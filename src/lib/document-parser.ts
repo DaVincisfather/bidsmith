@@ -1,4 +1,3 @@
-import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 
 const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".doc", ".md", ".txt"];
@@ -20,8 +19,8 @@ export async function parseDocument(
 
   switch (ext) {
     case ".pdf": {
-      const result = await pdfParse(buffer);
-      return result.text.trim();
+      // PDF support deferred — pdf-parse v2 has breaking API changes
+      throw new Error("PDF support coming soon. Please convert to Word or text.");
     }
     case ".docx":
     case ".doc": {
