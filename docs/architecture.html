@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Dealflow — Arkitektur</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 40px; min-height: 100vh; }
+  h1 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; color: #f8fafc; }
+  .subtitle { text-align: center; color: #94a3b8; margin-bottom: 48px; font-size: 0.95rem; }
+
+  /* Layout */
+  .section { max-width: 1100px; margin: 0 auto 64px; }
+  .section h2 { font-size: 1.3rem; margin-bottom: 24px; color: #f1f5f9; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+  .row { display: flex; gap: 20px; justify-content: center; align-items: stretch; flex-wrap: wrap; }
+
+  /* Cards */
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px; flex: 1; min-width: 280px; max-width: 340px; position: relative; transition: border-color 0.2s, box-shadow 0.2s; cursor: pointer; }
+  .card:hover { border-color: #60a5fa; box-shadow: 0 0 20px rgba(96, 165, 250, 0.15); }
+  .card.wide { max-width: 700px; min-width: 500px; flex: 2; }
+  .card.full { max-width: 100%; min-width: 100%; }
+
+  .card-icon { font-size: 1.6rem; margin-bottom: 8px; }
+  .card-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; color: #f1f5f9; }
+  .card-tech { font-size: 0.72rem; color: #60a5fa; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px; }
+  .card-desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
+  .card-desc strong { color: #cbd5e1; }
+
+  /* Milestone badge */
+  .badge { display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; margin-left: 6px; vertical-align: middle; }
+  .badge.m0 { background: #065f46; color: #6ee7b7; }
+  .badge.m1 { background: #713f12; color: #fcd34d; }
+  .badge.m15 { background: #581c87; color: #d8b4fe; }
+  .badge.m2 { background: #7c2d12; color: #fdba74; }
+  .badge.m3 { background: #0e7490; color: #67e8f9; }
+  .badge.cloud { background: #1e3a5f; color: #7dd3fc; }
+
+  /* Arrows */
+  .arrow-row { display: flex; justify-content: center; gap: 20px; margin: -8px 0; padding: 0 40px; }
+  .arrow { color: #475569; font-size: 0.85rem; text-align: center; flex: 1; max-width: 340px; line-height: 1.8; }
+  .arrow.wide { max-width: 700px; flex: 2; }
+
+  /* Detail panel */
+  .detail { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid #334155; }
+  .detail.active { display: block; }
+  .detail-item { font-size: 0.8rem; color: #94a3b8; padding: 3px 0; }
+  .detail-item code { background: #0f172a; padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; color: #a5b4fc; }
+
+  /* DB schema */
+  .db-schema { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+  .db-table { background: #0f172a; border: 1px solid #334155; border-radius: 8px; min-width: 240px; max-width: 320px; flex: 1; overflow: hidden; }
+  .db-table-header { background: #1e3a5f; padding: 10px 16px; font-weight: 700; font-size: 0.85rem; color: #93c5fd; }
+  .db-table-header.storage { background: #065f46; color: #6ee7b7; }
+  .db-table-header.future { background: #713f12; color: #fcd34d; }
+  .db-col { padding: 6px 16px; font-size: 0.78rem; color: #94a3b8; border-top: 1px solid #1e293b; display: flex; justify-content: space-between; }
+  .db-col .type { color: #60a5fa; font-size: 0.72rem; }
+  .db-col .pk { color: #f59e0b; font-size: 0.65rem; font-weight: 700; }
+  .db-col .fk { color: #a78bfa; font-size: 0.65rem; font-weight: 700; }
+
+  /* Data flow */
+  .flow-step { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; }
+  .flow-num { min-width: 36px; height: 36px; background: #1e293b; border: 2px solid #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; color: #60a5fa; flex-shrink: 0; }
+  .flow-content { flex: 1; }
+  .flow-title { font-weight: 700; font-size: 0.95rem; color: #e2e8f0; }
+  .flow-desc { font-size: 0.85rem; color: #94a3b8; margin-top: 2px; }
+  .flow-tokens { font-size: 0.75rem; color: #f59e0b; margin-top: 4px; }
+  .flow-line { width: 2px; height: 16px; background: #334155; margin: -16px 0 -16px 17px; }
+
+  /* Customer data section */
+  .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .data-box { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px; }
+  .data-box h3 { font-size: 0.95rem; color: #f1f5f9; margin-bottom: 12px; }
+  .data-list { list-style: none; }
+  .data-list li { font-size: 0.82rem; color: #94a3b8; padding: 5px 0; border-bottom: 1px solid #0f172a; display: flex; align-items: flex-start; gap: 8px; }
+  .data-list li:last-child { border: none; }
+  .data-tag { font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; white-space: nowrap; margin-top: 1px; }
+  .data-tag.required { background: #7c2d12; color: #fdba74; }
+  .data-tag.optional { background: #1e3a5f; color: #7dd3fc; }
+  .data-tag.generated { background: #065f46; color: #6ee7b7; }
+  .data-tag.accumulated { background: #312e81; color: #a5b4fc; }
+
+  /* Cost table */
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; padding: 10px 16px; background: #1e293b; color: #94a3b8; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 16px; border-top: 1px solid #1e293b; color: #cbd5e1; }
+  tr:hover td { background: #1e293b40; }
+  .model-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .model-badge.haiku { background: #1e3a5f; color: #7dd3fc; }
+  .model-badge.sonnet { background: #1e3a5f; color: #93c5fd; }
+  .model-badge.opus { background: #312e81; color: #a5b4fc; }
+
+  .legend { max-width: 1100px; margin: 32px auto 48px; display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #94a3b8; }
+
+  /* Connector lines between sections */
+  .connector { text-align: center; color: #334155; font-size: 1.2rem; margin: -20px 0 -20px; letter-spacing: 4px; }
+
+  @media (max-width: 768px) {
+    .data-grid { grid-template-columns: 1fr; }
+    .card { min-width: 100%; max-width: 100%; }
+    .card.wide { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Agentic Dealflow — Arkitektur</h1>
+<p class="subtitle">Klicka på kort för detaljer. Tre sektioner: systemöversikt, datamodell, och vad kunden lämnar ifrån sig.</p>
+
+<div class="legend">
+  <div class="legend-item"><span class="badge m0">M0</span> Kravanalys (klar)</div>
+  <div class="legend-item"><span class="badge m1">M1</span> Konsultmatchning (nasta)</div>
+  <div class="legend-item"><span class="badge m15">M1.5</span> Go/No-Go-agent</div>
+  <div class="legend-item"><span class="badge m2">M2</span> Anbudsgenerering</div>
+  <div class="legend-item"><span class="badge m3">M3</span> RFP-radar</div>
+  <div class="legend-item"><span class="badge cloud">MOLN</span> Extern tjänst</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 1: System Overview -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>1. Systemöversikt — vad pratar med vad?</h2>
+
+  <!-- User -->
+  <div class="row" style="margin-bottom: 8px;">
+    <div class="card wide" onclick="toggle(this)">
+      <div class="card-icon">👤</div>
+      <div class="card-title">Konsultfirma (användare)</div>
+      <div class="card-tech">Webbläsare</div>
+      <div class="card-desc">Laddar upp RFP:er, hanterar konsultprofiler, får anbudsutkast. All interaktion sker via webbgränssnittet.</div>
+      <div class="detail">
+        <div class="detail-item"><strong>M0:</strong> Ladda upp RFP → se strukturerad analys</div>
+        <div class="detail-item"><strong>M1:</strong> + Hantera konsultprofiler, se matchresultat</div>
+        <div class="detail-item"><strong>M2:</strong> + Generera och redigera anbudsutkast</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-row"><div class="arrow wide">↕ HTTPS (krypterat)</div></div>
+
+  <!-- Next.js -->
+  <div class="row" style="margin-bottom: 8px;">
+    <div class="card wide" onclick="toggle(this)">
+      <div class="card-icon">🖥️</div>
+      <div class="card-title">Next.js <span class="badge m0">M0</span></div>
+      <div class="card-tech">Frontend + Backend i ett · Vercel (prod) · localhost (dev)</div>
+      <div class="card-desc">
+        Hela vår applikation. Next.js är <strong>både frontend och backend</strong> — renderar webbsidor OCH kör server-logik (API routes). Hostad på Vercel i produktion.
+      </div>
+      <div class="detail">
+        <div class="detail-item"><strong>Frontend</strong> = det användaren ser (formulär, knappar, resultatvyer)</div>
+        <div class="detail-item"><strong>Backend</strong> = API routes som tar emot data, pratar med Claude och Supabase</div>
+        <div class="detail-item">💡 Tänk: en restaurang där kocken och servitören är samma person</div>
+        <div class="detail-item">📄 <code>src/app/</code> — sidor (varje mapp = en URL)</div>
+        <div class="detail-item">📄 <code>src/app/api/</code> — backend-logik</div>
+        <div class="detail-item">📄 <code>src/lib/</code> — delade hjälpfunktioner</div>
+        <div class="detail-item">📄 <code>src/components/</code> — UI-komponenter</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-row">
+    <div class="arrow">↕ API-anrop<br>(skickar text, får JSON)</div>
+    <div class="arrow">↕ SQL + filuppladdning<br>(läs/skriv data)</div>
+  </div>
+
+  <!-- External services -->
+  <div class="row">
+    <div class="card" onclick="toggle(this)">
+      <div class="card-icon">🤖</div>
+      <div class="card-title">Claude API <span class="badge cloud">MOLN</span></div>
+      <div class="card-tech">Anthropic · api.anthropic.com</div>
+      <div class="card-desc">
+        AI-hjärnan. Vår app skickar text till Claude, får tillbaka strukturerad analys. Claude <strong>lagrar ingenting</strong> — den processar och glömmer.
+      </div>
+      <div class="detail">
+        <div class="detail-item">🔑 Autentisering via API-nyckel i <code>.env.local</code></div>
+        <div class="detail-item">📤 Vi skickar: systemprompt + RFP-text (eller CV:n, eller instruktioner)</div>
+        <div class="detail-item">📥 Vi får: strukturerad JSON tillbaka</div>
+        <div class="detail-item">💡 Claudes API är <strong>stateless</strong> — den kommer inte ihåg tidigare anrop</div>
+        <div class="detail-item">💰 Vi betalar per token (in + ut). Se kostnadstabell nedan.</div>
+        <div class="detail-item">🔒 Data skickas krypterat, lagras inte av Anthropic (API-policy)</div>
+      </div>
+    </div>
+
+    <div class="card" onclick="toggle(this)">
+      <div class="card-icon">🗄️</div>
+      <div class="card-title">Supabase <span class="badge cloud">MOLN</span></div>
+      <div class="card-tech">PostgreSQL + Storage · supabase.co</div>
+      <div class="card-desc">
+        Vår databas och fillagring i molnet. Tänk: <strong>Google Drive</strong> (för filer) + <strong>Excel</strong> (för strukturerad data) — fast programmerbart och säkert.
+      </div>
+      <div class="detail">
+        <div class="detail-item"><strong>Två delar:</strong></div>
+        <div class="detail-item">📦 <strong>Storage</strong> = fillagring. Här hamnar originalfiler (Word, PDF, etc.)</div>
+        <div class="detail-item">🗃️ <strong>Database</strong> = PostgreSQL. Här lagras strukturerad data (analyser, profiler, anbud)</div>
+        <div class="detail-item">🔑 Autentisering via service role key (server-side, aldrig synlig för användaren)</div>
+        <div class="detail-item">💡 Supabase är en hanterad tjänst — vi sköter ingen server</div>
+        <div class="detail-item">🔒 Data krypterad at rest, anslutning via SSL</div>
+        <div class="detail-item">📍 Hostad i EU (Frankfurt) — bra för GDPR</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- M3: External data sources -->
+  <div class="arrow-row">
+    <div class="arrow" style="max-width: 700px; flex: 2;">↑ M3: proaktiv scanning av externa källor</div>
+  </div>
+
+  <div class="row">
+    <div class="card" onclick="toggle(this)" style="border-color: #0e749055;">
+      <div class="card-icon">📡</div>
+      <div class="card-title">RFP-radar <span class="badge m3">M3</span></div>
+      <div class="card-tech">Schemalagd scanning · Haiku + Sonnet</div>
+      <div class="card-desc">
+        Skannar upphandlingsplattformar automatiskt, matchar mot firmans konsultpool, rekommenderar de bästa möjligheterna. <strong>Flippar modellen från reaktiv till proaktiv.</strong>
+      </div>
+      <div class="detail">
+        <div class="detail-item"><strong>Flöde:</strong> Ny RFP upptäcks → Haiku snabbanalys → matcha mot konsultpool → Go/No-Go → notifiera firman</div>
+        <div class="detail-item"><strong>Nyckelinsikt:</strong> "Det finns 12 nya upphandlingar denna vecka. 3 matchar era konsulter. Här är den med 78% vinstchans."</div>
+        <div class="detail-item">💡 Kombinerat med Go/No-Go: "Skippa den du tittade på — den här som kommer på tisdag passar er bättre"</div>
+        <div class="detail-item">🔄 Kör schemalagt (dagligen/veckovis) — inte realtid, det räcker inte</div>
+      </div>
+    </div>
+
+    <div class="card" onclick="toggle(this)" style="border-color: #0e749055;">
+      <div class="card-icon">🌐</div>
+      <div class="card-title">Externa datakällor <span class="badge m3">M3</span></div>
+      <div class="card-tech">API-integrationer</div>
+      <div class="card-desc">
+        Upphandlingsplattformar och mäklare där RFP:er publiceras. Vi konsumerar deras data — de behöver inte ändra något.
+      </div>
+      <div class="detail">
+        <div class="detail-item"><strong>Offentlig sektor (Sverige):</strong></div>
+        <div class="detail-item">📌 TendSign / Mercell — största plattformen för offentlig upphandling</div>
+        <div class="detail-item">📌 E-avrop — statliga ramavtal</div>
+        <div class="detail-item">📌 Ted.europa.eu — EU-upphandlingar över tröskelvärden</div>
+        <div class="detail-item"><strong>Privat sektor / mäklare:</strong></div>
+        <div class="detail-item">📌 Brightly (fd Ework) — konsultmäklare</div>
+        <div class="detail-item">📌 Cinode — konsultplattform</div>
+        <div class="detail-item">📌 Uppdragsbörser (branschspecifika)</div>
+        <div class="detail-item">💡 Börja med 1–2 källor, expandera baserat på kundbehov</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>2. Vad lagras i Supabase? (Datamodell)</h2>
+
+  <div class="db-schema">
+    <!-- Storage -->
+    <div class="db-table">
+      <div class="db-table-header storage">📦 Storage: rfp-documents</div>
+      <div class="db-col">Originalfiler (Word, PDF, text) <span class="type">binary</span></div>
+      <div class="db-col" style="color: #6ee7b7; font-size: 0.75rem;">Filerna som kunden laddar upp — oförändrade. Sparas för spårbarhet.</div>
+    </div>
+
+    <!-- Documents table -->
+    <div class="db-table">
+      <div class="db-table-header">🗃️ Tabell: documents <span class="badge m0" style="margin-left: 8px;">M0</span></div>
+      <div class="db-col">id <span class="pk">PK</span> <span class="type">uuid</span></div>
+      <div class="db-col">file_name <span class="type">text</span></div>
+      <div class="db-col">file_size <span class="type">integer</span></div>
+      <div class="db-col">mime_type <span class="type">text</span></div>
+      <div class="db-col">storage_path <span class="type">text</span></div>
+      <div class="db-col">created_at <span class="type">timestamp</span></div>
+      <div class="db-col" style="color: #6ee7b7; font-size: 0.75rem;">Metadata om uppladdade filer. Pekar till filen i Storage.</div>
+    </div>
+
+    <!-- Analyses table -->
+    <div class="db-table">
+      <div class="db-table-header">🗃️ Tabell: analyses <span class="badge m0" style="margin-left: 8px;">M0</span></div>
+      <div class="db-col">id <span class="pk">PK</span> <span class="type">uuid</span></div>
+      <div class="db-col">document_id <span class="fk">FK → documents</span> <span class="type">uuid</span></div>
+      <div class="db-col">analysis <span class="type">jsonb</span></div>
+      <div class="db-col">created_at <span class="type">timestamp</span></div>
+      <div class="db-col" style="color: #6ee7b7; font-size: 0.75rem;">Claudes strukturerade analys — krav, vikter, kompetenser, red flags. Kopplad till dokumentet.</div>
+    </div>
+
+    <!-- Future: consultants -->
+    <div class="db-table">
+      <div class="db-table-header future">🗃️ Tabell: consultants <span class="badge m1" style="margin-left: 8px;">M1</span></div>
+      <div class="db-col">id <span class="pk">PK</span> <span class="type">uuid</span></div>
+      <div class="db-col">firm_id <span class="fk">FK → firms</span> <span class="type">uuid</span></div>
+      <div class="db-col">name <span class="type">text</span></div>
+      <div class="db-col">internal_cv <span class="type">text</span></div>
+      <div class="db-col">external_profile <span class="type">jsonb</span></div>
+      <div class="db-col">competencies <span class="type">text[]</span></div>
+      <div class="db-col" style="color: #fcd34d; font-size: 0.75rem;">Tvålagers-modell: internt CV (full detalj, bara för AI) + externt kuraterad profil (för anbud).</div>
+    </div>
+
+    <!-- Future: matches -->
+    <div class="db-table">
+      <div class="db-table-header future">🗃️ Tabell: matches <span class="badge m1" style="margin-left: 8px;">M1</span></div>
+      <div class="db-col">id <span class="pk">PK</span> <span class="type">uuid</span></div>
+      <div class="db-col">analysis_id <span class="fk">FK → analyses</span> <span class="type">uuid</span></div>
+      <div class="db-col">consultant_id <span class="fk">FK → consultants</span> <span class="type">uuid</span></div>
+      <div class="db-col">score <span class="type">float</span></div>
+      <div class="db-col">reasoning <span class="type">text</span></div>
+      <div class="db-col" style="color: #fcd34d; font-size: 0.75rem;">Hur väl varje konsult matchar varje RFP. Sparar AI:ns resonemang.</div>
+    </div>
+
+    <!-- Future: go_no_go -->
+    <div class="db-table">
+      <div class="db-table-header future" style="background: #581c87; color: #d8b4fe;">🗃️ Tabell: go_no_go <span class="badge m15" style="margin-left: 8px;">M1.5</span></div>
+      <div class="db-col">id <span class="pk">PK</span> <span class="type">uuid</span></div>
+      <div class="db-col">analysis_id <span class="fk">FK → analyses</span> <span class="type">uuid</span></div>
+      <div class="db-col">win_probability <span class="type">float</span></div>
+      <div class="db-col">confidence <span class="type">float</span></div>
+      <div class="db-col">strengths <span class="type">jsonb</span></div>
+      <div class="db-col">gaps <span class="type">jsonb</span></div>
+      <div class="db-col">recommendation <span class="type">enum</span></div>
+      <div class="db-col">reasoning <span class="type">text</span></div>
+      <div class="db-col">alternatives <span class="type">jsonb</span></div>
+      <div class="db-col">decision <span class="type">enum</span></div>
+      <div class="db-col">decision_at <span class="type">timestamp</span></div>
+      <div class="db-col" style="color: #d8b4fe; font-size: 0.75rem;">AI:ns beslutsunderlag + firmans faktiska beslut (go/no-go). Utfall sparas i bids — feedback-loopen som gör prediktionen bättre.</div>
+    </div>
+
+    <!-- Future: opportunities (M3) -->
+    <div class="db-table">
+      <div class="db-table-header future" style="background: #0e7490; color: #67e8f9;">🗃️ Tabell: opportunities <span class="badge m3" style="margin-left: 8px;">M3</span></div>
+      <div class="db-col">id <span class="pk">PK</span> <span class="type">uuid</span></div>
+      <div class="db-col">source <span class="type">enum (tendsign/ework/...)</span></div>
+      <div class="db-col">external_id <span class="type">text</span></div>
+      <div class="db-col">title <span class="type">text</span></div>
+      <div class="db-col">raw_data <span class="type">jsonb</span></div>
+      <div class="db-col">quick_analysis <span class="type">jsonb</span></div>
+      <div class="db-col">discovered_at <span class="type">timestamp</span></div>
+      <div class="db-col">deadline <span class="type">timestamp</span></div>
+      <div class="db-col" style="color: #67e8f9; font-size: 0.75rem;">Skannade RFP:er från externa plattformar. Snabbanalyseras av Haiku, relevanta triggar full analys + Go/No-Go.</div>
+    </div>
+
+    <!-- Future: bids -->
+    <div class="db-table">
+      <div class="db-table-header future" style="background: #7c2d12; color: #fdba74;">🗃️ Tabell: bids <span class="badge m2" style="margin-left: 8px;">M2</span></div>
+      <div class="db-col">id <span class="pk">PK</span> <span class="type">uuid</span></div>
+      <div class="db-col">analysis_id <span class="fk">FK → analyses</span> <span class="type">uuid</span></div>
+      <div class="db-col">go_no_go_id <span class="fk">FK → go_no_go</span> <span class="type">uuid</span></div>
+      <div class="db-col">draft <span class="type">text</span></div>
+      <div class="db-col">final_version <span class="type">text</span></div>
+      <div class="db-col">status <span class="type">enum</span></div>
+      <div class="db-col">outcome <span class="type">enum (won/lost/pending)</span></div>
+      <div class="db-col">submitted_at <span class="type">timestamp</span></div>
+      <div class="db-col" style="color: #fdba74; font-size: 0.75rem;">AI-genererat utkast → redigerat → inskickat. Utfall (won/lost) matas tillbaka till go_no_go för bättre prediktioner.</div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 24px; padding: 16px; background: #1e293b; border-radius: 8px; max-width: 1100px;">
+    <div style="font-size: 0.85rem; color: #94a3b8;">
+      <strong style="color: #f1f5f9;">Relationer:</strong>
+      document → analyses (1:N) → matches (1:N) → consultants (N:1) &nbsp;|&nbsp; analyses → go_no_go (1:1) → bids (1:N)
+    </div>
+    <div style="font-size: 0.8rem; color: #67e8f9; margin-top: 6px;">
+      <strong>M3-flöde:</strong> opportunities → document (auto-skapat) → hela pipeline:n kickar igång automatiskt
+    </div>
+    <div style="font-size: 0.8rem; color: #d8b4fe; margin-top: 4px;">
+      <strong>Feedback-loop:</strong> bids.outcome → förbättrar go_no_go.win_probability för framtida anbud
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 3: Customer Data -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>3. Vad lämnar kunden över? Och vad byggs upp över tid?</h2>
+
+  <div class="data-grid">
+    <!-- What customer provides -->
+    <div class="data-box">
+      <h3>📤 Kunden laddar upp / matar in</h3>
+      <ul class="data-list">
+        <li>
+          <span class="data-tag required">KRÄVS</span>
+          <span><strong>Förfrågningsunderlag (RFP)</strong> — Word, PDF eller text. Det offentliga/privata underlaget de vill svara på.</span>
+        </li>
+        <li>
+          <span class="data-tag required">KRÄVS</span>
+          <span><strong>Konsult-CV:n</strong> — Fullständiga CV:n för sina konsulter. Lagras internt, aldrig exponerat rakt av.</span>
+        </li>
+        <li>
+          <span class="data-tag optional">VALFRITT</span>
+          <span><strong>Tidigare anbud</strong> — Vinnande anbud de skickat förut. Hjälper AI:n lära sig firmans ton och stil.</span>
+        </li>
+        <li>
+          <span class="data-tag optional">VALFRITT</span>
+          <span><strong>Firmaprofil & mallar</strong> — Standardtexter, boilerplate, certifieringar, referensuppdrag.</span>
+        </li>
+        <li>
+          <span class="data-tag optional">VALFRITT</span>
+          <span><strong>Prismodell / timpriser</strong> — Om de vill att anbudet ska innehålla prisuppskattning.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- What system generates -->
+    <div class="data-box">
+      <h3>🔄 Systemet genererar</h3>
+      <ul class="data-list">
+        <li>
+          <span class="data-tag generated">GENERERAD</span>
+          <span><strong>Strukturerad RFP-analys</strong> — Krav, vikter, deadlines, red flags. Maskinläsbar JSON.</span>
+        </li>
+        <li>
+          <span class="data-tag generated">GENERERAD</span>
+          <span><strong>Konsultmatchning</strong> — Rankad lista med poäng och motivering per konsult vs krav. <span class="badge m1">M1</span></span>
+        </li>
+        <li>
+          <span class="data-tag generated">GENERERAD</span>
+          <span><strong>Anbudsutkast</strong> — Komplett anbudstext, redo att redigeras. <span class="badge m2">M2</span></span>
+        </li>
+        <li>
+          <span class="data-tag generated">GENERERAD</span>
+          <span><strong>Kuraterade konsultprofiler</strong> — Externt lager: sammanfattade profiler anpassade per anbud. <span class="badge m1">M1</span></span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- What accumulates over time -->
+    <div class="data-box">
+      <h3>📈 Byggs upp över tid (plattformsvärde)</h3>
+      <ul class="data-list">
+        <li>
+          <span class="data-tag accumulated">ACKUMULERAS</span>
+          <span><strong>Kravmönster</strong> — Vilka krav som är vanliga i vilka branscher/upphandlingar. Inget annat verktyg har denna data.</span>
+        </li>
+        <li>
+          <span class="data-tag accumulated">ACKUMULERAS</span>
+          <span><strong>Matchningshistorik</strong> — Vilka kompetenskombinationer vinner vilka typer av uppdrag.</span>
+        </li>
+        <li>
+          <span class="data-tag accumulated">ACKUMULERAS</span>
+          <span><strong>Anbudsutfall</strong> — Om kunden markerar "vann" / "förlorade" kan vi lära oss vad som funkar.</span>
+        </li>
+        <li>
+          <span class="data-tag accumulated">ACKUMULERAS</span>
+          <span><strong>Branschbenchmarks</strong> — Genomsnittligt antal krav, vanliga vikter, typiska red flags per sektor.</span>
+        </li>
+        <li>
+          <span class="data-tag accumulated">ACKUMULERAS</span>
+          <span><strong>Marknadsöversikt</strong> — Vilka typer av uppdrag publiceras var, frekvens, säsongsmönster, genomsnittlig konkurrens. <span class="badge m3">M3</span></span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Privacy model -->
+    <div class="data-box">
+      <h3>🔒 Datahantering & sekretess</h3>
+      <ul class="data-list">
+        <li>
+          <span><strong>Tvålagers CV-modell:</strong> Internt lager (full CV, bara AI:n ser) → Externt lager (kuraterad profil, syns i anbud)</span>
+        </li>
+        <li>
+          <span><strong>Claude API:</strong> Stateless — data processas men lagras inte av Anthropic</span>
+        </li>
+        <li>
+          <span><strong>Supabase:</strong> Krypterad lagring, EU-hosting (Frankfurt), GDPR-kompatibel</span>
+        </li>
+        <li>
+          <span><strong>Isolering:</strong> Varje firma ser bara sin egen data. Aggregerad anonymiserad data används för plattformsinsikter.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 4: Learning & Context Strategy -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>4. Hur blir systemet bättre över tid?</h2>
+
+  <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 24px; line-height: 1.6;">
+    Vi tränar inte Claude — det går inte med API:t. Istället bygger vi <strong>bättre kontext</strong> för varje anrop. Databasen växer, men prompten hålls liten. Det är skillnaden.
+  </p>
+
+  <!-- Three learning mechanisms -->
+  <div class="row" style="margin-bottom: 32px;">
+    <div class="card" onclick="toggle(this)">
+      <div class="card-icon">📚</div>
+      <div class="card-title">Historikbaserad kontext</div>
+      <div class="card-tech">Promptinjection från databas</div>
+      <div class="card-desc">Vid varje anrop hämtar vi relevanta tidigare resultat och skickar med. Opus "lär sig" genom att se firmans bästa exempel.</div>
+      <div class="detail">
+        <div class="detail-item"><strong>Anbudsskrivning:</strong> "Här är 3 tidigare anbud som vann i liknande upphandlingar"</div>
+        <div class="detail-item"><strong>Matchning:</strong> "Konsult X fick 92 poäng på liknande uppdrag förra kvartalet"</div>
+        <div class="detail-item"><strong>RFP-analys:</strong> "I senaste 20 upphandlingarna inom vård var vanligaste red flag otydlig tidsplan"</div>
+        <div class="detail-item">💡 Ingen magi — SQL-query → data i prompten → bättre svar</div>
+      </div>
+    </div>
+
+    <div class="card" onclick="toggle(this)">
+      <div class="card-icon">🏆</div>
+      <div class="card-title">Utfallsloop</div>
+      <div class="card-tech">Vann / Förlorade → feedback</div>
+      <div class="card-desc">Kunden markerar om anbudet vann eller inte. Över tid ser vi vilka formuleringar, strukturer och matchningar som korrelerar med vinst.</div>
+      <div class="detail">
+        <div class="detail-item">Kräver bara ett fält: <code>bids.outcome: 'won' | 'lost' | 'pending'</code></div>
+        <div class="detail-item">Vinnande anbud blir "goda exempel" i framtida prompter</div>
+        <div class="detail-item">Förlorande anbud = anti-patterns att undvika</div>
+        <div class="detail-item">💡 Varje anbud gör nästa lite bättre — flyghjulseffekt</div>
+      </div>
+    </div>
+
+    <div class="card" onclick="toggle(this)">
+      <div class="card-icon">🎨</div>
+      <div class="card-title">Firmspecifik stilguide</div>
+      <div class="card-tech">Extraheras en gång, sparas</div>
+      <div class="card-desc">Istället för att skicka 50 gamla anbud för att "lära tonen", extraherar vi en stilguide en gång. ~500 tokens som aldrig växer.</div>
+      <div class="detail">
+        <div class="detail-item"><strong>Ton:</strong> "formell men inte byråkratisk"</div>
+        <div class="detail-item"><strong>Undvik:</strong> "leverera", "synergi", "best practice"</div>
+        <div class="detail-item"><strong>Föredra:</strong> "genomföra", "samverkan", "beprövad metod"</div>
+        <div class="detail-item"><strong>Struktur:</strong> sammanfattning först, metodik, team, pris</div>
+        <div class="detail-item">💡 Byggs upp organiskt — kan redigeras av kunden</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context bloat solution -->
+  <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 28px; margin-bottom: 24px;">
+    <h3 style="font-size: 1.05rem; color: #f1f5f9; margin-bottom: 16px;">Kontextbloat-problemet — och lösningen</h3>
+    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;">
+      En firma med 200 anbud kan inte skicka allt till Claude — det blir 2M tokens och $300 per anrop. Lösningen: <strong>trattformad kontextfiltrering</strong>. Databasen är stor, prompten är liten.
+    </p>
+
+    <!-- Funnel visualization -->
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 20px;">
+      <!-- Layer 1 -->
+      <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 12px 32px; width: 90%; text-align: center;">
+        <div style="font-size: 0.75rem; color: #60a5fa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Lager 1: Databas (SQL)</div>
+        <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 4px;">200 anbud → <code style="background:#1e293b;padding:1px 6px;border-radius:3px;color:#a5b4fc;">WHERE bransch = 'vård' AND utfall = 'vann'</code> → 15 anbud</div>
+        <div style="font-size: 0.72rem; color: #22c55e; margin-top: 2px;">Kostnad: $0 — ren SQL-filtrering</div>
+      </div>
+      <div style="color: #475569; font-size: 1.2rem;">▼</div>
+
+      <!-- Layer 2 -->
+      <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 12px 32px; width: 72%; text-align: center;">
+        <div style="font-size: 0.75rem; color: #7dd3fc; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Lager 2: Sammanfattning</div>
+        <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 4px;">Aggregerad statistik: "7 av 10 vinnande anbud betonade förändringsledning"</div>
+        <div style="font-size: 0.72rem; color: #22c55e; margin-top: 2px;">Kostnad: $0 — förberäknade aggregat</div>
+      </div>
+      <div style="color: #475569; font-size: 1.2rem;">▼</div>
+
+      <!-- Layer 3 -->
+      <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 12px 32px; width: 54%; text-align: center;">
+        <div style="font-size: 0.75rem; color: #fcd34d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Lager 3: AI-filtrering (Haiku)</div>
+        <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 4px;">15 anbud → "vilka 3 är mest relevanta?" → 3 anbud</div>
+        <div style="font-size: 0.72rem; color: #22c55e; margin-top: 2px;">Kostnad: ~$0.01</div>
+      </div>
+      <div style="color: #475569; font-size: 1.2rem;">▼</div>
+
+      <!-- Final prompt -->
+      <div style="background: #312e81; border: 1px solid #4c1d95; border-radius: 6px; padding: 12px 32px; width: 38%; text-align: center;">
+        <div style="font-size: 0.75rem; color: #a5b4fc; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Prompt till Opus</div>
+        <div style="font-size: 0.82rem; color: #c4b5fd; margin-top: 4px;">~4 000 tokens: kravanalys + 3 exempel + stilguide + statistik</div>
+        <div style="font-size: 0.72rem; color: #a5b4fc; margin-top: 2px;">Kostnad: ~$0.35 (Opus)</div>
+      </div>
+    </div>
+
+    <p style="font-size: 0.82rem; color: #64748b; text-align: center;">
+      Samma promptstorlek oavsett om firman gjort 10 eller 1 000 anbud. Databasen växer, prompten gör det inte.
+    </p>
+  </div>
+
+  <!-- What prompt gets at each stage -->
+  <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 28px;">
+    <h3 style="font-size: 1.05rem; color: #f1f5f9; margin-bottom: 16px;">Vad varje AI-steg faktiskt får se</h3>
+    <table>
+      <thead>
+        <tr><th>Steg</th><th>Fast kontext</th><th>Historikkontext (växer ej)</th><th>Total prompt</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>RFP-analys <span class="badge m0">M0</span></td>
+          <td>Systemprompt + RFP-text</td>
+          <td>Branschstatistik (~100 tok)</td>
+          <td>~10 100 tok</td>
+        </tr>
+        <tr>
+          <td>CV-filter <span class="badge m1">M1</span></td>
+          <td>Kravlista + 1 CV i taget</td>
+          <td>—</td>
+          <td>~500 tok/CV</td>
+        </tr>
+        <tr>
+          <td>CV-matchning <span class="badge m1">M1</span></td>
+          <td>Kravlista + 1 CV</td>
+          <td>Konsultens track record (~200 tok)</td>
+          <td>~2 200 tok/CV</td>
+        </tr>
+        <tr style="background: #581c8710;">
+          <td>Go/No-Go <span class="badge m15">M1.5</span></td>
+          <td>Kravanalys + matchresultat</td>
+          <td>Historiska utfall för liknande RFP:er (~500 tok)</td>
+          <td>~3 000 tok</td>
+        </tr>
+        <tr>
+          <td>Anbudsskrivning <span class="badge m2">M2</span></td>
+          <td>Kravanalys + matchade konsulter + go/no-go-insikter</td>
+          <td>3 vinnande exempel + stilguide + statistik (~2 500 tok)</td>
+          <td>~6 500 tok</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 5: Data Flow -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>5. Dataflöde: Från RFP till anbud</h2>
+
+  <div class="flow-step">
+    <div class="flow-num">1</div>
+    <div class="flow-content">
+      <div class="flow-title">Kund laddar upp RFP</div>
+      <div class="flow-desc">Word/PDF/text → webbformulär → <strong>sparas i Supabase Storage</strong> (original) + <strong>documents-tabellen</strong> (metadata)</div>
+    </div>
+  </div>
+  <div class="flow-line"></div>
+
+  <div class="flow-step">
+    <div class="flow-num">2</div>
+    <div class="flow-content">
+      <div class="flow-title">Dokument parsas till text</div>
+      <div class="flow-desc">mammoth.js extraherar text ur Word. Ren filhantering i Next.js — <strong>ingen AI, inga tokens, ingen extern tjänst.</strong></div>
+      <div class="flow-tokens">Kostnad: $0</div>
+    </div>
+  </div>
+  <div class="flow-line"></div>
+
+  <div class="flow-step">
+    <div class="flow-num">3</div>
+    <div class="flow-content">
+      <div class="flow-title">RFP analyseras → strukturerad JSON <span class="badge m0">M0</span></div>
+      <div class="flow-desc">Text skickas till <strong>Claude API</strong> → får tillbaka krav, vikter, kompetenser, red flags. Resultatet <strong>sparas i analyses-tabellen</strong> i Supabase.</div>
+      <div class="flow-tokens">Sonnet: ~10 000 tokens in → ~2 000 tokens ut ≈ $0.06</div>
+    </div>
+  </div>
+  <div class="flow-line"></div>
+
+  <div class="flow-step">
+    <div class="flow-num">4</div>
+    <div class="flow-content">
+      <div class="flow-title">Konsulter matchas mot krav <span class="badge m1">M1</span></div>
+      <div class="flow-desc"><strong>Strukturerad JSON</strong> (inte rå-RFP) + CV:n från <strong>consultants-tabellen</strong> skickas till Claude. Haiku filtrerar, Sonnet matchar. Resultat sparas i <strong>matches-tabellen</strong>.</div>
+      <div class="flow-tokens">Haiku: ~$0.04 (filter) + Sonnet: ~$0.11 (matchning) ≈ $0.15</div>
+    </div>
+  </div>
+  <div class="flow-line"></div>
+
+  <div class="flow-step">
+    <div class="flow-num" style="border-color: #a855f7; color: #a855f7;">5</div>
+    <div class="flow-content">
+      <div class="flow-title">Go/No-Go-beslut <span class="badge m15">M1.5</span></div>
+      <div class="flow-desc">Sonnet analyserar matchresultat + historiska utfall → <strong>estimerad vinstchans</strong>, styrkor, luckor, alternativa möjligheter. Sparas i <strong>go_no_go-tabellen</strong>. Firman beslutar: satsa eller skippa?</div>
+      <div class="flow-tokens">Sonnet: ~3 000 tokens in → ~1 500 tokens ut ≈ $0.03</div>
+    </div>
+  </div>
+  <div class="flow-line"></div>
+
+  <div class="flow-step">
+    <div class="flow-num">6</div>
+    <div class="flow-content">
+      <div class="flow-title">Anbud genereras (om Go) <span class="badge m2">M2</span></div>
+      <div class="flow-desc">Opus får <strong>komprimerad kontext</strong> (~3 500 tokens): kravanalys + matchade konsulter + firmans mallar + go/no-go-insikter. Skriver anbudsutkast → <strong>bids-tabellen</strong>.</div>
+      <div class="flow-tokens">Opus: ~3 500 tokens in → ~4 000 tokens ut ≈ $0.35</div>
+    </div>
+  </div>
+  <div class="flow-line"></div>
+
+  <div class="flow-step">
+    <div class="flow-num">7</div>
+    <div class="flow-content">
+      <div class="flow-title">Senior konsult granskar & skickar</div>
+      <div class="flow-desc">Människan i loopen — redigerar utkastet, godkänner, skickar in. <strong>Ingen AI i detta steg.</strong></div>
+    </div>
+  </div>
+  <div class="flow-line"></div>
+
+  <div class="flow-step">
+    <div class="flow-num" style="border-color: #22c55e; color: #22c55e;">8</div>
+    <div class="flow-content">
+      <div class="flow-title">Utfall rapporteras (vann/förlorade)</div>
+      <div class="flow-desc">Kunden markerar utfall i <strong>bids.outcome</strong>. Kopplas tillbaka till go_no_go-prediktionen → <strong>feedback-loop som förbättrar framtida vinstprediktioner.</strong></div>
+      <div class="flow-tokens">Total pipeline: ~$0.59 per anbud (inkl. Go/No-Go)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 5: Cost -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>6. Tokenkostnad per anbud (uppskattning)</h2>
+  <table>
+    <thead>
+      <tr><th>Steg</th><th>Modell</th><th>Vad den gör</th><th>Input</th><th>Output</th><th>Kostnad</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>RFP-analys</td>
+        <td><span class="model-badge sonnet">Sonnet</span></td>
+        <td>Extraherar krav & struktur</td>
+        <td>~10 000 tok</td>
+        <td>~2 000 tok</td>
+        <td>~$0.06</td>
+      </tr>
+      <tr>
+        <td>CV pre-filter (80 st)</td>
+        <td><span class="model-badge haiku">Haiku</span></td>
+        <td>Snabbfilter: relevant eller ej?</td>
+        <td>~40 000 tok</td>
+        <td>~4 000 tok</td>
+        <td>~$0.04</td>
+      </tr>
+      <tr>
+        <td>CV matchning (10 st)</td>
+        <td><span class="model-badge sonnet">Sonnet</span></td>
+        <td>Djupmatchning med poäng</td>
+        <td>~20 000 tok</td>
+        <td>~3 000 tok</td>
+        <td>~$0.11</td>
+      </tr>
+      <tr style="background: #581c8710;">
+        <td>Go/No-Go-analys</td>
+        <td><span class="model-badge sonnet">Sonnet</span></td>
+        <td>Vinstprediktion + beslutsunderlag</td>
+        <td>~3 000 tok</td>
+        <td>~1 500 tok</td>
+        <td>~$0.03</td>
+      </tr>
+      <tr>
+        <td>Anbudsskrivning</td>
+        <td><span class="model-badge opus">Opus</span></td>
+        <td>Skriver anbudstexten</td>
+        <td>~3 500 tok</td>
+        <td>~4 000 tok</td>
+        <td>~$0.35</td>
+      </tr>
+      <tr style="font-weight: 700; border-top: 2px solid #475569;">
+        <td>Totalt per anbud</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>~$0.59</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="margin-top: 16px; font-size: 0.82rem; color: #64748b; text-align: center;">
+    Jämförelse: en senior konsult som lägger 4h på ett anbud kostar firman ~4 000–8 000 kr. Vår kostnad: ~6 kr. Go/No-Go-analysen kostar ~0,30 kr — och sparar de 4 timmarna helt om svaret är "skippa".
+  </p>
+</div>
+
+<script>
+function toggle(el) {
+  const detail = el.querySelector('.detail');
+  if (detail) detail.classList.toggle('active');
+}
+</script>
+
+</body>
+</html>

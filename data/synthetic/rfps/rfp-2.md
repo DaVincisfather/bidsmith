@@ -1,119 +1,69 @@
-# Offertförfrågan
+# Förfrågningsunderlag — Förnyad konkurrensutsättning
 
-## Molnmigrering för RetailNord AB
+## Utredning av hel skatteväxling av all allmän kollektivtrafik
 
-**Avsändare:** RetailNord AB, IT-avdelningen
-**Referens:** RN-IT-2024-089
-**Typ:** Privat offertförfrågan
-**Sista svarsdatum:** 2024-08-15
-
----
-
-## 1. Om RetailNord AB
-
-RetailNord AB är en nordisk retailkedja med 180 butiker i Sverige, Norge och Danmark samt en e-handelsplattform med ca 2 miljoner unika besökare per månad. Bolaget omsätter ca 4,5 miljarder kronor och har 3 200 anställda.
+**Referensnummer:** IN-IN23-0496
+**Ramavtal:** Managementkonsulter, Område: Ekonomi och finans
+**Beställare:** Region Västmanland, Kollektivtrafikförvaltningen
+**Kontaktperson:** Per Ekström, Budgetchef
 
 ---
 
-## 2. Bakgrund
+### Bakgrund
 
-RetailNords nuvarande IT-infrastruktur baseras till stor del på on-premise-lösningar i ett eget datacenter. Det primära datacentret är tekniskt föråldrat och supportavtal för central infrastruktur löper ut under 2025. En on-premise-förnyelse bedöms vara tekniskt och ekonomiskt ogynnsam.
+Region Västmanland utreder förutsättningarna för att skatteväxla all allmän kollektivtrafik från kommunerna till regionen. Utredningen ska ge ett heltäckande beslutsunderlag som belyser juridiska, ekonomiska och verksamhetsmässiga aspekter.
 
-Bolaget har beslutat att migrera till en hybrid molnlösning med Azure som primär molnplattform. Migreringen ska genomföras med minimal påverkan på affärsverksamheten.
+### Mål med uppdraget
 
-**Systemlandskap att migrera:**
-- ERP-system (Microsoft Dynamics 365 — delvis redan i moln)
-- E-handelsplattform (custom-byggd, .NET/React)
-- Lagerstyrningssystem (WMS) — äldre Java-applikation
-- HR-system (integrerat tredjepartssystem)
-- Datawarehouse och BI-miljö (SQL Server-baserat)
-- Intern filhantering och kommunikationsverktyg
+Analysera möjligheter och förutsättningar för skatteväxling av allmän kollektivtrafik i Västmanland, inklusive juridiska, ekonomiska och verksamhetsmässiga aspekter. Utredningen ska redovisa för- och nackdelar med att skatteväxla samt visa på olika konsekvenser och möjligheter och föreslå möjliga alternativ.
 
----
+### Uppdragsbeskrivning
 
-## 3. Uppdragsbeskrivning
+- Genomföra analys av fördelar och nackdelar med skatteväxling av allmän kollektivtrafik
+- Ta fram utmaningar och möjligheter för genomförande samt ge bra och dåliga exempel från andra regioner
+- Beräkna nivå på skatteväxling utifrån nuläge och framtida behov och utveckling
+- Analysera kostnadsbild och finansiering samt påverkan på kommunalekonomisk utjämning
+- Göra juridisk analys: relevant lagstiftning, moms, avtal och ansvarsfördelning kommun/region
+- Analysera strukturell påverkan: samarbetsfora, roller, mandat
+- Genomföra intervjuer med nyckelpersoner, kommuner, region samt andra regioner där skatteväxling skett
+- Presentera resultat skriftligt och muntligen senast 31 oktober 2026 för tjänstepersoner samt senast 20 december 2026 för förtroendevalda
 
-Vi söker en erfaren IT-konsult (eller konsultteam) som kan:
+Beställaren bistår med material, underlag och personer som ska intervjuas.
 
-### Fas 1: Nulägesanalys och strategi (ca 6 veckor)
-- Inventering och klassificering av alla system och beroenden
-- Bedömning av migreringskomplexitet per system
-- Rekommendation av migreringssekvens (7R-analys: Rehost, Replatform, Refactor etc.)
-- Azure-arkitekturdesign och landingzone-etablering
-- Riskanalys och mitigeringsplan
+### Tidsperiod
 
-### Fas 2: Genomförande (ca 9 månader)
-- Etablering av Azure-plattform och governance-struktur
-- Migrering av system i prioriterad ordning
-- Etablering av CI/CD-pipelines och DevOps-processer
-- Säkerhetsarkitektur och compliance (ISO 27001)
-- Utbildning av intern IT-personal
+2026 — 2026-12-31
 
-### Fas 3: Stabilisering och handover (ca 6 veckor)
-- Driftstabilisering och optimering
-- Dokumentation och kunskapsöverföring
-- Fastställande av driftsrutiner och eskaleringsmodell
+### Krav på konsult
 
----
+Leverantörens arbetsgrupp ska ledas av konsult på minst seniornivå som även är kontaktperson under hela uppdraget.
 
-## 4. Kravspecifikation
+Seniorkonsulten ska ha:
+- Minst 2 års erfarenhet och stor kompetens inom området allmän kollektivtrafik
+- Minst 2 års erfarenhet och stor kompetens inom skatteväxlingsområdet
 
-### 4.1 Ska-krav
+CV ska bifogas på svenska med uppgifter om anställningstid, teoretisk kompetens, yrkeserfarenhet och förteckning över liknande uppdrag.
 
-| # | Krav |
-|---|------|
-| SK1 | Bevisad erfarenhet av minst två (2) fullständiga molnmigreringsprojekt av liknande skala |
-| SK2 | Microsoft Azure-certifierade konsulter (Solutions Architect level) |
-| SK3 | Erfarenhet av migrering av .NET-applikationer och SQL Server-miljöer |
-| SK4 | Förmåga att bemanna projektet med minst två konsulter på heltid under genomförandefasen |
-| SK5 | Erfarenhet av retail- eller e-handelsmiljöer |
+### Prismodell
 
-### 4.2 Bör-krav
+Fast pris. Leverantören ska lämna ett fast totalpris för hela uppdraget (SEK exkl. moms).
 
-- Erfarenhet av Microsoft Dynamics 365
-- Erfarenhet av WMS-migrering
-- FinOps-kompetens (Azure kostnadsoptimering)
-- Lokal närvaro i Göteborg (primär projekthub)
+### Utvärdering
 
----
+Totalpoäng = Prispoäng + Kvalitetspoäng (max 100 poäng)
 
-## 5. Utvärderingskriterier
+| Kriterium | Max poäng |
+|-----------|-----------|
+| Pris | 50 |
+| Kvalitet: Referenser | 25 |
+| Kvalitet: Genomförandeplan | 25 |
 
-| Kriterium | Vikt |
-|-----------|------|
-| Teknisk kompetens och referensuppdrag | 40% |
-| Projektplan och metodik | 30% |
-| Pris (totalkostnad) | 30% |
+**Referenser (max 25 poäng)**
+Två referensuppdrag bedöms på: relevans, jämförbarhet, resultat/nytta, metod, leverantörens roll.
 
----
+**Genomförandeplan (max 25 poäng)**
+Bedöms på: tidplan, helhetsmetod, beräkningar, organisation, beställarens medverkan och risk. Uppdragsförståelse och lösningsförslag max två sidor.
 
-## 6. Tidplan
+### Sista anbudsdag
 
-| Milstolpe | Datum |
-|-----------|-------|
-| Sista svarsdatum offert | 2024-08-15 |
-| Leverantörspresentationer | 2024-08-26–27 |
-| Beslut och kontraktskrivning | 2024-09-06 |
-| Projektstart | 2024-10-01 |
-| Fas 1 klar | 2024-11-15 |
-| Migrering genomförd | 2025-08-31 |
-
----
-
-## 7. Offertens innehåll
-
-Vi önskar att offerten innehåller:
-
-1. Kortfattad företagspresentation och relevanta referenser
-2. Förståelse för uppdraget och vår situation
-3. Föreslagen metodik och projektplan
-4. Presentation av nyckelkonsulter med CV
-5. Prissättning: fast pris per fas + eventuell löpande resursbudget
-6. Riskbedömning och mitigeringsplan
-
-**Frågor:** Tekniska frågor besvaras av IT-direktör Marcus Strand, marcus.strand@retailnord.example.com
-**Offert skickas till:** procurement@retailnord.example.com
-
----
-
-*RetailNord AB förbehåller sig rätten att välja leverantör fritt eller avbryta upphandlingen utan angivande av skäl.*
+Inom 10 dagar från förfrågan.

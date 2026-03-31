@@ -1,182 +1,87 @@
-# Offert
+# Avropsanbud
 
-## Molnmigrering för RetailNord AB
+## Utredning av hel skatteväxling — Region Västmanland
 
-**Anbudsgivare:** TechBridge Consulting AB
-**Organisationsnummer:** 556712-5678
-**Kontaktperson:** Henrik Larsson, Partner & Cloud Practice Lead
-**Telefon:** +46 70 222 33 44
-**E-post:** henrik.larsson@techbridge.example.com
-**Datum:** 2024-08-14
-**Referens:** RN-IT-2024-089
+**Anbudsgivare:** Nordia Management AB, org.nr. 559012-3456
+**Ramavtal:** Managementkonsulter, Ekonomi och finans
+**Referensnummer:** IN-IN23-0496
+**Datum:** 2026-03-20
 
 ---
 
-## Försättsblad
+### 1. Uppdragsförståelse
 
-TechBridge Consulting AB lämnar härmed offert på RetailNord ABs förfrågan om konsulttjänster för molnmigrering (referens RN-IT-2024-089).
+Region Västmanland utreder förutsättningarna för att skatteväxla all allmän kollektivtrafik från kommunerna till regionen. Uppdraget kräver en kombination av juridisk, ekonomisk och verksamhetsmässig kompetens, samt erfarenhet av liknande utredningar i andra regioner.
 
-TechBridge är ett specialiserat IT-konsultbolag med 35 konsulter, varav 20 är dedikerade till molntransformation. Vi har genomfört mer än 40 fullskaliga molnmigreringar under de senaste fem åren, med ett starkt fokus på retail, e-handel och logistik. Vi förstår att en molnmigrering i er skala inte bara är ett tekniskt projekt — det är ett affärskritiskt program som kräver noggrann planering, minimal verksamhetsstörning och en tydlig plan för din interna organisations förmåga att ta över och förvalta den nya miljön.
+Vi har genomfört likartade utredningar för Region Östergötland och Region Dalarna och har djup insikt i de praktiska utmaningar som uppstår vid skatteväxling av kollektivtrafik.
 
----
+### 2. Lösningsförslag
 
-## 1. Vår förståelse av uppdraget
+Utredningen struktureras i fyra delmoment som genomförs parallellt med iterativa avstämningar:
 
-RetailNord befinner sig i en situation som vi känner igen väl: ett datacenter som passerat sin tekniska livslängd, en mix av legacy- och moderna system, och ett avtal som tickar ned. Det skapar en naturlig drivkraft för förändring, men också en risk för att driva för fort och skapa teknisk skuld i molnet.
+**A. Ekonomisk analys**
+- Beräkning av skatteväxlingsnivå utifrån nuvarande nettokostnader och framtida utveckling
+- Scenarioanalys med tre alternativa nivåer baserat på olika antaganden om kostnadsutveckling
+- Analys av påverkan på kommunalekonomisk utjämning per kommun
+- Momsteknisk analys av konsekvenser vid förändrad huvudmannaskap
 
-Vår erfarenhet säger att de vanligaste fallgroparna är:
-1. Att migrera legacy-system rakt av ("lift and shift") utan att ta tillfället i akt att modernisera
-2. Att underskatta integrationskomplexiteten — i ert fall ett WMS med troligen många systemintegrationer
-3. Att glömma driftsorganisationen — tekniken är bara halva jobbet
+**B. Juridisk analys**
+- Genomgång av relevant lagstiftning (kommunallagen, kollektivtrafiklagen, skattelagstiftning)
+- Analys av hur avtal och ansvarsfördelning bör organiseras
+- Granskning av momskonsekvenser vid skatteväxling
+- Jämförelse med juridisk hantering i regioner som genomfört skatteväxling
 
-Vår approach för RetailNord är att kombinera pragmatism (snabba vinster med lägre risk) med strategisk modernisering där det ger störst nytta.
+**C. Verksamhetsanalys**
+- Kartläggning av nuvarande organisation och samarbetsstrukturer
+- Analys av roller, mandat och styrning vid förändrat huvudmannaskap
+- Identifiering av centrala risker och framgångsfaktorer
 
----
+**D. Erfarenhetsinhämtning**
+- Intervjuer med nyckelpersoner i regionen och kommunerna (10–15 intervjuer)
+- Erfarenhetssamtal med 3–4 regioner som genomfört skatteväxling
+- Sammanställning av lärdomar, fallgropar och framgångsfaktorer
 
-## 2. Metod och genomförandeplan
+### 3. Tidplan
 
-### Fas 1 — Nulägesanalys och migreringsstrategi (6 veckor)
+| Vecka | Aktivitet | Leverans |
+|-------|-----------|----------|
+| 1–2 | Uppstart, datainsamling, intervjuplanering | Projektplan |
+| 3–8 | Ekonomisk, juridisk och verksamhetsanalys | Delrapporter |
+| 9–14 | Erfarenhetsinhämtning, scenarioberäkningar | — |
+| 15–18 | Syntes och rapportskrivning | Utkast rapport |
+| 19–20 | Presentation tjänstepersoner (senast 31 okt) | Slutrapport |
+| 24–26 | Presentation förtroendevalda (senast 20 dec) | Presentationsmaterial |
 
-**Systeminventering:** Vi genomför en strukturerad inventering av alla system, servrar, databaser och integrationer. Vi använder Azure Migrate för automatiserad discovery av on-premise-miljön.
+### 4. Team
 
-**7R-analys:** Varje system klassificeras enligt 7R-modellen (Rehost, Replatform, Repurchase, Refactor, Retire, Retain, Relocate). WMS-systemet är det vi identifierat som den högsta risken och det kräver en dedikerad analys.
+| Konsult | Roll | Kompetens |
+|---------|------|-----------|
+| Maria Bergström | Uppdragsansvarig (senior) | Expert på skatteväxling och kollektivtrafikfinansiering. Juristexamen + nationalekonomi. Genomfört liknande utredningar i Östergötland och Dalarna. |
+| Sofia Nilsson | Analytiker (junior) | Kvantitativ analys, intervjuer, rapportskrivande. Erfarenhet från offentlig förvaltning. |
 
-**Arkitekturdesign:** Vi designar Azure Landing Zone baserat på Microsoft Cloud Adoption Framework, anpassad för RetailNords krav på säkerhet, skalbarhet och kostnadsoptimering.
+### 5. Fast pris
 
-**Leverans:** Migreringsplan, arkitekturdokument, riskregister, prioriteringsmatris.
+**Totalpris: 620 000 SEK exkl. moms**
 
-### Fas 2 — Plattformsetablering och migrering (9 månader)
+Priset inkluderar samtliga konsultkostnader, resor inom Västmanland, och två presentationstillfällen (tjänstepersoner + förtroendevalda).
 
-**Etapp 2a — Azure-plattform (4 veckor):** Etablering av Landing Zone, governance, säkerhetsbaseline (Microsoft Defender for Cloud), nätverksarkitektur och CI/CD-foundation (Azure DevOps).
+### 6. Referenser
 
-**Etapp 2b — Icke-kritiska system (3 månader):** Rehost av interna filhanteringssystem, sekundära applikationer och dev/test-miljöer. Syftar till att bygga erfarenhet och validera plattformen.
+**Referens 1: Utredning skatteväxling kollektivtrafik, Region Östergötland (2024)**
+- Analys av förutsättningar för hel skatteväxling
+- Juridisk, ekonomisk och verksamhetsmässig analys
+- Intervjuer med 13 kommuner
+- Resultat: Beslutsunderlag som antogs av regionfullmäktige
+- Kontaktperson: [tillgänglig vid förfrågan]
 
-**Etapp 2c — BI och datawarehouse (2 månader):** Migrering av SQL Server-miljö till Azure SQL och Synapse Analytics. Etablering av ny BI-pipeline med minimal driftsavbrott.
+**Referens 2: Finansieringsmodell kollektivtrafik, Region Dalarna (2023)**
+- Utredning av alternativa finansieringsmodeller
+- Konsekvensanalys för kommunernas ekonomi
+- Leverans: Rapport till regionfullmäktige
+- Kontaktperson: [tillgänglig vid förfrågan]
 
-**Etapp 2d — E-handelsplattformen (3 månader):** Containerisering av .NET-applikationen med Azure Kubernetes Service (AKS). Blå-grön driftsättning för zero-downtime-migrering. Kritisk etapp med höga krav på prestanda och tillgänglighet.
+### 7. Kontaktperson
 
-**Etapp 2e — WMS-migrering (2 månader, parallell):** Rehost av Java-applikationen till Azure VM med optimering. Grundlig integrationstestning mot ERP och övriga system.
-
-### Fas 3 — Stabilisering och handover (6 veckor)
-
-- Performance baseline och optimering
-- FinOps-genomgång och kostnadsoptimering
-- Kompetensutveckling för intern IT (workshops)
-- Driftsdokumentation och runbooks
-- Eskaleringsmodell och supportavtal
-
----
-
-## 3. Organisation och bemanning
-
-### Jonas Eriksson — Lösningsarkitekt och projektledare
-
-Jonas leder projektet med ansvar för teknisk arkitektur och leveransansvar. 15 års erfarenhet av enterprise IT med fokus på molnarkitektur och systemmigreringar. Azure Solutions Architect Expert och AWS Certified. Se bifogat CV (Bilaga 1).
-
-**Uppdragsomfång:** 80% under hela projekttiden.
-
-### Emma Holmberg — Cloud Engineer
-
-Emma ansvarar för plattformsetablering, Infrastructure as Code (Terraform) och CI/CD-pipelines. 6 års erfarenhet, Azure-certifierad. Hon har arbetat med fem liknande migreringsuppdrag.
-
-**Uppdragsomfång:** 100% under Fas 2.
-
-### Henrik Larsson — Senior sponsor och FinOps-rådgivare
-
-Henrik är Partner och ansvarar för kvalitetssäkring och kostnadsoptimering. Han deltar i styrgruppsmöten och nyckelbeslutsmoment.
-
-**Uppdragsomfång:** 15% löpande.
-
----
-
-## 4. Tidplan
-
-| Aktivitet | Start | Slut |
-|-----------|-------|------|
-| Projektstart | 2024-10-01 | |
-| Systeminventering och 7R-analys | 2024-10-01 | 2024-10-25 |
-| Arkitekturdesign och migreringsplan | 2024-10-14 | 2024-11-08 |
-| **Fas 1 klar** | | **2024-11-15** |
-| Azure Landing Zone etablering | 2024-11-18 | 2024-12-13 |
-| Icke-kritiska system migreras | 2024-12-16 | 2025-03-07 |
-| BI/DW-migrering | 2025-01-13 | 2025-03-14 |
-| E-handelsplattform migreras | 2025-04-01 | 2025-06-27 |
-| WMS-migrering | 2025-05-05 | 2025-06-27 |
-| Stabilisering och handover | 2025-07-01 | 2025-08-15 |
-| **Migrering genomförd** | | **2025-08-15** |
-
----
-
-## 5. Prissättning
-
-### Timpriser (exkl. moms)
-
-| Konsult | Roll | Timpris |
-|---------|------|---------|
-| Jonas Eriksson | Lösningsarkitekt / Projektledare | 2 100 kr |
-| Emma Holmberg | Cloud Engineer | 1 700 kr |
-| Henrik Larsson | Partner / FinOps-rådgivare | 2 600 kr |
-
-### Totalkostnad per fas
-
-| Fas | Timmar | Kostnad (exkl. moms) |
-|-----|--------|----------------------|
-| Fas 1 — Nulägesanalys och strategi | 160 h | 322 000 kr |
-| Fas 2 — Plattform och migrering | 1 840 h | 3 350 000 kr |
-| Fas 3 — Stabilisering och handover | 220 h | 402 000 kr |
-| **Totalt** | **2 220 h** | **4 074 000 kr** |
-
-**Fast pris exkl. moms: 4 074 000 kronor**
-
-Resor och logi debiteras till självkostnad. Uppskattad kostnad: 25 000 kr.
-
-*Observera: Eventuella Azure-licenskostnader och infrastrukturkostnader tillkommer och ingår inte i offertsumman. Vi inkluderar en FinOps-uppskattning för Azure-drift i Bilaga 4.*
-
----
-
-## 6. Riskbedömning
-
-| Risk | Sannolikhet | Påverkan | Mitigering |
-|------|-------------|----------|------------|
-| WMS-migrering mer komplex än beräknat | Medel | Hög | Djupanalys i Fas 1, reserverat buffertutrymme i tidplan |
-| Integrationsproblem vid e-handelsmigrering | Låg | Hög | Parallell drift under 4 veckor, rollback-plan |
-| Intern IT-kapacitet otillräcklig | Medel | Medel | Kompetensutvecklingsplan ingår i Fas 3 |
-| Datamigreringsavvikelser | Låg | Hög | Automatiserade valideringstester vid varje migreringsmoment |
-
----
-
-## 7. Referenser
-
-### Referensuppdrag 1
-**Kund:** Stor nordisk retailkedja (250+ butiker)
-**Uppdrag:** Full Azure-migrering inklusive e-handelsplattform och WMS
-**Period:** 2023–2024
-**Resultat:** Levererat i tid, 30% kostnadsminskning i drift
-
-### Referensuppdrag 2
-**Kund:** Medelstort nordiskt logistikbolag
-**Uppdrag:** AWS-migrering av affärskritiska system
-**Period:** 2022–2023
-**Resultat:** Zero-downtime-migrering, 99,7% tillgänglighet efter migrering
-
-### Referensuppdrag 3
-**Kund:** Nordisk e-handelsaktör
-**Uppdrag:** Azure-plattformsetablering och containerisering
-**Period:** 2021–2022
-**Resultat:** Skalbarhet för 10x trafik, release-kadensen tredubblad
-
----
-
-## 8. Bilagor
-
-- Bilaga 1: CV — Jonas Eriksson
-- Bilaga 2: CV — Emma Holmberg
-- Bilaga 3: CV — Henrik Larsson
-- Bilaga 4: FinOps-uppskattning för Azure-driftkostnad
-- Bilaga 5: Referensutlåtanden
-
----
-
-*TechBridge Consulting AB*
-*Henrik Larsson, Partner & Cloud Practice Lead*
-*Stockholm, 2024-08-14*
+Maria Bergström, Senior Managementkonsult
+maria.bergstrom@nordiamanagement.se
++46 72 234 56 78

@@ -1,128 +1,84 @@
-# Förfrågningsunderlag
+# Förfrågningsunderlag — Förnyad konkurrensutsättning
 
-## Organisationsöversyn av regional hälso- och sjukvård
+## Optimering av bemanning och schemaplanering inom avdelning Anläggning, Idrotts- och föreningsförvaltningen
 
-**Upphandlande myndighet:** Region Mellansvea
-**Diarienummer:** RM-2024-KF-1187
-**Upphandlingsform:** Förenklat förfarande enligt LOU (2016:1145)
-**Sista anbudsdag:** 2024-09-30 kl. 23:59
-
----
-
-## 1. Bakgrund och syfte
-
-Region Mellansvea bedriver hälso- och sjukvård för ca 420 000 invånare med ett årligt nettokostnad om 7,2 miljarder kronor. Regionen har under de senaste åren genomfört ett antal omorganisationer som har resulterat i en komplex struktur med otydliga mandat, duplicerade stödenheter och en styrmodell som upplevs som svårtolkad av chefer och medarbetare.
-
-Regionfullmäktige har beslutat att genomföra en oberoende extern genomlysning av organisationsstruktur och styrmodell i syfte att:
-- Identifiera ineffektiviteter och otydligheter i nuvarande organisation
-- Lämna konkreta rekommendationer för en mer ändamålsenlig struktur
-- Stödja ledningen i beslut om framtida organisationsform
-
-Uppdraget är av strategisk karaktär och kräver hög kompetens inom organisationsutveckling och offentlig förvaltning.
+**Referensnummer:** IFF-2025-0342
+**Ramavtal:** Verksamhets- och organisationskonsulter, delområde A
+**Beställare:** Göteborgs stad, Idrotts- och föreningsförvaltningen
+**Kontaktperson:** Lisa Andersson, verksamhetscontroller
 
 ---
 
-## 2. Uppdragsbeskrivning
+### Bakgrund
 
-Uppdraget omfattar följande delmoment:
+Idrotts- och föreningsförvaltningen ansvarar för stadens idrotts- och motionsanläggningar, inklusive drift och uthyrning. Avdelningen Anläggning befinner sig i en tillväxtfas med planerad expansion under kommande år. Avdelningen behöver säkerställa långsiktigt hållbar bemanning och resursstyrning i takt med verksamhetens expansion.
 
-### 2.1 Nulägesanalys
-- Kartläggning av nuvarande organisationsstruktur inklusive alla nivåer
-- Analys av styrmodell, delegationsordning och beslutsnivåer
-- Genomgång av stödfunktionernas roller och resurser
-- Identifiering av dubbelarbete och strukturella ineffektiviteter
+### Syfte
 
-### 2.2 Benchmarking
-- Jämförelse med tre till fem jämförbara regioner avseende organisationsstruktur och styrmodell
-- Identifiering av best practice
+Syftet med uppdraget är att, i nära samverkan med förvaltningen, ta fram ett konkret och användbart beslutsunderlag för hur avdelningen Anläggning kan planera, bemanna och schemalägga personella resurser på ett hållbart och effektivt sätt.
 
-### 2.3 Rekommendationer
-- Framtagning av minst två alternativa organisationsmodeller med konsekvensanalys
-- Rekommendation av föredragen modell med motivering
-- Handlingsplan för genomförande
+Resultatet ska ge en tydlig nulägesbild, utvecklingsförslag och ett enkelt planeringsstöd som kan användas i 2027 års bemannings- och budgetprocess.
 
-### 2.4 Förankring
-- Presentationer för ledningsgrupp, fackliga representanter och regionpolitiker
-- Workshop med regionledningen för prioritering av rekommendationer
+### Uppdragsbeskrivning
 
----
+Uppdraget genomförs i nära dialog med förvaltningen och delas in i tre huvudfaser.
 
-## 3. Kravspecifikation
+**Fas 1 — Kartläggning (nulägesbild)**
+- Inventering av nuvarande bemanning, anställningsformer och schemaprinciper
+- Samlad översikt per anläggningstyp med bedömning av personalbehov
+- Redovisning av nyttjande av timanställda, övertid, säsongsvariation och vakanser
 
-### 3.1 Ska-krav (kvalificeringskrav)
+**Fas 2 — Analys (effektivitet, sårbarhet och kostnadsdrivare)**
+- Analys av bemanningsnivåer, schemaläggningsmönster och kompetensmix
+- Jämförelse mellan befintlig bemanning och identifierade personalbehov
+- Identifiering av sårbarheter kopplade till driftsäkerhet och arbetsmiljö
+- Kartläggning av kostnadsdrivande faktorer samt framtagande av nyckeltal
 
-| # | Krav |
-|---|------|
-| SK1 | Anbudsgivaren ska ha genomfört minst tre (3) liknande uppdrag (organisationsöversyn eller strukturanalys) i offentlig sektor under de senaste fem (5) åren |
-| SK2 | Projektledaren ska ha minst 8 års erfarenhet av management consulting med dokumenterad erfarenhet från offentlig sektor |
-| SK3 | Anbudsgivaren ska ha minst en konsult med specifik erfarenhet av hälso- och sjukvårdsorganisationer |
-| SK4 | Anbudsgivaren ska ha minst 5 anställda konsulter |
-| SK5 | Anbudsgivaren ska inte ha skatteskulder eller vara föremål för ansökan om konkurs |
+**Fas 3 — Rekommendation och beslutsunderlag**
+- Konkreta förslag för optimering av bemanning, schemastyrning och kompetensplanering
+- Leverans av ett enkelt och användarvänligt verktygsstöd (t.ex. Excel) för matchning mellan kompetens, bemanningsbehov och ekonomiska förutsättningar
+- Slutpresentation till avdelningsledning
 
-### 3.2 Bör-krav (utvärderingskriterier — se avsnitt 4)
+### Tidsperiod
 
-- Erfarenhet av uppdrag av liknande storlek (>2 000 anställda)
-- Erfarenhet av politiskt styrda organisationer
-- Metodik för förankring och förändringsledning
-- Certifierade konsulter (t.ex. PMP, PRINCE2)
+December 2025 — december 2026. Möjlighet till förlängning med upp till sex månader.
 
----
+### Krav på kompetens
 
-## 4. Utvärderingskriterier och viktning
+Konsulten eller konsultteamet ska uppfylla ramavtalets grundkrav för delområde A och ha:
 
-Anbud utvärderas enligt principen om det ekonomiskt mest fördelaktiga anbudet med följande viktning:
+- Dokumenterad erfarenhet av planering, analys och optimering av bemanning samt av att koppla bemanning till drift- och budgetförutsättningar, gärna med praktisk erfarenhet av Timecare eller motsvarande
+- Erfarenhet av att arbeta i miljöer med kollektivavtal, facklig samverkan och arbetsrättsliga ramar
+- Erfarenhet av analys, organisationsutveckling och förändringsledning
+- God kunskap om styrning i politiskt ledda organisationer
+- Förmåga att presentera komplexa resultat på ett pedagogiskt och beslutsorienterat sätt
+- Kompetens i att omsätta analys till praktiska styrmodeller och handlingsplaner
+
+Uppdraget bedöms lämpligast utföras av en senior konsult som uppdragsansvarig.
+
+### Pris
+
+Planerad kostnadsram: 500 000 SEK exkl. moms.
+Löpande räkning inom ramavtalets villkor.
+Timpris får inte överstiga ramavtalets takpris (2025 års index: 1 788 SEK senior, 1 430 SEK mellan, 817 SEK junior).
+
+### Utvärdering
 
 | Kriterium | Vikt |
 |-----------|------|
 | Konsulternas kompetens och erfarenhet | 40% |
-| Metodik och genomförandeplan | 30% |
-| Pris (totalt fast pris exkl. moms) | 30% |
+| Arbetsmetodik (teori, metod, modell) | 30% |
+| Pris | 30% |
 
-**Kompetens (40%):** Bedöms utifrån CV:n för namngivna konsulter. Utvärderingen fokuserar på relevans, erfarenhet av liknande uppdrag och branschkunskap.
+Kvalitetskriterierna bedöms kvalitativt enligt tregradig skala (1–3 poäng).
 
-**Metodik (30%):** Bedöms utifrån anbudets beskrivning av tillvägagångssätt, verktygslåda, datainsatmlingsmetoder och hur förankring planeras.
+### Anbudets innehåll
 
-**Pris (30%):** Det lägsta priset erhåller maximalt poäng. Övriga prissätts proportionellt.
+1. Kort beskrivning av leverantören och föreslagna konsulter med CV
+2. Beskrivning av metod och upplägg
+3. En (1) referens från liknande uppdrag senaste tre åren
+4. Prisbilaga med timpris per konsultkategori och uppskattad total tidsåtgång
 
----
+### Sista anbudsdag
 
-## 5. Tidplan och leveranser
-
-| Milstolpe | Datum |
-|-----------|-------|
-| Projektstart | 2024-11-01 |
-| Nulägesrapport klar | 2024-12-15 |
-| Benchmarking-rapport klar | 2025-01-15 |
-| Rekommendationsrapport (utkast) | 2025-02-14 |
-| Slutrapport och presentation | 2025-03-14 |
-
-Totalt projektomfång: ca 5 månader
-
----
-
-## 6. Anbudets format och innehållskrav
-
-Anbudet ska innehålla:
-
-1. **Försättsblad** med firmanamn, kontaktuppgifter och underskrift
-2. **Förståelse för uppdraget** (max 1 sida)
-3. **Metod och genomförandeplan** (max 3 sidor)
-4. **Bemanning** — namngivna konsulter med CV (max 2 sidor per konsult)
-5. **Referensuppdrag** — minst tre relevanta uppdrag
-6. **Prisbilaga** — fast pris per fas och totalt
-7. **Sanningsförsäkran** och intyg om frånvaro av uteslutningsgrunder
-
-Anbud lämnas digitalt via upphandlingssystemet TendSign senast **2024-09-30 kl. 23:59**.
-
----
-
-## 7. Hänvisning till LOU
-
-Upphandlingen genomförs enligt lag (2016:1145) om offentlig upphandling, förenklat förfarande. Vid frågor om upphandlingsförfarandet, kontakta upphandlingsenheten på upphandling@regionmellansvea.se.
-
-Regionen förbehåller sig rätten att förkasta samtliga anbud.
-
----
-
-*Region Mellansvea, Upphandlingsenheten*
-*Kontaktperson: Kristina Holm, kristina.holm@regionmellansvea.se*
+2025-11-21 klockan 23:59 via Proceedo.

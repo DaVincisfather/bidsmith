@@ -1,126 +1,82 @@
 # Förfrågningsunderlag
 
-## Digitaliseringsstrategi för kommunal förvaltning
+## Förstudie: Dataplattform och BI-strategi för Region Sörmland
 
-**Upphandlande myndighet:** Björksunds kommun
-**Diarienummer:** BK-2024-KS-0445
-**Upphandlingsform:** Förenklat förfarande enligt LOU (2016:1145)
-**Sista anbudsdag:** 2024-10-11 kl. 16:00
-
----
-
-## 1. Bakgrund och syfte
-
-Björksunds kommun har 45 000 invånare och ca 4 200 anställda fördelade på förvaltningarna Socialtjänst, Utbildning, Teknisk förvaltning, Kultur och fritid samt Kommunstyrelseförvaltningen. Kommunen har identifierat ett stort behov av att modernisera sina digitala arbetssätt för att möta medborgarnas förväntningar, klara framtida kompetensförsörjning och hålla nere kostnaderna.
-
-Nuläget präglas av:
-- Fragmenterade och ofta ålderdomliga verksamhetssystem
-- Begränsad datadriven styrning
-- Varierende digital mognad mellan förvaltningarna
-- Avsaknad av en sammanhållen digitaliseringsstrategi
-
-Kommunen söker nu en konsult för att ta fram en digitaliseringsstrategi och handlingsplan för perioden 2025–2028.
+**Referensnummer:** RS-2025-1247
+**Beställare:** Region Sörmland, IT- och digitaliseringsavdelningen
+**Kontaktperson:** Karin Holm, IT-strateg
 
 ---
 
-## 2. Uppdragsbeskrivning
+### Bakgrund
 
-### 2.1 Nulägesanalys och mognadsscoring
-- Kartläggning av kommunens digitala mognad per förvaltning
-- Inventering av befintliga system och digitala initiativ
-- Benchmarking mot tre till fem jämförbara kommuner (SKR:s ramverk)
+Region Sörmland har idag en fragmenterad datainfrastruktur med information spridd över ett flertal system — ekonomisystem (Raindance), personalsystem (Heroma), vårdinformationssystem (Cambio Cosmic) och flera fristående Excel-baserade rapporteringsflöden. Det saknas en sammanhållen BI-strategi och en gemensam plattform för analys och uppföljning.
 
-### 2.2 Strategiframtagning
-- Framtagning av vision och strategiska mål för digitalisering 2025–2028
-- Identifiering av prioriterade digitala förmågor
-- Scenarioanalys och strategiskt vägval
-- Förankring med ledning och politisk ledning
+Regionledningen har identifierat behov av en förstudie för att kartlägga nuläge och ta fram en rekommendation för framtida dataplattform och BI-strategi.
 
-### 2.3 Handlingsplan
-- Konkret handlingsplan med initiativ, ansvar, tidplan och kostnadsestimat
-- Prioriteringsmodell för initiativ (nytta vs. komplexitet)
-- Resurs- och kompetensbehov
+### Syfte
 
-### 2.4 Styrningsmodell
-- Rekommendation av organisationsmodell för digital styrning
-- Roller och ansvar för digitaliseringsarbetet
-- Uppföljnings- och mätmodell (KPI:er)
+Förstudien ska leverera:
+1. Kartläggning av nuvarande datasystem, dataflöden och rapporteringsbehov
+2. Behovsinventering hos verksamheter (hälso- och sjukvård, regional utveckling, kollektivtrafik)
+3. Utvärdering av plattformsalternativ (molnbaserade vs on-premise)
+4. Rekommendation för BI-strategi med arkitekturbeslut, implementeringsordning och budget
+5. Handlingsplan med tidplan och resursbehov
 
----
+### Uppdragsbeskrivning
 
-## 3. Kravspecifikation
+**Del 1 — Nulägesanalys (4 veckor)**
+- Kartläggning av befintliga datasystem och integrationer
+- Intervjuer med systemägare, controllers och verksamhetsansvariga (ca 20 personer)
+- Dokumentation av nuvarande rapporteringsprocesser och smärtpunkter
 
-### 3.1 Ska-krav
+**Del 2 — Behovsinventering (3 veckor)**
+- Workshops med verksamheter kring analysbehov och datadrivna beslutsprocesser
+- Kartläggning av framtida behov inom AI/ML och prediktiv analys
+- Prioritering av use cases utifrån nytta och genomförbarhet
 
-| # | Krav |
-|---|------|
-| SK1 | Anbudsgivaren ska ha genomfört minst två (2) digitaliseringsstrategier eller IT-strategiuppdrag i kommunal eller offentlig sektor |
-| SK2 | Projektledaren ska ha minst 5 års erfarenhet av strategi- eller digitaliseringsuppdrag |
-| SK3 | Anbudsgivaren ska uppvisa minst ett (1) referensuppdrag med digitaliseringsarbete i en organisation med mer än 1 000 anställda |
-| SK4 | Anbudsgivaren ska inte ha skatteskulder eller vara föremål för ansökan om konkurs |
+**Del 3 — Rekommendation (3 veckor)**
+- Utvärdering av minst tre plattformsalternativ (t.ex. Microsoft Fabric, Snowflake + dbt, Google BigQuery)
+- Arkitekturbeslut med konsekvensanalys
+- Budget- och resursplan för implementering
+- Slutrapport och presentation för regionledning
 
-### 3.2 Bör-krav
+### Tidsperiod
 
-- Erfarenhet av SKR:s digitaliseringsramverk och rekommendationer
-- Erfarenhet av systemkartläggning och arkitekturarbete
-- Förmåga att leverera interaktiva workshopar och medborgardialoger
-- Erfarenhet av förändringsledning i politiskt styrda organisationer
+Januari 2026 — april 2026 (10 veckor)
 
----
+### Krav på kompetens
 
-## 4. Utvärderingskriterier och viktning
+Konsultteamet ska bestå av:
+- **Uppdragsansvarig/projektledare** (senior): minst 8 års erfarenhet av BI/data-projekt, erfarenhet från offentlig sektor
+- **Dataarkitekt** (senior): dokumenterad erfarenhet av molnbaserade dataplattformar (Snowflake, Azure, GCP), erfarenhet av datamodellering och data governance
+- **BI-specialist** (mellan): erfarenhet av Power BI eller Tableau, erfarenhet av att bygga rapporteringslösningar för ledningsgrupper
+
+Det är meriterande med:
+- Erfarenhet från hälso- och sjukvårdssektorn
+- Kunskap om svensk offentlig upphandling och ramavtalsstruktur
+- Erfarenhet av förändringsarbete kopplat till datadrivna arbetssätt
+
+### Pris
+
+Löpande räkning. Kostnadsram: 800 000 SEK exkl. moms.
+Timpris ska specificeras per konsultkategori.
+
+### Utvärdering
 
 | Kriterium | Vikt |
 |-----------|------|
-| Konsulternas kompetens och erfarenhet | 35% |
-| Metodik och genomförandeplan | 35% |
-| Pris (totalt fast pris exkl. moms) | 30% |
+| Konsulternas kompetens och erfarenhet | 40% |
+| Metod och genomförandeplan | 35% |
+| Pris | 25% |
 
-**Kompetens (35%):** Namngivna konsulters erfarenhet av liknande uppdrag i offentlig sektor, särskilt kommunal digitalisering.
+### Anbudets innehåll
 
-**Metodik (35%):** Hur väl genomförandeplanen är anpassad till kommunens förutsättningar, inkl. plan för politisk förankring och verksamhetsinvolvering.
+1. Presentation av konsultteam med CV
+2. Metodbeskrivning och detaljerad tidplan
+3. Två (2) referenser från liknande uppdrag
+4. Prisbilaga
 
-**Pris (30%):** Lägst pris ger maximalt poäng. Priser utvärderas inklusive alla kostnader.
+### Sista anbudsdag
 
----
-
-## 5. Tidplan och leveranser
-
-| Milstolpe | Datum |
-|-----------|-------|
-| Projektstart | 2024-12-02 |
-| Nulägesanalys klar | 2025-01-31 |
-| Strategiutkast för remiss | 2025-03-14 |
-| Remissperiod avslutas | 2025-04-04 |
-| Slutlig strategi och handlingsplan levererad | 2025-05-02 |
-| Presentation för kommunfullmäktige | 2025-05-26 |
-
----
-
-## 6. Anbudets format och innehållskrav
-
-Anbudet ska vara på svenska och innehålla:
-
-1. **Försättsblad** med firmanamn, organisationsnummer, kontaktperson
-2. **Förståelse för uppdraget** (max 1 sida)
-3. **Metodik och genomförandeplan** med tydlig beskrivning av tillvägagångssätt (max 4 sidor)
-4. **Bemanning** — namngivna konsulter med CV (max 2 sidor per konsult)
-5. **Referensuppdrag** — minst två (2) relevanta uppdrag
-6. **Prisbilaga** — fast pris per fas och totalkostnad exkl. moms
-7. **Intyg och egenpåståenden** (uteslutningsgrunder, skattekontroll)
-
-Anbud lämnas via e-post till upphandling@bjorksund.se senast **2024-10-11 kl. 16:00**. Anbud som inkommer efter denna tidpunkt beaktas inte.
-
----
-
-## 7. Hänvisning till LOU
-
-Upphandlingen genomförs med stöd av lagen (2016:1145) om offentlig upphandling, förenklat förfarande, kapitel 19. Kommunen är skyldig att behandla alla anbudsgivare lika och på ett icke-diskriminerande sätt.
-
-Frågor om upphandlingen kan ställas skriftligen till upphandling@bjorksund.se senast **2024-09-27**. Svar publiceras anonymiserat på kommunens upphandlingsportal.
-
----
-
-*Björksunds kommun, Kommunstyrelseförvaltningen*
-*Kontaktperson: Anders Magnusson, upphandlingsstrateg*
-*anders.magnusson@bjorksund.se | +46 123 456 78*
+2025-12-15 klockan 23:59
