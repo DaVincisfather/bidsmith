@@ -2,33 +2,31 @@
 
 ## Var vi är
 
-M0 E2E-testad. Arkitektur dokumenterad. Modellstrategi beslutad. Roadmap utökad med M1.5 (Go/No-Go) och M3 (RFP-radar). Väntar på referensmaterial från Stefan.
+M0 komplett. M1-designspec klar och godkänd. Redo för implementeringsplan.
 
-## Gjort denna session
+## Gjort denna session (session 2)
 
-1. E2E-test lyckades — fixade modell-ID till `claude-opus-4-6`
-2. Modellstrategi: Sonnet (extraction/matchning), Opus (anbudsskrivning), Haiku (pre-filter)
-3. Arkitekturdokumentation: `docs/architecture.html` med 6 sektioner
-4. Kontextbloat-strategi: trattfiltrering (SQL → sammanfattning → Haiku → prompt)
-5. M1.5 Go/No-Go-agent: vinstprediktion + beslutsunderlag, ~$0.03/analys
-6. M3 RFP-radar: proaktiv scanning av upphandlingsplattformar
+1. Parsade referensfiler (CV:n, anbud, RFP:er) från Stefan
+2. Hämtade konsultprofiler från Crayon och Ekan för inspiration
+3. Skapade syntetisk data: 10 konsult-CV:n, 4 RFP:er, 3 anbud (Nordia Management AB)
+4. M1-design brainstormad och specad:
+   - CV-import med AI-extraktion (Sonnet)
+   - Automatisk teammatchning per erfarenhetsnivå
+   - Live teambedömning vid konsultbyten
+   - Hybrid datamodell: strukturerad + fritext
+5. Beslut: ingen tillgänglighet, outcome-tracking eller konsultpreferenser (kräver admin hos kund)
+6. Datastrategidiskussion: plattformens data = moat (prisdata, kravmönster, teamkompositioner, win rates)
 
 ## Nästa session
 
-1. Stefan laddar upp referensmaterial (riktiga CV:n, anbud, RFP:er)
-2. Skapa syntetisk data baserad på referensmaterialet
-3. Planera M1 (konsultprofiler + matchning)
-4. Byt RFP-analys från Opus till Sonnet (per modellstrategi)
-
-## Kod att committa
-
-- `src/lib/rfp-analyzer.ts` — modell ändrad till `claude-opus-4-6`
-- `docs/architecture.html` — ny arkitekturdokumentation
+1. Skriv implementeringsplan (writing-plans skill) baserad på M1-spec
+2. Implementera M1 (subagent-driven-development)
+3. Byt RFP-analys från Opus till Sonnet (per modellstrategi)
 
 ## Milstolpar
 
 - M0: Kravanalys ✅
-- M1: Konsultmatchning
+- M1: Konsultmatchning — **spec klar**, implementering nästa
 - M1.5: Go/No-Go-agent
 - M2: Anbudsgenerering
-- M3: RFP-radar (extern scanning)
+- M3: RFP-radar
