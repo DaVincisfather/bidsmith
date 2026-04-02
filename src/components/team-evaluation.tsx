@@ -36,7 +36,7 @@ function CoverageBar({ label, coverage }: { label: string; coverage: Requirement
           style={{ width: `${pct}%` }}
         />
       </div>
-      {coverage.details.length > 0 && (
+      {coverage.details?.length > 0 && (
         <ul className="mt-1 space-y-0.5">
           {coverage.details.map((d, i) => (
             <li key={i} className="text-xs text-gray-500">{d}</li>
