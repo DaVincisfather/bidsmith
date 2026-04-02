@@ -6,11 +6,11 @@ import { RfpAnalysis, Consultant, CompetencyCategory, Sector } from "@/lib/types
 const DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000001";
 
 interface RouteContext {
-  params: Promise<{ analysisId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {
-  const { analysisId } = await params;
+  const { id: analysisId } = await params;
   const supabase = createServiceClient();
 
   // Fetch analysis
