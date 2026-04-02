@@ -62,17 +62,17 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     updatedAt: row.updated_at as string,
   }));
 
-  // Run matching
+  // Score all consultants
   const result = await matchConsultants(rfpAnalysis, consultants);
 
-  // Save match
+  // Save match — store scored list in team_proposal jsonb
   const { data: matchRecord, error: matchError } = await supabase
     .from("matches")
     .insert({
       analysis_id: analysisId,
       organization_id: DEFAULT_ORG_ID,
-      team_proposal: result.teamProposal,
-      team_evaluation: result.teamEvaluation,
+      team_proposal: result.scoredConsultants,
+      team_evaluation: null,
     })
     .select()
     .single();
@@ -83,6 +83,6 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
   return NextResponse.json({
     id: matchRecord.id,
-    ...result,
+    scoredConsultants: result.scoredConsultants,
   });
 }

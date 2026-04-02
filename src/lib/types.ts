@@ -73,7 +73,7 @@ export interface Consultant {
   updatedAt: string;
 }
 
-export interface ConsultantMatch {
+export interface ScoredConsultant {
   consultantId: string;
   consultantName: string;
   level: ConsultantLevel;
@@ -81,44 +81,14 @@ export interface ConsultantMatch {
   reasoning: string;
 }
 
-export interface RequirementCoverage {
-  met: number;
-  total: number;
-  details: string[];
-}
-
-export interface TeamEvaluation {
-  overallFit: string;
-  gaps: string[];
-  requirementCoverage: {
-    must: RequirementCoverage;
-    should: RequirementCoverage;
-    niceToHave: RequirementCoverage;
-  };
-}
-
-export interface TeamProposal {
-  senior: ConsultantMatch[];
-  intermediate: ConsultantMatch[];
-  junior: ConsultantMatch[];
-}
-
-export interface MatchResult {
-  teamProposal: TeamProposal;
-  teamEvaluation: TeamEvaluation;
+export interface ScoredMatchResult {
+  scoredConsultants: ScoredConsultant[];
 }
 
 export interface MatchRecord {
   id: string;
   analysisId: string;
   organizationId: string;
-  teamProposal: TeamProposal;
-  teamEvaluation: TeamEvaluation;
+  scoredConsultants: ScoredConsultant[];
   createdAt: string;
-}
-
-export interface SwapComparison {
-  teamProposal: TeamProposal;
-  teamEvaluation: TeamEvaluation;
-  comparison: string;
 }

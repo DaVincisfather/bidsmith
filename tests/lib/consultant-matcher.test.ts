@@ -1,9 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { matchConsultants, reEvaluateTeam } from "@/lib/consultant-matcher";
-import { RfpAnalysis, Consultant, MatchResult, SwapComparison, TeamProposal } from "@/lib/types";
+import { matchConsultants } from "@/lib/consultant-matcher";
+import { RfpAnalysis, Consultant, ScoredMatchResult } from "@/lib/types";
 
-// Minimal mock data — enough to test the prompt + parse logic
 const mockAnalysis: RfpAnalysis = {
   title: "Organisationsöversyn",
   client: "Göteborgs stad",
@@ -65,46 +64,28 @@ const mockConsultants: Consultant[] = [
 ];
 
 describe("matchConsultants", () => {
-  it("returns a team proposal with ranked consultants and evaluation", async () => {
-    const result: MatchResult = await matchConsultants(mockAnalysis, mockConsultants);
+  it("scores all consultants individually against the RFP", async () => {
+    const result: ScoredMatchResult = await matchConsultants(mockAnalysis, mockConsultants);
 
-    // Team proposal structure
-    expect(result.teamProposal).toHaveProperty("senior");
-    expect(result.teamProposal).toHaveProperty("intermediate");
-    expect(result.teamProposal).toHaveProperty("junior");
+    // Returns scored list for all consultants
+    expect(result.scoredConsultants).toBeDefined();
+    expect(result.scoredConsultants.length).toBe(2);
 
-    // At least one senior match (Anna)
-    expect(result.teamProposal.senior.length).toBeGreaterThan(0);
-    const seniorMatch = result.teamProposal.senior[0];
-    expect(seniorMatch.consultantId).toBe("c1");
-    expect(seniorMatch.score).toBeGreaterThanOrEqual(0);
-    expect(seniorMatch.score).toBeLessThanOrEqual(100);
-    expect(seniorMatch.reasoning).toBeTruthy();
+    // Each consultant has score + reasoning
+    for (const sc of result.scoredConsultants) {
+      expect(sc.consultantId).toBeTruthy();
+      expect(sc.consultantName).toBeTruthy();
+      expect(["junior", "intermediate", "senior", "expert"]).toContain(sc.level);
+      expect(sc.score).toBeGreaterThanOrEqual(0);
+      expect(sc.score).toBeLessThanOrEqual(100);
+      expect(sc.reasoning).toBeTruthy();
+    }
 
-    // Evaluation
-    expect(result.teamEvaluation.overallFit).toBeTruthy();
-    expect(result.teamEvaluation.requirementCoverage).toHaveProperty("must");
-    expect(result.teamEvaluation.requirementCoverage.must).toHaveProperty("met");
-    expect(result.teamEvaluation.requirementCoverage.must).toHaveProperty("total");
-  }, 30000);
-});
-
-describe("reEvaluateTeam", () => {
-  it("returns a comparison when swapping a consultant", async () => {
-    const previousProposal: TeamProposal = {
-      senior: [{ consultantId: "c1", consultantName: "Anna Lindström", level: "senior", score: 85, reasoning: "Strong fit" }],
-      intermediate: [{ consultantId: "c2", consultantName: "Erik Johansson", level: "intermediate", score: 70, reasoning: "Good support" }],
-      junior: [],
-    };
-
-    const result: SwapComparison = await reEvaluateTeam(
-      mockAnalysis,
-      mockConsultants,
-      previousProposal
-    );
-
-    expect(result.teamProposal).toHaveProperty("senior");
-    expect(result.teamEvaluation).toHaveProperty("overallFit");
-    expect(result.comparison).toBeTruthy();
+    // Anna (senior, strong match) should score higher than Erik (intermediate, partial match)
+    const anna = result.scoredConsultants.find((c) => c.consultantId === "c1");
+    const erik = result.scoredConsultants.find((c) => c.consultantId === "c2");
+    expect(anna).toBeDefined();
+    expect(erik).toBeDefined();
+    expect(anna!.score).toBeGreaterThan(erik!.score);
   }, 30000);
 });

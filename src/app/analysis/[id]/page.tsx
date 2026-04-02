@@ -5,8 +5,6 @@ import { RfpAnalysis } from "@/lib/types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-const DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000001";
-
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -42,19 +40,24 @@ export default async function AnalysisPage({ params }: PageProps) {
   // Fetch latest match for this analysis
   const { data: matchRows } = await supabase
     .from("matches")
-    .select("id, team_proposal, team_evaluation")
+    .select("id, team_proposal")
     .eq("analysis_id", id)
     .order("created_at", { ascending: false })
     .limit(1);
 
-  const latestMatch = matchRows && matchRows.length > 0 ? matchRows[0] : null;
-
-  // Fetch all consultants for swap dropdowns
-  const { data: consultantRows } = await supabase
-    .from("consultants")
-    .select("id, name, level")
-    .eq("organization_id", DEFAULT_ORG_ID)
-    .order("name");
+  const latestMatch =
+    matchRows && matchRows.length > 0
+      ? {
+          id: matchRows[0].id as string,
+          scoredConsultants: matchRows[0].team_proposal as Array<{
+            consultantId: string;
+            consultantName: string;
+            level: string;
+            score: number;
+            reasoning: string;
+          }>,
+        }
+      : null;
 
   return (
     <main className="min-h-screen bg-white">
@@ -72,7 +75,6 @@ export default async function AnalysisPage({ params }: PageProps) {
         <AnalysisMatchSection
           analysisId={id}
           latestMatch={latestMatch}
-          allConsultants={consultantRows || []}
         />
       </div>
     </main>

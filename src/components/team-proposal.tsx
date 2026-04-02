@@ -1,6 +1,8 @@
 "use client";
 
-interface ConsultantMatch {
+import { ConsultantSearch } from "./consultant-search";
+
+interface ScoredConsultant {
   consultantId: string;
   consultantName: string;
   level: string;
@@ -8,23 +10,16 @@ interface ConsultantMatch {
   reasoning: string;
 }
 
-interface TeamProposalData {
-  senior: ConsultantMatch[];
-  intermediate: ConsultantMatch[];
-  junior: ConsultantMatch[];
-}
-
-interface AllConsultant {
-  id: string;
-  name: string;
-  level: string;
+interface SelectedTeam {
+  senior: ScoredConsultant | null;
+  intermediate: ScoredConsultant | null;
+  junior: ScoredConsultant | null;
 }
 
 interface TeamProposalProps {
-  proposal: TeamProposalData;
-  allConsultants: AllConsultant[];
-  onLocalSwap: (newProposal: TeamProposalData) => void;
-  dirty: boolean;
+  scoredConsultants: ScoredConsultant[];
+  selectedTeam: SelectedTeam;
+  onSwap: (level: string, consultant: ScoredConsultant) => void;
 }
 
 const LEVEL_ORDER = ["senior", "intermediate", "junior"] as const;
@@ -34,78 +29,51 @@ const LEVEL_LABELS: Record<string, string> = {
   junior: "Junior",
 };
 
+function scoreColor(score: number): string {
+  if (score >= 80) return "bg-green-100 text-green-700";
+  if (score >= 60) return "bg-blue-100 text-blue-700";
+  if (score >= 40) return "bg-yellow-100 text-yellow-700";
+  return "bg-gray-100 text-gray-500";
+}
+
 export function TeamProposal({
-  proposal,
-  allConsultants,
-  onLocalSwap,
-  dirty,
+  scoredConsultants,
+  selectedTeam,
+  onSwap,
 }: TeamProposalProps) {
-  function handleSwap(level: string, index: number, newConsultantId: string) {
-    const consultant = allConsultants.find((c) => c.id === newConsultantId);
-    if (!consultant) return;
-
-    const levelKey = level as keyof TeamProposalData;
-    const updated = [...proposal[levelKey]];
-    updated[index] = {
-      ...updated[index],
-      consultantId: newConsultantId,
-      consultantName: consultant.name,
-    };
-
-    onLocalSwap({
-      ...proposal,
-      [levelKey]: updated,
-    });
-  }
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <h3 className="text-lg font-semibold">Teamförslag</h3>
-        {dirty && (
-          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
-            Ej utvärderat
-          </span>
-        )}
-      </div>
+      <h3 className="text-lg font-semibold">Teamförslag</h3>
       {LEVEL_ORDER.map((level) => {
-        const matches = proposal[level];
-        if (matches.length === 0) return null;
+        const options = scoredConsultants.filter((c) => c.level === level);
+        if (options.length === 0) return null;
 
-        const available = allConsultants.filter((c) => c.level === level);
+        const selected = selectedTeam[level];
+        if (!selected) return null;
 
         return (
           <div key={level} className="border border-gray-200 rounded-lg overflow-hidden">
             <div className="px-4 py-3 bg-gray-50 flex items-center justify-between">
               <span className="font-medium">{LEVEL_LABELS[level]}</span>
-              <span className="text-sm text-gray-400">{matches.length} konsult(er)</span>
+              <span className="text-sm text-gray-400">
+                {options.length} tillgängliga
+              </span>
             </div>
 
-            <div className="divide-y divide-gray-100">
-              {matches.map((match, idx) => (
-                <div key={`${level}-${idx}`} className="px-4 py-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-3">
-                      <span className="font-medium">{match.consultantName}</span>
-                      <span className="text-xs font-mono bg-gray-200 px-2 py-0.5 rounded">
-                        {match.score}/100
-                      </span>
-                    </div>
-                    <select
-                      value={match.consultantId}
-                      onChange={(e) => handleSwap(level, idx, e.target.value)}
-                      className="text-xs border border-gray-200 rounded px-2 py-1"
-                    >
-                      {available.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <p className="text-sm text-gray-600">{match.reasoning}</p>
+            <div className="px-4 py-3 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <ConsultantSearch
+                    options={options}
+                    selected={selected}
+                    onSelect={(c) => onSwap(level, c)}
+                  />
                 </div>
-              ))}
+                <span className={`text-xs font-mono px-2 py-1 rounded shrink-0 ${scoreColor(selected.score)}`}>
+                  {selected.score}/100
+                </span>
+              </div>
+              <p className="text-sm text-gray-600">{selected.reasoning}</p>
             </div>
           </div>
         );

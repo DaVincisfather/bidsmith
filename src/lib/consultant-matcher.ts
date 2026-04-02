@@ -2,36 +2,35 @@ import Anthropic from "@anthropic-ai/sdk";
 import {
   RfpAnalysis,
   Consultant,
-  MatchResult,
-  TeamProposal,
-  SwapComparison,
+  ScoredMatchResult,
 } from "./types";
 
 const client = new Anthropic();
 
-const MATCH_SYSTEM_PROMPT = `Du är expert på att matcha konsulter till förfrågningsunderlag (RFP:er).
-Du får en RFP-analys och en lista konsulter. Ranka de bästa konsulterna PER erfarenhetsnivå (senior, intermediate, junior).
-Juniors tävlar ALDRIG mot seniors — rankning sker enbart inom samma nivå.
+const SYSTEM_PROMPT = `Du är expert på att matcha konsulter till förfrågningsunderlag (RFP:er).
+Du får en RFP-analys och en lista konsulter. Scora VARJE konsult individuellt mot RFP:en.
+Bedöm hur väl varje konsults kompetenser, erfarenhet och referensuppdrag matchar kraven.
 
-Returnera topp 3 konsulter per nivå (eller färre om det finns färre). Om en nivå saknar konsulter, returnera tom lista.
+Rankning sker enbart inom samma erfarenhetsnivå — juniors tävlar aldrig mot seniors.
 
 Svara ALLTID med giltig JSON som matchar detta schema:
 {
-  "teamProposal": {
-    "senior": [{ "consultantId": "uuid", "consultantName": "Namn", "level": "senior", "score": 85, "reasoning": "Varför denna konsult passar" }],
-    "intermediate": [...],
-    "junior": [...]
-  },
-  "teamEvaluation": {
-    "overallFit": "Övergripande bedömning av teamets matchning",
-    "gaps": ["Kompetens eller erfarenhet som saknas i teamet"],
-    "requirementCoverage": {
-      "must": { "met": 3, "total": 4, "details": ["Krav 1: uppfyllt av Anna", "Krav 2: ej uppfyllt"] },
-      "should": { "met": 2, "total": 3, "details": [...] },
-      "niceToHave": { "met": 1, "total": 2, "details": [...] }
+  "scoredConsultants": [
+    {
+      "consultantId": "uuid",
+      "consultantName": "Namn",
+      "level": "senior",
+      "score": 85,
+      "reasoning": "2-3 meningar om varför denna konsult matchar (eller inte matchar) uppdraget"
     }
-  }
-}`;
+  ]
+}
+
+Regler:
+- Scora ALLA konsulter, inte bara de bästa
+- Score 0-100: 80+ stark matchning, 60-79 relevant, 40-59 delvis relevant, <40 svag matchning
+- reasoning: specifik koppling till RFP-kraven, inte generell text
+- Sortera per nivå, högst score först inom varje nivå`;
 
 function formatConsultantsForPrompt(consultants: Consultant[]): string {
   const grouped: Record<string, Consultant[]> = {};
@@ -57,25 +56,25 @@ function formatConsultantsForPrompt(consultants: Consultant[]): string {
 export async function matchConsultants(
   analysis: RfpAnalysis,
   consultants: Consultant[]
-): Promise<MatchResult> {
+): Promise<ScoredMatchResult> {
   const consultantText = formatConsultantsForPrompt(consultants);
 
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 4000,
+    max_tokens: 8000,
     messages: [
       {
         role: "user",
-        content: `Matcha följande konsulter mot detta förfrågningsunderlag.
+        content: `Scora följande konsulter individuellt mot detta förfrågningsunderlag.
 
 ## RFP-analys
 ${JSON.stringify(analysis, null, 2)}
 
-## Tillgängliga konsulter
+## Konsulter att scora
 ${consultantText}`,
       },
     ],
-    system: MATCH_SYSTEM_PROMPT,
+    system: SYSTEM_PROMPT,
   });
 
   const content = message.content[0];
@@ -88,61 +87,5 @@ ${consultantText}`,
     throw new Error("No JSON found in Claude response");
   }
 
-  return JSON.parse(jsonMatch[0]) as MatchResult;
-}
-
-const REEVALUATE_SYSTEM_PROMPT = `Du är expert på att bedöma konsultteam mot förfrågningsunderlag.
-Du får en RFP-analys, ett nytt team, och det tidigare teamförslaget.
-Bedöm det nya teamet och jämför mot det tidigare.
-
-Svara ALLTID med giltig JSON:
-{
-  "teamProposal": { "senior": [...], "intermediate": [...], "junior": [...] },
-  "teamEvaluation": {
-    "overallFit": "...",
-    "gaps": [...],
-    "requirementCoverage": { "must": {...}, "should": {...}, "niceToHave": {...} }
-  },
-  "comparison": "Jämförelse med tidigare team: vad har blivit bättre/sämre, t.ex. 'Tappade Power BI-erfarenhet, fick starkare offentlig-sektor-referenser'"
-}`;
-
-export async function reEvaluateTeam(
-  analysis: RfpAnalysis,
-  consultants: Consultant[],
-  previousProposal: TeamProposal
-): Promise<SwapComparison> {
-  const consultantText = formatConsultantsForPrompt(consultants);
-
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 4000,
-    messages: [
-      {
-        role: "user",
-        content: `Bedöm detta konsultteam mot RFP:en och jämför med det tidigare förslaget.
-
-## RFP-analys
-${JSON.stringify(analysis, null, 2)}
-
-## Tillgängliga konsulter (det nya teamet)
-${consultantText}
-
-## Tidigare teamförslag
-${JSON.stringify(previousProposal, null, 2)}`,
-      },
-    ],
-    system: REEVALUATE_SYSTEM_PROMPT,
-  });
-
-  const content = message.content[0];
-  if (content.type !== "text") {
-    throw new Error("Unexpected response type from Claude");
-  }
-
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("No JSON found in Claude response");
-  }
-
-  return JSON.parse(jsonMatch[0]) as SwapComparison;
+  return JSON.parse(jsonMatch[0]) as ScoredMatchResult;
 }
