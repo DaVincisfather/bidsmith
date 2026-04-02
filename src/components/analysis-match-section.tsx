@@ -58,15 +58,20 @@ export function AnalysisMatchSection({
   allConsultants,
 }: AnalysisMatchSectionProps) {
   const [match, setMatch] = useState<MatchData | null>(latestMatch);
+  const [editedProposal, setEditedProposal] = useState<TeamProposalData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [swapping, setSwapping] = useState(false);
+  const [evaluating, setEvaluating] = useState(false);
   const [comparison, setComparison] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const currentProposal = editedProposal ?? match?.team_proposal ?? null;
+  const dirty = editedProposal !== null;
 
   async function triggerMatching() {
     setLoading(true);
     setError(null);
     setComparison(null);
+    setEditedProposal(null);
 
     try {
       const response = await fetch(`/api/matches/${analysisId}`, {
@@ -91,20 +96,26 @@ export function AnalysisMatchSection({
     }
   }
 
-  async function handleSwap(matchId: string, newProposal: TeamProposalData) {
-    setSwapping(true);
+  function handleLocalSwap(newProposal: TeamProposalData) {
+    setEditedProposal(newProposal);
+  }
+
+  async function evaluateTeam() {
+    if (!match || !editedProposal) return;
+
+    setEvaluating(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/matches/${matchId}/swap`, {
+      const response = await fetch(`/api/matches/${match.id}/swap`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamProposal: newProposal }),
+        body: JSON.stringify({ teamProposal: editedProposal }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Swap failed");
+        throw new Error(data.error || "Evaluation failed");
       }
 
       const data = await response.json();
@@ -114,10 +125,11 @@ export function AnalysisMatchSection({
         team_evaluation: data.teamEvaluation,
       });
       setComparison(data.comparison);
+      setEditedProposal(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
-      setSwapping(false);
+      setEvaluating(false);
     }
   }
 
@@ -125,18 +137,30 @@ export function AnalysisMatchSection({
     <div className="border-t border-gray-200 pt-8 mt-8 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Teammatchning</h2>
-        <button
-          onClick={triggerMatching}
-          disabled={loading}
-          className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium
-                     hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-        >
-          {loading
-            ? "Matchar..."
-            : match
-              ? "Kör om matchning"
-              : "Matcha konsulter"}
-        </button>
+        <div className="flex gap-2">
+          {dirty && (
+            <button
+              onClick={evaluateTeam}
+              disabled={evaluating}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium
+                         hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+            >
+              {evaluating ? "Utvärderar..." : "Utvärdera team"}
+            </button>
+          )}
+          <button
+            onClick={triggerMatching}
+            disabled={loading || evaluating}
+            className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium
+                       hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading
+              ? "Matchar..."
+              : match
+                ? "Kör om matchning"
+                : "Matcha konsulter"}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -145,20 +169,20 @@ export function AnalysisMatchSection({
         </div>
       )}
 
-      {match && (
-        <>
-          <TeamProposal
-            matchId={match.id}
-            proposal={match.team_proposal}
-            allConsultants={allConsultants}
-            onSwap={handleSwap}
-            swapping={swapping}
-          />
-          <TeamEvaluation
-            evaluation={match.team_evaluation}
-            comparison={comparison || undefined}
-          />
-        </>
+      {currentProposal && (
+        <TeamProposal
+          proposal={currentProposal}
+          allConsultants={allConsultants}
+          onLocalSwap={handleLocalSwap}
+          dirty={dirty}
+        />
+      )}
+
+      {match && !dirty && (
+        <TeamEvaluation
+          evaluation={match.team_evaluation}
+          comparison={comparison || undefined}
+        />
       )}
 
       {!match && !loading && (

@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 interface ConsultantMatch {
   consultantId: string;
   consultantName: string;
@@ -23,11 +21,10 @@ interface AllConsultant {
 }
 
 interface TeamProposalProps {
-  matchId: string;
   proposal: TeamProposalData;
   allConsultants: AllConsultant[];
-  onSwap: (matchId: string, newProposal: TeamProposalData) => void;
-  swapping: boolean;
+  onLocalSwap: (newProposal: TeamProposalData) => void;
+  dirty: boolean;
 }
 
 const LEVEL_ORDER = ["senior", "intermediate", "junior"] as const;
@@ -38,34 +35,39 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 export function TeamProposal({
-  matchId,
   proposal,
   allConsultants,
-  onSwap,
-  swapping,
+  onLocalSwap,
+  dirty,
 }: TeamProposalProps) {
-  const [expandedLevel, setExpandedLevel] = useState<string | null>(null);
-
   function handleSwap(level: string, index: number, newConsultantId: string) {
     const consultant = allConsultants.find((c) => c.id === newConsultantId);
     if (!consultant) return;
 
-    const newProposal = { ...proposal };
     const levelKey = level as keyof TeamProposalData;
-    const updated = [...newProposal[levelKey]];
+    const updated = [...proposal[levelKey]];
     updated[index] = {
       ...updated[index],
       consultantId: newConsultantId,
       consultantName: consultant.name,
     };
-    newProposal[levelKey] = updated;
 
-    onSwap(matchId, newProposal);
+    onLocalSwap({
+      ...proposal,
+      [levelKey]: updated,
+    });
   }
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Teamförslag</h3>
+      <div className="flex items-center gap-3">
+        <h3 className="text-lg font-semibold">Teamförslag</h3>
+        {dirty && (
+          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+            Ej utvärderat
+          </span>
+        )}
+      </div>
       {LEVEL_ORDER.map((level) => {
         const matches = proposal[level];
         if (matches.length === 0) return null;
@@ -74,17 +76,14 @@ export function TeamProposal({
 
         return (
           <div key={level} className="border border-gray-200 rounded-lg overflow-hidden">
-            <button
-              onClick={() => setExpandedLevel(expandedLevel === level ? null : level)}
-              className="w-full px-4 py-3 bg-gray-50 flex items-center justify-between text-left"
-            >
+            <div className="px-4 py-3 bg-gray-50 flex items-center justify-between">
               <span className="font-medium">{LEVEL_LABELS[level]}</span>
               <span className="text-sm text-gray-400">{matches.length} konsult(er)</span>
-            </button>
+            </div>
 
             <div className="divide-y divide-gray-100">
               {matches.map((match, idx) => (
-                <div key={match.consultantId} className="px-4 py-3">
+                <div key={`${level}-${idx}`} className="px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-3">
                       <span className="font-medium">{match.consultantName}</span>
@@ -95,7 +94,6 @@ export function TeamProposal({
                     <select
                       value={match.consultantId}
                       onChange={(e) => handleSwap(level, idx, e.target.value)}
-                      disabled={swapping}
                       className="text-xs border border-gray-200 rounded px-2 py-1"
                     >
                       {available.map((c) => (
