@@ -20,6 +20,7 @@ interface TeamProposalProps {
   scoredConsultants: ScoredConsultant[];
   selectedTeam: SelectedTeam;
   onSwap: (level: string, consultant: ScoredConsultant) => void;
+  disabled?: boolean;
 }
 
 const LEVEL_ORDER = ["senior", "intermediate", "junior"] as const;
@@ -40,6 +41,7 @@ export function TeamProposal({
   scoredConsultants,
   selectedTeam,
   onSwap,
+  disabled = false,
 }: TeamProposalProps) {
   return (
     <div className="space-y-4">
@@ -63,11 +65,17 @@ export function TeamProposal({
             <div className="px-4 py-3 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <ConsultantSearch
-                    options={options}
-                    selected={selected}
-                    onSelect={(c) => onSwap(level, c)}
-                  />
+                  {disabled ? (
+                    <span className="text-sm px-3 py-1.5 inline-block">
+                      {selected.consultantName}
+                    </span>
+                  ) : (
+                    <ConsultantSearch
+                      options={options}
+                      selected={selected}
+                      onSelect={(c) => onSwap(level, c)}
+                    />
+                  )}
                 </div>
                 <span className={`text-xs font-mono px-2 py-1 rounded shrink-0 ${scoreColor(selected.score)}`}>
                   {selected.score}/100
