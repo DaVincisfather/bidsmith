@@ -28,7 +28,8 @@ Svara ALLTID med giltig JSON som matchar detta schema:
   ],
   "requiredCompetencies": ["kompetens1", "kompetens2"],
   "estimatedScope": "Uppskattad omfattning i tid/resurser",
-  "redFlags": ["Potentiella risker eller oklarheter i underlaget"]
+  "redFlags": ["Potentiella risker eller oklarheter i underlaget"],
+  "domain": "Kort domäntagg, t.ex. IT, management, ekonomi, HR, hälsa, infrastruktur"
 }
 
 Var noggrann med att:

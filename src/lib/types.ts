@@ -20,6 +20,7 @@ export interface RfpAnalysis {
   requiredCompetencies: string[];
   estimatedScope: string;
   redFlags: string[];
+  domain: string;
 }
 
 export interface AnalysisRecord {
@@ -90,5 +91,46 @@ export interface MatchRecord {
   analysisId: string;
   organizationId: string;
   scoredConsultants: ScoredConsultant[];
+  createdAt: string;
+}
+
+// --- M1.5: Go/No-Go Agent ---
+
+export interface MustRequirementCheck {
+  requirement: string;
+  met: boolean;
+  coveredBy: string | null;
+}
+
+export interface ImprovementSuggestion {
+  swap: { remove: string; add: string };
+  swapIds: { removeId: string; addId: string };
+  estimatedImpact: string;
+  reason: string;
+}
+
+export type GoNoGoRecommendation = "go" | "no-go" | "go-with-reservations";
+
+export interface GoNoGoResult {
+  mustRequirements: MustRequirementCheck[];
+  winProbability: number;
+  winProbabilityReasoning: string;
+  strengths: string[];
+  gaps: string[];
+  improvements: ImprovementSuggestion[];
+  recommendation: GoNoGoRecommendation;
+  reasoning: string;
+}
+
+export type GoNoGoDecision = "pending" | "go" | "no-go";
+
+export interface GoNoGoAssessment {
+  id: string;
+  analysisId: string;
+  organizationId: string;
+  teamConsultantIds: string[];
+  result: GoNoGoResult;
+  decision: GoNoGoDecision;
+  decisionAt: string | null;
   createdAt: string;
 }

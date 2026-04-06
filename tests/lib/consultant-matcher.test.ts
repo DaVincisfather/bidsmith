@@ -21,6 +21,7 @@ const mockAnalysis: RfpAnalysis = {
   requiredCompetencies: ["Organisationsöversyner", "Offentlig sektor", "Förändringsledning"],
   estimatedScope: "2 konsulter, 3 månader",
   redFlags: [],
+  domain: "management",
 };
 
 const mockConsultants: Consultant[] = [
