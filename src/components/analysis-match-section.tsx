@@ -13,12 +13,6 @@ interface ScoredConsultant {
   reasoning: string;
 }
 
-interface SelectedTeam {
-  senior: ScoredConsultant | null;
-  intermediate: ScoredConsultant | null;
-  junior: ScoredConsultant | null;
-}
-
 interface MatchData {
   id: string;
   scoredConsultants: ScoredConsultant[];
@@ -29,30 +23,10 @@ interface AnalysisMatchSectionProps {
   latestMatch: MatchData | null;
 }
 
-function buildDefaultTeam(scored: ScoredConsultant[]): SelectedTeam {
-  const byLevel: Record<string, ScoredConsultant[]> = {};
-  for (const c of scored) {
-    if (!byLevel[c.level]) byLevel[c.level] = [];
-    byLevel[c.level].push(c);
-  }
-
-  const pick = (level: string): ScoredConsultant | null => {
-    const list = byLevel[level];
-    if (!list || list.length === 0) return null;
-    return [...list].sort((a, b) => b.score - a.score)[0];
-  };
-
-  return {
-    senior: pick("senior"),
-    intermediate: pick("intermediate"),
-    junior: pick("junior"),
-  };
-}
-
-function getTeamIds(team: SelectedTeam): string[] {
-  return [team.senior, team.intermediate, team.junior]
-    .filter((c): c is ScoredConsultant => c !== null)
-    .map((c) => c.consultantId);
+function buildDefaultTeamIds(scored: ScoredConsultant[]): Set<string> {
+  // Pick top 3 by score, regardless of level
+  const top = [...scored].sort((a, b) => b.score - a.score).slice(0, 3);
+  return new Set(top.map((c) => c.consultantId));
 }
 
 export function AnalysisMatchSection({
@@ -60,10 +34,8 @@ export function AnalysisMatchSection({
   latestMatch,
 }: AnalysisMatchSectionProps) {
   const [match, setMatch] = useState<MatchData | null>(latestMatch);
-  const [selectedTeam, setSelectedTeam] = useState<SelectedTeam>(
-    latestMatch
-      ? buildDefaultTeam(latestMatch.scoredConsultants)
-      : { senior: null, intermediate: null, junior: null }
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    latestMatch ? buildDefaultTeamIds(latestMatch.scoredConsultants) : new Set()
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +49,6 @@ export function AnalysisMatchSection({
   async function triggerMatching() {
     setLoading(true);
     setError(null);
-    // Reset Go/No-Go when re-matching
     setTeamLocked(false);
     setGoNoGoResult(null);
     setGoNoGoId(null);
@@ -98,7 +69,7 @@ export function AnalysisMatchSection({
         scoredConsultants: data.scoredConsultants,
       };
       setMatch(newMatch);
-      setSelectedTeam(buildDefaultTeam(data.scoredConsultants));
+      setSelectedIds(buildDefaultTeamIds(data.scoredConsultants));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -106,14 +77,24 @@ export function AnalysisMatchSection({
     }
   }
 
-  function handleSwap(level: string, consultant: ScoredConsultant) {
-    setSelectedTeam((prev) => ({
-      ...prev,
-      [level]: consultant,
-    }));
+  function handleToggle(consultantId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(consultantId)) {
+        next.delete(consultantId);
+      } else {
+        next.add(consultantId);
+      }
+      return next;
+    });
   }
 
   async function lockTeamAndEvaluate() {
+    if (selectedIds.size === 0) {
+      setError("Välj minst en konsult för teamet.");
+      return;
+    }
+
     setTeamLocked(true);
     setGoNoGoLoading(true);
     setError(null);
@@ -124,7 +105,7 @@ export function AnalysisMatchSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           analysisId,
-          teamConsultantIds: getTeamIds(selectedTeam),
+          teamConsultantIds: Array.from(selectedIds),
         }),
       });
 
@@ -151,7 +132,6 @@ export function AnalysisMatchSection({
   }
 
   async function proceedToBid() {
-    // Record "go" decision
     if (goNoGoId) {
       await fetch(`/api/go-no-go/${goNoGoId}`, {
         method: "PATCH",
@@ -193,19 +173,19 @@ export function AnalysisMatchSection({
         <>
           <TeamProposal
             scoredConsultants={match.scoredConsultants}
-            selectedTeam={selectedTeam}
-            onSwap={handleSwap}
+            selectedIds={selectedIds}
+            onToggle={handleToggle}
             disabled={teamLocked}
           />
 
-          {/* Lock team / Go/No-Go section */}
           {!teamLocked && !goNoGoLoading && (
             <button
               onClick={lockTeamAndEvaluate}
+              disabled={selectedIds.size === 0}
               className="w-full border-2 border-dashed border-gray-300 text-gray-600 px-4 py-3 rounded-lg text-sm font-medium
-                         hover:border-gray-400 hover:text-gray-800 transition-colors"
+                         hover:border-gray-400 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Lås team och kör Go/No-Go-analys
+              Lås team ({selectedIds.size} valda) och kör Go/No-Go-analys
             </button>
           )}
 

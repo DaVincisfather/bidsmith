@@ -54,19 +54,15 @@ export async function POST(request: NextRequest) {
 
   const allScoredConsultants = matchRows[0].team_proposal as ScoredConsultant[];
 
-  // Determine team IDs — use provided or pick top-scored per level
+  // Determine team IDs — use provided or pick top 3 by score
   let resolvedTeamIds: string[];
   if (teamConsultantIds && teamConsultantIds.length > 0) {
     resolvedTeamIds = teamConsultantIds;
   } else {
-    // Auto-select best per level (M3 compatibility)
-    const byLevel: Record<string, ScoredConsultant[]> = {};
-    for (const c of allScoredConsultants) {
-      if (!byLevel[c.level]) byLevel[c.level] = [];
-      byLevel[c.level].push(c);
-    }
-    resolvedTeamIds = Object.values(byLevel)
-      .map((list) => [...list].sort((a, b) => b.score - a.score)[0])
+    // Auto-select top 3 (M3 compatibility)
+    resolvedTeamIds = [...allScoredConsultants]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
       .map((c) => c.consultantId);
   }
 
