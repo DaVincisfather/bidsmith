@@ -47,7 +47,8 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 
 Regler:
 - winProbability: 0-100. ALLTID 0 om något ska-krav saknas.
-- improvements: sortera efter estimatedImpact (högst först). Referera till faktiska konsulter i poolen med namn och ID.
+- improvements: sortera efter estimatedImpact (högst först). Du får BARA referera till konsulter som finns i listan "Övriga tillgängliga konsulter" nedan. Använd EXAKT namn och ID från den listan. Hitta INTE PÅ konsulter. Om inga tillgängliga konsulter förbättrar teamet, returnera en tom improvements-lista.
+- coveredBy: använd EXAKT namn från teamlistan.
 - strengths/gaps: koppla till specifika krav i RFP:en, inte generella påståenden.
 - reasoning: 2-4 meningar, professionell ton.`;
 
