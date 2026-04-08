@@ -1,12 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { RfpAnalysis } from "./types";
 import { RfpAnalysisSchema } from "./ai-schemas";
-
-let _client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!_client) _client = new Anthropic();
-  return _client;
-}
+import { callClaude } from "./ai-client";
 
 const SYSTEM_PROMPT = `Du är en expert på att analysera förfrågningsunderlag (RFP:er) för konsultuppdrag.
 Du läser ett RFP-dokument och producerar en strukturerad analys i JSON-format.
@@ -44,32 +38,12 @@ Var noggrann med att:
 - Sammanfatta i professionell ton`;
 
 export async function analyzeRfp(rfpText: string): Promise<RfpAnalysis> {
-  const message = await getClient().messages.create({
+  return callClaude({
     model: "claude-sonnet-4-6",
-    max_tokens: 4000,
-    messages: [
-      {
-        role: "user",
-        content: `Analysera följande förfrågningsunderlag och returnera en strukturerad JSON-analys:\n\n${rfpText}`,
-      },
-    ],
+    maxTokens: 4000,
     system: SYSTEM_PROMPT,
+    userContent: `Analysera följande förfrågningsunderlag och returnera en strukturerad JSON-analys:\n\n${rfpText}`,
+    schema: RfpAnalysisSchema,
+    label: "RFP analysis",
   });
-
-  const content = message.content[0];
-  if (content.type !== "text") {
-    throw new Error("Unexpected response type from Claude");
-  }
-
-  // Extract JSON from response (Claude may wrap it in markdown code blocks)
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("No JSON found in Claude response");
-  }
-
-  const parsed = RfpAnalysisSchema.safeParse(JSON.parse(jsonMatch[0]));
-  if (!parsed.success) {
-    throw new Error(`Invalid RFP analysis response: ${parsed.error.message}`);
-  }
-  return parsed.data;
 }

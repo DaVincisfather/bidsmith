@@ -1,16 +1,10 @@
-import Anthropic from "@anthropic-ai/sdk";
 import {
   RfpAnalysis,
   Consultant,
   ScoredMatchResult,
 } from "./types";
 import { ScoredMatchResultSchema } from "./ai-schemas";
-
-let _client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!_client) _client = new Anthropic();
-  return _client;
-}
+import { callClaude } from "./ai-client";
 
 const SYSTEM_PROMPT = `Du är expert på att matcha konsulter till förfrågningsunderlag (RFP:er).
 Du får en RFP-analys och en lista konsulter. Scora VARJE konsult individuellt mot RFP:en.
@@ -64,37 +58,18 @@ export async function matchConsultants(
 ): Promise<ScoredMatchResult> {
   const consultantText = formatConsultantsForPrompt(consultants);
 
-  const message = await getClient().messages.create({
+  return callClaude({
     model: "claude-sonnet-4-6",
-    max_tokens: 8000,
-    messages: [
-      {
-        role: "user",
-        content: `Scora följande konsulter individuellt mot detta förfrågningsunderlag.
+    maxTokens: 8000,
+    system: SYSTEM_PROMPT,
+    userContent: `Scora följande konsulter individuellt mot detta förfrågningsunderlag.
 
 ## RFP-analys
 ${JSON.stringify(analysis, null, 2)}
 
 ## Konsulter att scora
 ${consultantText}`,
-      },
-    ],
-    system: SYSTEM_PROMPT,
+    schema: ScoredMatchResultSchema,
+    label: "consultant matching",
   });
-
-  const content = message.content[0];
-  if (content.type !== "text") {
-    throw new Error("Unexpected response type from Claude");
-  }
-
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("No JSON found in Claude response");
-  }
-
-  const parsed = ScoredMatchResultSchema.safeParse(JSON.parse(jsonMatch[0]));
-  if (!parsed.success) {
-    throw new Error(`Invalid match response: ${parsed.error.message}`);
-  }
-  return parsed.data;
 }

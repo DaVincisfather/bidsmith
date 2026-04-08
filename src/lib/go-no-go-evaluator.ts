@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import {
   RfpAnalysis,
   Consultant,
@@ -6,12 +5,7 @@ import {
   GoNoGoResult,
 } from "./types";
 import { GoNoGoResultSchema } from "./ai-schemas";
-
-let _client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!_client) _client = new Anthropic();
-  return _client;
-}
+import { callClaude } from "./ai-client";
 
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
 Du får en RFP-analys, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
@@ -101,13 +95,11 @@ export async function evaluateGoNoGo(
   const teamText = formatTeamForPrompt(teamConsultants, allScoredConsultants);
   const poolText = formatPoolForPrompt(allScoredConsultants, teamIds);
 
-  const message = await getClient().messages.create({
+  return callClaude({
     model: "claude-sonnet-4-6",
-    max_tokens: 4000,
-    messages: [
-      {
-        role: "user",
-        content: `Bedöm detta teams chanser att vinna följande upphandling.
+    maxTokens: 4000,
+    system: SYSTEM_PROMPT,
+    userContent: `Bedöm detta teams chanser att vinna följande upphandling.
 
 ## RFP-analys
 ${JSON.stringify(analysis, null, 2)}
@@ -117,24 +109,7 @@ ${teamText}
 
 ## Övriga tillgängliga konsulter (för förbättringsförslag)
 ${poolText}`,
-      },
-    ],
-    system: SYSTEM_PROMPT,
+    schema: GoNoGoResultSchema,
+    label: "Go/No-Go evaluation",
   });
-
-  const content = message.content[0];
-  if (content.type !== "text") {
-    throw new Error("Unexpected response type from Claude");
-  }
-
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("No JSON found in Claude response");
-  }
-
-  const parsed = GoNoGoResultSchema.safeParse(JSON.parse(jsonMatch[0]));
-  if (!parsed.success) {
-    throw new Error(`Invalid Go/No-Go response: ${parsed.error.message}`);
-  }
-  return parsed.data;
 }

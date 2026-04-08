@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import {
   RfpAnalysis,
   Consultant,
@@ -9,14 +8,7 @@ import {
 } from "./types";
 import { BidContext, getSectionPrompt, AI_SECTION_KEYS } from "./bid-section-prompts";
 import { AI_SECTION_SCHEMAS } from "./ai-schemas";
-
-// Lazy-initialized to avoid instantiation in browser-like test environments.
-// AI generation functions (Task 4) will call getClient() when needed.
-let _client: Anthropic | null = null;
-function getClient(): Anthropic {
-  if (!_client) _client = new Anthropic();
-  return _client;
-}
+import { callClaude } from "./ai-client";
 
 // --- Data-driven section builders ---
 
@@ -49,6 +41,16 @@ export function buildTocSection(allSections: BidSection[]): BidSection {
   };
 }
 
+// Swedish stop words that match too broadly in keyword matching
+const STOP_WORDS = new Set([
+  "alla", "andra", "arbete", "även", "bara", "behov", "bild", "både",
+  "denna", "dessa", "dock", "efter", "eller", "finns", "från", "föra",
+  "före", "genom", "gäller", "hade", "hade", "hela", "inte", "inom",
+  "krav", "kunna", "många", "måste", "möjlig", "nära", "några", "också",
+  "samt", "sedan", "sina", "skall", "skapa", "stor", "till", "under",
+  "uppd", "vara", "vill", "visa", "värd", "över",
+]);
+
 export function buildRequirementMatrix(
   analysis: RfpAnalysis,
   team: Consultant[]
@@ -65,7 +67,7 @@ export function buildRequirementMatrix(
       const allText = [...competencies, ...refTexts].join(" ");
       const keywords = req.description.toLowerCase().split(/\s+/);
       coverage[c.id] = keywords.some(
-        (kw) => kw.length > 3 && allText.includes(kw)
+        (kw) => kw.length > 4 && !STOP_WORDS.has(kw) && allText.includes(kw)
       );
     }
     return {
@@ -136,34 +138,21 @@ export async function generateAiSection(
     throw new Error(`Unknown AI section key: ${key}`);
   }
 
-  const message = await getClient().messages.create({
+  const schema = AI_SECTION_SCHEMAS[key];
+  if (!schema) {
+    throw new Error(`No schema defined for section ${key}`);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zod validates at runtime, format switch narrows below
+  const parsed: any = await callClaude({
     model: "claude-opus-4-6",
-    max_tokens: 4000,
+    maxTokens: 4000,
     system: prompt.system,
-    messages: [{ role: "user", content: prompt.user(ctx) }],
+    userContent: prompt.user(ctx),
+    schema,
+    label: `bid section "${key}"`,
   });
 
-  const content = message.content[0];
-  if (content.type !== "text") {
-    throw new Error(`Unexpected response type for section ${key}`);
-  }
-
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error(`No JSON found in response for section ${key}`);
-  }
-
-  const rawParsed = JSON.parse(jsonMatch[0]);
-
-  const schema = AI_SECTION_SCHEMAS[key];
-  if (schema) {
-    const validated = schema.safeParse(rawParsed);
-    if (!validated.success) {
-      throw new Error(`Invalid AI response for section ${key}: ${validated.error.message}`);
-    }
-  }
-
-  const parsed = rawParsed;
   const format = SECTION_FORMAT[key];
 
   let sectionContent: BidSectionContent;
@@ -232,11 +221,21 @@ export async function generateAllSections(
   sectionsMap.set("cover", cover);
   onSectionComplete?.(cover);
 
-  // 2. AI sections (sequential — each saved after completion)
-  for (const key of AI_SECTION_KEYS) {
-    const section = await generateAiSection(key, ctx);
-    sectionsMap.set(key, section);
+  // 2. AI sections — parallel for independent sections, then summary last
+  const independentKeys = AI_SECTION_KEYS.filter((k) => k !== "summary");
+  const results = await Promise.all(
+    independentKeys.map((key) => generateAiSection(key, ctx))
+  );
+  for (const section of results) {
+    sectionsMap.set(section.key, section);
     onSectionComplete?.(section);
+  }
+
+  // Summary depends on other sections being generated (for context)
+  if (AI_SECTION_KEYS.includes("summary")) {
+    const summary = await generateAiSection("summary", ctx);
+    sectionsMap.set("summary", summary);
+    onSectionComplete?.(summary);
   }
 
   // 3. Requirement matrix (data-driven)
