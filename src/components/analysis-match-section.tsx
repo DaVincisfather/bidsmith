@@ -4,6 +4,8 @@ import { useState } from "react";
 import { TeamProposal } from "./team-proposal";
 import { GoNoGoResultView } from "./go-no-go-result";
 import { GoNoGoResult } from "@/lib/types";
+import { BidPreview } from "./bid-preview";
+import { BidSection } from "@/lib/types";
 
 interface ScoredConsultant {
   consultantId: string;
@@ -45,6 +47,12 @@ export function AnalysisMatchSection({
   const [goNoGoLoading, setGoNoGoLoading] = useState(false);
   const [goNoGoResult, setGoNoGoResult] = useState<GoNoGoResult | null>(null);
   const [goNoGoId, setGoNoGoId] = useState<string | null>(null);
+
+  // Bid state
+  const [bidId, setBidId] = useState<string | null>(null);
+  const [bidSections, setBidSections] = useState<BidSection[]>([]);
+  const [bidStatus, setBidStatus] = useState<string>("generating");
+  const [bidLoading, setBidLoading] = useState(false);
 
   async function triggerMatching() {
     setLoading(true);
@@ -139,8 +147,35 @@ export function AnalysisMatchSection({
         body: JSON.stringify({ decision: "go" }),
       });
     }
-    // TODO: Navigate to bid flow (M2)
-    alert("Anbudsflödet byggs i M2. Beslutet (Go) har sparats.");
+
+    setBidLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/bids", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analysisId,
+          assessmentId: goNoGoId,
+          teamConsultantIds: Array.from(selectedIds),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Bid generation failed");
+      }
+
+      const data = await response.json();
+      setBidId(data.id);
+      setBidSections(data.sections ?? []);
+      setBidStatus(data.status);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setBidLoading(false);
+    }
   }
 
   return (
@@ -201,6 +236,21 @@ export function AnalysisMatchSection({
               assessmentId={goNoGoId}
               onUnlock={unlockTeam}
               onProceedToBid={proceedToBid}
+              bidLoading={bidLoading}
+            />
+          )}
+
+          {bidLoading && (
+            <div className="text-center py-8 text-gray-400 text-sm">
+              Skapar anbud och genererar sektioner...
+            </div>
+          )}
+
+          {bidId && !bidLoading && (
+            <BidPreview
+              bidId={bidId}
+              initialSections={bidSections}
+              initialStatus={bidStatus}
             />
           )}
         </>

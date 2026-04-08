@@ -7,6 +7,7 @@ interface GoNoGoResultProps {
   assessmentId: string;
   onUnlock: () => void;
   onProceedToBid: () => void;
+  bidLoading?: boolean;
 }
 
 function recommendationLabel(rec: GoNoGoRecommendation): string {
@@ -42,6 +43,7 @@ export function GoNoGoResultView({
   result,
   onUnlock,
   onProceedToBid,
+  bidLoading,
 }: GoNoGoResultProps) {
   const allMustMet = result.mustRequirements.every((r) => r.met);
 
@@ -165,10 +167,11 @@ export function GoNoGoResultView({
         </button>
         <button
           onClick={onProceedToBid}
+          disabled={bidLoading}
           className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium
-                     hover:bg-gray-800 transition-colors"
+                     hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
         >
-          Gå vidare till anbud
+          {bidLoading ? "Genererar anbud..." : "Gå vidare till anbud"}
         </button>
       </div>
     </div>
