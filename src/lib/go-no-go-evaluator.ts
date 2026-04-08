@@ -5,8 +5,13 @@ import {
   ScoredConsultant,
   GoNoGoResult,
 } from "./types";
+import { GoNoGoResultSchema } from "./ai-schemas";
 
-const client = new Anthropic();
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!_client) _client = new Anthropic();
+  return _client;
+}
 
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
 Du får en RFP-analys, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
@@ -96,7 +101,7 @@ export async function evaluateGoNoGo(
   const teamText = formatTeamForPrompt(teamConsultants, allScoredConsultants);
   const poolText = formatPoolForPrompt(allScoredConsultants, teamIds);
 
-  const message = await client.messages.create({
+  const message = await getClient().messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 4000,
     messages: [
@@ -127,5 +132,9 @@ ${poolText}`,
     throw new Error("No JSON found in Claude response");
   }
 
-  return JSON.parse(jsonMatch[0]) as GoNoGoResult;
+  const parsed = GoNoGoResultSchema.safeParse(JSON.parse(jsonMatch[0]));
+  if (!parsed.success) {
+    throw new Error(`Invalid Go/No-Go response: ${parsed.error.message}`);
+  }
+  return parsed.data;
 }

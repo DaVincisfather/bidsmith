@@ -4,8 +4,13 @@ import {
   Consultant,
   ScoredMatchResult,
 } from "./types";
+import { ScoredMatchResultSchema } from "./ai-schemas";
 
-const client = new Anthropic();
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!_client) _client = new Anthropic();
+  return _client;
+}
 
 const SYSTEM_PROMPT = `Du är expert på att matcha konsulter till förfrågningsunderlag (RFP:er).
 Du får en RFP-analys och en lista konsulter. Scora VARJE konsult individuellt mot RFP:en.
@@ -59,7 +64,7 @@ export async function matchConsultants(
 ): Promise<ScoredMatchResult> {
   const consultantText = formatConsultantsForPrompt(consultants);
 
-  const message = await client.messages.create({
+  const message = await getClient().messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 8000,
     messages: [
@@ -87,5 +92,9 @@ ${consultantText}`,
     throw new Error("No JSON found in Claude response");
   }
 
-  return JSON.parse(jsonMatch[0]) as ScoredMatchResult;
+  const parsed = ScoredMatchResultSchema.safeParse(JSON.parse(jsonMatch[0]));
+  if (!parsed.success) {
+    throw new Error(`Invalid match response: ${parsed.error.message}`);
+  }
+  return parsed.data;
 }

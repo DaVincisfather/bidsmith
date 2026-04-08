@@ -1,7 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { RfpAnalysis } from "./types";
+import { RfpAnalysisSchema } from "./ai-schemas";
 
-const client = new Anthropic();
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!_client) _client = new Anthropic();
+  return _client;
+}
 
 const SYSTEM_PROMPT = `Du är en expert på att analysera förfrågningsunderlag (RFP:er) för konsultuppdrag.
 Du läser ett RFP-dokument och producerar en strukturerad analys i JSON-format.
@@ -39,7 +44,7 @@ Var noggrann med att:
 - Sammanfatta i professionell ton`;
 
 export async function analyzeRfp(rfpText: string): Promise<RfpAnalysis> {
-  const message = await client.messages.create({
+  const message = await getClient().messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 4000,
     messages: [
@@ -62,6 +67,9 @@ export async function analyzeRfp(rfpText: string): Promise<RfpAnalysis> {
     throw new Error("No JSON found in Claude response");
   }
 
-  const analysis: RfpAnalysis = JSON.parse(jsonMatch[0]);
-  return analysis;
+  const parsed = RfpAnalysisSchema.safeParse(JSON.parse(jsonMatch[0]));
+  if (!parsed.success) {
+    throw new Error(`Invalid RFP analysis response: ${parsed.error.message}`);
+  }
+  return parsed.data;
 }

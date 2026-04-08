@@ -8,6 +8,7 @@ import {
   BidSectionContent,
 } from "./types";
 import { BidContext, getSectionPrompt, AI_SECTION_KEYS } from "./bid-section-prompts";
+import { AI_SECTION_SCHEMAS } from "./ai-schemas";
 
 // Lazy-initialized to avoid instantiation in browser-like test environments.
 // AI generation functions (Task 4) will call getClient() when needed.
@@ -152,7 +153,17 @@ export async function generateAiSection(
     throw new Error(`No JSON found in response for section ${key}`);
   }
 
-  const parsed = JSON.parse(jsonMatch[0]);
+  const rawParsed = JSON.parse(jsonMatch[0]);
+
+  const schema = AI_SECTION_SCHEMAS[key];
+  if (schema) {
+    const validated = schema.safeParse(rawParsed);
+    if (!validated.success) {
+      throw new Error(`Invalid AI response for section ${key}: ${validated.error.message}`);
+    }
+  }
+
+  const parsed = rawParsed;
   const format = SECTION_FORMAT[key];
 
   let sectionContent: BidSectionContent;
