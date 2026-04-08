@@ -184,3 +184,71 @@ export async function generateAiSection(
     generatedAt: new Date().toISOString(),
   };
 }
+
+// --- Orchestrator ---
+
+const PLACEHOLDER_SECTIONS = [
+  { key: "pricing", title: "Pris & omfattning", instruction: "Fyll i er prisbild, timmar och eventuella förbehåll." },
+  { key: "confidentiality", title: "Sekretess & certifieringar", instruction: "Lägg till era standardslides om anbudssekretess, ISO-certifieringar och kvalitetsarbete." },
+  { key: "contact", title: "Kontakt", instruction: "Lägg till kontaktuppgifter för ansvarig säljare och uppdragsledare." },
+];
+
+const SECTION_ORDER = [
+  "cover",
+  "toc",
+  "understanding",
+  "value-proposition",
+  "execution-plan",
+  "quality",
+  "risks",
+  "team",
+  "requirement-matrix",
+  "references",
+  "summary",
+  "pricing",
+  "confidentiality",
+  "contact",
+];
+
+export async function generateAllSections(
+  ctx: BidContext,
+  onSectionComplete?: (section: BidSection) => void
+): Promise<{ sections: BidSection[] }> {
+  const sectionsMap = new Map<string, BidSection>();
+
+  // 1. Cover (data-driven)
+  const cover = buildCoverSection(ctx.analysis);
+  sectionsMap.set("cover", cover);
+  onSectionComplete?.(cover);
+
+  // 2. AI sections (sequential — each saved after completion)
+  for (const key of AI_SECTION_KEYS) {
+    const section = await generateAiSection(key, ctx);
+    sectionsMap.set(key, section);
+    onSectionComplete?.(section);
+  }
+
+  // 3. Requirement matrix (data-driven)
+  const matrix = buildRequirementMatrix(ctx.analysis, ctx.teamConsultants);
+  sectionsMap.set("requirement-matrix", matrix);
+  onSectionComplete?.(matrix);
+
+  // 4. Placeholders
+  for (const ph of PLACEHOLDER_SECTIONS) {
+    const section = buildPlaceholderSection(ph.key, ph.title, ph.instruction);
+    sectionsMap.set(ph.key, section);
+    onSectionComplete?.(section);
+  }
+
+  // 5. TOC (needs all other sections)
+  const allExceptToc = SECTION_ORDER.filter((k) => k !== "toc")
+    .map((k) => sectionsMap.get(k)!)
+    .filter(Boolean);
+  const toc = buildTocSection(allExceptToc);
+  sectionsMap.set("toc", toc);
+
+  // Assemble in order
+  const sections = SECTION_ORDER.map((k) => sectionsMap.get(k)!).filter(Boolean);
+
+  return { sections };
+}
