@@ -154,7 +154,7 @@ function addRequirementMatrixSlide(pptx: PptxGenJS, section: BidSection, style: 
     color: hexToRgb(style.colors.primary), bold: true,
   });
 
-  const rows = section.content.rows;
+  const { rows, consultantNames } = section.content;
   if (rows.length === 0) return;
 
   const consultantIds = Object.keys(rows[0].coverage);
@@ -166,7 +166,7 @@ function addRequirementMatrixSlide(pptx: PptxGenJS, section: BidSection, style: 
     { text: "Krav", options: { bold: true, fontSize: 10, fontFace: style.font, color: hexToRgb(style.colors.light), fill: { color: hexToRgb(style.colors.primary) } } },
     { text: "Prio", options: { bold: true, fontSize: 10, fontFace: style.font, color: hexToRgb(style.colors.light), fill: { color: hexToRgb(style.colors.primary) } } },
     ...consultantIds.map((id) => ({
-      text: section.content.consultantNames?.[id] ?? id.substring(0, 8),
+      text: consultantNames?.[id] ?? id.substring(0, 8),
       options: { bold: true, fontSize: 10, fontFace: style.font, color: hexToRgb(style.colors.light), fill: { color: hexToRgb(style.colors.primary) }, align: "center" as const },
     })),
   ];

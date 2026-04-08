@@ -64,7 +64,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     .update({ status: "exported", exported_at: new Date().toISOString() })
     .eq("id", id);
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     status: 200,
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
