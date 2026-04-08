@@ -134,3 +134,84 @@ export interface GoNoGoAssessment {
   decisionAt: string | null;
   createdAt: string;
 }
+
+// --- M2: Bid Generation ---
+
+export interface ExecutionPhase {
+  name: string;
+  objective: string;
+  activities: string[];
+  deliverables: string[];
+  duration: string;
+}
+
+export interface TeamPresentation {
+  consultantId: string;
+  name: string;
+  role: string;
+  relevantExperience: string;
+  keyCompetencies: string[];
+}
+
+export interface BidReference {
+  title: string;
+  client: string;
+  year: number;
+  description: string;
+  relevance: string;
+}
+
+export interface RequirementRow {
+  requirement: string;
+  priority: "must" | "should" | "nice-to-have";
+  coverage: Record<string, boolean>;
+}
+
+export type BidSectionContent =
+  | { format: "prose"; text: string }
+  | { format: "bullets"; items: string[] }
+  | { format: "phases"; phases: ExecutionPhase[] }
+  | { format: "team"; members: TeamPresentation[] }
+  | { format: "references"; references: BidReference[] }
+  | { format: "requirement-matrix"; rows: RequirementRow[]; consultantNames: Record<string, string> }
+  | { format: "cover"; title: string; client: string; date: string }
+  | { format: "placeholder"; instruction: string };
+
+export interface BidSection {
+  type: "ai" | "data" | "placeholder";
+  key: string;
+  title: string;
+  content: BidSectionContent;
+  generatedAt: string;
+}
+
+export type BidStatus = "generating" | "draft" | "exported";
+export type BidOutcome = "won" | "lost" | "no-bid";
+
+export interface Bid {
+  id: string;
+  analysisId: string;
+  assessmentId: string | null;
+  organizationId: string;
+  teamConsultantIds: string[];
+  sections: BidSection[];
+  status: BidStatus;
+  outcome: BidOutcome | null;
+  exportedAt: string | null;
+  createdAt: string;
+}
+
+export interface StyleGuide {
+  colors: {
+    primary: string;
+    primaryLight: string;
+    secondary: string;
+    secondaryLight: string;
+    accent: string;
+    dark: string;
+    light: string;
+    muted: string;
+  };
+  font: string;
+  logoUrl: string;
+}
