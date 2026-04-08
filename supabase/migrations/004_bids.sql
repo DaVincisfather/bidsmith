@@ -14,3 +14,21 @@ create table bids (
 
 create index idx_bids_analysis on bids(analysis_id);
 create index idx_bids_org on bids(organization_id);
+
+-- Seed style guide for development organization
+update organizations
+set style_guide = '{
+  "colors": {
+    "primary": "#1A2B4A",
+    "primaryLight": "#2D4A7A",
+    "secondary": "#E8913A",
+    "secondaryLight": "#F4B76E",
+    "accent": "#2E8B57",
+    "dark": "#1A1A1A",
+    "light": "#F5F5F0",
+    "muted": "#6B7280"
+  },
+  "font": "Calibri",
+  "logoUrl": ""
+}'::jsonb
+where id = '00000000-0000-0000-0000-000000000001';
