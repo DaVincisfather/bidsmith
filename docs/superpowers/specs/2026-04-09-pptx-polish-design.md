@@ -184,10 +184,12 @@ From the existing `StyleGuide.colors`:
 
 ## Type Changes
 
-### New `BidSectionContent` variant
+### New `BidSectionContent` variants
 
 ```typescript
 | { format: "three-column"; columns: { title: string; icon: string; body: string }[] }
+| { format: "gantt"; phases: ExecutionPhase[]; milestones?: { label: string; afterPhase: number }[] }
+| { format: "section-divider"; sectionNumber: number; subtitle: string }
 ```
 
 ### Extended `ExecutionPhase`
@@ -226,7 +228,7 @@ The renderer processes sections in order. Expected section sequence in a bid:
 4. Understanding content (format: `prose` or `three-column`)
 5. Value proposition (format: `prose` or `bullets`)
 6. Section divider: "Genomförandeplan"
-7. Gantt overview (format: `phases` — rendered as Gantt)
+7. Gantt overview (format: `gantt` — NEW format, auto-generated from phases data)
 8. Phase 1 detail (format: `phases` — rendered as phase-detail slides)
 9. Phase 2 detail...
 10. Quality/method (format: `prose` or `bullets`)
