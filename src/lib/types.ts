@@ -143,6 +143,9 @@ export interface ExecutionPhase {
   activities: string[];
   deliverables: string[];
   duration: string;
+  risks?: string[];
+  hoursEstimate?: number;
+  period?: string;
 }
 
 export interface TeamPresentation {
@@ -175,7 +178,10 @@ export type BidSectionContent =
   | { format: "references"; references: BidReference[] }
   | { format: "requirement-matrix"; rows: RequirementRow[]; consultantNames: Record<string, string> }
   | { format: "cover"; title: string; client: string; date: string }
-  | { format: "placeholder"; instruction: string };
+  | { format: "placeholder"; instruction: string }
+  | { format: "section-divider"; sectionNumber: number; subtitle: string }
+  | { format: "three-column"; columns: { title: string; icon: string; body: string }[] }
+  | { format: "gantt"; phases: ExecutionPhase[]; milestones?: { label: string; afterPhase: number }[] };
 
 export interface BidSection {
   type: "ai" | "data" | "placeholder";

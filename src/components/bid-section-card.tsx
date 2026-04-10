@@ -28,6 +28,12 @@ function sectionPreview(section: BidSection): string {
       return `${section.content.title} — ${section.content.client}`;
     case "placeholder":
       return section.content.instruction;
+    case "section-divider":
+      return `Avsnitt ${section.content.sectionNumber}: ${section.content.subtitle}`;
+    case "three-column":
+      return section.content.columns.map((c) => c.title).join(" | ");
+    case "gantt":
+      return section.content.phases.map((p) => p.name).join(" → ");
   }
 }
 
