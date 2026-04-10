@@ -8,6 +8,8 @@ import { renderSectionDividerSlide } from "../pptx/section-divider";
 import { renderPlaceholderSlide } from "../pptx/placeholder";
 import { renderProseSlide, renderBulletsSlide } from "../pptx/content-two-col";
 import { renderThreeColumnSlide } from "../pptx/content-three-col";
+import { renderPhaseDetailSlides } from "../pptx/phase-detail";
+import { renderGanttSlide } from "../pptx/gantt";
 
 const mockStyleGuide: StyleGuide = {
   colors: {
@@ -186,6 +188,49 @@ describe("content slide renderers", () => {
           { title: "Vårt uppdrag", icon: "U", body: "Text 3" },
         ],
       }, mockStyleGuide, 5, 14)
+    ).not.toThrow();
+  });
+});
+
+const testPhases = [
+  {
+    name: "Fas 1: Uppstart",
+    objective: "Kartlägg nuläge",
+    activities: ["Uppstartsmöte", "Intervjuer", "Materialinventering"],
+    deliverables: ["Projektplan", "Intervjulista"],
+    duration: "4 veckor",
+    risks: ["Underlag kan fördröjas"],
+    hoursEstimate: 100,
+    period: "Mars 2026",
+  },
+  {
+    name: "Fas 2: Analys",
+    objective: "Analysera data",
+    activities: ["Dataanalys", "Benchmarking"],
+    deliverables: ["Analysrapport"],
+    duration: "6 veckor",
+    hoursEstimate: 120,
+    period: "April–Maj 2026",
+  },
+];
+
+describe("phase and gantt renderers", () => {
+  it("renders phase detail slides (one per phase)", () => {
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    expect(() =>
+      renderPhaseDetailSlides(pptx, testPhases, mockStyleGuide, 7, 14)
+    ).not.toThrow();
+  });
+
+  it("renders gantt slide without throwing", () => {
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    expect(() =>
+      renderGanttSlide(pptx, {
+        phases: testPhases,
+        milestones: [{ label: "Rapport klar", afterPhase: 1 }],
+      }, mockStyleGuide, 6, 14)
     ).not.toThrow();
   });
 });
