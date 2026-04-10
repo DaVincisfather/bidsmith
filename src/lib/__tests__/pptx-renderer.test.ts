@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import PptxGenJS from "pptxgenjs";
 import { renderBidToPptx } from "../pptx-renderer";
 import { BidSection, StyleGuide } from "../types";
+import { renderCoverSlide } from "../pptx/cover";
+import { renderSectionDividerSlide } from "../pptx/section-divider";
+import { renderPlaceholderSlide } from "../pptx/placeholder";
 
 const mockStyleGuide: StyleGuide = {
   colors: {
@@ -111,5 +115,42 @@ describe("renderBidToPptx", () => {
   it("creates slides without throwing for all section types", async () => {
     const buffer = await renderBidToPptx(mockSections, mockStyleGuide);
     expect(buffer.length).toBeGreaterThan(1000);
+  });
+});
+
+describe("individual slide renderers", () => {
+  it("renders cover slide without throwing", () => {
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    expect(() =>
+      renderCoverSlide(pptx, {
+        title: "Test Bid",
+        client: "Kund AB",
+        date: "2026-04-09",
+      }, mockStyleGuide)
+    ).not.toThrow();
+  });
+
+  it("renders section-divider slide without throwing", () => {
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    expect(() =>
+      renderSectionDividerSlide(pptx, {
+        title: "Genomförandeplan",
+        sectionNumber: 2,
+        subtitle: "Arbetssätt och metod",
+      }, mockStyleGuide, 3, 14)
+    ).not.toThrow();
+  });
+
+  it("renders placeholder slide without throwing", () => {
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    expect(() =>
+      renderPlaceholderSlide(pptx, {
+        title: "Pris",
+        instruction: "Fyll i prisbild",
+      }, mockStyleGuide, 14, 14)
+    ).not.toThrow();
   });
 });
