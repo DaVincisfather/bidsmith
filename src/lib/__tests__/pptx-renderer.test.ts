@@ -6,6 +6,8 @@ import { BidSection, StyleGuide } from "../types";
 import { renderCoverSlide } from "../pptx/cover";
 import { renderSectionDividerSlide } from "../pptx/section-divider";
 import { renderPlaceholderSlide } from "../pptx/placeholder";
+import { renderProseSlide, renderBulletsSlide } from "../pptx/content-two-col";
+import { renderThreeColumnSlide } from "../pptx/content-three-col";
 
 const mockStyleGuide: StyleGuide = {
   colors: {
@@ -151,6 +153,39 @@ describe("individual slide renderers", () => {
         title: "Pris",
         instruction: "Fyll i prisbild",
       }, mockStyleGuide, 14, 14)
+    ).not.toThrow();
+  });
+});
+
+describe("content slide renderers", () => {
+  it("renders prose slide without throwing", () => {
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    expect(() =>
+      renderProseSlide(pptx, { title: "Uppdragsförståelse", text: "Vi förstår ert behov." }, mockStyleGuide, 4, 14)
+    ).not.toThrow();
+  });
+
+  it("renders bullets slide without throwing", () => {
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    expect(() =>
+      renderBulletsSlide(pptx, { title: "Värde", items: ["Punkt 1", "Punkt 2"] }, mockStyleGuide, 5, 14)
+    ).not.toThrow();
+  });
+
+  it("renders three-column slide without throwing", () => {
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_WIDE";
+    expect(() =>
+      renderThreeColumnSlide(pptx, {
+        title: "Vår förståelse",
+        columns: [
+          { title: "Nuläge", icon: "N", body: "Text 1" },
+          { title: "Vad vi ser", icon: "V", body: "Text 2" },
+          { title: "Vårt uppdrag", icon: "U", body: "Text 3" },
+        ],
+      }, mockStyleGuide, 5, 14)
     ).not.toThrow();
   });
 });
