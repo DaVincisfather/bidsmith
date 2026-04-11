@@ -234,3 +234,77 @@ describe("phase and gantt renderers", () => {
     ).not.toThrow();
   });
 });
+
+const fullMockSections: BidSection[] = [
+  mockSections[0], // cover
+  {
+    type: "data",
+    key: "divider-1",
+    title: "Uppdragsförståelse",
+    content: { format: "section-divider", sectionNumber: 1, subtitle: "Vår förståelse" },
+    generatedAt: "2026-04-09",
+  },
+  mockSections[1], // prose (understanding)
+  mockSections[2], // bullets (value-proposition)
+  {
+    type: "data",
+    key: "three-col-1",
+    title: "Tre perspektiv",
+    content: {
+      format: "three-column",
+      columns: [
+        { title: "Nuläge", icon: "N", body: "Text A" },
+        { title: "Vad vi ser", icon: "V", body: "Text B" },
+        { title: "Vårt uppdrag", icon: "U", body: "Text C" },
+      ],
+    },
+    generatedAt: "2026-04-09",
+  },
+  {
+    type: "data",
+    key: "divider-2",
+    title: "Genomförandeplan",
+    content: { format: "section-divider", sectionNumber: 2, subtitle: "Metod och tidplan" },
+    generatedAt: "2026-04-09",
+  },
+  {
+    type: "data",
+    key: "gantt",
+    title: "Tidplan",
+    content: {
+      format: "gantt",
+      phases: testPhases,
+      milestones: [{ label: "Rapport klar", afterPhase: 1 }],
+    },
+    generatedAt: "2026-04-09",
+  },
+  {
+    type: "ai",
+    key: "execution-plan",
+    title: "Genomförandeplan",
+    content: { format: "phases", phases: testPhases },
+    generatedAt: "2026-04-09",
+  },
+  {
+    type: "data",
+    key: "divider-3",
+    title: "Team & Referenser",
+    content: { format: "section-divider", sectionNumber: 3, subtitle: "Vårt team" },
+    generatedAt: "2026-04-09",
+  },
+  mockSections[4], // team
+  mockSections[5], // requirement-matrix
+  mockSections[6], // references
+  mockSections[7], // placeholder (pricing)
+];
+
+describe("full v2 render", () => {
+  it("renders all section types into a valid PPTX", async () => {
+    const buffer = await renderBidToPptx(fullMockSections, mockStyleGuide);
+    expect(buffer).toBeInstanceOf(Buffer);
+    // PPTX files are ZIP archives — start with PK header
+    expect(buffer[0]).toBe(0x50);
+    expect(buffer[1]).toBe(0x4b);
+    expect(buffer.length).toBeGreaterThan(5000);
+  });
+});
