@@ -105,6 +105,38 @@ export function buildPlaceholderSection(
   };
 }
 
+export function buildSectionDivider(
+  key: string,
+  title: string,
+  sectionNumber: number,
+  subtitle: string
+): BidSection {
+  return {
+    type: "data",
+    key,
+    title,
+    content: { format: "section-divider", sectionNumber, subtitle },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+export function buildGanttSection(phases: BidSection[]): BidSection | null {
+  const phaseSection = phases.find((s) => s.content.format === "phases");
+  if (!phaseSection || phaseSection.content.format !== "phases") return null;
+
+  return {
+    type: "data",
+    key: "gantt",
+    title: "Tidplan",
+    content: {
+      format: "gantt",
+      phases: phaseSection.content.phases,
+      milestones: [],
+    },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 // --- AI section builders ---
 
 const SECTION_TITLES: Record<string, string> = {
@@ -196,11 +228,15 @@ const PLACEHOLDER_SECTIONS = [
 const SECTION_ORDER = [
   "cover",
   "toc",
+  "divider-understanding",
   "understanding",
   "value-proposition",
+  "divider-execution",
+  "gantt",
   "execution-plan",
   "quality",
   "risks",
+  "divider-team",
   "team",
   "requirement-matrix",
   "references",
@@ -238,7 +274,24 @@ export async function generateAllSections(
     onSectionComplete?.(summary);
   }
 
-  // 3. Requirement matrix (data-driven)
+  // 3. Section dividers (data-driven)
+  sectionsMap.set("divider-understanding", buildSectionDivider(
+    "divider-understanding", "Uppdragsförståelse", 1, "Vår förståelse och approach"
+  ));
+  sectionsMap.set("divider-execution", buildSectionDivider(
+    "divider-execution", "Genomförandeplan", 2, "Arbetssätt, metod och tidplan"
+  ));
+  sectionsMap.set("divider-team", buildSectionDivider(
+    "divider-team", "Team & Referenser", 3, "Vårt team och relevanta uppdrag"
+  ));
+
+  // 4. Gantt (derived from execution-plan phases)
+  const gantt = buildGanttSection(Array.from(sectionsMap.values()));
+  if (gantt) {
+    sectionsMap.set("gantt", gantt);
+  }
+
+  // 5. Requirement matrix (data-driven)
   const matrix = buildRequirementMatrix(ctx.analysis, ctx.teamConsultants);
   sectionsMap.set("requirement-matrix", matrix);
   onSectionComplete?.(matrix);
