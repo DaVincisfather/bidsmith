@@ -68,3 +68,37 @@ describe("BidPlanSchema", () => {
     expect(BidPlanSchema.safeParse(raw).success).toBe(true);
   });
 });
+
+import { DEFAULT_BID_PLAN } from "../bid-planner";
+
+describe("DEFAULT_BID_PLAN", () => {
+  it("is a valid BidPlan", () => {
+    expect(BidPlanSchema.safeParse(DEFAULT_BID_PLAN).success).toBe(true);
+  });
+
+  it("contains all required semanticKeys", () => {
+    const keys = DEFAULT_BID_PLAN.sections
+      .map((s) => s.semanticKey)
+      .filter((k): k is string => !!k);
+    expect(keys).toContain("cover");
+    expect(keys).toContain("quality");
+    expect(keys).toContain("team");
+    expect(keys).toContain("requirement-matrix");
+    expect(keys).toContain("references");
+    expect(keys).toContain("contact");
+    expect(keys).toContain("confidentiality");
+  });
+
+  it("puts cover first, confidentiality last", () => {
+    const first = DEFAULT_BID_PLAN.sections[0];
+    const last = DEFAULT_BID_PLAN.sections[DEFAULT_BID_PLAN.sections.length - 1];
+    expect(first.kind).toBe("cover");
+    expect(last.semanticKey).toBe("confidentiality");
+  });
+
+  it("puts contact second-to-last", () => {
+    const secondToLast =
+      DEFAULT_BID_PLAN.sections[DEFAULT_BID_PLAN.sections.length - 2];
+    expect(secondToLast.semanticKey).toBe("contact");
+  });
+});
