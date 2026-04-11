@@ -78,6 +78,13 @@ export async function renderBidToPptx(
       case "placeholder":
         renderPlaceholderSlide(pptx, { title: section.title, instruction: content.instruction }, styleGuide, slideNum, totalSlides);
         break;
+
+      default: {
+        // Exhaustiveness guard: if a new BidSectionContent variant is added,
+        // TypeScript will fail to compile this line until it is handled above.
+        const _exhaustive: never = content;
+        throw new Error(`Unhandled section format: ${JSON.stringify(_exhaustive)}`);
+      }
     }
 
     slideNum++;
