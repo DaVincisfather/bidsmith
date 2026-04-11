@@ -85,6 +85,9 @@ export const PhasesResponseSchema = z.object({
       activities: z.array(z.string()),
       deliverables: z.array(z.string()),
       duration: z.string(),
+      risks: z.array(z.string()).optional(),
+      hoursEstimate: z.number().optional(),
+      period: z.string().optional(),
     })
   ),
 });

@@ -75,11 +75,15 @@ Svara med giltig JSON:
       "objective": "Förstå nuvarande processer och identifiera förbättringsmöjligheter",
       "activities": ["Intervjuer med nyckelintressenter", "Dokumentanalys"],
       "deliverables": ["Nulägesrapport", "Gap-analys"],
-      "duration": "2 veckor"
+      "duration": "2 veckor",
+      "risks": ["Tillgång till nyckelpersoner kan fördröjas"],
+      "hoursEstimate": 80,
+      "period": "Mars 2026"
     }
   ]
 }
-Anpassa antalet faser efter uppdragets komplexitet. Varje fas ska ha konkreta, mätbara leverabler.`,
+Anpassa antalet faser efter uppdragets komplexitet. Varje fas ska ha konkreta, mätbara leverabler.
+Inkludera alltid risks (1-2 per fas), hoursEstimate (antal konsulttimmar), och period (tidsperiod i klartext).`,
     user: (ctx) =>
       `Skapa en genomförandeplan baserat på:\n\n${formatContext(ctx)}`,
   },
