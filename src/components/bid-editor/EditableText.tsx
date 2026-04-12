@@ -8,6 +8,7 @@ interface EditableTextProps {
   as?: "p" | "h2" | "h3" | "h4" | "span" | "li";
   className?: string;
   placeholder?: string;
+  style?: React.CSSProperties;
 }
 
 export function EditableText({
@@ -16,6 +17,7 @@ export function EditableText({
   as: Tag = "p",
   className = "",
   placeholder = "",
+  style,
 }: EditableTextProps) {
   const ref = useRef<HTMLElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -58,6 +60,7 @@ export function EditableText({
       onBlur={handleBlur}
       className={`outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-1 rounded px-0.5 -mx-0.5 ${className}`}
       data-placeholder={placeholder}
+      style={style}
     >
       {value}
     </Tag>
