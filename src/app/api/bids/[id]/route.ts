@@ -38,11 +38,12 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
   const body = await request.json();
-  const { outcome } = body as { outcome?: string };
+  const { outcome, sections } = body as { outcome?: string; sections?: unknown[] };
 
   const supabase = createServiceClient();
 
   const updates: Record<string, unknown> = {};
+
   if (outcome) {
     if (!["won", "lost", "no-bid"].includes(outcome)) {
       return NextResponse.json(
@@ -51,6 +52,20 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
     updates.outcome = outcome;
+  }
+
+  if (sections) {
+    if (!Array.isArray(sections)) {
+      return NextResponse.json(
+        { error: "sections must be an array" },
+        { status: 400 }
+      );
+    }
+    updates.sections = sections;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
   const { data, error } = await supabase
@@ -67,5 +82,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  return NextResponse.json({ id: data.id, outcome: data.outcome, status: data.status });
+  return NextResponse.json({
+    id: data.id,
+    sections: data.sections,
+    outcome: data.outcome,
+    status: data.status,
+  });
 }
