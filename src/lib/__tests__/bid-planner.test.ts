@@ -276,6 +276,129 @@ describe("FORMAT_SCHEMAS", () => {
   });
 });
 
+describe("generateAllSections (planner-driven)", () => {
+  beforeEach(() => {
+    mockCreate.mockReset();
+  });
+
+  it("returns sections in plan order and includes plan in result", async () => {
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            language: "sv",
+            sections: [
+              { kind: "cover", semanticKey: "cover" },
+              { kind: "prose", title: "Förståelse", promptHint: "x", semanticKey: "understanding" },
+              { kind: "prose", title: "Kvalitet", promptHint: "x", semanticKey: "quality" },
+              { kind: "team", title: "Team", semanticKey: "team" },
+              { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+              { kind: "references", title: "Ref", semanticKey: "references" },
+              { kind: "placeholder", title: "Kontakt", instruction: "i", semanticKey: "contact" },
+              { kind: "placeholder", title: "Sekretess", instruction: "i", semanticKey: "confidentiality" },
+            ],
+          }),
+        },
+      ],
+    });
+    mockCreate.mockImplementation(({ system }: { system: string }) => {
+      if (system.includes("prose-sektion")) {
+        return Promise.resolve({
+          content: [{ type: "text", text: '{ "text": "Prose text" }' }],
+        });
+      }
+      if (system.includes("team-sektion")) {
+        return Promise.resolve({
+          content: [
+            {
+              type: "text",
+              text: '{ "members": [{ "consultantId": "c1", "name": "Anna", "role": "Lead", "relevantExperience": "10y", "keyCompetencies": ["PM"] }] }',
+            },
+          ],
+        });
+      }
+      if (system.includes("references-sektion")) {
+        return Promise.resolve({
+          content: [
+            {
+              type: "text",
+              text: '{ "references": [{ "title": "R1", "client": "C", "year": 2024, "description": "d", "relevance": "r" }] }',
+            },
+          ],
+        });
+      }
+      return Promise.resolve({
+        content: [{ type: "text", text: '{ "text": "fallback" }' }],
+      });
+    });
+
+    const { generateAllSections } = await import("../bid-generator");
+    const { sections, plan } = await generateAllSections(minimalCtx);
+
+    expect(plan).toBeDefined();
+    expect(plan.sections[0].kind).toBe("cover");
+
+    expect(sections[0].content.format).toBe("cover");
+    const last = sections[sections.length - 1];
+    expect(last.content.format).toBe("placeholder");
+    expect(last.title.toLowerCase()).toMatch(/sekretess|confidentiality|s/i);
+  });
+
+  it("streams progress via onSectionComplete", async () => {
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            language: "sv",
+            sections: [
+              { kind: "cover", semanticKey: "cover" },
+              { kind: "placeholder", title: "Kontakt", instruction: "i", semanticKey: "contact" },
+              { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+            ],
+          }),
+        },
+      ],
+    });
+
+    const { generateAllSections } = await import("../bid-generator");
+    const progress: string[] = [];
+    await generateAllSections(minimalCtx, (s) => {
+      progress.push(s.title);
+    });
+    expect(progress.length).toBeGreaterThan(0);
+  });
+
+  it("replaces failed section with placeholder (graceful degradation)", async () => {
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            language: "sv",
+            sections: [
+              { kind: "cover", semanticKey: "cover" },
+              { kind: "prose", title: "Förståelse", promptHint: "x", semanticKey: "understanding" },
+              { kind: "placeholder", title: "Kontakt", instruction: "i", semanticKey: "contact" },
+              { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+            ],
+          }),
+        },
+      ],
+    });
+    mockCreate.mockImplementation(() =>
+      Promise.resolve({ content: [{ type: "text", text: "not json" }] })
+    );
+
+    const { generateAllSections } = await import("../bid-generator");
+    const { sections } = await generateAllSections(minimalCtx);
+    const understanding = sections.find((s) => s.title === "Förståelse");
+    expect(understanding).toBeDefined();
+    expect(understanding?.content.format).toBe("placeholder");
+  });
+});
+
 import type { PlannedSection } from "../bid-planner";
 
 describe("buildSection dispatcher", () => {
