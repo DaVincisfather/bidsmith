@@ -161,3 +161,218 @@ export function getSectionPrompt(
 }
 
 export const AI_SECTION_KEYS = Object.keys(SECTION_PROMPTS);
+
+// --- Format-level prompts (new architecture) ---
+
+export type AiFormat = "prose" | "bullets" | "three-column" | "phases" | "team" | "references";
+
+type Language = "sv" | "en";
+
+interface ProseArgs {
+  language: Language;
+  promptHint: string;
+  semanticKey: string | undefined;
+}
+interface BulletsArgs {
+  language: Language;
+  promptHint: string;
+  semanticKey: string | undefined;
+  minItems?: number;
+}
+interface ThreeColumnArgs {
+  language: Language;
+  columnHints: [string, string, string];
+  semanticKey: string | undefined;
+}
+interface PhasesArgs {
+  language: Language;
+  promptHint: string;
+  semanticKey: string | undefined;
+}
+interface TeamArgs {
+  language: Language;
+  preferredSize: number | undefined;
+  semanticKey: string | undefined;
+}
+interface ReferencesArgs {
+  language: Language;
+  minCount: number | undefined;
+  semanticKey: string | undefined;
+}
+
+interface FormatPromptSet {
+  prose: {
+    system: (args: ProseArgs) => string;
+    userContent: (ctx: BidContext) => string;
+  };
+  bullets: {
+    system: (args: BulletsArgs) => string;
+    userContent: (ctx: BidContext) => string;
+  };
+  "three-column": {
+    system: (args: ThreeColumnArgs) => string;
+    userContent: (ctx: BidContext) => string;
+  };
+  phases: {
+    system: (args: PhasesArgs) => string;
+    userContent: (ctx: BidContext) => string;
+  };
+  team: {
+    system: (args: TeamArgs) => string;
+    userContent: (ctx: BidContext) => string;
+  };
+  references: {
+    system: (args: ReferencesArgs) => string;
+    userContent: (ctx: BidContext) => string;
+  };
+}
+
+const SEMANTIC_GUIDANCE_SV: Record<string, string> = {
+  understanding:
+    "Sektionen ska visa att ni förstått uppdragets kärna — inte bara repetera RFP:n.",
+  "value-proposition":
+    "Sektionen ska koppla varje värdepunkt till ett specifikt område i RFP:en.",
+  "execution-plan":
+    "Sektionen ska bryta ner genomförandet i faser med konkreta, mätbara leverabler.",
+  quality:
+    "Sektionen ska säkerställa kvalitet: täck avstämningar, rapportering, eskalering, kunskapsöverföring.",
+  risks:
+    "Sektionen ska lista risker med mitigering — parade ihop, specifika för detta uppdrag.",
+  team: "Sektionen ska presentera konsulterna med fokus på relevans för just detta uppdrag.",
+  references:
+    "Sektionen ska välja referenser som kopplar till RFP:ens krav och domän.",
+};
+
+const SEMANTIC_GUIDANCE_EN: Record<string, string> = {
+  understanding:
+    "This section should show you understood the core of the engagement — not just repeat the RFP.",
+  "value-proposition":
+    "This section should tie each value point to a specific area of the RFP.",
+  "execution-plan":
+    "This section should break execution into phases with concrete, measurable deliverables.",
+  quality:
+    "This section should ensure quality: cover check-ins, reporting, escalation, knowledge transfer.",
+  risks:
+    "This section should list risks paired with mitigations, specific to this engagement.",
+  team: "This section should present consultants focused on relevance to this specific engagement.",
+  references:
+    "This section should pick references that tie back to the RFP's requirements and domain.",
+};
+
+export function semanticGuidance(
+  key: string | undefined,
+  language: Language
+): string {
+  if (!key) return "";
+  const map = language === "sv" ? SEMANTIC_GUIDANCE_SV : SEMANTIC_GUIDANCE_EN;
+  return map[key] ?? "";
+}
+
+export const FORMAT_PROMPTS: FormatPromptSet = {
+  prose: {
+    system: ({ language, promptHint, semanticKey }) =>
+      `Du skriver en prose-sektion i ett konsultanbud på språk "${language}".
+${semanticGuidance(semanticKey, language)}
+Fokus enligt plannern: ${promptHint}
+Svara med giltig JSON: { "text": "..." }
+150–300 ord. Inga rubriker inuti texten.`,
+    userContent: formatContext,
+  },
+
+  bullets: {
+    system: ({ language, promptHint, semanticKey, minItems }) =>
+      `Du skriver en bullets-sektion i ett konsultanbud på språk "${language}".
+${semanticGuidance(semanticKey, language)}
+Fokus enligt plannern: ${promptHint}
+Svara med giltig JSON: { "items": ["Punkt 1", "Punkt 2", ...] }
+${minItems ? `Minst ${minItems} punkter.` : "4-6 punkter."} Varje punkt: 1-2 meningar.`,
+    userContent: formatContext,
+  },
+
+  "three-column": {
+    system: ({ language, columnHints, semanticKey }) =>
+      `Du skriver en three-column-sektion i ett konsultanbud på språk "${language}".
+${semanticGuidance(semanticKey, language)}
+Kolumnerna ska motsvara dessa tre teman:
+1. ${columnHints[0]}
+2. ${columnHints[1]}
+3. ${columnHints[2]}
+Svara med giltig JSON:
+{
+  "columns": [
+    { "title": "...", "icon": "N", "body": "..." },
+    { "title": "...", "icon": "V", "body": "..." },
+    { "title": "...", "icon": "U", "body": "..." }
+  ]
+}
+Varje kolumns body: 30-60 ord. icon är en enskild bokstav som representerar temat.`,
+    userContent: formatContext,
+  },
+
+  phases: {
+    system: ({ language, promptHint, semanticKey }) =>
+      `Du skriver en phases-sektion i ett konsultanbud på språk "${language}".
+${semanticGuidance(semanticKey, language)}
+Fokus enligt plannern: ${promptHint}
+Bryt ner genomförandet i 3-5 faser med tydliga mål, aktiviteter och leverabler.
+Svara med giltig JSON:
+{
+  "phases": [
+    {
+      "name": "Fas 1: ...",
+      "objective": "...",
+      "activities": ["..."],
+      "deliverables": ["..."],
+      "duration": "2 veckor",
+      "risks": ["..."],
+      "hoursEstimate": 80,
+      "period": "Mars 2026"
+    }
+  ]
+}
+Inkludera alltid risks (1-2 per fas), hoursEstimate och period.`,
+    userContent: formatContext,
+  },
+
+  team: {
+    system: ({ language, preferredSize, semanticKey }) =>
+      `Du skriver en team-sektion i ett konsultanbud på språk "${language}".
+${semanticGuidance(semanticKey, language)}
+Presentera varje konsult med fokus på erfarenhet relevant för DETTA uppdrag.
+${preferredSize ? `Fokusera på ${preferredSize} nyckelpersoner.` : ""}
+Svara med giltig JSON:
+{
+  "members": [
+    {
+      "consultantId": "uuid",
+      "name": "Anna Svensson",
+      "role": "Projektledare",
+      "relevantExperience": "10 års erfarenhet av...",
+      "keyCompetencies": ["Kompetens 1", "Kompetens 2"]
+    }
+  ]
+}
+Använd EXAKT namn och ID från teamlistan.`,
+    userContent: formatContext,
+  },
+
+  references: {
+    system: ({ language, minCount, semanticKey }) =>
+      `Du skriver en references-sektion i ett konsultanbud på språk "${language}".
+${semanticGuidance(semanticKey, language)}
+Välj ${minCount ?? 3}-5 relevanta referensuppdrag från teamets historik. Prioritera nyliga och domänrelevanta.
+Svara med giltig JSON:
+{
+  "references": [
+    {
+      "title": "Uppdragstitel",
+      "client": "Kund",
+      "year": 2024,
+      "description": "Kort beskrivning",
+      "relevance": "Relevant eftersom..."
+    }
+  ]
+}`,
+    userContent: formatContext,
+  },
+};
