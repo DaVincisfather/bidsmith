@@ -234,3 +234,90 @@ describe("Pass B — position enforcement", () => {
     expect(result.sections[result.sections.length - 1].semanticKey).toBe("confidentiality");
   });
 });
+
+describe("Pass C — sanity checks", () => {
+  it("removes duplicate cover, keeping first", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "prose", title: "Kvalitet", promptHint: "x", semanticKey: "quality" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    const coverCount = result.sections.filter((s) => s.kind === "cover").length;
+    expect(coverCount).toBe(1);
+  });
+
+  it("removes duplicate toc and gantt, keeping first", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "toc", title: "Innehåll" },
+        { kind: "toc", title: "TOC 2" },
+        { kind: "phases", title: "Plan", promptHint: "x" },
+        { kind: "gantt", title: "T1" },
+        { kind: "gantt", title: "T2" },
+        { kind: "prose", title: "Kvalitet", promptHint: "x", semanticKey: "quality" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    expect(result.sections.filter((s) => s.kind === "toc").length).toBe(1);
+    expect(result.sections.filter((s) => s.kind === "gantt").length).toBe(1);
+  });
+
+  it("auto-injects gantt immediately after phases when missing", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "phases", title: "Genomförande", promptHint: "x" },
+        { kind: "prose", title: "Kvalitet", promptHint: "x", semanticKey: "quality" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    const phasesIdx = result.sections.findIndex((s) => s.kind === "phases");
+    const ganttIdx = result.sections.findIndex((s) => s.kind === "gantt");
+    expect(ganttIdx).toBe(phasesIdx + 1);
+  });
+
+  it("removes orphan gantt with no phases", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "gantt", title: "Tidplan" },
+        { kind: "prose", title: "Kvalitet", promptHint: "x", semanticKey: "quality" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    expect(result.sections.filter((s) => s.kind === "gantt").length).toBe(0);
+  });
+
+  it("leaves valid DEFAULT_BID_PLAN untouched through all passes", () => {
+    const result = validateAndRepair(DEFAULT_BID_PLAN, mockCtx);
+    expect(result.sections.length).toBe(DEFAULT_BID_PLAN.sections.length);
+  });
+});

@@ -107,11 +107,58 @@ export function validateAndRepair(plan: BidPlan, ctx: BidContext): BidPlan {
     }
   }
 
-  // Pass B — enforce position constraints
+  // Pass C — sanity checks (dedupe, gantt/phases coupling)
+  cloned.sections = sanityCheck(cloned.sections);
+
+  // Pass B — position enforcement (runs after sanity to keep constraints stable)
   cloned.sections = enforcePositions(cloned.sections);
 
-  // Pass C — sanity checks (Task 7)
   return cloned;
+}
+
+function sanityCheck(sections: PlannedSection[]): PlannedSection[] {
+  let working = [...sections];
+
+  // Remove duplicates of cover/toc/gantt, keep first occurrence of each
+  for (const dupKind of ["cover", "toc", "gantt"] as const) {
+    let seen = false;
+    working = working.filter((s) => {
+      if (s.kind !== dupKind) return true;
+      if (seen) {
+        console.log(`[bid-plan-validator] removed duplicate ${dupKind}`);
+        return false;
+      }
+      seen = true;
+      return true;
+    });
+  }
+
+  // If phases exists but no gantt, auto-inject gantt right after phases
+  const phasesIdx = working.findIndex((s) => s.kind === "phases");
+  const ganttIdx = working.findIndex((s) => s.kind === "gantt");
+  if (phasesIdx !== -1 && ganttIdx === -1) {
+    const injected: PlannedSection = { kind: "gantt", title: "Tidplan" };
+    working.splice(phasesIdx + 1, 0, injected);
+    console.log("[bid-plan-validator] auto-injected gantt after phases");
+  }
+
+  // If gantt exists but no phases, remove orphan gantt
+  if (ganttIdx !== -1 && phasesIdx === -1) {
+    working = working.filter((s) => s.kind !== "gantt");
+    console.warn("[bid-plan-validator] removed orphan gantt (no phases section)");
+  }
+
+  // Warn on long plan without dividers (do not inject)
+  if (working.length > 6) {
+    const hasDividers = working.some((s) => s.kind === "divider");
+    if (!hasDividers) {
+      console.warn(
+        `[bid-plan-validator] plan has ${working.length} sections but no dividers — consider adding structure`
+      );
+    }
+  }
+
+  return working;
 }
 
 function extractBySemanticKey(
