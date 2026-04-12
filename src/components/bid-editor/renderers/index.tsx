@@ -148,6 +148,7 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
     case "requirement-matrix":
       return (
         <MatrixRenderer
+          title={section.title}
           rows={content.rows}
           consultantNames={content.consultantNames}
           style={style}
@@ -157,6 +158,7 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
     case "references":
       return (
         <ReferencesRenderer
+          title={section.title}
           references={content.references}
           style={style}
           onReferenceFieldChange={onSectionChange ? (index, field, value) => {

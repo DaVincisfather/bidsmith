@@ -4,16 +4,18 @@ import { BidReference, StyleGuide } from "@/lib/types";
 import { EditableText } from "../EditableText";
 
 interface ReferencesRendererProps {
+  title: string;
   references: BidReference[];
   style: StyleGuide;
   onReferenceFieldChange?: (index: number, field: "title" | "description" | "relevance", value: string) => void;
 }
 
-export function ReferencesRenderer({ references, style, onReferenceFieldChange }: ReferencesRendererProps) {
+export function ReferencesRenderer({ title, references, style, onReferenceFieldChange }: ReferencesRendererProps) {
   const c = style.colors;
 
   return (
     <div className="py-2 space-y-4">
+      <h3 className="text-xl font-bold mb-2" style={{ color: c.primary }}>{title}</h3>
       {references.map((ref, i) => (
         <div key={i} className="rounded-lg border border-gray-200 p-5">
           <div className="flex items-start justify-between mb-2">

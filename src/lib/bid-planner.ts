@@ -47,9 +47,9 @@ export const DEFAULT_BID_PLAN: BidPlan = {
     },
     { kind: "gantt", title: "Tidplan" },
     {
-      kind: "prose",
+      kind: "three-column",
       title: "Kvalitetssäkring och samverkan",
-      promptHint: "Avstämningar, rapportering, eskalering, kunskapsöverföring",
+      columnHints: ["Metodik", "Kvalitetsstyrning", "Samverkan"] as [string, string, string],
       semanticKey: "quality",
     },
     {

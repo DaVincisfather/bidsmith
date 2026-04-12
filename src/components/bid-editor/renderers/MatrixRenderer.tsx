@@ -3,12 +3,13 @@
 import { RequirementRow, StyleGuide } from "@/lib/types";
 
 interface MatrixRendererProps {
+  title: string;
   rows: RequirementRow[];
   consultantNames: Record<string, string>;
   style: StyleGuide;
 }
 
-export function MatrixRenderer({ rows, consultantNames, style }: MatrixRendererProps) {
+export function MatrixRenderer({ title, rows, consultantNames, style }: MatrixRendererProps) {
   const c = style.colors;
   const consultantIds = Object.keys(consultantNames);
 
@@ -26,6 +27,7 @@ export function MatrixRenderer({ rows, consultantNames, style }: MatrixRendererP
 
   return (
     <div className="py-2 overflow-x-auto">
+      <h3 className="text-xl font-bold mb-4" style={{ color: c.primary }}>{title}</h3>
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr>
