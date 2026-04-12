@@ -107,7 +107,45 @@ export function validateAndRepair(plan: BidPlan, ctx: BidContext): BidPlan {
     }
   }
 
-  // Pass B — position enforcement (Task 6)
+  // Pass B — enforce position constraints
+  cloned.sections = enforcePositions(cloned.sections);
+
   // Pass C — sanity checks (Task 7)
   return cloned;
+}
+
+function extractBySemanticKey(
+  sections: PlannedSection[],
+  key: string
+): { section: PlannedSection | undefined; rest: PlannedSection[] } {
+  const idx = sections.findIndex((s) => s.semanticKey === key);
+  if (idx === -1) return { section: undefined, rest: sections };
+  const section = sections[idx];
+  const rest = [...sections.slice(0, idx), ...sections.slice(idx + 1)];
+  return { section, rest };
+}
+
+function enforcePositions(sections: PlannedSection[]): PlannedSection[] {
+  let working = [...sections];
+
+  // Extract cover, contact, confidentiality in any order
+  const cover = extractBySemanticKey(working, "cover");
+  working = cover.rest;
+  const contact = extractBySemanticKey(working, "contact");
+  working = contact.rest;
+  const confidentiality = extractBySemanticKey(working, "confidentiality");
+  working = confidentiality.rest;
+
+  // Re-assemble: cover first, then middle, then contact, then confidentiality
+  const out: PlannedSection[] = [];
+  if (cover.section) {
+    out.push(cover.section);
+  } else {
+    console.warn("[bid-plan-validator] no cover section after Pass A — this should not happen");
+  }
+  out.push(...working);
+  if (contact.section) out.push(contact.section);
+  if (confidentiality.section) out.push(confidentiality.section);
+
+  return out;
 }

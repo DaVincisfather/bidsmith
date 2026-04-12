@@ -158,3 +158,79 @@ describe("Pass A — inject missing required sections", () => {
     expect(coverCount).toBe(1);
   });
 });
+
+describe("Pass B — position enforcement", () => {
+  it("moves cover to index 0 when planner put it elsewhere", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "prose", title: "X", promptHint: "y", semanticKey: "quality" },
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    expect(result.sections[0].semanticKey).toBe("cover");
+  });
+
+  it("moves confidentiality to the last position", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+        { kind: "prose", title: "Kvalitet", promptHint: "x", semanticKey: "quality" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    const last = result.sections[result.sections.length - 1];
+    expect(last.semanticKey).toBe("confidentiality");
+  });
+
+  it("moves contact to second-to-last", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+        { kind: "prose", title: "Kvalitet", promptHint: "x", semanticKey: "quality" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    const secondToLast = result.sections[result.sections.length - 2];
+    const last = result.sections[result.sections.length - 1];
+    expect(secondToLast.semanticKey).toBe("contact");
+    expect(last.semanticKey).toBe("confidentiality");
+  });
+
+  it("correctly orders all three position constraints simultaneously", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+        { kind: "prose", title: "Kvalitet", promptHint: "x", semanticKey: "quality" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "cover", semanticKey: "cover" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    expect(result.sections[0].semanticKey).toBe("cover");
+    expect(result.sections[result.sections.length - 2].semanticKey).toBe("contact");
+    expect(result.sections[result.sections.length - 1].semanticKey).toBe("confidentiality");
+  });
+});
