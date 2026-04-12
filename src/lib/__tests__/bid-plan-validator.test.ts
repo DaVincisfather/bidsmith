@@ -79,3 +79,82 @@ describe("validateAndRepair — passthrough", () => {
     expect(JSON.stringify(plan)).toBe(snapshot);
   });
 });
+
+describe("Pass A — inject missing required sections", () => {
+  it("injects missing cover section", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "prose", title: "X", promptHint: "y", semanticKey: "quality" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    const keys = result.sections.map((s) => s.semanticKey);
+    expect(keys).toContain("cover");
+  });
+
+  it("injects missing quality prose", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+        { kind: "placeholder", title: "K", instruction: "i", semanticKey: "contact" },
+        { kind: "placeholder", title: "S", instruction: "i", semanticKey: "confidentiality" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    const quality = result.sections.find((s) => s.semanticKey === "quality");
+    expect(quality).toBeDefined();
+    expect(quality?.kind).toBe("prose");
+  });
+
+  it("injects missing contact and confidentiality placeholders", () => {
+    const plan: BidPlan = {
+      language: "sv",
+      sections: [
+        { kind: "cover", semanticKey: "cover" },
+        { kind: "prose", title: "Kvalitet", promptHint: "x", semanticKey: "quality" },
+        { kind: "team", title: "Team", semanticKey: "team" },
+        { kind: "requirement-matrix", title: "Krav", semanticKey: "requirement-matrix" },
+        { kind: "references", title: "Ref", semanticKey: "references" },
+      ],
+    };
+    const result = validateAndRepair(plan, mockCtx);
+    expect(result.sections.find((s) => s.semanticKey === "contact")).toBeDefined();
+    expect(result.sections.find((s) => s.semanticKey === "confidentiality")).toBeDefined();
+  });
+
+  it("injects all seven required sections when starting from empty", () => {
+    const plan: BidPlan = { language: "sv", sections: [] };
+    const result = validateAndRepair(plan, mockCtx);
+    const keys = result.sections.map((s) => s.semanticKey);
+    for (const rule of REQUIRED_SECTIONS) {
+      expect(keys).toContain(rule.semanticKey);
+    }
+  });
+
+  it("respects language 'en' when injecting defaults", () => {
+    const plan: BidPlan = { language: "en", sections: [] };
+    const result = validateAndRepair(plan, mockCtx);
+    const quality = result.sections.find((s) => s.semanticKey === "quality");
+    expect(quality?.kind).toBe("prose");
+    if (quality && quality.kind === "prose") {
+      expect(quality.title).toBe("Quality and collaboration");
+    }
+  });
+
+  it("does not duplicate sections that are already present", () => {
+    const result = validateAndRepair(DEFAULT_BID_PLAN, mockCtx);
+    const keys = result.sections.map((s) => s.semanticKey);
+    const coverCount = keys.filter((k) => k === "cover").length;
+    expect(coverCount).toBe(1);
+  });
+});

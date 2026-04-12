@@ -90,10 +90,23 @@ export const REQUIRED_SECTIONS: RequiredSectionRule[] = [
   },
 ];
 
-export function validateAndRepair(plan: BidPlan, _ctx: BidContext): BidPlan {
-  // Deep-clone so we never mutate the input
+export function validateAndRepair(plan: BidPlan, ctx: BidContext): BidPlan {
   const cloned: BidPlan = JSON.parse(JSON.stringify(plan));
-  // Pass A — injection (Task 5)
+
+  // Pass A — inject missing required sections
+  const presentKeys = new Set(
+    cloned.sections.map((s) => s.semanticKey).filter((k): k is string => !!k)
+  );
+  for (const rule of REQUIRED_SECTIONS) {
+    if (!presentKeys.has(rule.semanticKey)) {
+      const injected = rule.buildDefault(ctx, cloned.language);
+      cloned.sections.push(injected);
+      console.log(
+        `[bid-plan-validator] injected missing required section: ${rule.semanticKey}`
+      );
+    }
+  }
+
   // Pass B — position enforcement (Task 6)
   // Pass C — sanity checks (Task 7)
   return cloned;
