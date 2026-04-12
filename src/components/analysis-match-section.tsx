@@ -4,8 +4,7 @@ import { useState } from "react";
 import { TeamProposal } from "./team-proposal";
 import { GoNoGoResultView } from "./go-no-go-result";
 import { GoNoGoResult } from "@/lib/types";
-import { BidPreview } from "./bid-preview";
-import { BidSection } from "@/lib/types";
+import Link from "next/link";
 
 interface ScoredConsultant {
   consultantId: string;
@@ -50,8 +49,6 @@ export function AnalysisMatchSection({
 
   // Bid state
   const [bidId, setBidId] = useState<string | null>(null);
-  const [bidSections, setBidSections] = useState<BidSection[]>([]);
-  const [bidStatus, setBidStatus] = useState<string>("generating");
   const [bidLoading, setBidLoading] = useState(false);
 
   async function triggerMatching() {
@@ -169,8 +166,6 @@ export function AnalysisMatchSection({
 
       const data = await response.json();
       setBidId(data.id);
-      setBidSections(data.sections ?? []);
-      setBidStatus(data.status);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -247,11 +242,13 @@ export function AnalysisMatchSection({
           )}
 
           {bidId && !bidLoading && (
-            <BidPreview
-              bidId={bidId}
-              initialSections={bidSections}
-              initialStatus={bidStatus}
-            />
+            <Link
+              href={`/bids/${bidId}`}
+              className="block w-full text-center bg-gray-900 text-white px-4 py-3 rounded-lg text-sm font-medium
+                         hover:bg-gray-800 transition-colors"
+            >
+              Öppna anbudsredigerare
+            </Link>
           )}
         </>
       )}

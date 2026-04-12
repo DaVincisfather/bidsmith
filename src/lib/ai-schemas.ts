@@ -85,6 +85,9 @@ export const PhasesResponseSchema = z.object({
       activities: z.array(z.string()),
       deliverables: z.array(z.string()),
       duration: z.string(),
+      risks: z.array(z.string()).optional(),
+      hoursEstimate: z.number().optional(),
+      period: z.string().optional(),
     })
   ),
 });
@@ -113,13 +116,104 @@ export const ReferencesResponseSchema = z.object({
   ),
 });
 
-export const AI_SECTION_SCHEMAS: Record<string, z.ZodType> = {
-  understanding: ProseResponseSchema,
-  "value-proposition": BulletsResponseSchema,
-  "execution-plan": PhasesResponseSchema,
-  quality: ProseResponseSchema,
-  risks: BulletsResponseSchema,
+export const ThreeColumnResponseSchema = z.object({
+  columns: z.tuple([
+    z.object({ title: z.string(), icon: z.string(), body: z.string() }),
+    z.object({ title: z.string(), icon: z.string(), body: z.string() }),
+    z.object({ title: z.string(), icon: z.string(), body: z.string() }),
+  ]),
+});
+
+// Map from AI-generating section kind to its response schema.
+// Non-AI kinds (cover, toc, divider, gantt, requirement-matrix, placeholder)
+// are deterministic and do not appear here.
+export const FORMAT_SCHEMAS = {
+  prose: ProseResponseSchema,
+  bullets: BulletsResponseSchema,
+  "three-column": ThreeColumnResponseSchema,
+  phases: PhasesResponseSchema,
   team: TeamResponseSchema,
   references: ReferencesResponseSchema,
-  summary: ProseResponseSchema,
-};
+} as const;
+
+// --- Bid Planner ---
+
+export const PlannedSectionSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("cover"),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("toc"),
+    title: z.string(),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("divider"),
+    number: z.number(),
+    title: z.string(),
+    subtitle: z.string(),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("prose"),
+    title: z.string(),
+    promptHint: z.string(),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("bullets"),
+    title: z.string(),
+    promptHint: z.string(),
+    minItems: z.number().optional(),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("three-column"),
+    title: z.string(),
+    columnHints: z.tuple([z.string(), z.string(), z.string()]),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("phases"),
+    title: z.string(),
+    promptHint: z.string(),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("gantt"),
+    title: z.string(),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("team"),
+    title: z.string(),
+    preferredSize: z.number().optional(),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("requirement-matrix"),
+    title: z.string(),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("references"),
+    title: z.string(),
+    minCount: z.number().optional(),
+    semanticKey: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("placeholder"),
+    title: z.string(),
+    instruction: z.string(),
+    reason: z.enum(["manual-fill", "unmapped-requirement"]).optional(),
+    semanticKey: z.string().optional(),
+  }),
+]);
+
+export const BidPlanSchema = z.object({
+  language: z.enum(["sv", "en"]),
+  sections: z.array(PlannedSectionSchema),
+  unmappedRequirements: z.array(z.string()).optional(),
+  rationale: z.string().optional(),
+});

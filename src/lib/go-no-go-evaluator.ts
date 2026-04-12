@@ -47,6 +47,8 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 Regler:
 - winProbability: 0-100. ALLTID 0 om något ska-krav saknas.
 - improvements: sortera efter estimatedImpact (högst först). Du får BARA referera till konsulter som finns i listan "Övriga tillgängliga konsulter" nedan. Använd EXAKT namn och ID från den listan. Hitta INTE PÅ konsulter. Om inga tillgängliga konsulter förbättrar teamet, returnera en tom improvements-lista.
+- improvements MÅSTE ha reell positiv impact. Om ett byte INTE löser ett ouppfyllt ska-krav och winProbability redan är 0, kommer bytet fortfarande resultera i 0% — ta INTE med det som förbättringsförslag. Varje förslag ska vara ett byte som faktiskt höjer winProbability. Inkludera ALDRIG förslag med +0% impact.
+- estimatedImpact: beräkna genom att tänka igenom vad winProbability skulle bli med det nya teamet. Om nuvarande winProbability är 0 pga ouppfyllt ska-krav, och bytet löser det kravet, uppskatta den nya winProbability baserat på resterande ska-krav + bör-krav + viktning. Om bytet INTE löser alla ouppfyllda ska-krav förblir det 0% — inkludera inte förslaget.
 - coveredBy: använd EXAKT namn från teamlistan.
 - strengths/gaps: koppla till specifika krav i RFP:en, inte generella påståenden.
 - reasoning: 2-4 meningar, professionell ton.`;

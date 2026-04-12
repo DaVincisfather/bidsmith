@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
-import { generateAiSection } from "@/lib/bid-generator";
+import { buildSection } from "@/lib/bid-generator";
+import { DEFAULT_BID_PLAN } from "@/lib/bid-planner";
+import type { PlannedSection } from "@/lib/bid-planner";
 import {
   RfpAnalysis,
   Consultant,
@@ -130,8 +132,20 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     },
   };
 
+  // Resolve the PlannedSection for this key from DEFAULT_BID_PLAN, or build a
+  // minimal prose fallback so unknown keys still produce a sensible result.
+  const plannedFromDefault = DEFAULT_BID_PLAN.sections.find(
+    (s) => s.semanticKey === sectionKey
+  );
+  const planned: PlannedSection = plannedFromDefault ?? {
+    kind: "prose",
+    title: sections[sectionIndex].title,
+    promptHint: `Regenerate the section titled "${sections[sectionIndex].title}"`,
+    semanticKey: sectionKey,
+  };
+
   // Regenerate the section
-  const newSection = await generateAiSection(sectionKey, ctx);
+  const newSection = await buildSection(planned, ctx);
 
   // Replace in sections array
   sections[sectionIndex] = newSection;

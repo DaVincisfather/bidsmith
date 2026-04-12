@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { buildCoverSection, buildTocSection, buildRequirementMatrix, buildPlaceholderSection } from "../bid-generator";
-import { RfpAnalysis, Consultant, BidSection } from "../types";
+import { buildCoverSection, buildRequirementMatrix } from "../bid-generator";
+import { RfpAnalysis, Consultant } from "../types";
 
 const mockAnalysis: RfpAnalysis = {
   title: "IT-konsulttjänster för Region Västra Götaland",
@@ -69,21 +69,6 @@ describe("buildCoverSection", () => {
   });
 });
 
-describe("buildTocSection", () => {
-  it("creates a TOC from section titles", () => {
-    const sections: BidSection[] = [
-      { type: "data", key: "cover", title: "Framsida", content: { format: "cover", title: "", client: "", date: "" }, generatedAt: "" },
-      { type: "ai", key: "understanding", title: "Uppdragsförståelse", content: { format: "prose", text: "" }, generatedAt: "" },
-    ];
-    const toc = buildTocSection(sections);
-    expect(toc.content.format).toBe("bullets");
-    if (toc.content.format === "bullets") {
-      expect(toc.content.items).toContain("Uppdragsförståelse");
-      expect(toc.content.items).not.toContain("Framsida");
-    }
-  });
-});
-
 describe("buildRequirementMatrix", () => {
   it("creates a matrix with consultants vs requirements", () => {
     const section = buildRequirementMatrix(mockAnalysis, mockTeam);
@@ -98,13 +83,3 @@ describe("buildRequirementMatrix", () => {
   });
 });
 
-describe("buildPlaceholderSection", () => {
-  it("creates a placeholder with instruction text", () => {
-    const section = buildPlaceholderSection("pricing", "Pris & omfattning", "Fyll i er prisbild här.");
-    expect(section.type).toBe("placeholder");
-    expect(section.key).toBe("pricing");
-    if (section.content.format === "placeholder") {
-      expect(section.content.instruction).toBe("Fyll i er prisbild här.");
-    }
-  });
-});

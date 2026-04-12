@@ -1,14 +1,15 @@
 import {
   RfpAnalysis,
   Consultant,
-  ScoredConsultant,
-  GoNoGoResult,
   BidSection,
-  BidSectionContent,
 } from "./types";
-import { BidContext, getSectionPrompt, AI_SECTION_KEYS } from "./bid-section-prompts";
-import { AI_SECTION_SCHEMAS } from "./ai-schemas";
+import { BidContext, FORMAT_PROMPTS } from "./bid-section-prompts";
+import { FORMAT_SCHEMAS } from "./ai-schemas";
 import { callClaude } from "./ai-client";
+import type { PlannedSection } from "./bid-planner";
+import { planBidOrFallback } from "./bid-planner";
+import type { BidPlan } from "./bid-planner";
+import { validateAndRepair } from "./bid-plan-validator";
 
 // --- Data-driven section builders ---
 
@@ -23,20 +24,6 @@ export function buildCoverSection(analysis: RfpAnalysis): BidSection {
       client: analysis.client,
       date: new Date().toISOString().split("T")[0],
     },
-    generatedAt: new Date().toISOString(),
-  };
-}
-
-export function buildTocSection(allSections: BidSection[]): BidSection {
-  const items = allSections
-    .filter((s) => s.key !== "cover" && s.key !== "toc")
-    .map((s) => s.title);
-
-  return {
-    type: "data",
-    key: "toc",
-    title: "Innehållsförteckning",
-    content: { format: "bullets", items },
     generatedAt: new Date().toISOString(),
   };
 }
@@ -91,174 +78,371 @@ export function buildRequirementMatrix(
   };
 }
 
-export function buildPlaceholderSection(
-  key: string,
-  title: string,
-  instruction: string
+// --- buildSection dispatcher (new architecture) ---
+
+export async function buildSection(
+  planned: PlannedSection,
+  ctx: BidContext
+): Promise<BidSection> {
+  switch (planned.kind) {
+    case "cover":
+      return buildCoverSection(ctx.analysis);
+
+    case "divider":
+      return buildDividerFromPlan(planned);
+
+    case "placeholder":
+      return buildPlaceholderFromPlan(planned);
+
+    case "requirement-matrix":
+      return buildRequirementMatrixFromPlan(planned, ctx);
+
+    case "prose":
+      return buildProseViaAi(planned, ctx);
+
+    case "bullets":
+      return buildBulletsViaAi(planned, ctx);
+
+    case "three-column":
+      return buildThreeColumnViaAi(planned, ctx);
+
+    case "phases":
+      return buildPhasesViaAi(planned, ctx);
+
+    case "team":
+      return buildTeamViaAi(planned, ctx);
+
+    case "references":
+      return buildReferencesViaAi(planned, ctx);
+
+    case "toc":
+    case "gantt": {
+      throw new Error(
+        `buildSection: ${planned.kind} must be handled in pass B, not direct dispatch`
+      );
+    }
+
+    default: {
+      const _exhaustive: never = planned;
+      throw new Error(`Unhandled kind: ${JSON.stringify(_exhaustive)}`);
+    }
+  }
+}
+
+function buildDividerFromPlan(
+  planned: Extract<PlannedSection, { kind: "divider" }>
 ): BidSection {
   return {
-    type: "placeholder",
-    key,
-    title,
-    content: { format: "placeholder", instruction },
+    type: "data",
+    key: `divider-${planned.number}`,
+    title: planned.title,
+    content: {
+      format: "section-divider",
+      sectionNumber: planned.number,
+      subtitle: planned.subtitle,
+    },
     generatedAt: new Date().toISOString(),
   };
 }
 
-// --- AI section builders ---
-
-const SECTION_TITLES: Record<string, string> = {
-  understanding: "Uppdragsförståelse",
-  "value-proposition": "Identifierat värde",
-  "execution-plan": "Genomförandeplan",
-  quality: "Kvalitetssäkring och samverkan",
-  risks: "Risker och hantering",
-  team: "Teamet",
-  references: "Referensuppdrag",
-  summary: "Sammanfattning — Varför oss",
-};
-
-const SECTION_FORMAT: Record<string, BidSectionContent["format"]> = {
-  understanding: "prose",
-  "value-proposition": "bullets",
-  "execution-plan": "phases",
-  quality: "prose",
-  risks: "bullets",
-  team: "team",
-  references: "references",
-  summary: "prose",
-};
-
-export async function generateAiSection(
-  key: string,
-  ctx: BidContext
-): Promise<BidSection> {
-  const prompt = getSectionPrompt(key);
-  if (!prompt) {
-    throw new Error(`Unknown AI section key: ${key}`);
-  }
-
-  const schema = AI_SECTION_SCHEMAS[key];
-  if (!schema) {
-    throw new Error(`No schema defined for section ${key}`);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Zod validates at runtime, format switch narrows below
-  const parsed: any = await callClaude({
-    model: "claude-opus-4-6",
-    maxTokens: 4000,
-    system: prompt.system,
-    userContent: prompt.user(ctx),
-    schema,
-    label: `bid section "${key}"`,
-  });
-
-  const format = SECTION_FORMAT[key];
-
-  let sectionContent: BidSectionContent;
-  switch (format) {
-    case "prose":
-      sectionContent = { format: "prose", text: parsed.text };
-      break;
-    case "bullets":
-      sectionContent = { format: "bullets", items: parsed.items };
-      break;
-    case "phases":
-      sectionContent = { format: "phases", phases: parsed.phases };
-      break;
-    case "team":
-      sectionContent = { format: "team", members: parsed.members };
-      break;
-    case "references":
-      sectionContent = { format: "references", references: parsed.references };
-      break;
-    default:
-      throw new Error(`Unsupported format for section ${key}: ${format}`);
-  }
-
+function buildPlaceholderFromPlan(
+  planned: Extract<PlannedSection, { kind: "placeholder" }>
+): BidSection {
   return {
-    type: "ai",
-    key,
-    title: SECTION_TITLES[key] ?? key,
-    content: sectionContent,
+    type: "placeholder",
+    key: planned.semanticKey ?? `placeholder-${planned.title.toLowerCase().replace(/\s+/g, "-")}`,
+    title: planned.title,
+    content: { format: "placeholder", instruction: planned.instruction },
     generatedAt: new Date().toISOString(),
   };
+}
+
+function buildRequirementMatrixFromPlan(
+  planned: Extract<PlannedSection, { kind: "requirement-matrix" }>,
+  ctx: BidContext
+): BidSection {
+  const base = buildRequirementMatrix(ctx.analysis, ctx.teamConsultants);
+  return { ...base, title: planned.title };
+}
+
+async function buildProseViaAi(
+  planned: Extract<PlannedSection, { kind: "prose" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.prose;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      promptHint: planned.promptHint,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.prose,
+    label: `prose "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? slugifyTitle(planned.title),
+    title: planned.title,
+    content: { format: "prose", text: parsed.text },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildBulletsViaAi(
+  planned: Extract<PlannedSection, { kind: "bullets" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.bullets;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      promptHint: planned.promptHint,
+      semanticKey: planned.semanticKey,
+      minItems: planned.minItems,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.bullets,
+    label: `bullets "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? slugifyTitle(planned.title),
+    title: planned.title,
+    content: { format: "bullets", items: parsed.items },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildThreeColumnViaAi(
+  planned: Extract<PlannedSection, { kind: "three-column" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS["three-column"];
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      columnHints: planned.columnHints,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS["three-column"],
+    label: `three-column "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? slugifyTitle(planned.title),
+    title: planned.title,
+    content: { format: "three-column", columns: [...parsed.columns] },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildPhasesViaAi(
+  planned: Extract<PlannedSection, { kind: "phases" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.phases;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      promptHint: planned.promptHint,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.phases,
+    label: `phases "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? slugifyTitle(planned.title),
+    title: planned.title,
+    content: { format: "phases", phases: parsed.phases },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildTeamViaAi(
+  planned: Extract<PlannedSection, { kind: "team" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.team;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      preferredSize: planned.preferredSize,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.team,
+    label: `team "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? "team",
+    title: planned.title,
+    content: { format: "team", members: parsed.members },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildReferencesViaAi(
+  planned: Extract<PlannedSection, { kind: "references" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.references;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      minCount: planned.minCount,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.references,
+    label: `references "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? "references",
+    title: planned.title,
+    content: { format: "references", references: parsed.references },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function slugifyTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[åä]/g, "a")
+    .replace(/ö/g, "o")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 // --- Orchestrator ---
 
-const PLACEHOLDER_SECTIONS = [
-  { key: "pricing", title: "Pris & omfattning", instruction: "Fyll i er prisbild, timmar och eventuella förbehåll." },
-  { key: "confidentiality", title: "Sekretess & certifieringar", instruction: "Lägg till era standardslides om anbudssekretess, ISO-certifieringar och kvalitetsarbete." },
-  { key: "contact", title: "Kontakt", instruction: "Lägg till kontaktuppgifter för ansvarig säljare och uppdragsledare." },
-];
-
-const SECTION_ORDER = [
-  "cover",
-  "toc",
-  "understanding",
-  "value-proposition",
-  "execution-plan",
-  "quality",
-  "risks",
-  "team",
-  "requirement-matrix",
-  "references",
-  "summary",
-  "pricing",
-  "confidentiality",
-  "contact",
-];
-
 export async function generateAllSections(
   ctx: BidContext,
-  onSectionComplete?: (section: BidSection) => void
-): Promise<{ sections: BidSection[] }> {
-  const sectionsMap = new Map<string, BidSection>();
+  onSectionComplete?: (section: BidSection) => void | Promise<void>
+): Promise<{ sections: BidSection[]; plan: BidPlan }> {
+  // 1. Plan
+  const rawPlan = await planBidOrFallback(ctx);
+  console.log("[bid-generator] raw plan:", JSON.stringify(rawPlan, null, 2));
 
-  // 1. Cover (data-driven)
-  const cover = buildCoverSection(ctx.analysis);
-  sectionsMap.set("cover", cover);
-  onSectionComplete?.(cover);
-
-  // 2. AI sections — parallel for independent sections, then summary last
-  const independentKeys = AI_SECTION_KEYS.filter((k) => k !== "summary");
-  const results = await Promise.all(
-    independentKeys.map((key) => generateAiSection(key, ctx))
-  );
-  for (const section of results) {
-    sectionsMap.set(section.key, section);
-    onSectionComplete?.(section);
+  // 2. Validate + repair
+  const plan = validateAndRepair(rawPlan, ctx);
+  console.log("[bid-generator] validated plan:", JSON.stringify(plan, null, 2));
+  if (plan.unmappedRequirements && plan.unmappedRequirements.length > 0) {
+    console.warn("[bid-generator] unmapped requirements:", plan.unmappedRequirements);
   }
 
-  // Summary depends on other sections being generated (for context)
-  if (AI_SECTION_KEYS.includes("summary")) {
-    const summary = await generateAiSection("summary", ctx);
-    sectionsMap.set("summary", summary);
-    onSectionComplete?.(summary);
+  // 3. Pass A — build independent sections in parallel
+  const deferredKinds = new Set<PlannedSection["kind"]>(["toc", "gantt"]);
+  const passAIndexes: number[] = [];
+  const passAPromises: Promise<BidSection>[] = [];
+
+  plan.sections.forEach((planned, idx) => {
+    if (deferredKinds.has(planned.kind)) return;
+    passAIndexes.push(idx);
+    passAPromises.push(buildSectionSafe(planned, ctx));
+  });
+
+  const passAResults = await Promise.all(passAPromises);
+
+  const out: (BidSection | undefined)[] = new Array(plan.sections.length).fill(undefined);
+  passAIndexes.forEach((origIdx, i) => {
+    out[origIdx] = passAResults[i];
+  });
+
+  for (const idx of passAIndexes) {
+    const section = out[idx];
+    if (section && onSectionComplete) {
+      await onSectionComplete(section);
+    }
   }
 
-  // 3. Requirement matrix (data-driven)
-  const matrix = buildRequirementMatrix(ctx.analysis, ctx.teamConsultants);
-  sectionsMap.set("requirement-matrix", matrix);
-  onSectionComplete?.(matrix);
-
-  // 4. Placeholders
-  for (const ph of PLACEHOLDER_SECTIONS) {
-    const section = buildPlaceholderSection(ph.key, ph.title, ph.instruction);
-    sectionsMap.set(ph.key, section);
-    onSectionComplete?.(section);
+  // 4. Pass B — toc and gantt
+  for (let idx = 0; idx < plan.sections.length; idx++) {
+    const planned = plan.sections[idx];
+    if (planned.kind === "toc") {
+      const otherTitles = out
+        .filter((s): s is BidSection => !!s)
+        .filter((s) => s.content.format !== "cover" && s.content.format !== "section-divider")
+        .map((s) => s.title);
+      out[idx] = {
+        type: "data",
+        key: "toc",
+        title: planned.title,
+        content: { format: "bullets", items: otherTitles },
+        generatedAt: new Date().toISOString(),
+      };
+      if (onSectionComplete) await onSectionComplete(out[idx]!);
+    } else if (planned.kind === "gantt") {
+      const phasesSection = out.find(
+        (s): s is BidSection => !!s && s.content.format === "phases"
+      );
+      if (phasesSection && phasesSection.content.format === "phases") {
+        out[idx] = {
+          type: "data",
+          key: "gantt",
+          title: planned.title,
+          content: {
+            format: "gantt",
+            phases: phasesSection.content.phases,
+            milestones: [],
+          },
+          generatedAt: new Date().toISOString(),
+        };
+      } else {
+        out[idx] = {
+          type: "placeholder",
+          key: "gantt",
+          title: planned.title,
+          content: { format: "placeholder", instruction: "Ingen fasdata tillgänglig för tidplan" },
+          generatedAt: new Date().toISOString(),
+        };
+      }
+      if (onSectionComplete) await onSectionComplete(out[idx]!);
+    }
   }
 
-  // 5. TOC (needs all other sections)
-  const allExceptToc = SECTION_ORDER.filter((k) => k !== "toc")
-    .map((k) => sectionsMap.get(k)!)
-    .filter(Boolean);
-  const toc = buildTocSection(allExceptToc);
-  sectionsMap.set("toc", toc);
+  const sections = out.filter((s): s is BidSection => !!s);
+  return { sections, plan };
+}
 
-  // Assemble in order
-  const sections = SECTION_ORDER.map((k) => sectionsMap.get(k)!).filter(Boolean);
-
-  return { sections };
+async function buildSectionSafe(
+  planned: PlannedSection,
+  ctx: BidContext
+): Promise<BidSection> {
+  try {
+    return await buildSection(planned, ctx);
+  } catch (err) {
+    console.error(
+      `[bid-generator] section "${"title" in planned ? planned.title : planned.kind}" failed, using placeholder fallback:`,
+      err
+    );
+    const title = "title" in planned ? planned.title : planned.kind;
+    return {
+      type: "placeholder",
+      key: planned.semanticKey ?? `${planned.kind}-failed`,
+      title,
+      content: {
+        format: "placeholder",
+        instruction: "Kunde inte auto-generera sektionen — fyll i manuellt.",
+      },
+      generatedAt: new Date().toISOString(),
+    };
+  }
 }
