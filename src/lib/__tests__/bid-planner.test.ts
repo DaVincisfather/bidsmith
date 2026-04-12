@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { BidPlanSchema } from "../ai-schemas";
+import { BidPlanSchema, ThreeColumnResponseSchema, FORMAT_SCHEMAS } from "../ai-schemas";
 import type { BidPlan } from "../bid-planner";
 
 describe("BidPlanSchema", () => {
@@ -232,5 +232,46 @@ describe("DEFAULT_BID_PLAN", () => {
     const secondToLast =
       DEFAULT_BID_PLAN.sections[DEFAULT_BID_PLAN.sections.length - 2];
     expect(secondToLast.semanticKey).toBe("contact");
+  });
+});
+
+describe("ThreeColumnResponseSchema", () => {
+  it("parses a valid three-column response", () => {
+    const raw = {
+      columns: [
+        { title: "Nuläge", icon: "N", body: "Text A" },
+        { title: "Vad vi ser", icon: "V", body: "Text B" },
+        { title: "Vårt uppdrag", icon: "U", body: "Text C" },
+      ],
+    };
+    expect(ThreeColumnResponseSchema.safeParse(raw).success).toBe(true);
+  });
+
+  it("rejects fewer than 3 columns", () => {
+    const raw = { columns: [{ title: "A", icon: "A", body: "x" }] };
+    expect(ThreeColumnResponseSchema.safeParse(raw).success).toBe(false);
+  });
+
+  it("rejects more than 3 columns", () => {
+    const raw = {
+      columns: [
+        { title: "A", icon: "A", body: "x" },
+        { title: "B", icon: "B", body: "y" },
+        { title: "C", icon: "C", body: "z" },
+        { title: "D", icon: "D", body: "w" },
+      ],
+    };
+    expect(ThreeColumnResponseSchema.safeParse(raw).success).toBe(false);
+  });
+});
+
+describe("FORMAT_SCHEMAS", () => {
+  it("maps every AI-generating kind to a schema", () => {
+    expect(FORMAT_SCHEMAS.prose).toBeDefined();
+    expect(FORMAT_SCHEMAS.bullets).toBeDefined();
+    expect(FORMAT_SCHEMAS["three-column"]).toBeDefined();
+    expect(FORMAT_SCHEMAS.phases).toBeDefined();
+    expect(FORMAT_SCHEMAS.team).toBeDefined();
+    expect(FORMAT_SCHEMAS.references).toBeDefined();
   });
 });

@@ -116,6 +116,26 @@ export const ReferencesResponseSchema = z.object({
   ),
 });
 
+export const ThreeColumnResponseSchema = z.object({
+  columns: z.tuple([
+    z.object({ title: z.string(), icon: z.string(), body: z.string() }),
+    z.object({ title: z.string(), icon: z.string(), body: z.string() }),
+    z.object({ title: z.string(), icon: z.string(), body: z.string() }),
+  ]),
+});
+
+// Map from AI-generating section kind to its response schema.
+// Non-AI kinds (cover, toc, divider, gantt, requirement-matrix, placeholder)
+// are deterministic and do not appear here.
+export const FORMAT_SCHEMAS = {
+  prose: ProseResponseSchema,
+  bullets: BulletsResponseSchema,
+  "three-column": ThreeColumnResponseSchema,
+  phases: PhasesResponseSchema,
+  team: TeamResponseSchema,
+  references: ReferencesResponseSchema,
+} as const;
+
 export const AI_SECTION_SCHEMAS: Record<string, z.ZodType> = {
   understanding: ProseResponseSchema,
   "value-proposition": BulletsResponseSchema,
