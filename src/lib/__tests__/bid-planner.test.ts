@@ -275,3 +275,116 @@ describe("FORMAT_SCHEMAS", () => {
     expect(FORMAT_SCHEMAS.references).toBeDefined();
   });
 });
+
+import type { PlannedSection } from "../bid-planner";
+
+describe("buildSection dispatcher", () => {
+  beforeEach(() => {
+    mockCreate.mockReset();
+  });
+
+  it("builds a cover BidSection deterministically (no AI call)", async () => {
+    const { buildSection } = await import("../bid-generator");
+    const planned: PlannedSection = { kind: "cover", semanticKey: "cover" };
+    const section = await buildSection(planned, minimalCtx);
+    expect(section.type).toBe("data");
+    expect(section.content.format).toBe("cover");
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("builds a divider BidSection from planned fields", async () => {
+    const { buildSection } = await import("../bid-generator");
+    const planned: PlannedSection = {
+      kind: "divider",
+      number: 2,
+      title: "Genomförande",
+      subtitle: "Metod och tidplan",
+    };
+    const section = await buildSection(planned, minimalCtx);
+    expect(section.type).toBe("data");
+    expect(section.content.format).toBe("section-divider");
+    if (section.content.format === "section-divider") {
+      expect(section.content.sectionNumber).toBe(2);
+      expect(section.content.subtitle).toBe("Metod och tidplan");
+    }
+    expect(section.title).toBe("Genomförande");
+  });
+
+  it("builds a placeholder BidSection from planned fields", async () => {
+    const { buildSection } = await import("../bid-generator");
+    const planned: PlannedSection = {
+      kind: "placeholder",
+      title: "Pris",
+      instruction: "Fyll i",
+      semanticKey: "pricing",
+    };
+    const section = await buildSection(planned, minimalCtx);
+    expect(section.type).toBe("placeholder");
+    expect(section.content.format).toBe("placeholder");
+  });
+
+  it("builds a requirement-matrix deterministically", async () => {
+    const { buildSection } = await import("../bid-generator");
+    const planned: PlannedSection = {
+      kind: "requirement-matrix",
+      title: "Krav",
+      semanticKey: "requirement-matrix",
+    };
+    const section = await buildSection(planned, minimalCtx);
+    expect(section.content.format).toBe("requirement-matrix");
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("builds a prose section via AI call", async () => {
+    mockCreate.mockResolvedValueOnce({
+      content: [{ type: "text", text: '{ "text": "Prose content" }' }],
+    });
+    const { buildSection } = await import("../bid-generator");
+    const planned: PlannedSection = {
+      kind: "prose",
+      title: "Förståelse",
+      promptHint: "Visa förståelse",
+      semanticKey: "understanding",
+    };
+    const section = await buildSection(planned, minimalCtx);
+    expect(section.type).toBe("ai");
+    expect(section.content.format).toBe("prose");
+    if (section.content.format === "prose") {
+      expect(section.content.text).toBe("Prose content");
+    }
+  });
+
+  it("builds a three-column section via AI call", async () => {
+    mockCreate.mockResolvedValueOnce({
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({
+            columns: [
+              { title: "A", icon: "A", body: "text a" },
+              { title: "B", icon: "B", body: "text b" },
+              { title: "C", icon: "C", body: "text c" },
+            ],
+          }),
+        },
+      ],
+    });
+    const { buildSection } = await import("../bid-generator");
+    const planned: PlannedSection = {
+      kind: "three-column",
+      title: "Perspektiv",
+      columnHints: ["Nuläge", "Vad vi ser", "Vårt uppdrag"],
+    };
+    const section = await buildSection(planned, minimalCtx);
+    expect(section.content.format).toBe("three-column");
+    if (section.content.format === "three-column") {
+      expect(section.content.columns).toHaveLength(3);
+    }
+  });
+
+  it("throws on unknown kind (exhaustiveness check)", async () => {
+    const { buildSection } = await import("../bid-generator");
+    const planned = { kind: "bogus", title: "X" } as unknown as PlannedSection;
+    await expect(buildSection(planned, minimalCtx)).rejects.toThrow(/Unhandled kind/);
+  });
+});

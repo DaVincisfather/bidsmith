@@ -6,9 +6,10 @@ import {
   BidSection,
   BidSectionContent,
 } from "./types";
-import { BidContext, getSectionPrompt, AI_SECTION_KEYS } from "./bid-section-prompts";
-import { AI_SECTION_SCHEMAS } from "./ai-schemas";
+import { BidContext, getSectionPrompt, AI_SECTION_KEYS, FORMAT_PROMPTS } from "./bid-section-prompts";
+import { AI_SECTION_SCHEMAS, FORMAT_SCHEMAS } from "./ai-schemas";
 import { callClaude } from "./ai-client";
+import type { PlannedSection } from "./bid-planner";
 
 // --- Data-driven section builders ---
 
@@ -135,6 +136,259 @@ export function buildGanttSection(phases: BidSection[]): BidSection | null {
     },
     generatedAt: new Date().toISOString(),
   };
+}
+
+// --- buildSection dispatcher (new architecture) ---
+
+export async function buildSection(
+  planned: PlannedSection,
+  ctx: BidContext
+): Promise<BidSection> {
+  switch (planned.kind) {
+    case "cover":
+      return buildCoverSection(ctx.analysis);
+
+    case "divider":
+      return buildDividerFromPlan(planned);
+
+    case "placeholder":
+      return buildPlaceholderFromPlan(planned);
+
+    case "requirement-matrix":
+      return buildRequirementMatrixFromPlan(planned, ctx);
+
+    case "prose":
+      return buildProseViaAi(planned, ctx);
+
+    case "bullets":
+      return buildBulletsViaAi(planned, ctx);
+
+    case "three-column":
+      return buildThreeColumnViaAi(planned, ctx);
+
+    case "phases":
+      return buildPhasesViaAi(planned, ctx);
+
+    case "team":
+      return buildTeamViaAi(planned, ctx);
+
+    case "references":
+      return buildReferencesViaAi(planned, ctx);
+
+    case "toc":
+    case "gantt": {
+      throw new Error(
+        `buildSection: ${planned.kind} must be handled in pass B, not direct dispatch`
+      );
+    }
+
+    default: {
+      const _exhaustive: never = planned;
+      throw new Error(`Unhandled kind: ${JSON.stringify(_exhaustive)}`);
+    }
+  }
+}
+
+function buildDividerFromPlan(
+  planned: Extract<PlannedSection, { kind: "divider" }>
+): BidSection {
+  return {
+    type: "data",
+    key: `divider-${planned.number}`,
+    title: planned.title,
+    content: {
+      format: "section-divider",
+      sectionNumber: planned.number,
+      subtitle: planned.subtitle,
+    },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function buildPlaceholderFromPlan(
+  planned: Extract<PlannedSection, { kind: "placeholder" }>
+): BidSection {
+  return {
+    type: "placeholder",
+    key: planned.semanticKey ?? `placeholder-${planned.title.toLowerCase().replace(/\s+/g, "-")}`,
+    title: planned.title,
+    content: { format: "placeholder", instruction: planned.instruction },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function buildRequirementMatrixFromPlan(
+  planned: Extract<PlannedSection, { kind: "requirement-matrix" }>,
+  ctx: BidContext
+): BidSection {
+  const base = buildRequirementMatrix(ctx.analysis, ctx.teamConsultants);
+  return { ...base, title: planned.title };
+}
+
+async function buildProseViaAi(
+  planned: Extract<PlannedSection, { kind: "prose" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.prose;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      promptHint: planned.promptHint,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.prose,
+    label: `prose "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? slugifyTitle(planned.title),
+    title: planned.title,
+    content: { format: "prose", text: parsed.text },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildBulletsViaAi(
+  planned: Extract<PlannedSection, { kind: "bullets" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.bullets;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      promptHint: planned.promptHint,
+      semanticKey: planned.semanticKey,
+      minItems: planned.minItems,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.bullets,
+    label: `bullets "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? slugifyTitle(planned.title),
+    title: planned.title,
+    content: { format: "bullets", items: parsed.items },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildThreeColumnViaAi(
+  planned: Extract<PlannedSection, { kind: "three-column" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS["three-column"];
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      columnHints: planned.columnHints,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS["three-column"],
+    label: `three-column "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? slugifyTitle(planned.title),
+    title: planned.title,
+    content: { format: "three-column", columns: [...parsed.columns] },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildPhasesViaAi(
+  planned: Extract<PlannedSection, { kind: "phases" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.phases;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      promptHint: planned.promptHint,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.phases,
+    label: `phases "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? slugifyTitle(planned.title),
+    title: planned.title,
+    content: { format: "phases", phases: parsed.phases },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildTeamViaAi(
+  planned: Extract<PlannedSection, { kind: "team" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.team;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      preferredSize: planned.preferredSize,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.team,
+    label: `team "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? "team",
+    title: planned.title,
+    content: { format: "team", members: parsed.members },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildReferencesViaAi(
+  planned: Extract<PlannedSection, { kind: "references" }>,
+  ctx: BidContext
+): Promise<BidSection> {
+  const prompt = FORMAT_PROMPTS.references;
+  const parsed = await callClaude({
+    model: "claude-opus-4-6",
+    maxTokens: 4000,
+    system: prompt.system({
+      language: "sv",
+      minCount: planned.minCount,
+      semanticKey: planned.semanticKey,
+    }),
+    userContent: prompt.userContent(ctx),
+    schema: FORMAT_SCHEMAS.references,
+    label: `references "${planned.title}"`,
+  });
+  return {
+    type: "ai",
+    key: planned.semanticKey ?? "references",
+    title: planned.title,
+    content: { format: "references", references: parsed.references },
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+function slugifyTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[åä]/g, "a")
+    .replace(/ö/g, "o")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 // --- AI section builders ---
