@@ -136,17 +136,6 @@ export const FORMAT_SCHEMAS = {
   references: ReferencesResponseSchema,
 } as const;
 
-export const AI_SECTION_SCHEMAS: Record<string, z.ZodType> = {
-  understanding: ProseResponseSchema,
-  "value-proposition": BulletsResponseSchema,
-  "execution-plan": PhasesResponseSchema,
-  quality: ProseResponseSchema,
-  risks: BulletsResponseSchema,
-  team: TeamResponseSchema,
-  references: ReferencesResponseSchema,
-  summary: ProseResponseSchema,
-};
-
 // --- Bid Planner ---
 
 export const PlannedSectionSchema = z.discriminatedUnion("kind", [
