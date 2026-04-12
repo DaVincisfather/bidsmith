@@ -7,13 +7,13 @@ const DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000001";
 
 const DEFAULT_STYLE_GUIDE: StyleGuide = {
   colors: {
-    primary: "#1A2B4A",
-    primaryLight: "#2D4A7A",
-    secondary: "#E8913A",
-    secondaryLight: "#F4B76E",
-    accent: "#2E8B57",
+    primary: "#1F5E63",
+    primaryLight: "#2D7A7F",
+    secondary: "#8FAF9A",
+    secondaryLight: "#B3CABA",
+    accent: "#1F5E63",
     dark: "#1A1A1A",
-    light: "#F5F5F0",
+    light: "#E8E6DF",
     muted: "#6B7280",
   },
   font: "Calibri",

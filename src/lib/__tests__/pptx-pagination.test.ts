@@ -7,10 +7,10 @@ import { StyleGuide } from "../types";
 
 const mockStyleGuide: StyleGuide = {
   colors: {
-    primary: "#1A2B4A", primaryLight: "#2D4A7A",
-    secondary: "#E8913A", secondaryLight: "#F4B76E",
-    accent: "#2E8B57", dark: "#1A1A1A",
-    light: "#F5F5F0", muted: "#6B7280",
+    primary: "#1F5E63", primaryLight: "#2D7A7F",
+    secondary: "#8FAF9A", secondaryLight: "#B3CABA",
+    accent: "#1F5E63", dark: "#1A1A1A",
+    light: "#E8E6DF", muted: "#6B7280",
   },
   font: "Calibri", logoUrl: "",
 };

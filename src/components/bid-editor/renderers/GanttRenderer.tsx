@@ -2,7 +2,7 @@
 
 import { ExecutionPhase, StyleGuide } from "@/lib/types";
 
-const PHASE_COLORS = ["#E8913A", "#2E8B57", "#2D4A7A", "#7C3AED", "#DC2626"];
+const PHASE_COLORS = ["#1F5E63", "#8FAF9A", "#2D7A7F", "#5B8A72", "#3D8A8A"];
 
 interface Milestone {
   label: string;
