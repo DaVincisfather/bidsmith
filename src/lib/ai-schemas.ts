@@ -217,3 +217,10 @@ export const BidPlanSchema = z.object({
   unmappedRequirements: z.array(z.string()).optional(),
   rationale: z.string().optional(),
 });
+
+// --- Radar: Opportunity Scoring ---
+
+export const OpportunityScoreSchema = z.object({
+  relevanceScore: z.number().min(0).max(100),
+  reasoning: z.string(),
+});
