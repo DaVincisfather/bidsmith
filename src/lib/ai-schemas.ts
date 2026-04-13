@@ -217,3 +217,33 @@ export const BidPlanSchema = z.object({
   unmappedRequirements: z.array(z.string()).optional(),
   rationale: z.string().optional(),
 });
+
+// --- Consultant Extractor ---
+
+export const ConsultantExtractionSchema = z.object({
+  name: z.string(),
+  level: z.enum(["junior", "intermediate", "senior", "expert"]),
+  yearsExperience: z.number(),
+  summary: z.string(),
+  competencies: z.array(
+    z.object({
+      competency: z.string(),
+      category: z.enum(["technical", "domain", "methodology", "certification"]),
+    })
+  ),
+  references: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      year: z.number(),
+      sector: z.enum(["public", "private"]),
+    })
+  ),
+});
+
+// --- Radar: Opportunity Scoring ---
+
+export const OpportunityScoreSchema = z.object({
+  relevanceScore: z.number().min(0).max(100),
+  reasoning: z.string(),
+});

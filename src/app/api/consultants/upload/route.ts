@@ -3,7 +3,7 @@ import { parseDocument } from "@/lib/document-parser";
 import { extractConsultant } from "@/lib/consultant-extractor";
 import { createServiceClient } from "@/lib/supabase";
 
-const DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000001";
+import { DEFAULT_ORG_ID } from "@/lib/constants";
 
 interface UploadResult {
   fileName: string;

@@ -46,6 +46,12 @@ export default function RootLayout({
             >
               Konsulter
             </Link>
+            <Link
+              href="/radar"
+              className="text-sm text-gray-500 hover:text-gray-900"
+            >
+              Radar
+            </Link>
           </div>
         </nav>
         {children}

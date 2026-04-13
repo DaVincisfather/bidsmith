@@ -2,7 +2,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { ConsultantList } from "@/components/consultant-list";
 import { ConsultantUploadWrapper } from "@/components/consultant-upload-wrapper";
 
-const DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000001";
+import { DEFAULT_ORG_ID } from "@/lib/constants";
 
 export default async function ConsultantsPage() {
   const supabase = createServiceClient();

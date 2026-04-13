@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/radar/fetch",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/radar/score",
+      "schedule": "15 6 * * *"
+    }
+  ]
+}

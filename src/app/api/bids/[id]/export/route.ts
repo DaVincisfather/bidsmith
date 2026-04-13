@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { renderBidToPptx } from "@/lib/pptx-renderer";
 import { BidSection, StyleGuide } from "@/lib/types";
 
-const DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000001";
+import { DEFAULT_ORG_ID } from "@/lib/constants";
 
 const DEFAULT_STYLE_GUIDE: StyleGuide = {
   colors: {
