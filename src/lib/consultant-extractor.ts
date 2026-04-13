@@ -1,7 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { callClaude } from "./ai-client";
+import { ConsultantExtractionSchema } from "./ai-schemas";
 import { ConsultantExtraction } from "./types";
-
-const client = new Anthropic();
 
 const SYSTEM_PROMPT = `Du är expert på att analysera konsult-CV:n och extrahera strukturerad profildata.
 Du läser ett CV-dokument och producerar en strukturerad profil i JSON-format.
@@ -39,27 +38,12 @@ Regler:
 export async function extractConsultant(
   cvText: string
 ): Promise<ConsultantExtraction> {
-  const message = await client.messages.create({
+  return callClaude({
     model: "claude-sonnet-4-6",
-    max_tokens: 4000,
-    messages: [
-      {
-        role: "user",
-        content: `Analysera följande konsult-CV och returnera en strukturerad JSON-profil:\n\n${cvText}`,
-      },
-    ],
+    maxTokens: 4000,
     system: SYSTEM_PROMPT,
+    userContent: `Analysera följande konsult-CV och returnera en strukturerad JSON-profil:\n\n${cvText}`,
+    schema: ConsultantExtractionSchema,
+    label: "consultant-extraction",
   });
-
-  const content = message.content[0];
-  if (content.type !== "text") {
-    throw new Error("Unexpected response type from Claude");
-  }
-
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("No JSON found in Claude response");
-  }
-
-  return JSON.parse(jsonMatch[0]) as ConsultantExtraction;
 }

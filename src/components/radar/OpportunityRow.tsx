@@ -38,6 +38,7 @@ export function OpportunityRow({
   status, analysisId, tedUrl, onDismiss, onAnalyze,
 }: OpportunityRowProps) {
   const isAnalyzing = status === "analyzing";
+  const isAnalyzed = status === "analyzed" && !!analysisId;
   const titleHref = analysisId ? `/analysis/${analysisId}` : tedUrl;
 
   return (
@@ -67,7 +68,7 @@ export function OpportunityRow({
         </div>
       </div>
       <div className="flex gap-2 shrink-0 ml-3">
-        {isAnalyzing && analysisId ? (
+        {isAnalyzed ? (
           <a href={`/analysis/${analysisId}`} className="text-xs px-3 py-1.5 rounded-md bg-[#1F5E63] text-white">
             Visa analys
           </a>

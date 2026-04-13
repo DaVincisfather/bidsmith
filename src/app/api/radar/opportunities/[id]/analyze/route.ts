@@ -20,19 +20,20 @@ export async function POST(
     return NextResponse.json({ error: "Opportunity not found" }, { status: 404 });
   }
 
-  // 2. Determine input text — prefer summary, fallback to fetching TED content
+  // 2. Determine input text — prefer summary, fallback to fetching full notice XML
   let inputText = opp.summary;
   if (!inputText || inputText.length < 200) {
-    // raw_xml stores the XML URL, not content — fetch it
+    // raw_xml stores the XML URL from TED, not content — fetch it on demand
     if (opp.raw_xml && opp.raw_xml.startsWith("http")) {
       try {
         const tedRes = await fetch(opp.raw_xml, { signal: AbortSignal.timeout(10000) });
         if (tedRes.ok) {
           const xml = await tedRes.text();
-          inputText = xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          const stripped = xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          if (stripped.length > 200) inputText = stripped;
         }
       } catch {
-        // Fetch failed — fall through to title
+        // Fetch failed — fall through to summary/title
       }
     }
     if (!inputText || inputText.length < 200) {
@@ -77,7 +78,7 @@ export async function POST(
   // 6. Update opportunity status + link to analysis
   await supabase
     .from("rfp_opportunities")
-    .update({ status: "analyzing", analysis_id: analysisRecord.id })
+    .update({ status: "analyzed", analysis_id: analysisRecord.id })
     .eq("id", id);
 
   return NextResponse.json({

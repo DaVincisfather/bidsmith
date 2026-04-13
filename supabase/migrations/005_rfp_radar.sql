@@ -28,7 +28,7 @@ CREATE TABLE rfp_opportunities (
   raw_xml text,
   relevance_score integer,
   relevance_reasoning text,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'scored', 'dismissed', 'analyzing')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'scored', 'dismissed', 'analyzing', 'analyzed')),
   analysis_id uuid REFERENCES analyses(id),
   fetched_at timestamptz NOT NULL DEFAULT now(),
   scored_at timestamptz,
