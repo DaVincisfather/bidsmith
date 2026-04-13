@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { scoreOpportunity } from "@/lib/opportunity-scorer";
 
-const DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000001";
+import { DEFAULT_ORG_ID } from "@/lib/constants";
 const BATCH_SIZE = 20;
 
 export async function POST(request: NextRequest) {

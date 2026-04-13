@@ -32,7 +32,7 @@ export function buildCoverSection(analysis: RfpAnalysis): BidSection {
 const STOP_WORDS = new Set([
   "alla", "andra", "arbete", "även", "bara", "behov", "bild", "både",
   "denna", "dessa", "dock", "efter", "eller", "finns", "från", "föra",
-  "före", "genom", "gäller", "hade", "hade", "hela", "inte", "inom",
+  "före", "genom", "gäller", "hade", "hela", "inte", "inom",
   "krav", "kunna", "många", "måste", "möjlig", "nära", "några", "också",
   "samt", "sedan", "sina", "skall", "skapa", "stor", "till", "under",
   "uppd", "vara", "vill", "visa", "värd", "över",
@@ -98,22 +98,12 @@ export async function buildSection(
       return buildRequirementMatrixFromPlan(planned, ctx);
 
     case "prose":
-      return buildProseViaAi(planned, ctx);
-
     case "bullets":
-      return buildBulletsViaAi(planned, ctx);
-
     case "three-column":
-      return buildThreeColumnViaAi(planned, ctx);
-
     case "phases":
-      return buildPhasesViaAi(planned, ctx);
-
     case "team":
-      return buildTeamViaAi(planned, ctx);
-
     case "references":
-      return buildReferencesViaAi(planned, ctx);
+      return buildAiSection(planned.kind, planned, ctx);
 
     case "toc":
     case "gantt": {
@@ -165,159 +155,33 @@ function buildRequirementMatrixFromPlan(
   return { ...base, title: planned.title };
 }
 
-async function buildProseViaAi(
-  planned: Extract<PlannedSection, { kind: "prose" }>,
+// Generic AI section builder — all format-specific builders share this pattern
+type AiFormatKind = "prose" | "bullets" | "three-column" | "phases" | "team" | "references";
+
+async function buildAiSection(
+  kind: AiFormatKind,
+  planned: PlannedSection & { title: string },
   ctx: BidContext
 ): Promise<BidSection> {
-  const prompt = FORMAT_PROMPTS.prose;
-  const parsed = await callClaude({
+  const prompt = FORMAT_PROMPTS[kind];
+  const schema = FORMAT_SCHEMAS[kind];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const systemArgs = { language: "sv" as const, ...planned } as any;
+  const parsed = await callClaude<any>({
     model: "claude-opus-4-6",
     maxTokens: 4000,
-    system: prompt.system({
-      language: "sv",
-      promptHint: planned.promptHint,
-      semanticKey: planned.semanticKey,
-    }),
+    system: prompt.system(systemArgs),
     userContent: prompt.userContent(ctx),
-    schema: FORMAT_SCHEMAS.prose,
-    label: `prose "${planned.title}"`,
+    schema,
+    label: `${kind} "${planned.title}"`,
   });
+
   return {
     type: "ai",
     key: planned.semanticKey ?? slugifyTitle(planned.title),
     title: planned.title,
-    content: { format: "prose", text: parsed.text },
-    generatedAt: new Date().toISOString(),
-  };
-}
-
-async function buildBulletsViaAi(
-  planned: Extract<PlannedSection, { kind: "bullets" }>,
-  ctx: BidContext
-): Promise<BidSection> {
-  const prompt = FORMAT_PROMPTS.bullets;
-  const parsed = await callClaude({
-    model: "claude-opus-4-6",
-    maxTokens: 4000,
-    system: prompt.system({
-      language: "sv",
-      promptHint: planned.promptHint,
-      semanticKey: planned.semanticKey,
-      minItems: planned.minItems,
-    }),
-    userContent: prompt.userContent(ctx),
-    schema: FORMAT_SCHEMAS.bullets,
-    label: `bullets "${planned.title}"`,
-  });
-  return {
-    type: "ai",
-    key: planned.semanticKey ?? slugifyTitle(planned.title),
-    title: planned.title,
-    content: { format: "bullets", items: parsed.items },
-    generatedAt: new Date().toISOString(),
-  };
-}
-
-async function buildThreeColumnViaAi(
-  planned: Extract<PlannedSection, { kind: "three-column" }>,
-  ctx: BidContext
-): Promise<BidSection> {
-  const prompt = FORMAT_PROMPTS["three-column"];
-  const parsed = await callClaude({
-    model: "claude-opus-4-6",
-    maxTokens: 4000,
-    system: prompt.system({
-      language: "sv",
-      columnHints: planned.columnHints,
-      semanticKey: planned.semanticKey,
-    }),
-    userContent: prompt.userContent(ctx),
-    schema: FORMAT_SCHEMAS["three-column"],
-    label: `three-column "${planned.title}"`,
-  });
-  return {
-    type: "ai",
-    key: planned.semanticKey ?? slugifyTitle(planned.title),
-    title: planned.title,
-    content: { format: "three-column", columns: [...parsed.columns] },
-    generatedAt: new Date().toISOString(),
-  };
-}
-
-async function buildPhasesViaAi(
-  planned: Extract<PlannedSection, { kind: "phases" }>,
-  ctx: BidContext
-): Promise<BidSection> {
-  const prompt = FORMAT_PROMPTS.phases;
-  const parsed = await callClaude({
-    model: "claude-opus-4-6",
-    maxTokens: 4000,
-    system: prompt.system({
-      language: "sv",
-      promptHint: planned.promptHint,
-      semanticKey: planned.semanticKey,
-    }),
-    userContent: prompt.userContent(ctx),
-    schema: FORMAT_SCHEMAS.phases,
-    label: `phases "${planned.title}"`,
-  });
-  return {
-    type: "ai",
-    key: planned.semanticKey ?? slugifyTitle(planned.title),
-    title: planned.title,
-    content: { format: "phases", phases: parsed.phases },
-    generatedAt: new Date().toISOString(),
-  };
-}
-
-async function buildTeamViaAi(
-  planned: Extract<PlannedSection, { kind: "team" }>,
-  ctx: BidContext
-): Promise<BidSection> {
-  const prompt = FORMAT_PROMPTS.team;
-  const parsed = await callClaude({
-    model: "claude-opus-4-6",
-    maxTokens: 4000,
-    system: prompt.system({
-      language: "sv",
-      preferredSize: planned.preferredSize,
-      semanticKey: planned.semanticKey,
-    }),
-    userContent: prompt.userContent(ctx),
-    schema: FORMAT_SCHEMAS.team,
-    label: `team "${planned.title}"`,
-  });
-  return {
-    type: "ai",
-    key: planned.semanticKey ?? "team",
-    title: planned.title,
-    content: { format: "team", members: parsed.members },
-    generatedAt: new Date().toISOString(),
-  };
-}
-
-async function buildReferencesViaAi(
-  planned: Extract<PlannedSection, { kind: "references" }>,
-  ctx: BidContext
-): Promise<BidSection> {
-  const prompt = FORMAT_PROMPTS.references;
-  const parsed = await callClaude({
-    model: "claude-opus-4-6",
-    maxTokens: 4000,
-    system: prompt.system({
-      language: "sv",
-      minCount: planned.minCount,
-      semanticKey: planned.semanticKey,
-    }),
-    userContent: prompt.userContent(ctx),
-    schema: FORMAT_SCHEMAS.references,
-    label: `references "${planned.title}"`,
-  });
-  return {
-    type: "ai",
-    key: planned.semanticKey ?? "references",
-    title: planned.title,
-    content: { format: "references", references: parsed.references },
+    content: { format: kind, ...parsed },
     generatedAt: new Date().toISOString(),
   };
 }
