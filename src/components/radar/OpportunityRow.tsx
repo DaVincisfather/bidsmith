@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 interface OpportunityRowProps {
   id: string;
   title: string;
@@ -50,11 +52,18 @@ export function OpportunityRow({
         {relevanceScore ?? "–"}
       </div>
       <div className="ml-3 flex-1 min-w-0">
-        {titleHref ? (
+        {analysisId ? (
+          <Link
+            href={`/analysis/${analysisId}`}
+            className="font-semibold text-sm truncate block hover:text-[#1F5E63] hover:underline"
+          >
+            {title}
+          </Link>
+        ) : tedUrl ? (
           <a
-            href={titleHref}
-            target={analysisId ? undefined : "_blank"}
-            rel={analysisId ? undefined : "noopener noreferrer"}
+            href={tedUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="font-semibold text-sm truncate block hover:text-[#1F5E63] hover:underline"
           >
             {title}
@@ -69,9 +78,9 @@ export function OpportunityRow({
       </div>
       <div className="flex gap-2 shrink-0 ml-3">
         {isAnalyzed ? (
-          <a href={`/analysis/${analysisId}`} className="text-xs px-3 py-1.5 rounded-md bg-[#1F5E63] text-white">
+          <Link href={`/analysis/${analysisId}`} className="text-xs px-3 py-1.5 rounded-md bg-[#1F5E63] text-white">
             Visa analys
-          </a>
+          </Link>
         ) : (
           <button onClick={() => onAnalyze(id)} disabled={isAnalyzing} className="text-xs px-3 py-1.5 rounded-md bg-[#1F5E63] text-white disabled:opacity-50">
             {isAnalyzing ? "Analyserar..." : "Analysera"}
