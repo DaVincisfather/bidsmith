@@ -43,3 +43,10 @@ next-env.d.ts
 
 # local scratch output (sample PPTX, scratch files)
 /tmp
+sample-output.pptx
+
+# superpowers plugin state
+.superpowers/
+
+# local data (anonymized test files etc.)
+/data
