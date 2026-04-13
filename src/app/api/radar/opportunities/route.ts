@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
 
   if (status) {
     query = query.eq("status", status);
+  } else {
+    query = query.neq("status", "new");
   }
   if (minScore) {
     query = query.gte("relevance_score", parseInt(minScore, 10));

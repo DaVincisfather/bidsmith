@@ -28,8 +28,7 @@ export function OpportunityList() {
     setLoading(true);
     const res = await fetch("/api/radar/opportunities");
     const data = (await res.json()).opportunities ?? [];
-    // Exclude unscored ("new") — they haven't been evaluated yet
-    setAllOpportunities(data.filter((o: Opportunity) => o.status !== "new"));
+    setAllOpportunities(data);
     setLoading(false);
   }, []);
 
@@ -62,7 +61,7 @@ export function OpportunityList() {
     const data = await res.json();
     if (data.analysisId) {
       setAllOpportunities((prev) =>
-        prev.map((o) => o.id === id ? { ...o, analysis_id: data.analysisId } : o)
+        prev.map((o) => o.id === id ? { ...o, status: "analyzed", analysis_id: data.analysisId } : o)
       );
     }
   };
