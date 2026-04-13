@@ -20,25 +20,28 @@ interface Opportunity {
 }
 
 export function OpportunityList() {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [allOpportunities, setAllOpportunities] = useState<Opportunity[]>([]);
   const [filter, setFilter] = useState<Filter>("relevant");
   const [loading, setLoading] = useState(true);
 
   const fetchOpportunities = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (filter === "relevant") params.set("min_score", "50");
-    if (filter === "dismissed") params.set("status", "dismissed");
-
-    const res = await fetch(`/api/radar/opportunities?${params}`);
-    const data = await res.json();
-    setOpportunities(data.opportunities ?? []);
+    const res = await fetch("/api/radar/opportunities");
+    const data = (await res.json()).opportunities ?? [];
+    // Exclude unscored ("new") — they haven't been evaluated yet
+    setAllOpportunities(data.filter((o: Opportunity) => o.status !== "new"));
     setLoading(false);
-  }, [filter]);
+  }, []);
 
   useEffect(() => {
     fetchOpportunities();
   }, [fetchOpportunities]);
+
+  const opportunities = allOpportunities.filter((o) => {
+    if (filter === "relevant") return (o.relevance_score ?? 0) >= 50 && o.status !== "dismissed";
+    if (filter === "dismissed") return o.status === "dismissed";
+    return o.status !== "dismissed";
+  });
 
   const handleDismiss = async (id: string) => {
     await fetch(`/api/radar/opportunities/${id}`, {
@@ -46,26 +49,28 @@ export function OpportunityList() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "dismissed" }),
     });
-    setOpportunities((prev) => prev.filter((o) => o.id !== id));
+    setAllOpportunities((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, status: "dismissed" } : o))
+    );
   };
 
   const handleAnalyze = async (id: string) => {
-    setOpportunities((prev) =>
+    setAllOpportunities((prev) =>
       prev.map((o) => (o.id === id ? { ...o, status: "analyzing" } : o))
     );
     const res = await fetch(`/api/radar/opportunities/${id}/analyze`, { method: "POST" });
     const data = await res.json();
     if (data.analysisId) {
-      setOpportunities((prev) =>
-        prev.map((o) => o.id === id ? { ...o, status: "analyzing", analysis_id: data.analysisId } : o)
+      setAllOpportunities((prev) =>
+        prev.map((o) => o.id === id ? { ...o, analysis_id: data.analysisId } : o)
       );
     }
   };
 
   const counts = {
-    all: opportunities.length,
-    relevant: opportunities.filter((o) => (o.relevance_score ?? 0) >= 50 && o.status !== "dismissed").length,
-    dismissed: opportunities.filter((o) => o.status === "dismissed").length,
+    all: allOpportunities.filter((o) => o.status !== "dismissed").length,
+    relevant: allOpportunities.filter((o) => (o.relevance_score ?? 0) >= 50 && o.status !== "dismissed").length,
+    dismissed: allOpportunities.filter((o) => o.status === "dismissed").length,
   };
 
   const tabs: { key: Filter; label: string; count: number }[] = [
