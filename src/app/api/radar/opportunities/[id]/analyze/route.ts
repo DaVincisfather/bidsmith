@@ -20,12 +20,24 @@ export async function POST(
     return NextResponse.json({ error: "Opportunity not found" }, { status: 404 });
   }
 
-  // 2. Determine input text — prefer summary, fallback to raw_xml
+  // 2. Determine input text — prefer summary, fallback to fetching TED content
   let inputText = opp.summary;
   if (!inputText || inputText.length < 200) {
-    inputText = opp.raw_xml
-      ? opp.raw_xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
-      : opp.summary ?? opp.title;
+    // raw_xml stores the XML URL, not content — fetch it
+    if (opp.raw_xml && opp.raw_xml.startsWith("http")) {
+      try {
+        const tedRes = await fetch(opp.raw_xml, { signal: AbortSignal.timeout(10000) });
+        if (tedRes.ok) {
+          const xml = await tedRes.text();
+          inputText = xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        }
+      } catch {
+        // Fetch failed — fall through to title
+      }
+    }
+    if (!inputText || inputText.length < 200) {
+      inputText = opp.summary ?? opp.title;
+    }
   }
 
   // 3. Create a document record (radar-sourced, no file upload)

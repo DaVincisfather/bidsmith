@@ -37,14 +37,11 @@ export function OpportunityRow({
   id, title, buyer, deadline, estimatedValue, relevanceScore,
   status, analysisId, tedUrl, onDismiss, onAnalyze,
 }: OpportunityRowProps) {
-  const isLowRelevance = relevanceScore !== null && relevanceScore < 50;
   const isAnalyzing = status === "analyzing";
+  const titleHref = analysisId ? `/analysis/${analysisId}` : tedUrl;
 
   return (
-    <div
-      className="flex items-center px-4 py-3 border-b border-gray-100"
-      style={{ opacity: isLowRelevance ? 0.6 : 1 }}
-    >
+    <div className="flex items-center px-4 py-3 border-b border-gray-100">
       <div
         className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
         style={{ backgroundColor: scoreColor(relevanceScore) }}
@@ -52,7 +49,18 @@ export function OpportunityRow({
         {relevanceScore ?? "–"}
       </div>
       <div className="ml-3 flex-1 min-w-0">
-        <div className="font-semibold text-sm truncate">{title}</div>
+        {titleHref ? (
+          <a
+            href={titleHref}
+            target={analysisId ? undefined : "_blank"}
+            rel={analysisId ? undefined : "noopener noreferrer"}
+            className="font-semibold text-sm truncate block hover:text-[#1F5E63] hover:underline"
+          >
+            {title}
+          </a>
+        ) : (
+          <div className="font-semibold text-sm truncate">{title}</div>
+        )}
         <div className="text-xs text-gray-500 mt-0.5">
           {buyer ?? "Okänd köpare"} &bull; {formatDeadline(deadline)}
           {estimatedValue ? ` \u2022 ${formatValue(estimatedValue)}` : ""}
