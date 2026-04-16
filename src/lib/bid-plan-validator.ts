@@ -119,7 +119,9 @@ export function validateAndRepair(plan: BidPlan, ctx: BidContext): BidPlan {
 function sanityCheck(sections: PlannedSection[]): PlannedSection[] {
   let working = [...sections];
 
-  // Remove duplicates of cover/toc/gantt, keep first occurrence of each
+  // Remove duplicates of cover/toc/gantt, keep first occurrence of each.
+  // For cover, also normalize semanticKey so enforcePositions (which looks up
+  // by semanticKey) can find it even if the planner produced a cover without one.
   for (const dupKind of ["cover", "toc", "gantt"] as const) {
     let seen = false;
     working = working.filter((s) => {
@@ -132,6 +134,9 @@ function sanityCheck(sections: PlannedSection[]): PlannedSection[] {
       return true;
     });
   }
+  working = working.map((s) =>
+    s.kind === "cover" && !s.semanticKey ? { ...s, semanticKey: "cover" } : s
+  );
 
   // If phases exists but no gantt, auto-inject gantt right after phases
   const phasesIdx = working.findIndex((s) => s.kind === "phases");

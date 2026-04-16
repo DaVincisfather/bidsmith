@@ -97,7 +97,7 @@ export async function evaluateGoNoGo(
   const teamText = formatTeamForPrompt(teamConsultants, allScoredConsultants);
   const poolText = formatPoolForPrompt(allScoredConsultants, teamIds);
 
-  return callClaude({
+  const result = await callClaude({
     model: "claude-sonnet-4-6",
     maxTokens: 4000,
     system: SYSTEM_PROMPT,
@@ -114,4 +114,13 @@ ${poolText}`,
     schema: GoNoGoResultSchema,
     label: "Go/No-Go evaluation",
   });
+
+  // Enforce hard rule: if any must-requirement is unmet, winProbability must be 0.
+  // The prompt states this but the LLM occasionally fudges it.
+  const anyUnmet = result.mustRequirements.some((r) => !r.met);
+  if (anyUnmet && result.winProbability !== 0) {
+    result.winProbability = 0;
+  }
+
+  return result;
 }

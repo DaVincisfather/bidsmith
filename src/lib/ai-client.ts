@@ -77,21 +77,36 @@ export async function callClaude<T>({
   throw lastError;
 }
 
-// Extract JSON by finding matching braces — handles nested objects correctly
-function extractJson(text: string): string | null {
+// Extract JSON by finding matching braces — ignores braces inside string literals
+// so values like {"msg": "hello } world"} parse correctly.
+export function extractJson(text: string): string | null {
   // Prefer ```json code blocks
   const codeBlock = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
   if (codeBlock) return codeBlock[1];
 
-  // Find first { and match braces
   const start = text.indexOf("{");
   if (start === -1) return null;
 
   let depth = 0;
+  let inString = false;
+  let escape = false;
   for (let i = start; i < text.length; i++) {
-    if (text[i] === "{") depth++;
-    else if (text[i] === "}") depth--;
-    if (depth === 0) return text.slice(start, i + 1);
+    const ch = text[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (inString) {
+      if (ch === "\\") escape = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
   }
   return null;
 }

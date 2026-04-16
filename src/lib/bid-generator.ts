@@ -82,7 +82,8 @@ export function buildRequirementMatrix(
 
 export async function buildSection(
   planned: PlannedSection,
-  ctx: BidContext
+  ctx: BidContext,
+  language: "sv" | "en" = "sv"
 ): Promise<BidSection> {
   switch (planned.kind) {
     case "cover":
@@ -103,7 +104,7 @@ export async function buildSection(
     case "phases":
     case "team":
     case "references":
-      return buildAiSection(planned.kind, planned, ctx);
+      return buildAiSection(planned.kind, planned, ctx, language);
 
     case "toc":
     case "gantt": {
@@ -161,13 +162,14 @@ type AiFormatKind = "prose" | "bullets" | "three-column" | "phases" | "team" | "
 async function buildAiSection(
   kind: AiFormatKind,
   planned: PlannedSection & { title: string },
-  ctx: BidContext
+  ctx: BidContext,
+  language: "sv" | "en"
 ): Promise<BidSection> {
   const prompt = FORMAT_PROMPTS[kind];
   const schema = FORMAT_SCHEMAS[kind];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const systemArgs = { language: "sv" as const, ...planned } as any;
+  const systemArgs = { language, ...planned } as any;
   const parsed = await callClaude<any>({
     model: "claude-opus-4-6",
     maxTokens: 4000,
@@ -212,18 +214,20 @@ export async function generateAllSections(
     console.warn("[bid-generator] unmapped requirements:", plan.unmappedRequirements);
   }
 
-  // 3. Pass A — build independent sections in parallel
+  // 3. Pass A — build independent sections with bounded concurrency.
+  // Bid plans can have 15+ sections; unbounded parallelism against Claude
+  // triggers 429s and blows through Vercel's per-invocation timeout.
   const deferredKinds = new Set<PlannedSection["kind"]>(["toc", "gantt"]);
   const passAIndexes: number[] = [];
-  const passAPromises: Promise<BidSection>[] = [];
+  const passATasks: (() => Promise<BidSection>)[] = [];
 
   plan.sections.forEach((planned, idx) => {
     if (deferredKinds.has(planned.kind)) return;
     passAIndexes.push(idx);
-    passAPromises.push(buildSectionSafe(planned, ctx));
+    passATasks.push(() => buildSectionSafe(planned, ctx, plan.language));
   });
 
-  const passAResults = await Promise.all(passAPromises);
+  const passAResults = await runWithConcurrency(passATasks, 5);
 
   const out: (BidSection | undefined)[] = new Array(plan.sections.length).fill(undefined);
   passAIndexes.forEach((origIdx, i) => {
@@ -286,12 +290,31 @@ export async function generateAllSections(
   return { sections, plan };
 }
 
+export async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number
+): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let nextIdx = 0;
+  async function worker() {
+    while (true) {
+      const i = nextIdx++;
+      if (i >= tasks.length) return;
+      results[i] = await tasks[i]();
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
 async function buildSectionSafe(
   planned: PlannedSection,
-  ctx: BidContext
+  ctx: BidContext,
+  language: "sv" | "en"
 ): Promise<BidSection> {
   try {
-    return await buildSection(planned, ctx);
+    return await buildSection(planned, ctx, language);
   } catch (err) {
     console.error(
       `[bid-generator] section "${"title" in planned ? planned.title : planned.kind}" failed, using placeholder fallback:`,
