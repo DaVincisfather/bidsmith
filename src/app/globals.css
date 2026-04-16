@@ -3,6 +3,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --urgency-urgent: #dc2626;
+  --urgency-soon: #d97706;
+  --urgency-later: #10b981;
+  --outcome-awaiting: #94a3b8;
+  --outcome-won: #10b981;
+  --outcome-lost: #dc2626;
+  --outcome-cancelled: #94a3b8;
 }
 
 @theme inline {

@@ -50,3 +50,7 @@ sample-output.pptx
 
 # local data (anonymized test files etc.)
 /data
+
+# local tech-stack illustrations (canonical version lives in README)
+docs/tech-stack.html
+docs/tech-stack.png

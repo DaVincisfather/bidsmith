@@ -192,7 +192,7 @@ export interface BidSection {
 }
 
 export type BidStatus = "generating" | "draft" | "exported";
-export type BidOutcome = "won" | "lost" | "no-bid";
+export type BidOutcome = "won" | "lost" | "no-bid" | "cancelled";
 
 export interface Bid {
   id: string;
@@ -220,4 +220,47 @@ export interface StyleGuide {
   };
   font: string;
   logoUrl: string;
+}
+
+// --- RFP Dashboard types ---
+
+export type Urgency = "urgent" | "soon" | "later";
+export type LossReason = "pris" | "erfarenhet" | "team" | "kvalitet" | "relation" | "annat";
+
+export interface PipelineItem {
+  id: string;                     // opportunityId OR documentId
+  source: "ted" | "upload";
+  title: string;
+  deadline: string;               // ISO date
+  daysLeft: number;
+  urgency: Urgency;
+  relevanceScore: number | null;  // TED only
+  analysisId: string | null;      // exists once analyzed (upload always, TED after analyze)
+  tedUrl: string | null;          // TED only
+}
+
+export interface BidSummary {
+  id: string;
+  title: string;
+  exportedAt: string;
+  teamNames: string[];
+  outcome: BidOutcome | null;
+  outcomeLoggedAt: string | null;
+  competitorName: string | null;
+  lossReason: LossReason | null;
+  lossComment: string | null;
+}
+
+export interface PipelineStats {
+  awaitingCount: number;
+  loggedCount: number;
+  wonCount: number;
+  lostCount: number;
+}
+
+export interface OutcomePatch {
+  outcome: BidOutcome;
+  competitorName?: string;
+  lossReason?: LossReason;
+  lossComment?: string;
 }
