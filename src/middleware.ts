@@ -1,7 +1,15 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/auth/signout", "/invites/accept"];
+// Cron routes authenticate via CRON_SECRET header, not Supabase session.
+const PUBLIC_PATHS = [
+  "/login",
+  "/auth/callback",
+  "/auth/signout",
+  "/invites/accept",
+  "/api/radar/fetch",
+  "/api/radar/score",
+];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });

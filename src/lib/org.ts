@@ -16,9 +16,11 @@ export class NoOrganizationError extends Error {
   }
 }
 
+export type OrgRole = "super_user" | "user";
+
 type Profile = {
   organization_id: string;
-  role: "super_user" | "user";
+  role: OrgRole;
 };
 
 export async function getCurrentProfile(
@@ -72,7 +74,7 @@ async function bootstrapProfileFromInvite(
     .maybeSingle<{
       id: string;
       organization_id: string;
-      role: "super_user" | "user";
+      role: OrgRole;
       expires_at: string;
       accepted_at: string | null;
     }>();
