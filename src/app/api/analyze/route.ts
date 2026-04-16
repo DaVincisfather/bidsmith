@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseDocument } from "@/lib/document-parser";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 import { createServiceClient } from "@/lib/supabase";
+import { DEFAULT_ORG_ID } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
         file_name: file.name,
         file_url: publicUrl,
         raw_text: rawText,
+        organization_id: DEFAULT_ORG_ID,
       })
       .select()
       .single();
@@ -65,6 +67,7 @@ export async function POST(request: NextRequest) {
       .insert({
         document_id: doc.id,
         analysis,
+        organization_id: DEFAULT_ORG_ID,
       })
       .select()
       .single();
