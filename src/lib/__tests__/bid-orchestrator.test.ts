@@ -9,6 +9,7 @@ vi.mock("@anthropic-ai/sdk", () => {
     default: function () {
       return { messages: { create: mockCreate } };
     },
+    APIError: class MockAPIError extends Error { status?: number },
   };
 });
 

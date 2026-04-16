@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic, { APIError } from "@anthropic-ai/sdk";
 import { z } from "zod";
 
 let _client: Anthropic | null = null;
@@ -11,7 +11,7 @@ const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 
 function isRetryable(error: unknown): boolean {
-  if (error instanceof Anthropic.APIError) {
+  if (error instanceof APIError) {
     return error.status === 429 || error.status === 529 || error.status >= 500;
   }
   if (error instanceof Error && error.message.includes("fetch failed")) {

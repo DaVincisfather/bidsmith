@@ -1,0 +1,82 @@
+consultants:
+  - id: anna_svensson
+    match_profile:
+      intent: "strong-match-it-consulting"
+      cv_format: "structured-bullets"
+      must_haves_demonstrated: ["digital_transformation_5yr", "public_sector"]
+    cv_text: |
+      Anna Svensson — Senior Management Consultant
+      12 års erfarenhet inom digital transformation i offentlig sektor.
+
+      Projekt:
+      - Stockholms stad 2019-2024: Ledde molnmigration för 12 förvaltningar.
+        Ansvarig för strategi, partnerval och leverans. Agila metoder (SAFe).
+      - Region Skåne 2015-2019: Digitaliseringsstrateg, ledde journalsystem-projekt.
+
+      Kompetenser: digital transformation, molnmigration, offentlig sektor, SAFe, Scrum.
+      Språk: svenska (modersmål), engelska (flytande).
+    parsed_profile:
+      name: "Anna Svensson"
+      level: "expert"
+      yearsExperience: 12
+      summary: "Senior management consultant med djup erfarenhet av digital transformation i offentlig sektor."
+      competencies: ["digital transformation", "molnmigration", "offentlig sektor", "SAFe", "Scrum"]
+      projects:
+        - client: "Stockholms stad"
+          role: "Lead konsult"
+          years: "2019-2024"
+          description: "Molnmigration för 12 förvaltningar"
+        - client: "Region Skåne"
+          role: "Digitaliseringsstrateg"
+          years: "2015-2019"
+          description: "Journalsystem-projekt"
+
+  - id: bertil_larsson
+    match_profile:
+      intent: "non-match-junior"
+      cv_format: "narrative"
+      must_haves_demonstrated: []
+    cv_text: |
+      Bertil Larsson, junior utvecklare med 2 års erfarenhet av React och TypeScript.
+      Jobbat på startup inom e-handel. Inga konsultuppdrag eller offentlig sektor.
+    parsed_profile:
+      name: "Bertil Larsson"
+      level: "junior"
+      yearsExperience: 2
+      summary: "Junior frontend-utvecklare."
+      competencies: ["React", "TypeScript", "e-handel"]
+      projects:
+        - client: "E-handelsstartup AB"
+          role: "Utvecklare"
+          years: "2024-2026"
+          description: "Frontend för kundportal"
+
+  - id: cecilia_berg
+    match_profile:
+      intent: "close-call-it-consulting"
+      cv_format: "structured-bullets"
+      must_haves_demonstrated: ["digital_transformation_5yr"]
+    cv_text: |
+      Cecilia Berg — Senior konsult, 8 års erfarenhet av digital transformation.
+
+      Projekt:
+      - Volvo Cars 2020-2024: Ledde DX-program, 4 workstreams.
+      - IKEA 2018-2020: Digitaliseringsanalys e-handel.
+
+      Offentlig sektor: inget. Privata företag hela karriären.
+      Språk: svenska, engelska.
+    parsed_profile:
+      name: "Cecilia Berg"
+      level: "senior"
+      yearsExperience: 8
+      summary: "Senior konsult med 8 års DX-erfarenhet i privat sektor."
+      competencies: ["digital transformation", "change management", "privat sektor"]
+      projects:
+        - client: "Volvo Cars"
+          role: "DX-lead"
+          years: "2020-2024"
+          description: "Lead för 4 workstreams"
+        - client: "IKEA"
+          role: "Digitaliseringskonsult"
+          years: "2018-2020"
+          description: "E-handelsanalys"

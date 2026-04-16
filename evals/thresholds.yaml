@@ -1,0 +1,24 @@
+analyzer:
+  requirements.f1:
+    green: 0.85
+    yellow: 0.70
+  evaluationCriteria.f1:
+    green: 0.80
+    yellow: 0.65
+  requiredCompetencies.f1:
+    green: 0.85
+    yellow: 0.70
+  title:
+    green: 1.0
+    yellow: 1.0
+  client:
+    green: 1.0
+    yellow: 1.0
+
+matcher:
+  mhc.mean:
+    green: 0.90
+    yellow: 0.80
+  hit_at_k:
+    green: 1.00
+    yellow: 0.80

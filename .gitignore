@@ -54,3 +54,6 @@ sample-output.pptx
 # local tech-stack illustrations (canonical version lives in README)
 docs/tech-stack.html
 docs/tech-stack.png
+
+# eval runs (local outputs, not shared)
+/evals/runs

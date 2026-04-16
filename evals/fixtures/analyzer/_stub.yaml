@@ -1,0 +1,33 @@
+id: _stub
+notes: |
+  Smoke-test-fixture. Används för att verifiera CLI-pipeline utan att betrakta
+  metrics seriöst. Ersätts av riktiga TED-fixtures.
+rfp_text: |
+  Stockholms stad söker konsult för digital transformation. Uppdraget är 18 månader
+  och kräver minst 5 års erfarenhet av digital transformation i offentlig sektor.
+  Flytande svenska är ett ska-krav. Deadline för anbud: 2026-06-15.
+  Utvärdering: kvalitet 60%, pris 40%.
+
+golden:
+  title: "Digital transformation — Stockholms stad"
+  client: "Stockholms stad"
+  deadline: "2026-06-15"
+  domain: "IT"
+  summary: "Stockholms stad söker konsult för 18 månaders digital-transformation-uppdrag."
+  requirements:
+    - category: "Kompetens"
+      description: "Minst 5 års erfarenhet av digital transformation i offentlig sektor"
+      priority: "must"
+    - category: "Språk"
+      description: "Flytande svenska"
+      priority: "must"
+  evaluationCriteria:
+    - name: "Kvalitet"
+      weight: 60
+      description: "Metod och leveransplan"
+    - name: "Pris"
+      weight: 40
+      description: "Timarvode"
+  requiredCompetencies: ["digital transformation", "offentlig sektor"]
+  estimatedScope: "18 månaders uppdrag"
+  redFlags: []

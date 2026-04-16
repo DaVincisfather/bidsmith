@@ -1,0 +1,21 @@
+id: _stub
+analyzer_fixture: _stub
+mode: isolated
+consultant_ids:
+  - anna_svensson
+  - bertil_larsson
+  - cecilia_berg
+golden:
+  evaluation_method: "top_k"
+  expected_top_k:
+    k: 2
+    must_contain:
+      - anna_svensson
+      - cecilia_berg
+  must_have_coverage:
+    enabled: true
+    judge_model: "claude-sonnet-4-6"
+    required_threshold: 0.80
+  reasoning_rubric: |
+    Top-K-konsultens motivering ska referera konkreta CV-punkter (klient, år, roll)
+    och koppla dessa till RFP:s ska-krav, utan att hitta på fakta.
