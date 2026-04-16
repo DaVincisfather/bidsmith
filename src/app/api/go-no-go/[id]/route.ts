@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("go_no_go_assessments")

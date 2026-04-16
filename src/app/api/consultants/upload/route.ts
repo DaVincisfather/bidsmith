@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseDocument } from "@/lib/document-parser";
 import { extractConsultant } from "@/lib/consultant-extractor";
 import { createServiceClient } from "@/lib/supabase";
-
-import { DEFAULT_ORG_ID } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/server";
+import { getOrgId } from "@/lib/org";
 
 interface UploadResult {
   fileName: string;
@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
+    const authed = await createClient();
+    const orgId = await getOrgId(authed);
     const supabase = createServiceClient();
     const results: UploadResult[] = [];
 
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
         const { data: consultant, error: consultantError } = await supabase
           .from("consultants")
           .insert({
-            organization_id: DEFAULT_ORG_ID,
+            organization_id: orgId,
             name: extraction.name,
             level: extraction.level,
             years_experience: extraction.yearsExperience,

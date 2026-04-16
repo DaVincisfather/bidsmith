@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase";
-
-import { DEFAULT_ORG_ID } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/server";
+import { getOrgId } from "@/lib/org";
 
 export async function GET(request: NextRequest) {
-  const supabase = createServiceClient();
+  const supabase = await createClient();
+  const orgId = await getOrgId(supabase);
   const { searchParams } = new URL(request.url);
   const level = searchParams.get("level");
   const competency = searchParams.get("competency");
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       consultant_competencies (id, competency, category),
       consultant_references (id, title, description, year, sector)
     `)
-    .eq("organization_id", DEFAULT_ORG_ID)
+    .eq("organization_id", orgId)
     .order("name");
 
   if (level) {

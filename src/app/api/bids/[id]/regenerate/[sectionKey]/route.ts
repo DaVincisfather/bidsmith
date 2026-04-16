@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient, fetchConsultantsByIds, EMPTY_GO_NO_GO } from "@/lib/supabase";
+import { fetchConsultantsByIds, EMPTY_GO_NO_GO } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { buildSection } from "@/lib/bid-generator";
 import { DEFAULT_BID_PLAN } from "@/lib/bid-planner";
 import type { PlannedSection } from "@/lib/bid-planner";
@@ -12,7 +13,7 @@ interface RouteContext {
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { id, sectionKey } = await params;
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   // Fetch bid
   const { data: bid, error: bidError } = await supabase

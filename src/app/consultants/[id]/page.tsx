@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { ConsultantProfile } from "@/components/consultant-profile";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -9,7 +9,7 @@ interface PageProps {
 
 export default async function ConsultantPage({ params }: PageProps) {
   const { id } = await params;
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("consultants")

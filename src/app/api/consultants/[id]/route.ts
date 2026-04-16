@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -7,7 +7,7 @@ interface RouteContext {
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("consultants")
@@ -28,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
 export async function PUT(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
-  const supabase = createServiceClient();
+  const supabase = await createClient();
   const body = await request.json();
 
   // Update consultant base fields
@@ -113,7 +113,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   const { error } = await supabase.from("consultants").delete().eq("id", id);
 

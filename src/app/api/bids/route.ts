@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, fetchConsultantsByIds, EMPTY_GO_NO_GO } from "@/lib/supabase";
-import { DEFAULT_ORG_ID } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/server";
+import { getOrgId } from "@/lib/org";
 import { generateAllSections } from "@/lib/bid-generator";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult, BidSection } from "@/lib/types";
 import { BidContext } from "@/lib/bid-section-prompts";
@@ -20,6 +21,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const authed = await createClient();
+  const orgId = await getOrgId(authed);
   const supabase = createServiceClient();
 
   // Fetch all context in parallel
@@ -51,7 +54,7 @@ export async function POST(request: NextRequest) {
     .insert({
       analysis_id: analysisId,
       assessment_id: assessmentId || null,
-      organization_id: DEFAULT_ORG_ID,
+      organization_id: orgId,
       team_consultant_ids: teamConsultantIds,
       status: "generating",
     })

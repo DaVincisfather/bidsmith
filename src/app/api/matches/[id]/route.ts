@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, mapConsultantRow } from "@/lib/supabase";
-import { DEFAULT_ORG_ID, CONSULTANT_SELECT } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/server";
+import { getOrgId } from "@/lib/org";
+import { CONSULTANT_SELECT } from "@/lib/constants";
 import { matchConsultants } from "@/lib/consultant-matcher";
 import { RfpAnalysis } from "@/lib/types";
 
@@ -10,12 +12,14 @@ interface RouteContext {
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { id: analysisId } = await params;
+  const authed = await createClient();
+  const orgId = await getOrgId(authed);
   const supabase = createServiceClient();
 
   // Fetch analysis + consultants in parallel
   const [analysisResult, consultantResult] = await Promise.all([
     supabase.from("analyses").select("analysis").eq("id", analysisId).single(),
-    supabase.from("consultants").select(CONSULTANT_SELECT).eq("organization_id", DEFAULT_ORG_ID),
+    supabase.from("consultants").select(CONSULTANT_SELECT).eq("organization_id", orgId),
   ]);
 
   if (analysisResult.error || !analysisResult.data) {
@@ -35,7 +39,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     .from("matches")
     .insert({
       analysis_id: analysisId,
-      organization_id: DEFAULT_ORG_ID,
+      organization_id: orgId,
       team_proposal: result.scoredConsultants,
       team_evaluation: null,
     })

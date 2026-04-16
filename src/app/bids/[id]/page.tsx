@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { BidEditor } from "@/components/bid-editor/BidEditor";
 import { BidSection, StyleGuide } from "@/lib/types";
 import { notFound } from "next/navigation";
@@ -24,7 +24,7 @@ interface PageProps {
 
 export default async function BidEditorPage({ params }: PageProps) {
   const { id } = await params;
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   const { data: bid, error } = await supabase
     .from("bids")

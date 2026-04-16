@@ -1,11 +1,11 @@
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
+import { getOrgId } from "@/lib/org";
 import { ConsultantList } from "@/components/consultant-list";
 import { ConsultantUploadWrapper } from "@/components/consultant-upload-wrapper";
 
-import { DEFAULT_ORG_ID } from "@/lib/constants";
-
 export default async function ConsultantsPage() {
-  const supabase = createServiceClient();
+  const supabase = await createClient();
+  const orgId = await getOrgId(supabase);
 
   const { data: consultants } = await supabase
     .from("consultants")
@@ -13,7 +13,7 @@ export default async function ConsultantsPage() {
       id, name, level, years_experience, summary,
       consultant_competencies (competency, category)
     `)
-    .eq("organization_id", DEFAULT_ORG_ID)
+    .eq("organization_id", orgId)
     .order("name");
 
   return (

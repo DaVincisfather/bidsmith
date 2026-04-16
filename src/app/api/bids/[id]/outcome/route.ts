@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import type { OutcomePatch } from "@/lib/types";
 
 const VALID_OUTCOMES = ["won", "lost", "no-bid", "cancelled"] as const;
@@ -35,7 +35,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   const { data: updated, error } = await supabase
     .from("bids")

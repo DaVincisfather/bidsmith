@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
+import { getOrgId } from "@/lib/org";
 import { renderBidToPptx } from "@/lib/pptx-renderer";
 import { BidSection, StyleGuide } from "@/lib/types";
-
-import { DEFAULT_ORG_ID } from "@/lib/constants";
 
 const DEFAULT_STYLE_GUIDE: StyleGuide = {
   colors: {
@@ -26,6 +26,8 @@ interface RouteContext {
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
+  const authed = await createClient();
+  const orgId = await getOrgId(authed);
   const supabase = createServiceClient();
 
   // Fetch bid
@@ -33,6 +35,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     .from("bids")
     .select("*")
     .eq("id", id)
+    .eq("organization_id", orgId)
     .single();
 
   if (bidError || !bid) {
@@ -50,7 +53,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { data: org } = await supabase
     .from("organizations")
     .select("style_guide")
-    .eq("id", bid.organization_id ?? DEFAULT_ORG_ID)
+    .eq("id", bid.organization_id)
     .single();
 
   const styleGuide: StyleGuide = (org?.style_guide as StyleGuide) ?? DEFAULT_STYLE_GUIDE;

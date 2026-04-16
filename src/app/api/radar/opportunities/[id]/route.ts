@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 
 export async function PATCH(
   request: NextRequest,
@@ -16,7 +16,7 @@ export async function PATCH(
     );
   }
 
-  const supabase = createServiceClient();
+  const supabase = await createClient();
   const { error } = await supabase
     .from("rfp_opportunities")
     .update({ status })

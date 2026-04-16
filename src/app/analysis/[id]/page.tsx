@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { AnalysisResult } from "@/components/analysis-result";
 import { AnalysisMatchSection } from "@/components/analysis-match-section";
 import { RfpAnalysis } from "@/lib/types";
@@ -11,7 +11,7 @@ interface PageProps {
 
 export default async function AnalysisPage({ params }: PageProps) {
   const { id } = await params;
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   // Fetch analysis
   const { data, error } = await supabase

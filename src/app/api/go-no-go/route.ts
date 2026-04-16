@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, fetchConsultantsByIds } from "@/lib/supabase";
-import { DEFAULT_ORG_ID } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/server";
+import { getOrgId } from "@/lib/org";
 import { evaluateGoNoGo } from "@/lib/go-no-go-evaluator";
 import { RfpAnalysis, ScoredConsultant } from "@/lib/types";
 
@@ -15,6 +16,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "analysisId is required" }, { status: 400 });
   }
 
+  const authed = await createClient();
+  const orgId = await getOrgId(authed);
   const supabase = createServiceClient();
 
   // Fetch analysis + match in parallel
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
     .from("go_no_go_assessments")
     .insert({
       analysis_id: analysisId,
-      organization_id: DEFAULT_ORG_ID,
+      organization_id: orgId,
       team_consultant_ids: resolvedTeamIds,
       result,
     })

@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase";
-import { DEFAULT_ORG_ID } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/server";
+import { getOrgId } from "@/lib/org";
 import { daysUntil, calculateUrgency, sortPipelineItems } from "@/lib/pipeline";
 import type { PipelineItem, RfpAnalysis } from "@/lib/types";
 
 const MIN_SCORE = 65;
 
 export async function GET() {
-  const supabase = createServiceClient();
+  const supabase = await createClient();
+  const orgId = await getOrgId(supabase);
   const today = new Date().toISOString().split("T")[0];
 
   // Fetch TED opportunities, analyses, and exported bids in parallel
@@ -19,19 +20,19 @@ export async function GET() {
     supabase
       .from("rfp_opportunities")
       .select("id, title, deadline, relevance_score, analysis_id, ted_url, status")
-      .eq("organization_id", DEFAULT_ORG_ID)
+      .eq("organization_id", orgId)
       .gte("relevance_score", MIN_SCORE)
       .gte("deadline", today)
       .neq("status", "dismissed"),
     supabase
       .from("analyses")
       .select("id, document_id, analysis, created_at, documents!inner(file_name)")
-      .eq("organization_id", DEFAULT_ORG_ID)
+      .eq("organization_id", orgId)
       .order("created_at", { ascending: false }),
     supabase
       .from("bids")
       .select("analysis_id")
-      .eq("organization_id", DEFAULT_ORG_ID)
+      .eq("organization_id", orgId)
       .not("exported_at", "is", null),
   ]);
 

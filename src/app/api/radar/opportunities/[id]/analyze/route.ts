@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 
 export async function POST(
@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = createServiceClient();
+  const supabase = await createClient();
 
   // 1. Get the opportunity
   const { data: opp, error: oppError } = await supabase
