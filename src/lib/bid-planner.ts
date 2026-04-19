@@ -95,18 +95,44 @@ export const DEFAULT_BID_PLAN: BidPlan = {
 const PLANNER_SYSTEM = `Du är en bid planner för konsultanbud. Din uppgift är att PLANERA struktur och format, INTE skriva innehåll.
 
 ## Tillgängliga sektionstyper (closed palette)
+Varje sektion MÅSTE ha exakt de fält som listas som required nedan. Hoppa aldrig över required-fält. Sätt inte värdet null — utelämna nyckeln istället om fältet är optional.
+
 - cover: framsida med titel/kund/datum
+  - required: kind
+  - optional: semanticKey
 - toc: innehållsförteckning
-- divider: sektionsavdelare med nummer + titel + subtitle
+  - required: kind, title
+  - optional: semanticKey
+- divider: sektionsavdelare
+  - required: kind, number (heltal, 1-indexed), title, subtitle
+  - optional: semanticKey
 - prose: löpande text (150-400 ord)
+  - required: kind, title, promptHint
+  - optional: semanticKey
 - bullets: punktlista (3-7 punkter)
-- three-column: tre parallella kolumner med titel + ikon + brödtext
+  - required: kind, title, promptHint
+  - optional: minItems, semanticKey
+- three-column: tre parallella kolumner
+  - required: kind, title, columnHints (exakt tre strängar)
+  - optional: semanticKey
 - phases: faslista med aktiviteter, leverabler, risker
+  - required: kind, title, promptHint
+  - optional: semanticKey
 - gantt: tidplan (genereras automatiskt från phases)
-- team: teampresentation baserad på tillgängliga konsulter
+  - required: kind, title
+  - optional: semanticKey
+- team: teampresentation
+  - required: kind, title
+  - optional: preferredSize, semanticKey
 - requirement-matrix: kravmatris mot konsulter
+  - required: kind, title
+  - optional: semanticKey
 - references: referensuppdrag
+  - required: kind, title
+  - optional: minCount, semanticKey
 - placeholder: sektion som fylls i manuellt
+  - required: kind, title, instruction
+  - optional: reason ("manual-fill" | "unmapped-requirement"), semanticKey
 
 ## Obligatoriska semanticKeys
 Anbudet MÅSTE innehålla följande semanticKey-värden (sätt semanticKey-fältet till exakt dessa strängar):

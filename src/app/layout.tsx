@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { PipelineRail } from "@/components/pipeline/PipelineRail";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +31,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <nav className="border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-6">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
             <Link href="/" className="font-bold text-lg">
               Agentic Dealflow
             </Link>
@@ -54,7 +55,10 @@ export default function RootLayout({
             </Link>
           </div>
         </nav>
-        {children}
+        <div className="flex-1 grid grid-cols-[1fr_260px] min-h-0">
+          <div className="min-w-0">{children}</div>
+          <PipelineRail />
+        </div>
       </body>
     </html>
   );

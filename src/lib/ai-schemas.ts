@@ -7,6 +7,7 @@ export const RfpAnalysisSchema = z.object({
   client: z.string(),
   deadline: z.string().nullable(),
   summary: z.string(),
+  background: z.string().optional(),
   requirements: z.array(
     z.object({
       category: z.string(),
@@ -141,81 +142,81 @@ export const FORMAT_SCHEMAS = {
 export const PlannedSectionSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("cover"),
-    semanticKey: z.string().optional(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("toc"),
     title: z.string(),
-    semanticKey: z.string().optional(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("divider"),
     number: z.number(),
     title: z.string(),
     subtitle: z.string(),
-    semanticKey: z.string().optional(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("prose"),
     title: z.string(),
     promptHint: z.string(),
-    semanticKey: z.string().optional(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("bullets"),
     title: z.string(),
     promptHint: z.string(),
-    minItems: z.number().optional(),
-    semanticKey: z.string().optional(),
+    minItems: z.number().nullish(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("three-column"),
     title: z.string(),
     columnHints: z.tuple([z.string(), z.string(), z.string()]),
-    semanticKey: z.string().optional(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("phases"),
     title: z.string(),
     promptHint: z.string(),
-    semanticKey: z.string().optional(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("gantt"),
     title: z.string(),
-    semanticKey: z.string().optional(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("team"),
     title: z.string(),
-    preferredSize: z.number().optional(),
-    semanticKey: z.string().optional(),
+    preferredSize: z.number().nullish(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("requirement-matrix"),
     title: z.string(),
-    semanticKey: z.string().optional(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("references"),
     title: z.string(),
-    minCount: z.number().optional(),
-    semanticKey: z.string().optional(),
+    minCount: z.number().nullish(),
+    semanticKey: z.string().nullish(),
   }),
   z.object({
     kind: z.literal("placeholder"),
     title: z.string(),
     instruction: z.string(),
-    reason: z.enum(["manual-fill", "unmapped-requirement"]).optional(),
-    semanticKey: z.string().optional(),
+    reason: z.enum(["manual-fill", "unmapped-requirement"]).nullish(),
+    semanticKey: z.string().nullish(),
   }),
 ]);
 
 export const BidPlanSchema = z.object({
   language: z.enum(["sv", "en"]),
   sections: z.array(PlannedSectionSchema),
-  unmappedRequirements: z.array(z.string()).optional(),
-  rationale: z.string().optional(),
+  unmappedRequirements: z.array(z.string()).nullish(),
+  rationale: z.string().nullish(),
 });
 
 // --- Consultant Extractor ---

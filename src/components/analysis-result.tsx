@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { RfpAnalysis } from "@/lib/types";
 
 interface AnalysisResultProps {
@@ -5,111 +8,167 @@ interface AnalysisResultProps {
   fileName: string;
 }
 
-export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <p className="text-sm text-gray-400 mb-1">{fileName}</p>
-        <h1 className="text-2xl font-bold">{analysis.title}</h1>
-        <div className="flex gap-4 mt-2 text-sm text-gray-500">
-          {analysis.client && <span>Kund: {analysis.client}</span>}
-          {analysis.deadline && <span>Deadline: {analysis.deadline}</span>}
-        </div>
-      </div>
+const PRIORITY_LABELS: Record<string, string> = {
+  must: "Ska",
+  should: "Bör",
+  nice: "Meriterande",
+};
 
-      {/* Summary */}
+const PRIORITY_CLASSES: Record<string, string> = {
+  must: "bg-red-50 text-red-700 border-red-100",
+  should: "bg-amber-50 text-amber-700 border-amber-100",
+  nice: "bg-emerald-50 text-emerald-700 border-emerald-100",
+};
+
+export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
+  const [expanded, setExpanded] = useState(false);
+  const hasBackground = Boolean(analysis.background?.trim());
+
+  return (
+    <div className="space-y-10">
+      {/* Header */}
+      <header>
+        <p className="text-xs font-mono text-gray-400 mb-2">{fileName}</p>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          {analysis.title}
+        </h1>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          {analysis.client && (
+            <span className="text-gray-600">
+              <span className="text-gray-400">Kund</span>{" "}
+              <span className="font-medium">{analysis.client}</span>
+            </span>
+          )}
+          {analysis.deadline && (
+            <span className="text-gray-600">
+              <span className="text-gray-400">Deadline</span>{" "}
+              <span className="font-medium">{analysis.deadline}</span>
+            </span>
+          )}
+          {analysis.estimatedScope && (
+            <span className="text-gray-600">
+              <span className="text-gray-400">Omfattning</span>{" "}
+              <span className="font-medium">{analysis.estimatedScope}</span>
+            </span>
+          )}
+        </div>
+      </header>
+
+      {/* Sammanfattning — callout, drar blicken */}
       <section>
-        <h2 className="text-lg font-semibold mb-2">Sammanfattning</h2>
-        <p className="text-gray-700">{analysis.summary}</p>
+        <div className="border-l-2 border-gray-900 pl-5 py-1">
+          <p className="text-base leading-relaxed text-gray-900">
+            {analysis.summary}
+          </p>
+          {expanded && hasBackground && (
+            <p className="text-sm leading-relaxed text-gray-700 mt-3">
+              {analysis.background}
+            </p>
+          )}
+          {hasBackground && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-3 text-xs text-gray-500 hover:text-gray-900 underline-offset-2 hover:underline"
+            >
+              {expanded ? "Visa mindre" : "Se mer"}
+            </button>
+          )}
+        </div>
       </section>
 
-      {/* Estimated Scope */}
-      {analysis.estimatedScope && (
-        <section>
-          <h2 className="text-lg font-semibold mb-2">Uppskattad omfattning</h2>
-          <p className="text-gray-700">{analysis.estimatedScope}</p>
-        </section>
-      )}
-
-      {/* Requirements */}
+      {/* Kravmatris */}
       <section>
-        <h2 className="text-lg font-semibold mb-3">Krav</h2>
-        <div className="space-y-2">
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+            Kravmatris
+          </h2>
+          <span className="text-xs text-gray-400">
+            {analysis.requirements.length} krav
+          </span>
+        </div>
+        <div className="border-t border-gray-100">
           {analysis.requirements.map((req, i) => (
             <div
               key={i}
-              className="flex items-start gap-3 p-3 bg-gray-50 rounded"
+              className="border-b border-gray-100 py-3 grid grid-cols-[84px_1fr] sm:grid-cols-[84px_140px_1fr] gap-x-4 gap-y-1 items-start"
             >
               <span
-                className={`text-xs font-medium px-2 py-1 rounded shrink-0 ${
-                  req.priority === "must"
-                    ? "bg-red-100 text-red-700"
-                    : req.priority === "should"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-green-100 text-green-700"
-                }`}
+                className={`text-[11px] font-medium px-2 py-0.5 rounded border inline-flex items-center justify-center w-fit ${PRIORITY_CLASSES[req.priority] ?? "bg-gray-50 text-gray-700 border-gray-100"}`}
               >
-                {req.priority === "must"
-                  ? "Ska"
-                  : req.priority === "should"
-                    ? "Bor"
-                    : "Meriterande"}
+                {PRIORITY_LABELS[req.priority] ?? req.priority}
               </span>
-              <div>
-                <span className="text-xs text-gray-400">{req.category}</span>
-                <p className="text-sm">{req.description}</p>
-              </div>
+              <span className="hidden sm:block text-xs text-gray-500 pt-1">
+                {req.category}
+              </span>
+              <p className="col-span-2 sm:col-span-1 text-sm text-gray-800 leading-relaxed">
+                {req.description}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Evaluation Criteria */}
-      <section>
-        <h2 className="text-lg font-semibold mb-3">Utvarderingskriterier</h2>
-        <div className="space-y-3">
-          {analysis.evaluationCriteria.map((crit, i) => (
-            <div key={i} className="p-3 bg-gray-50 rounded">
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-medium">{crit.name}</span>
-                <span className="text-sm font-mono bg-gray-200 px-2 py-0.5 rounded">
+      {/* Utvärderingskriterier */}
+      {analysis.evaluationCriteria.length > 0 && (
+        <section>
+          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-3">
+            Utvärderingskriterier
+          </h2>
+          <div className="border-t border-gray-100">
+            {analysis.evaluationCriteria.map((crit, i) => (
+              <div
+                key={i}
+                className="border-b border-gray-100 py-3 flex items-start gap-4"
+              >
+                <span className="text-xs font-mono text-gray-500 w-12 shrink-0 pt-1">
                   {crit.weight}%
                 </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
+                    {crit.name}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-0.5 leading-relaxed">
+                    {crit.description}
+                  </p>
+                </div>
               </div>
-              <p className="text-sm text-gray-600">{crit.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Competencies */}
-      <section>
-        <h2 className="text-lg font-semibold mb-3">Efterfragade kompetenser</h2>
-        <div className="flex flex-wrap gap-2">
-          {analysis.requiredCompetencies.map((comp, i) => (
-            <span
-              key={i}
-              className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm"
-            >
-              {comp}
-            </span>
-          ))}
-        </div>
-      </section>
+      {/* Kompetenser */}
+      {analysis.requiredCompetencies.length > 0 && (
+        <section>
+          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-3">
+            Efterfrågade kompetenser
+          </h2>
+          <div className="flex flex-wrap gap-1.5">
+            {analysis.requiredCompetencies.map((comp, i) => (
+              <span
+                key={i}
+                className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded"
+              >
+                {comp}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Red Flags */}
+      {/* Att observera */}
       {analysis.redFlags.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold mb-3">Att observera</h2>
-          <ul className="space-y-1">
+          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-3">
+            Att observera
+          </h2>
+          <div className="border-l-2 border-amber-400 pl-4 space-y-2">
             {analysis.redFlags.map((flag, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <span className="text-amber-500 shrink-0">!</span>
-                <span className="text-gray-700">{flag}</span>
-              </li>
+              <p key={i} className="text-sm text-gray-800 leading-relaxed">
+                {flag}
+              </p>
             ))}
-          </ul>
+          </div>
         </section>
       )}
     </div>

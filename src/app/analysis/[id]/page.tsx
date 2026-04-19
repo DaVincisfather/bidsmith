@@ -60,11 +60,11 @@ export default async function AnalysisPage({ params }: PageProps) {
       : null;
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="max-w-2xl mx-auto px-4 py-16">
+    <main className="min-h-full bg-white">
+      <div className="max-w-3xl mx-auto px-6 py-10">
         <Link
           href="/"
-          className="text-sm text-gray-400 hover:text-gray-600 mb-8 inline-block"
+          className="text-xs text-gray-400 hover:text-gray-700 mb-8 inline-block"
         >
           &larr; Ny analys
         </Link>

@@ -15,6 +15,7 @@ export interface RfpAnalysis {
   client: string;
   deadline: string | null;
   summary: string;
+  background?: string;
   requirements: RfpRequirement[];
   evaluationCriteria: EvaluationCriterion[];
   requiredCompetencies: string[];

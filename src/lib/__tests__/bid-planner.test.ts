@@ -67,6 +67,52 @@ describe("BidPlanSchema", () => {
     };
     expect(BidPlanSchema.safeParse(raw).success).toBe(true);
   });
+
+  it("accepts null for optional fields (Sonnet often returns null instead of omitting)", () => {
+    const raw = {
+      language: "sv",
+      sections: [
+        { kind: "cover", semanticKey: null },
+        {
+          kind: "divider",
+          number: 1,
+          title: "Del 1",
+          subtitle: "Intro",
+          semanticKey: null,
+        },
+        {
+          kind: "prose",
+          title: "Bakgrund",
+          promptHint: "Beskriv kontext",
+          semanticKey: null,
+        },
+        {
+          kind: "bullets",
+          title: "Risker",
+          promptHint: "3-5 risker",
+          minItems: null,
+          semanticKey: null,
+        },
+        {
+          kind: "references",
+          title: "Referenser",
+          minCount: null,
+          semanticKey: null,
+        },
+        {
+          kind: "placeholder",
+          title: "Pris",
+          instruction: "Fyll i",
+          reason: null,
+          semanticKey: null,
+        },
+      ],
+      unmappedRequirements: null,
+      rationale: null,
+    };
+    const result = BidPlanSchema.safeParse(raw);
+    expect(result.success).toBe(true);
+  });
 });
 
 import { vi, beforeEach } from "vitest";

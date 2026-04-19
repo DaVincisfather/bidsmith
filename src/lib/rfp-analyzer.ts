@@ -10,7 +10,8 @@ Svara ALLTID med giltig JSON som matchar detta schema:
   "title": "Uppdragets titel",
   "client": "Kund/beställare (om angivet, annars 'Ej angivet')",
   "deadline": "Sista anbudsdag i ISO-format, eller null",
-  "summary": "2-3 meningar som sammanfattar uppdraget",
+  "summary": "2-3 meningar som sammanfattar uppdraget — kort och skarpt",
+  "background": "4-6 meningar som beskriver uppdragets kontext: varför upphandlingen sker, vad kunden vill åstadkomma, eventuell historik eller strategisk riktning. Skriv flytande prosa, inte punktlista.",
   "requirements": [
     {
       "category": "Kategori (t.ex. Kompetens, Erfarenhet, Kapacitet)",
