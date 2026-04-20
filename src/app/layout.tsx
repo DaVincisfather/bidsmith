@@ -53,6 +53,12 @@ export default function RootLayout({
             >
               Radar
             </Link>
+            <Link
+              href="/team"
+              className="text-sm text-gray-500 hover:text-gray-900"
+            >
+              Team
+            </Link>
           </div>
         </nav>
         <div className="flex-1 grid grid-cols-[1fr_260px] min-h-0">
