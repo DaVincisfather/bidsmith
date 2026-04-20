@@ -190,6 +190,11 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
     case "understanding-assignment":
     case "understanding-vision":
     case "quality-assurance":
+    case "team-pricing":
+    case "requirement-matrix-v2":
+    case "reference-v2":
+    case "confidentiality":
+    case "certifications":
       return (
         <div className="text-gray-400 text-sm italic p-4">
           [{content.format}] — rendered via pptx-template pipeline
