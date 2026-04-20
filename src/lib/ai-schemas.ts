@@ -8,6 +8,7 @@ export const RfpAnalysisSchema = z.object({
   deadline: z.string().nullable(),
   summary: z.string(),
   background: z.string().optional(),
+  diaryNumber: z.string().optional(),
   requirements: z.array(
     z.object({
       category: z.string(),

@@ -182,6 +182,20 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
         />
       );
 
+    // pptx-template pivot formats — not rendered by the legacy UI editor.
+    // These are handled by the new applicators in src/lib/pptx-template/.
+    // Legacy bid-editor display falls through to a generic label.
+    // TODO Task 13: remove when legacy pptx renderer is deleted.
+    case "understanding-current":
+    case "understanding-assignment":
+    case "understanding-vision":
+    case "quality-assurance":
+      return (
+        <div className="text-gray-400 text-sm italic p-4">
+          [{content.format}] — rendered via pptx-template pipeline
+        </div>
+      );
+
     default: {
       const _exhaustive: never = content;
       return <div className="text-red-500 text-sm">Unknown format: {JSON.stringify(_exhaustive)}</div>;

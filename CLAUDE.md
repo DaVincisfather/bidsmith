@@ -58,7 +58,7 @@ Vid ändringar i befintlig kod:
 
 ## Tech-stack
 
-Next.js 16 (App Router), Tailwind v4, Supabase (PostgreSQL + Storage), pptxgenjs, Vercel.
+Next.js 16 (App Router), Tailwind v4, Supabase (PostgreSQL + Storage), pptx-automizer, Vercel.
 
 ## Viktiga filer
 

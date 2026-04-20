@@ -10,6 +10,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
   "title": "Uppdragets titel",
   "client": "Kund/beställare (om angivet, annars 'Ej angivet')",
   "deadline": "Sista anbudsdag i ISO-format, eller null",
+  "diaryNumber": "Diarienummer/upphandlings-ID om angivet i dokumentet (t.ex. 'VGR-2026-0042', 'Dnr 12345/2024'). Utelämna fältet helt om det inte anges.",
   "summary": "2-3 meningar som sammanfattar uppdraget — kort och skarpt",
   "background": "4-6 meningar som beskriver uppdragets kontext: varför upphandlingen sker, vad kunden vill åstadkomma, eventuell historik eller strategisk riktning. Skriv flytande prosa, inte punktlista.",
   "requirements": [
@@ -36,6 +37,7 @@ Var noggrann med att:
 - Skilja mellan ska-krav (must) och bör-krav (should)
 - Extrahera utvärderingskriterier med vikter om de anges
 - Identifiera oklarheter eller potentiella problem (redFlags)
+- Plocka diarienummer/upphandlings-ID exakt som det står i dokumentet — utelämna fältet om det saknas, gissa aldrig
 - Sammanfatta i professionell ton`;
 
 export async function analyzeRfp(rfpText: string): Promise<RfpAnalysis> {

@@ -2,23 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { getOrgId } from "@/lib/org";
-import { renderBidToPptx } from "@/lib/pptx-renderer";
-import { BidSection, StyleGuide } from "@/lib/types";
-
-const DEFAULT_STYLE_GUIDE: StyleGuide = {
-  colors: {
-    primary: "#1F5E63",
-    primaryLight: "#2D7A7F",
-    secondary: "#8FAF9A",
-    secondaryLight: "#B3CABA",
-    accent: "#1F5E63",
-    dark: "#1A1A1A",
-    light: "#E8E6DF",
-    muted: "#6B7280",
-  },
-  font: "Calibri",
-  logoUrl: "",
-};
+import { renderTemplate } from "@/lib/pptx-template/loader";
+import { BidSection, RfpAnalysis } from "@/lib/types";
+import { buildMasterContext } from "./build-master-context";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -30,7 +16,6 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   const orgId = await getOrgId(authed);
   const supabase = createServiceClient();
 
-  // Fetch bid
   const { data: bid, error: bidError } = await supabase
     .from("bids")
     .select("*")
@@ -45,23 +30,49 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   if (bid.status === "generating") {
     return NextResponse.json(
       { error: "Bid is still generating. Wait until status is 'draft'." },
-      { status: 409 }
+      { status: 409 },
     );
   }
 
-  // Fetch organization style guide
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("style_guide")
-    .eq("id", bid.organization_id)
-    .single();
+  const [
+    { data: analysisRow, error: analysisError },
+    { data: org, error: orgError },
+  ] = await Promise.all([
+    supabase
+      .from("analyses")
+      .select("analysis")
+      .eq("id", bid.analysis_id)
+      .single(),
+    supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", bid.organization_id)
+      .single(),
+  ]);
 
-  const styleGuide: StyleGuide = (org?.style_guide as StyleGuide) ?? DEFAULT_STYLE_GUIDE;
+  if (analysisError || !analysisRow) {
+    return NextResponse.json(
+      { error: "Analysis not found for bid" },
+      { status: 404 },
+    );
+  }
+
+  if (orgError || !org) {
+    return NextResponse.json(
+      { error: "Organization not found" },
+      { status: 404 },
+    );
+  }
 
   const sections = bid.sections as BidSection[];
-  const buffer = await renderBidToPptx(sections, styleGuide);
+  const master = buildMasterContext({
+    analysis: analysisRow.analysis as RfpAnalysis,
+    organizationName: org.name,
+    now: new Date(),
+  });
 
-  // Mark as exported
+  const buffer = await renderTemplate("anbudsmall-v2", sections, master);
+
   await supabase
     .from("bids")
     .update({ status: "exported", exported_at: new Date().toISOString() })
@@ -70,7 +81,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,
     headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
       "Content-Disposition": `attachment; filename="anbud-${id.substring(0, 8)}.pptx"`,
     },
   });
