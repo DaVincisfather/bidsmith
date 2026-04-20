@@ -70,10 +70,10 @@ export async function renderTemplate(
 }
 
 /** Maps a SlideConfig type to its applicator callback. */
-function applicatorFor(
+export function applicatorFor(
   slideCfg: SlideConfig,
   ctx: ApplicatorContext,
-): ((slide: ISlide) => void) | undefined {
+): (slide: ISlide) => void {
   switch (slideCfg.type) {
     case "cover":
       return coverApplicator(ctx);
@@ -98,7 +98,7 @@ function applicatorFor(
     case "certifications":
       return certificationsApplicator(ctx);
     default:
-      return undefined;
+      throw new Error(`unknown slide type: ${(slideCfg as { type: string }).type}`);
   }
 }
 

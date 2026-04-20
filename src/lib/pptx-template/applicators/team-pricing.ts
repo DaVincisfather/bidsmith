@@ -38,12 +38,14 @@ export function teamPricingApplicator(ctx: ApplicatorContext) {
 
 /**
  * Format a number using Swedish locale (space as thousand separator, integer).
- * E.g. 444000 → "444 000", 1197600 → "1 197 600".
+ * E.g. 444000 → "444 000", 1197600 → "1 197 600". Null → "" (company fills
+ * in timpris/total post-generation; renderer leaves those cells empty).
  *
  * toLocaleString("sv-SE") may produce non-breaking space (U+00A0) on some
  * runtimes. We normalise to a regular space for consistent XML output.
  */
-function formatSvSE(n: number): string {
+function formatSvSE(n: number | null): string {
+  if (n === null) return "";
   return n.toLocaleString("sv-SE").replace(/\u00a0/g, " ");
 }
 
@@ -55,9 +57,13 @@ function buildTeamPricingMap(ctx: ApplicatorContext): Record<string, string> {
   const c = sec.content;
   const members = c.members;
 
-  // Compute summary from members (or use override if provided)
+  // Compute summary from members (or use override if provided). If ANY member
+  // total is null, computedPris is null too — company must fill in timpris
+  // before a total can be shown.
   const computedTimmar = members.reduce((sum, m) => sum + m.timmar, 0);
-  const computedPris = members.reduce((sum, m) => sum + m.total, 0);
+  const computedPris = members.some((m) => m.total === null)
+    ? null
+    : members.reduce((sum, m) => sum + (m.total ?? 0), 0);
   const totalTimmar = c.summary?.totalTimmar ?? computedTimmar;
   const totalPris = c.summary?.totalPris ?? computedPris;
 
@@ -75,7 +81,7 @@ function buildTeamPricingMap(ctx: ApplicatorContext): Record<string, string> {
       map[`{Konsult ${i} \u2014 namn}`] = member.name;
       map[`{Roll ${i}}`] = member.role;
       map[`{Omfattning ${i} %}`] = `${member.omfattningPct}%`;
-      map[`{Timpris ${i}}`] = String(member.timpris);
+      map[`{Timpris ${i}}`] = member.timpris === null ? "" : String(member.timpris);
       map[`{Timmar ${i}}`] = String(member.timmar);
       map[`{Total ${i}}`] = formatSvSE(member.total);
     } else {

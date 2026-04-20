@@ -13,6 +13,8 @@ const baseAnalysis: RfpAnalysis = {
   estimatedScope: "x",
   redFlags: [],
   domain: "management",
+  oslReference: null,
+  secrecyRows: [],
 };
 
 describe("buildMasterContext", () => {

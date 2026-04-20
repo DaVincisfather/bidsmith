@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { RfpAnalysisSchema } from "../ai-schemas";
 
 const mockCallClaude = vi.hoisted(() => vi.fn());
 vi.mock("../ai-client", () => ({
@@ -24,6 +25,8 @@ describe("analyzeRfp", () => {
       estimatedScope: "x",
       redFlags: [],
       domain: "IT",
+      oslReference: null,
+      secrecyRows: [],
     });
 
     await analyzeRfp("Diarienummer: VGR-2026-0042\n\nResten av RFP:n...");
@@ -47,6 +50,8 @@ describe("analyzeRfp", () => {
       estimatedScope: "x",
       redFlags: [],
       domain: "IT",
+      oslReference: null,
+      secrecyRows: [],
     });
 
     const result = await analyzeRfp("Diarienummer: VGR-2026-0042\n\n...");
@@ -65,9 +70,39 @@ describe("analyzeRfp", () => {
       estimatedScope: "x",
       redFlags: [],
       domain: "IT",
+      oslReference: null,
+      secrecyRows: [],
     });
 
     const result = await analyzeRfp("RFP utan diarienummer");
     expect(result.diaryNumber).toBeUndefined();
+  });
+});
+
+describe("RfpAnalysisSchema — OSL extraction", () => {
+  it("accepts oslReference and secrecyRows", () => {
+    const raw = {
+      title: "t", client: "c", deadline: null, summary: "s",
+      requirements: [], evaluationCriteria: [], requiredCompetencies: [],
+      estimatedScope: "", redFlags: [], domain: "",
+      oslReference: "19 kap 3 §",
+      secrecyRows: [{ reference: "Bilaga 2", scope: "Personuppgifter", justification: "GDPR" }],
+    };
+    const parsed = RfpAnalysisSchema.parse(raw);
+    expect(parsed.oslReference).toBe("19 kap 3 §");
+    expect(parsed.secrecyRows).toHaveLength(1);
+  });
+
+  it("accepts null oslReference and empty secrecyRows", () => {
+    const raw = {
+      title: "t", client: "c", deadline: null, summary: "s",
+      requirements: [], evaluationCriteria: [], requiredCompetencies: [],
+      estimatedScope: "", redFlags: [], domain: "",
+      oslReference: null,
+      secrecyRows: [],
+    };
+    const parsed = RfpAnalysisSchema.parse(raw);
+    expect(parsed.oslReference).toBeNull();
+    expect(parsed.secrecyRows).toEqual([]);
   });
 });

@@ -22,6 +22,8 @@ const mockAnalysis: RfpAnalysis = {
   estimatedScope: "2 konsulter, 3 månader",
   redFlags: [],
   domain: "management",
+  oslReference: null,
+  secrecyRows: [],
 };
 
 const mockConsultants: Consultant[] = [

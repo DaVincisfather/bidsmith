@@ -319,32 +319,38 @@ const sections: BidSection[] = [
           requirement: "Minst 5 års erfarenhet av strategisk rådgivning inom offentlig sektor",
           hurUppfylls: "Anna 12 år, Erik 9 år regionerfarenhet.",
           referens: "Bilaga 1, 2",
+          coverage: [],
         },
         {
           requirement: "Leder komplexa intressentprocesser",
           hurUppfylls: "Johan: PROSCI-program Region Skåne.",
           referens: "Referens 1",
+          coverage: [],
         },
         {
           requirement: "Erfarenhet av digitalisering inom hälso- och sjukvård",
           hurUppfylls: "Fyra sjukvårdsuppdrag inkl. TakeCare.",
           referens: "Referens 2, 3",
+          coverage: [],
         },
         {
           requirement: "ISO 9001-certifierade processer för projektleverans",
           hurUppfylls: "ISO 9001:2015, giltig 03/2027.",
           referens: "Bilaga 7",
+          coverage: [],
         },
         {
           requirement: "Kapacitet att starta inom 4 veckor från avtalssignering",
           hurUppfylls: "Bekräftad uppstart inom 5 dagar.",
           referens: "Bilaga 8",
+          coverage: [],
         },
         {
           requirement: "Leverans av samtliga delrapporter på svenska",
           hurUppfylls:
             "Helsvenskt bolag — allt på svenska.",
           referens: "Bilaga 9",
+          coverage: [],
         },
       ],
     },

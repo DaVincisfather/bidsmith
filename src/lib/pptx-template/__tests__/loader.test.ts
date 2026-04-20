@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
-import { renderTemplate } from "../loader";
+import { renderTemplate, applicatorFor } from "../loader";
 import type { BidSection } from "../../types";
 
 const minimalSections: BidSection[] = [
@@ -62,5 +62,29 @@ describe("renderTemplate — cover only", () => {
     expect(slide1).not.toContain("{Anbudsdatum}");
 
     expect(slide1).not.toContain("{Kundnamn}");
+  });
+});
+
+describe("applicatorFor — fail-loud", () => {
+  it("throws on an unknown slide type", () => {
+    expect(() =>
+      applicatorFor(
+        // @ts-expect-error — deliberately invalid type to test fail-loud path
+        { source: 99, type: "unknown-type" },
+        {
+          sections: [],
+          master: {
+            companyName: "",
+            clientName: "",
+            diaryNumber: "",
+            bidName: "",
+            bidDate: "",
+          },
+          slideNum: 1,
+          totalSlides: 1,
+          sourceSlide: 99,
+        },
+      ),
+    ).toThrow(/unknown slide type/i);
   });
 });

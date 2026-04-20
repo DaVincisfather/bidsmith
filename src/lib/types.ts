@@ -10,6 +10,12 @@ export interface EvaluationCriterion {
   description: string;
 }
 
+export interface SecrecyRow {
+  reference: string;      // e.g. "Bilaga 2"
+  scope: string;
+  justification: string;
+}
+
 export interface RfpAnalysis {
   title: string;
   client: string;
@@ -23,6 +29,8 @@ export interface RfpAnalysis {
   estimatedScope: string;
   redFlags: string[];
   domain: string;
+  oslReference: string | null;      // NEW — OSL paragraph (e.g. "19 kap 3 §") or null
+  secrecyRows: SecrecyRow[];        // NEW — what the RFP asks to be classified (may be empty)
 }
 
 export interface AnalysisRecord {
@@ -154,133 +162,91 @@ export interface ExecutionPhase {
   shortDescription?: string;
 }
 
-export interface TeamPresentation {
-  consultantId: string;
-  name: string;
-  role: string;
-  relevantExperience: string;
-  keyCompetencies: string[];
-}
-
-export interface BidReference {
-  title: string;
-  client: string;
-  year: number;
-  description: string;
-  relevance: string;
-}
-
-export interface RequirementRow {
-  requirement: string;
-  priority: "must" | "should" | "nice-to-have";
-  coverage: Record<string, boolean>;
-}
+// --- Removed: TeamPresentation, BidReference, RequirementRow — v1 formats removed in M2. ---
 
 export type BidSectionContent =
-  | { format: "prose"; text: string }
-  | { format: "bullets"; items: string[] }
-  | { format: "phases"; phases: ExecutionPhase[] }
-  | { format: "team"; members: TeamPresentation[] }
-  | { format: "references"; references: BidReference[] }
-  | { format: "requirement-matrix"; rows: RequirementRow[]; consultantNames: Record<string, string> }
   | { format: "cover"; title: string; client: string; date: string }
-  | { format: "placeholder"; instruction: string }
-  | { format: "section-divider"; sectionNumber: number; subtitle: string }
-  | { format: "three-column"; columns: { title: string; icon: string; body: string }[] }
-  | { format: "gantt"; phases: ExecutionPhase[]; milestones?: { label: string; afterPhase: number }[] }
-  // --- pptx-template pivot: slide-specific structured content ---
-  /** Slide 3 — Kunden idag (Organisation/system/processer + Smärtpunkter) */
+  | { format: "phases"; phases: ExecutionPhase[] }
   | {
       format: "understanding-current";
       organisation: string;
       system: string;
       processer: string;
-      smärtpunkter: string[]; // slot cap 4; unused slots replaced with ""
+      smärtpunkter: string[]; // slot cap 4
     }
-  /** Slide 4 — Uppdragsbeskrivning (3 fixed paragraphs) */
   | {
       format: "understanding-assignment";
       stycken: string[]; // slot cap 3
     }
-  /** Slide 5 — Utmaningar och värde */
   | {
       format: "understanding-vision";
       utmaningar: string[]; // slot cap 4
       värden: string[];     // slot cap 4
     }
-  /** Slide 11 — Kvalitetssäkring */
   | {
       format: "quality-assurance";
-      qaProcess: string[]; // slot cap 2 paragraphs
-      qualityLead: {
-        name: string;
-        roleAndMandate: string;
-        contact: string;
-      };
-      escalation: {
-        process: string;
-        reporting: string;
-      };
+      qaProcess: string[]; // slot cap 2
+      qualityLead: { name: string; roleAndMandate: string; contact: string };
+      escalation: { process: string; reporting: string };
       checkpoints: string[]; // slot cap 4
     }
-  /** Slide 12 — team-pricing table (5 consultant rows + summary) */
   | {
       format: "team-pricing";
       members: Array<{
         name: string;
         role: string;
-        omfattningPct: number;     // e.g. 50 for "50%"
-        timpris: number;           // SEK per hour, e.g. 1850
-        timmar: number;            // hours, e.g. 240
-        total: number;             // computed: timpris * timmar (SEK)
+        omfattningPct: number;
+        timpris: number | null;   // null until company fills in
+        timmar: number;
+        total: number | null;     // timpris * timmar, or null when timpris is null
       }>;
-      // Summary row computed from members. Allow override if needed.
-      summary?: { totalTimmar: number; totalPris: number };
+      summary?: { totalTimmar: number; totalPris: number | null };
     }
-  /** Slide 13 — requirement-matrix table v2 (6 requirement rows) */
   | {
       format: "requirement-matrix-v2";
       rows: Array<{
         requirement: string;
         hurUppfylls: string;
         referens: string;
-        met?: boolean;             // future use; default true
+        coverage: Array<{
+          consultantName: string;
+          status: "JA" | "NEJ" | "DELVIS";
+          evidence: string;
+        }>;
+        met?: boolean;
       }>;
     }
-  /** Slide 14 — Reference (cloned per item) */
   | {
       format: "reference-v2";
       references: Array<{
         clientName: string;
         contextLine: string;
         organisation: string;
-        startDate: string;          // "MM/ÅÅÅÅ"
-        endDate: string;            // "MM/ÅÅÅÅ"
+        startDate: string;
+        endDate: string;
         scope: string;
         contact: { name: string; titlePhoneEmail: string };
         roleAndDelivery: string;
         result: string;
       }>;
     }
-  /** Slide 16 — Confidentiality */
   | {
       format: "confidentiality";
-      oslReference: string;         // e.g. "19 kap 3 §"
+      oslReference: string;
       secrecyRows: Array<{
-        reference: string;          // e.g. "Bilaga 2"
+        reference: string;
         scope: string;
         justification: string;
-      }>;                           // slot cap 4
+      }>; // slot cap 4
     }
-  /** Slide 17 — Certifications */
   | {
       format: "certifications";
       certs: Array<{
-        name?: string;              // for card 4 only; cards 1-3 names are static in template
-        description?: string;       // for card 4 only
-        number: string;             // certificate number
-        validUntil: string;         // "MM/ÅÅÅÅ"
-      }>;                           // slot cap 4 (cards 1-3 are ISO 9001/27001/14001, card 4 is Övrig)
+        name?: string;
+        description?: string;
+        number: string;
+        validUntil: string;
+      }>; // slot cap 4
     };
 
 export interface BidSection {

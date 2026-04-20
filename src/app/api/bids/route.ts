@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getOrgId } from "@/lib/org";
 import { generateAllSections } from "@/lib/bid-generator";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult, BidSection } from "@/lib/types";
-import { BidContext } from "@/lib/bid-section-prompts";
+import type { BidContext } from "@/lib/bid-generator";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   };
 
   // Generate sections, saving progress to DB after each
-  const { sections } = await generateAllSections(ctx, async (section: BidSection) => {
+  const sections = await generateAllSections(ctx, async (section: BidSection) => {
     const { data: currentBid } = await supabase
       .from("bids")
       .select("sections")

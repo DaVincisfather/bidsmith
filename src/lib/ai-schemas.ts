@@ -2,6 +2,12 @@ import { z } from "zod";
 
 // --- RFP Analyzer ---
 
+export const SecrecyRowSchema = z.object({
+  reference: z.string(),
+  scope: z.string(),
+  justification: z.string(),
+});
+
 export const RfpAnalysisSchema = z.object({
   title: z.string(),
   client: z.string(),
@@ -27,6 +33,8 @@ export const RfpAnalysisSchema = z.object({
   estimatedScope: z.string(),
   redFlags: z.array(z.string()),
   domain: z.string(),
+  oslReference: z.string().nullable(),
+  secrecyRows: z.array(SecrecyRowSchema),
 });
 
 // --- Consultant Matcher ---
@@ -69,17 +77,9 @@ export const GoNoGoResultSchema = z.object({
   reasoning: z.string(),
 });
 
-// --- Bid Generator AI sections ---
+// --- Bid Generator: phases schema (v2) ---
 
-export const ProseResponseSchema = z.object({
-  text: z.string(),
-});
-
-export const BulletsResponseSchema = z.object({
-  items: z.array(z.string()),
-});
-
-export const PhasesResponseSchema = z.object({
+export const PhasesV2Schema = z.object({
   phases: z.array(
     z.object({
       name: z.string(),
@@ -92,132 +92,6 @@ export const PhasesResponseSchema = z.object({
       period: z.string().optional(),
     })
   ),
-});
-
-export const TeamResponseSchema = z.object({
-  members: z.array(
-    z.object({
-      consultantId: z.string(),
-      name: z.string(),
-      role: z.string(),
-      relevantExperience: z.string(),
-      keyCompetencies: z.array(z.string()),
-    })
-  ),
-});
-
-export const ReferencesResponseSchema = z.object({
-  references: z.array(
-    z.object({
-      title: z.string(),
-      client: z.string(),
-      year: z.number(),
-      description: z.string(),
-      relevance: z.string(),
-    })
-  ),
-});
-
-export const ThreeColumnResponseSchema = z.object({
-  columns: z.tuple([
-    z.object({ title: z.string(), icon: z.string(), body: z.string() }),
-    z.object({ title: z.string(), icon: z.string(), body: z.string() }),
-    z.object({ title: z.string(), icon: z.string(), body: z.string() }),
-  ]),
-});
-
-// Map from AI-generating section kind to its response schema.
-// Non-AI kinds (cover, toc, divider, gantt, requirement-matrix, placeholder)
-// are deterministic and do not appear here.
-export const FORMAT_SCHEMAS = {
-  prose: ProseResponseSchema,
-  bullets: BulletsResponseSchema,
-  "three-column": ThreeColumnResponseSchema,
-  phases: PhasesResponseSchema,
-  team: TeamResponseSchema,
-  references: ReferencesResponseSchema,
-} as const;
-
-// --- Bid Planner ---
-
-export const PlannedSectionSchema = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("cover"),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("toc"),
-    title: z.string(),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("divider"),
-    number: z.number(),
-    title: z.string(),
-    subtitle: z.string(),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("prose"),
-    title: z.string(),
-    promptHint: z.string(),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("bullets"),
-    title: z.string(),
-    promptHint: z.string(),
-    minItems: z.number().nullish(),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("three-column"),
-    title: z.string(),
-    columnHints: z.tuple([z.string(), z.string(), z.string()]),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("phases"),
-    title: z.string(),
-    promptHint: z.string(),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("gantt"),
-    title: z.string(),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("team"),
-    title: z.string(),
-    preferredSize: z.number().nullish(),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("requirement-matrix"),
-    title: z.string(),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("references"),
-    title: z.string(),
-    minCount: z.number().nullish(),
-    semanticKey: z.string().nullish(),
-  }),
-  z.object({
-    kind: z.literal("placeholder"),
-    title: z.string(),
-    instruction: z.string(),
-    reason: z.enum(["manual-fill", "unmapped-requirement"]).nullish(),
-    semanticKey: z.string().nullish(),
-  }),
-]);
-
-export const BidPlanSchema = z.object({
-  language: z.enum(["sv", "en"]),
-  sections: z.array(PlannedSectionSchema),
-  unmappedRequirements: z.array(z.string()).nullish(),
-  rationale: z.string().nullish(),
 });
 
 // --- Consultant Extractor ---

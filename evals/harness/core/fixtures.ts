@@ -25,6 +25,12 @@ export const AnalyzerGoldenSchema = z.object({
   requiredCompetencies: z.array(z.string()),
   estimatedScope: z.string(),
   redFlags: z.array(z.string()),
+  oslReference: z.string().nullable().default(null),
+  secrecyRows: z.array(z.object({
+    reference: z.string(),
+    scope: z.string(),
+    justification: z.string(),
+  })).default([]),
 });
 
 export const AnalyzerFixtureSchema = z.object({

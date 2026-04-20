@@ -25,6 +25,8 @@ const analysis: RfpAnalysis = {
   estimatedScope: "3 mån",
   redFlags: [],
   domain: "IT",
+  oslReference: null,
+  secrecyRows: [],
 };
 
 const team: Consultant[] = [

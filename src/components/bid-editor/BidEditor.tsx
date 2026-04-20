@@ -129,6 +129,10 @@ export function BidEditor({ bidId, initialSections, initialStatus, styleGuide }:
   }
 
   const isReady = status === "draft" || status === "exported";
+  const needsTimpris = sections.some(
+    (s) => s.content.format === "team-pricing"
+      && s.content.members.some((m) => m.timpris === null)
+  );
 
   return (
     <div className="flex h-[calc(100vh-57px)]">
@@ -150,6 +154,12 @@ export function BidEditor({ bidId, initialSections, initialStatus, styleGuide }:
       {/* Center panel — document view */}
       <main className="flex-1 overflow-y-auto bg-gray-50">
         <div className="max-w-3xl mx-auto py-8 px-6 space-y-8">
+          {needsTimpris && (
+            <div className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <span role="img" aria-label="varning">⚠</span> Fyll i timpriser i Team-sektionen innan export.
+            </div>
+          )}
+
           {status === "generating" && sections.length === 0 && (
             <div className="text-center py-16 text-gray-400 text-sm">
               Genererar anbudssektioner...
