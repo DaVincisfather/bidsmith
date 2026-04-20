@@ -170,6 +170,12 @@ function buildPlaceholderMap(phase: ExecutionPhase): Record<string, string> {
 interface LiteralReplacement {
   from: string;
   to: string;
+  /**
+   * When true, only replace text nodes whose entire content equals `from`.
+   * Use for short tokens (e.g. the two-digit badge "01") that would otherwise
+   * match substrings inside placeholder-filled text like "ISO 27001".
+   */
+  exactMatch?: boolean;
 }
 
 function buildLiteralMap(
@@ -207,10 +213,13 @@ function buildLiteralMap(
       from: "FAS 1",
       to: `FAS ${n}`,
     },
-    // 4. Badge (two-digit ordinal, e.g. "01")
+    // 4. Badge (two-digit ordinal, e.g. "01") — the badge sits in a dedicated
+    // text node. Use exactMatch so placeholder-filled content that happens to
+    // include "01" (e.g. "ISO 27001", "2026-01-15") is not rewritten.
     {
       from: "01",
       to: String(n).padStart(2, "0"),
+      exactMatch: true,
     },
   ];
 }
@@ -229,8 +238,12 @@ function applyLiteralReplacements(
   for (let i = 0; i < tNodes.length; i++) {
     const node = tNodes[i];
     let text = node.textContent ?? "";
-    for (const { from, to } of replacements) {
-      if (text.includes(from)) {
+    for (const { from, to, exactMatch } of replacements) {
+      if (exactMatch) {
+        if (text === from) {
+          text = to;
+        }
+      } else if (text.includes(from)) {
         text = text.split(from).join(to);
       }
     }

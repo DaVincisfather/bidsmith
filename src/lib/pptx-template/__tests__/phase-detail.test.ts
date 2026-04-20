@@ -308,6 +308,77 @@ describe("phase-detail applicator — empty slot handling", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Test 6a: Badge "01" replacement must not corrupt substrings in placeholder
+// content (e.g. "ISO 27001" in an activity, date "2026-01-15", etc.)
+// ---------------------------------------------------------------------------
+
+describe("phase-detail applicator — badge replacement scope", () => {
+  it("phase 2 slide preserves 'ISO 27001' in activity text (no substring corruption)", async () => {
+    const sections: BidSection[] = [
+      {
+        type: "data",
+        key: "cover",
+        title: "Cover",
+        generatedAt: "2026-04-19",
+        content: {
+          format: "cover",
+          title: "Testanbud",
+          client: "TestKund",
+          date: "2026-04-19",
+        },
+      },
+      {
+        type: "data",
+        key: "phases",
+        title: "Genomförande",
+        generatedAt: "2026-04-19",
+        content: {
+          format: "phases",
+          phases: [
+            {
+              name: "Nulägesanalys",
+              objective: "x",
+              activities: ["PHASE1_FINGERPRINT intervjuer"],
+              deliverables: ["rapport"],
+              decisions: [],
+              duration: "4 v",
+              period: "M1\u2013M4",
+            },
+            {
+              name: "Design",
+              objective: "x",
+              activities: [
+                "PHASE2_FINGERPRINT Certifiering enligt ISO 27001",
+              ],
+              deliverables: ["systemdesign"],
+              decisions: [],
+              duration: "4 v",
+              period: "M5\u2013M8",
+            },
+          ],
+        },
+      },
+    ];
+
+    const buf = await renderTemplate("anbudsmall-v2", sections, master);
+    const zip = await JSZip.loadAsync(buf);
+    const slides = await getAllSlideXml(zip);
+
+    const phase2Slide = slides.find((s) => s.includes("PHASE2_FINGERPRINT"));
+    expect(phase2Slide).toBeDefined();
+
+    // The activity contains "ISO 27001" — the "01" substring must NOT be
+    // rewritten to "02" by the badge replacement (which targets only the
+    // standalone two-digit badge).
+    expect(phase2Slide).toContain("ISO 27001");
+    expect(phase2Slide).not.toContain("ISO 27002");
+
+    // Badge itself still renders correctly as standalone "02".
+    expect(phase2Slide).toContain(">02<");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Test 6: Footer applies on each clone
 // ---------------------------------------------------------------------------
 
