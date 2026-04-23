@@ -24,6 +24,8 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export type ClaudeEffort = "low" | "medium" | "high" | "max";
+
 interface CallClaudeOptions<T> {
   model: string;
   maxTokens: number;
@@ -31,6 +33,9 @@ interface CallClaudeOptions<T> {
   userContent: string;
   schema: z.ZodType<T>;
   label: string;
+  // Opus 4.7+ adaptive thinking. When set, enables reasoning budget via
+  // output_config.effort. Omit for Sonnet/Haiku calls that don't need it.
+  effort?: ClaudeEffort;
 }
 
 export async function callClaude<T>({
@@ -40,6 +45,7 @@ export async function callClaude<T>({
   userContent,
   schema,
   label,
+  effort,
 }: CallClaudeOptions<T>): Promise<T> {
   let lastError: unknown;
 
@@ -50,10 +56,18 @@ export async function callClaude<T>({
         max_tokens: maxTokens,
         system,
         messages: [{ role: "user", content: userContent }],
+        ...(effort
+          ? {
+              thinking: { type: "adaptive" as const },
+              output_config: { effort },
+            }
+          : {}),
       });
 
-      const content = message.content[0];
-      if (content.type !== "text") {
+      // With adaptive thinking the first block is "thinking"; the text
+      // block follows. Find the first text block rather than indexing.
+      const content = message.content.find((b) => b.type === "text");
+      if (!content || content.type !== "text") {
         throw new Error(`Unexpected response type for ${label}`);
       }
 

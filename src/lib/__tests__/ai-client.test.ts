@@ -1,5 +1,25 @@
-import { describe, it, expect } from "vitest";
-import { extractJson } from "@/lib/ai-client";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { z } from "zod";
+import { extractJson, callClaude } from "@/lib/ai-client";
+
+const mockCreate = vi.fn();
+vi.mock("@anthropic-ai/sdk", () => {
+  class APIError extends Error {
+    status: number;
+    constructor(status: number, message: string) {
+      super(message);
+      this.status = status;
+    }
+  }
+  class Anthropic {
+    messages = { create: mockCreate };
+  }
+  return { default: Anthropic, APIError };
+});
+
+beforeEach(() => {
+  mockCreate.mockReset();
+});
 
 describe("extractJson", () => {
   it("returns null when no object is present", () => {
@@ -41,5 +61,60 @@ describe("extractJson", () => {
 
   it("returns null for unterminated string", () => {
     expect(extractJson('{"a": "never closed')).toBeNull();
+  });
+});
+
+describe("callClaude — adaptive thinking handling", () => {
+  const schema = z.object({ answer: z.string() });
+  const baseArgs = {
+    maxTokens: 1000,
+    system: "sys",
+    userContent: "user",
+    schema,
+    label: "test",
+  };
+
+  it("finds the text block when a thinking block is present first", async () => {
+    mockCreate.mockResolvedValue({
+      content: [
+        { type: "thinking", thinking: "reasoning...", signature: "sig" },
+        { type: "text", text: '{"answer": "ok"}' },
+      ],
+    });
+
+    const result = await callClaude({
+      ...baseArgs,
+      model: "claude-opus-4-7",
+      effort: "max",
+    });
+
+    expect(result).toEqual({ answer: "ok" });
+  });
+
+  it("wires effort to thinking + output_config in the request", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "text", text: '{"answer": "ok"}' }],
+    });
+
+    await callClaude({ ...baseArgs, model: "claude-opus-4-7", effort: "high" });
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        thinking: { type: "adaptive" },
+        output_config: { effort: "high" },
+      })
+    );
+  });
+
+  it("omits thinking + output_config when effort is not set", async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: "text", text: '{"answer": "ok"}' }],
+    });
+
+    await callClaude({ ...baseArgs, model: "claude-sonnet-4-6" });
+
+    const payload = mockCreate.mock.calls[0][0];
+    expect(payload.thinking).toBeUndefined();
+    expect(payload.output_config).toBeUndefined();
   });
 });

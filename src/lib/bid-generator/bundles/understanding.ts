@@ -50,12 +50,13 @@ export async function buildUnderstandingBundle(
   ctx: BidContext
 ): Promise<BidSection[]> {
   const parsed = await callClaude({
-    model: "claude-opus-4-6",
-    maxTokens: 4000,
+    model: "claude-opus-4-7",
+    maxTokens: 32000,
     system: SYSTEM_PROMPT,
     userContent: formatContext(ctx),
     schema: UnderstandingBundleSchema,
     label: "understanding bundle",
+    effort: "max",
   });
 
   const now = new Date().toISOString();

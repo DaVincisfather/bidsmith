@@ -58,12 +58,13 @@ Svara med giltig JSON:
 
 export async function buildPhasesBundle(ctx: BidContext): Promise<BidSection[]> {
   const parsed = await callClaude({
-    model: "claude-opus-4-6",
-    maxTokens: 4000,
+    model: "claude-opus-4-7",
+    maxTokens: 32000,
     system: SYSTEM_PROMPT,
     userContent: formatContext(ctx),
     schema: PhasesV2Schema,
     label: "phases bundle",
+    effort: "max",
   });
 
   return [

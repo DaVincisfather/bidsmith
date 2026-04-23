@@ -41,12 +41,13 @@ Svara med giltig JSON:
 
 export async function buildQualityBundle(ctx: BidContext): Promise<BidSection[]> {
   const parsed = await callClaude({
-    model: "claude-opus-4-6",
-    maxTokens: 2000,
+    model: "claude-opus-4-7",
+    maxTokens: 16000,
     system: SYSTEM_PROMPT,
     userContent: formatContext(ctx),
     schema: QualityBundleSchema,
     label: "quality bundle",
+    effort: "max",
   });
 
   return [{
