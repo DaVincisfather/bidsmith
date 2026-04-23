@@ -16,6 +16,6 @@ export function buildMasterContext(
     bidName: input.analysis.title,
     // diaryNumber is optional on RfpAnalysis — default to empty string when absent
     diaryNumber: input.analysis.diaryNumber ?? "",
-    bidDate: input.now.toISOString().split("T")[0],
+    bidDate: new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm" }).format(input.now),
   };
 }

@@ -44,13 +44,15 @@ describe("buildMasterContext", () => {
     expect(ctx.diaryNumber).toBe("");
   });
 
-  it("formats bidDate as ISO date (no time)", () => {
+  it("formats bidDate in Europe/Stockholm, not UTC", () => {
+    // 23:30 UTC on Apr 22 = 01:30 CEST on Apr 23 — buggy UTC path would
+    // return "2026-04-22", Stockholm-aware path returns "2026-04-23".
     const ctx = buildMasterContext({
       analysis: baseAnalysis,
       organizationName: "Org",
-      now: new Date("2026-04-19T23:59:59Z"),
+      now: new Date("2026-04-22T23:30:00Z"),
     });
 
-    expect(ctx.bidDate).toBe("2026-04-19");
+    expect(ctx.bidDate).toBe("2026-04-23");
   });
 });

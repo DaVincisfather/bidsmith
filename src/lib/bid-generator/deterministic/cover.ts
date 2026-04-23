@@ -9,7 +9,7 @@ export function buildCoverSection(analysis: RfpAnalysis): BidSection {
       format: "cover",
       title: analysis.title,
       client: analysis.client,
-      date: new Date().toISOString().split("T")[0],
+      date: new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm" }).format(new Date()),
     },
     generatedAt: new Date().toISOString(),
   };

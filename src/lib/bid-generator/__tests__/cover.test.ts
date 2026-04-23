@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { buildCoverSection } from "../deterministic/cover";
 import type { RfpAnalysis } from "@/lib/types";
 
@@ -13,6 +13,10 @@ const baseAnalysis: RfpAnalysis = {
 };
 
 describe("buildCoverSection", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("maps analysis.title and analysis.client into the cover content", () => {
     const s = buildCoverSection(baseAnalysis);
     expect(s.content).toEqual({
@@ -23,5 +27,14 @@ describe("buildCoverSection", () => {
     });
     expect(s.key).toBe("cover");
     expect(s.type).toBe("data");
+  });
+
+  it("formats cover date in Europe/Stockholm, not UTC", () => {
+    // 23:30 UTC on Apr 22 = 01:30 CEST on Apr 23 — buggy UTC path would
+    // return "2026-04-22", Stockholm-aware path returns "2026-04-23".
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T23:30:00Z"));
+    const s = buildCoverSection(baseAnalysis);
+    expect((s.content as { date: string }).date).toBe("2026-04-23");
   });
 });
