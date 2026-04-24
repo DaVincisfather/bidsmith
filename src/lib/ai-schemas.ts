@@ -2,6 +2,47 @@ import { z } from "zod";
 
 // --- RFP Analyzer ---
 
+// Coerce priority values from LLM output. Swedish RFPs often use "ska-krav"/"bör-krav"
+// as natural language, and models drift to those (and to capitalized / underscore /
+// English-synonym variants) on long requirement lists. We normalize at the boundary.
+const PRIORITY_MAP: Record<string, "must" | "should" | "nice-to-have"> = {
+  must: "must",
+  should: "should",
+  "nice-to-have": "nice-to-have",
+  // Swedish
+  ska: "must",
+  skall: "must",
+  "ska-krav": "must",
+  "skall-krav": "must",
+  skakrav: "must",
+  skallkrav: "must",
+  bör: "should",
+  bor: "should",
+  "bör-krav": "should",
+  "bor-krav": "should",
+  borkrav: "should",
+  börkrav: "should",
+  kan: "nice-to-have",
+  "kan-krav": "nice-to-have",
+  kankrav: "nice-to-have",
+  önskemål: "nice-to-have",
+  onskemal: "nice-to-have",
+  // English synonyms and spacing/casing variants
+  "nice to have": "nice-to-have",
+  nice_to_have: "nice-to-have",
+  nicetohave: "nice-to-have",
+  mandatory: "must",
+  required: "must",
+  optional: "nice-to-have",
+  recommended: "should",
+};
+
+export const PrioritySchema = z.preprocess((val) => {
+  if (typeof val !== "string") return val;
+  const key = val.trim().toLowerCase();
+  return PRIORITY_MAP[key] ?? val;
+}, z.enum(["must", "should", "nice-to-have"]));
+
 export const SecrecyRowSchema = z.object({
   reference: z.string(),
   scope: z.string(),
@@ -19,7 +60,7 @@ export const RfpAnalysisSchema = z.object({
     z.object({
       category: z.string(),
       description: z.string(),
-      priority: z.enum(["must", "should", "nice-to-have"]),
+      priority: PrioritySchema,
     })
   ),
   evaluationCriteria: z.array(

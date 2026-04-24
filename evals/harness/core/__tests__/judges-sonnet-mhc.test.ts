@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockCreate = vi.hoisted(() => vi.fn());
+const mockStream = vi.hoisted(() =>
+  vi.fn((..._args: unknown[]) => {
+    const message = mockCreate();
+    return { finalMessage: () => Promise.resolve(message) };
+  })
+);
 vi.mock("@anthropic-ai/sdk", () => ({
-  default: function () { return { messages: { create: mockCreate } }; },
+  default: function () { return { messages: { stream: mockStream } }; },
   APIError: class MockAPIError extends Error { status?: number },
 }));
 
@@ -57,7 +63,7 @@ describe("sonnetMhcJudge", () => {
         '{"demonstrated": true, "evidence": "x", "confidence": "medium"}' }],
     });
     await sonnetMhcJudge({ requirement: sampleRequirement, consultantId: "c1", cvText: "cv" });
-    expect(mockCreate).toHaveBeenCalledWith(
+    expect(mockStream).toHaveBeenCalledWith(
       expect.objectContaining({ model: expect.stringMatching(/sonnet/i) })
     );
   });

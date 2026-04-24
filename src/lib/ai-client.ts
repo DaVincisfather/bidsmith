@@ -51,7 +51,11 @@ export async function callClaude<T>({
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const message = await getClient().messages.create({
+      // Streaming is required when the SDK estimates >10 min wall time
+      // (max_tokens * 60/128000 > 10). Opus 4.7 + effort=max + 32k tokens
+      // trips this. Using .stream().finalMessage() keeps parity with .create()
+      // and removes the ceiling uniformly.
+      const stream = getClient().messages.stream({
         model,
         max_tokens: maxTokens,
         system,
@@ -63,6 +67,7 @@ export async function callClaude<T>({
             }
           : {}),
       });
+      const message = await stream.finalMessage();
 
       // With adaptive thinking the first block is "thinking"; the text
       // block follows. Find the first text block rather than indexing.
@@ -139,7 +144,26 @@ function parseAndValidate<T>(
 
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
-    throw new Error(`Invalid ${label} response: ${parsed.error.message}`);
+    // Include the received value per issue so drifts (Swedish enum aliases,
+    // capitalization, unexpected nulls) are diagnosable without re-running.
+    const lines = parsed.error.issues.map((issue) => {
+      const pathStr = issue.path.length ? issue.path.join(".") : "<root>";
+      const received = getAtPath(raw, issue.path);
+      return `${pathStr}: ${issue.message} (received: ${JSON.stringify(received)})`;
+    });
+    throw new Error(`Invalid ${label} response:\n  - ${lines.join("\n  - ")}`);
   }
   return parsed.data;
+}
+
+function getAtPath(
+  obj: unknown,
+  path: readonly PropertyKey[]
+): unknown {
+  let cur: unknown = obj;
+  for (const key of path) {
+    if (cur == null) return undefined;
+    cur = (cur as Record<PropertyKey, unknown>)[key];
+  }
+  return cur;
 }

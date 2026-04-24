@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { z } from "zod";
 import { extractJson, callClaude } from "@/lib/ai-client";
 
-const mockCreate = vi.fn();
+const mockStream = vi.fn();
 vi.mock("@anthropic-ai/sdk", () => {
   class APIError extends Error {
     status: number;
@@ -12,13 +12,23 @@ vi.mock("@anthropic-ai/sdk", () => {
     }
   }
   class Anthropic {
-    messages = { create: mockCreate };
+    messages = { stream: mockStream };
   }
   return { default: Anthropic, APIError };
 });
 
+// Mimic the subset of MessageStream used by callClaude — only finalMessage().
+function streamOf(message: unknown) {
+  return { finalMessage: () => Promise.resolve(message) };
+}
+
+// Alias for clarity in tests — our create-style mock now returns a stream.
+const mockCreate = mockStream;
+mockCreate.mockImplementation((..._args: unknown[]) => streamOf(undefined));
+
 beforeEach(() => {
-  mockCreate.mockReset();
+  mockStream.mockReset();
+  mockStream.mockImplementation((..._args: unknown[]) => streamOf(undefined));
 });
 
 describe("extractJson", () => {
@@ -64,6 +74,34 @@ describe("extractJson", () => {
   });
 });
 
+describe("callClaude — validation error formatting", () => {
+  const baseArgs = {
+    maxTokens: 1000,
+    system: "sys",
+    userContent: "user",
+    label: "test",
+    model: "claude-sonnet-4-6",
+  };
+
+  it("includes the received value and path in the error message", async () => {
+    const schema = z.object({
+      items: z.array(z.object({ priority: z.enum(["a", "b"]) })),
+    });
+    mockCreate.mockReturnValue(streamOf({
+      content: [
+        {
+          type: "text",
+          text: '{"items": [{"priority": "a"}, {"priority": "nope"}]}',
+        },
+      ],
+    }));
+
+    await expect(callClaude({ ...baseArgs, schema })).rejects.toThrow(
+      /items\.1\.priority.*nope/
+    );
+  });
+});
+
 describe("callClaude — adaptive thinking handling", () => {
   const schema = z.object({ answer: z.string() });
   const baseArgs = {
@@ -75,12 +113,12 @@ describe("callClaude — adaptive thinking handling", () => {
   };
 
   it("finds the text block when a thinking block is present first", async () => {
-    mockCreate.mockResolvedValue({
+    mockCreate.mockReturnValue(streamOf({
       content: [
         { type: "thinking", thinking: "reasoning...", signature: "sig" },
         { type: "text", text: '{"answer": "ok"}' },
       ],
-    });
+    }));
 
     const result = await callClaude({
       ...baseArgs,
@@ -92,9 +130,9 @@ describe("callClaude — adaptive thinking handling", () => {
   });
 
   it("wires effort to thinking + output_config in the request", async () => {
-    mockCreate.mockResolvedValue({
+    mockCreate.mockReturnValue(streamOf({
       content: [{ type: "text", text: '{"answer": "ok"}' }],
-    });
+    }));
 
     await callClaude({ ...baseArgs, model: "claude-opus-4-7", effort: "high" });
 
@@ -107,9 +145,9 @@ describe("callClaude — adaptive thinking handling", () => {
   });
 
   it("omits thinking + output_config when effort is not set", async () => {
-    mockCreate.mockResolvedValue({
+    mockCreate.mockReturnValue(streamOf({
       content: [{ type: "text", text: '{"answer": "ok"}' }],
-    });
+    }));
 
     await callClaude({ ...baseArgs, model: "claude-sonnet-4-6" });
 

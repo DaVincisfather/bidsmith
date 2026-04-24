@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockCreate = vi.hoisted(() => vi.fn());
+const mockStream = vi.hoisted(() =>
+  vi.fn((..._args: unknown[]) => {
+    const message = mockCreate();
+    return { finalMessage: () => Promise.resolve(message) };
+  })
+);
 vi.mock("@anthropic-ai/sdk", () => ({
-  default: function () { return { messages: { create: mockCreate } }; },
+  default: function () { return { messages: { stream: mockStream } }; },
   APIError: class MockAPIError extends Error { status?: number },
 }));
 
@@ -42,7 +48,7 @@ describe("haikuEquivJudge", () => {
       content: [{ type: "text", text: '{"match": true, "reason": "ok"}' }],
     });
     await haikuEquivJudge({ golden: "A", actual: "B", field: "x" });
-    expect(mockCreate).toHaveBeenCalledWith(
+    expect(mockStream).toHaveBeenCalledWith(
       expect.objectContaining({ model: expect.stringMatching(/haiku/i) })
     );
   });

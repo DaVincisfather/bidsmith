@@ -3,11 +3,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { RfpAnalysis, Consultant, ScoredConsultant } from "../types";
 
 const mockCreate = vi.hoisted(() => vi.fn());
+const mockStream = vi.hoisted(() =>
+  vi.fn((..._args: unknown[]) => {
+    const message = mockCreate();
+    return { finalMessage: () => Promise.resolve(message) };
+  })
+);
 
 vi.mock("@anthropic-ai/sdk", () => {
   return {
     default: function () {
-      return { messages: { create: mockCreate } };
+      return { messages: { stream: mockStream } };
+    },
+    APIError: class MockAPIError extends Error {
+      status?: number;
     },
   };
 });

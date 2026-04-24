@@ -32,7 +32,10 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 }
 
 Var noggrann med att:
-- Skilja mellan ska-krav (must) och bör-krav (should)
+- priority MÅSTE vara exakt ett av strängvärdena "must", "should", "nice-to-have".
+  Mappa svenska termer: ska-krav/skall-krav/skall/ska → "must",
+  bör-krav/bör → "should", kan-krav/kan/önskemål → "nice-to-have".
+  Använd aldrig svenska värden eller andra varianter i fältet.
 - Extrahera utvärderingskriterier med vikter
 - Identifiera oklarheter (redFlags)
 - Plocka diarienummer exakt — utelämna fältet om det saknas
