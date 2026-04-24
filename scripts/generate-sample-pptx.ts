@@ -44,16 +44,18 @@ const sections: BidSection[] = [
     content: {
       format: "understanding-current",
       organisation:
-        "Sveriges näst största region.\n56 000 anställda, fyra sjukhus.",
+        "Sveriges näst största region med komplex politisk styrning.\n56 000 anställda, fyra sjukhus, 200+ vårdcentraler, 49 kommuner.",
       system:
-        "Heterogen systemflora: TakeCare,\nRaindance, lokala stödsystem.",
+        "Heterogen systemflora: TakeCare, Raindance, Cosmic, Millennium,\nlokala journalstödsystem och egenutvecklade specialapplikationer.",
       processer:
-        "Kärnprocesser i silos.\nManuell dataextraktion.",
+        "Kärnprocesser i silos mellan hälso- och sjukvårdsförvaltningar.\nManuell dataextraktion, begränsad integration, överlappande register.",
       smärtpunkter: [
-        "Dubbeldokumentation pga bristande systemintegration",
-        "Begränsad realtidsdata försvårar resursstyrning",
-        "Ojämn digital mognad mellan förvaltningar",
-        "Långa ledtider i beslutsprocesser",
+        "Dubbeldokumentation pga bristande systemintegration mellan förvaltningar",
+        "Begränsad realtidsdata försvårar operativ resursstyrning och kapacitetsplanering",
+        "Ojämn digital mognad mellan förvaltningar skapar friktion vid samverkan",
+        "Långa ledtider i beslutsprocesser — från behov till driftsatt lösning",
+        "Svagt masterdata-arbete leder till inkonsistenta patientuppgifter över system",
+        "Kompetensbrist inom integrations- och dataarkitektur i regionens egen IT",
       ],
     },
   },
@@ -69,9 +71,10 @@ const sections: BidSection[] = [
     content: {
       format: "understanding-assignment",
       stycken: [
-        "Region Västra Götaland söker konsultpartner för att driva digital transformation inom hälso- och sjukvård. Uppdraget omfattar analys, målbild och genomförandestöd under 12–18 månader.",
-        "Konsulten leder tvärfunktionella workshops, säkrar ledningsförankring och producerar beslutsunderlag, roadmap samt mätramverk för löpande nyttorealisering.",
-        "Arbetet bedrivs tillsammans med regionens digitaliseringsenhet och IT. Slutleverans inkluderar styrgruppsrapportering och rekommendationer för nästa fas.",
+        "Region Västra Götaland söker en erfaren konsultpartner för att driva digital transformation inom hälso- och sjukvård över samtliga förvaltningar. Uppdraget omfattar strategisk analys, gemensam målbild, prioriterad roadmap och operativt genomförandestöd under 12–18 månader med möjlighet till option om ytterligare 12 månader.",
+        "Konsulten leder tvärfunktionella workshops med politisk styrgrupp, förvaltningsledning och verksamhet, säkrar ledningsförankring på alla nivåer och producerar beslutsunderlag, roadmap, business case samt mätramverk för löpande nyttorealisering under hela transformationsperioden.",
+        "Arbetet bedrivs i nära samverkan med regionens digitaliseringsenhet, IT-förvaltning och upphandlingsavdelning. Leveransmodellen följer regionens etablerade projektmetodik och kvalitetskrav enligt ISO 9001.",
+        "Slutleverans inkluderar styrgruppsrapportering, överlämningsdokumentation, rekommendationer för nästa fas samt en konkret förvaltningsplan som säkerställer att förändringsarbetet fortsätter efter uppdragets slut.",
       ],
     },
   },
@@ -87,16 +90,18 @@ const sections: BidSection[] = [
     content: {
       format: "understanding-vision",
       utmaningar: [
-        "Samordna parallella initiativ utan central styrning",
-        "Förbättra medarbetarvardagen — inte bara byta teknik",
-        "Hantera motstånd i komplex multistakeholder-miljö",
-        "Uppnå GDPR-krav i distribuerat systemlandskap",
+        "Samordna parallella digitaliseringsinitiativ utan stark central styrning eller portföljfunktion",
+        "Förbättra medarbetarvardagen — inte bara byta teknik utan också arbetssätt och kultur",
+        "Hantera motstånd i komplex multistakeholder-miljö med politisk, facklig och verksamhetspåverkan",
+        "Uppnå GDPR- och patientdatakrav i distribuerat systemlandskap med gamla integrationer",
+        "Säkerställa kompetensöverföring från konsult till intern förvaltning under hela resan",
       ],
       värden: [
-        "20–30 % kortare ledtider i kärnprocesser",
-        "Ökad datakvalitet via masterdata och integrationshubb",
-        "Stärkt beslutsförmåga via realtidsdashboards",
-        "Framtidssäkrad plattform för AI-driven uppföljning",
+        "20–30 % kortare ledtider i kärnprocesser genom automatisering och integration",
+        "Ökad datakvalitet via masterdata-hantering och en enhetlig integrationshubb",
+        "Stärkt beslutsförmåga i ledning och verksamhet via realtidsdashboards",
+        "Framtidssäkrad plattform för AI-driven uppföljning och prediktiv analys",
+        "Lägre förvaltningskostnad genom konsolidering av överlappande system",
       ],
     },
   },
@@ -117,18 +122,21 @@ const sections: BidSection[] = [
           shortDescription: "Förankra uppdrag och kartlägg nuläge",
           objective: "Etablera projektstruktur, skapa gemensam bild av nuläget och identifiera prioriterade förbättringsområden",
           activities: [
-            "Uppstartsmöte med styrgrupp + projektplan",
-            "15–20 djupintervjuer med nyckelpersoner",
-            "Systemkartläggning och dokumentinventering",
-            "Workshop: validering och prioritering",
+            "Uppstartsmöte med styrgrupp och verksamhetsledning + projektplan",
+            "15–20 djupintervjuer med nyckelpersoner i verksamhet och IT",
+            "Systemkartläggning och dokumentinventering av befintligt landskap",
+            "Workshop för validering och prioritering med förvaltningschefer",
+            "Riskanalys och intressentkarta för transformationsresan",
           ],
           deliverables: [
-            "Projektplan och kommunikationsplan",
-            "Nulägessrapport med smärtpunktslista",
+            "Projektplan och kommunikationsplan för hela uppdraget",
+            "Nulägessrapport med smärtpunktslista och bedömd affärspåverkan",
+            "Intressent- och riskkarta som underlag för roadmap",
           ],
           decisions: [
-            "Styrgruppen godkänner nulägessrapport",
-            "Go/No-go för fördjupad analys",
+            "Styrgruppen godkänner nulägessrapport och scope",
+            "Go/No-go för fördjupad analys i fas 2",
+            "Resurs- och budgetram bekräftad för nästa fas",
           ],
           duration: "4 v",
           period: "M1–M2",
@@ -374,15 +382,15 @@ const sections: BidSection[] = [
           startDate: "03/2023",
           endDate: "11/2024",
           scope:
-            "Microsoft 365-införande med förändringsprogram.",
+            "Microsoft 365-införande med förändringsprogram, utbildningspaket och ny styrmodell för digital arbetsplats över samtliga förvaltningar.",
           contact: {
             name: "Maria Ekström",
-            titlePhoneEmail: "Digitaliseringschef / 040-123 45 67 / maria.ekstrom@skane.se",
+            titlePhoneEmail: "Digitaliseringschef Region Skåne / 040-123 45 67 / maria.ekstrom@skane.se",
           },
           roleAndDelivery:
-            "Anna uppdragsledare; Johan förändringsledare. Roadmap, utbildning, styrmodell.",
+            "Anna uppdragsledare; Johan förändringsledare. Ansvar för roadmap, utbildning, styrmodell och kommunikationsstrategi gentemot verksamhet och fackliga parter.",
           result:
-            "98 % onboardade inom 6 mån. Ledtid –35 %. På tid och budget.",
+            "98 % av medarbetarna onboardade inom 6 mån. Ledtid för samverkan –35 %. Leverans på tid och inom budget.",
         },
         {
           clientName: "Region Uppsala",

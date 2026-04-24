@@ -43,17 +43,24 @@ export function referenceApplicator(ctx: ApplicatorContext) {
     };
   }
 
-  // Build placeholder → value map.
-  // All placeholder strings are verified against the actual PPTX XML bytes.
-  // Notable gotchas:
-  //   - contextLine uses U+201D (right double quote) for BOTH opening AND closing quote
-  //   - startDate/endDate are in ONE compound text node: "{Start} — {Slut}"
-  //     so we replace the entire compound string with a formatted date range,
-  //     OR we replace each sub-placeholder within the compound string.
-  //     Since replaceAllTextNodes walks nodes and the compound node contains
-  //     both {Start...} and {Slut...}, we can replace them individually within it.
-  //   - {Namn} has a trailing space in the XML node ("{Namn} ") — we match just
-  //     "{Namn}" and leave any trailing space in place.
+  // One-box-per-column pattern (parallel to slide 3/4/5/7): each column is a
+  // single textbox whose content joins all field labels + values with "\n".
+  // expandMultiline() in _footer.ts clones the host paragraph per "\n" so each
+  // line becomes its own paragraph, inheriting pPr/rPr from the template.
+  // Labels remain UPPERCASE for visual hierarchy even though they share the
+  // value run's typography.
+  const vanster = [
+    `KUND\n${reference.organisation}`,
+    `PERIOD\n${reference.startDate} \u2014 ${reference.endDate}`,
+    `OMFATTNING\n${reference.scope}`,
+    `KONTAKTPERSON\n${reference.contact.name}\n${reference.contact.titlePhoneEmail}`,
+  ].join("\n\n");
+
+  const hoger = [
+    `ROLL OCH LEVERANS\n${reference.roleAndDelivery}`,
+    `RESULTAT\n${reference.result}`,
+  ].join("\n\n");
+
   const placeholderMap: Record<string, string> = {
     // Heading
     "{Referens 1 \u2014 kundnamn}": reference.clientName,
@@ -61,24 +68,9 @@ export function referenceApplicator(ctx: ApplicatorContext) {
     "{Referens 1 \u2014 kort kontextrad, t.ex. \u201dDigitalisering av \u00e4rendehantering\u201d}":
       reference.contextLine,
 
-    // Details section
-    "{Kund \u2014 organisation}": reference.organisation,
-    // Start/end dates are in ONE node: "{Start MM/ÅÅÅÅ} — {Slut MM/ÅÅÅÅ}"
-    // Replace each placeholder individually; replaceAllTextNodes handles both within the node.
-    "{Start MM/\u00c5\u00c5\u00c5\u00c5}": reference.startDate,
-    "{Slut MM/\u00c5\u00c5\u00c5\u00c5}": reference.endDate,
-    "{Omfattning \u2014 antal timmar, konsulter och total volym}": reference.scope,
-
-    // Contact section — two separate frames
-    "{Namn}": reference.contact.name,
-    // Compound contact frame — the whole string is one placeholder block
-    "{Titel} \u00b7 {Telefon} \u00b7 {E-post}": reference.contact.titlePhoneEmail,
-
-    // Role and result
-    "{Roll/leverans \u2014 vilken roll vi hade och vad vi levererade, konkret och verifierbart}":
-      reference.roleAndDelivery,
-    "{Resultat \u2014 m\u00e4tbart utfall av uppdraget, g\u00e4rna med siffror och tidsbesparing}":
-      reference.result,
+    // Consolidated columns — one box each
+    "{V\u00e4nster}": vanster,
+    "{H\u00f6ger}": hoger,
   };
 
   // Tab label update: "REFERENS 01" → "REFERENS NN"

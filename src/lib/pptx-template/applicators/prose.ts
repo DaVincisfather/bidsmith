@@ -1,6 +1,10 @@
 import type { ISlide } from "pptx-automizer/dist/interfaces/islide";
 import type { ApplicatorContext } from "../types";
-import { applyFooter, replaceAllTextNodes } from "./_footer";
+import {
+  applyFooter,
+  replaceAllTextNodes,
+  replaceParagraphTextNodes,
+} from "./_footer";
 
 /**
  * Prose applicator — handles slides 3, 4, 5.
@@ -18,6 +22,10 @@ export function proseApplicator(ctx: ApplicatorContext) {
   return (slide: ISlide) => {
     const map = buildProseMap(ctx);
     slide.modify((doc: XMLDocument) => {
+      // Paragraph-level first: placeholders like {Stycken}/{Utmaningar}/{Värden}
+      // get split by PowerPoint's spell-checker across multiple <a:r> runs
+      // (err="1" flags "unknown" Swedish words), so a single-node pass misses them.
+      replaceParagraphTextNodes(map)(doc);
       replaceAllTextNodes(map)(doc);
       footer(doc);
     });
@@ -51,28 +59,30 @@ function buildSlide3Map(ctx: ApplicatorContext): Record<string, string> {
     return {};
   }
   const c = sec.content;
-  const sp = c.smärtpunkter;
+  const sp = c.smärtpunkter.filter((s) => s && s.trim().length > 0);
+
+  // One-box pattern (parallel to slide 4/5). {Nuläge} is a single flowing
+  // block with inline section labels; expandMultiline clones the host
+  // paragraph per \n, so each line/section inherits the same rPr. The
+  // template textbox rPr determines visual output; labels become natural
+  // inline prefixes.
+  const nulage = [
+    `Organisation — ${c.organisation}`,
+    `System — ${c.system}`,
+    `Processer — ${c.processer}`,
+  ].join("\n\n");
 
   return {
-    // Section A
-    "{Kundens nuläge — organisation: förvaltningar, antal anställda, geografi}":
-      c.organisation,
-    "{Kundens nuläge — system: nuvarande verksamhetssystem, integrationer, leverantörer}":
-      c.system,
-    "{Kundens nuläge — processer: arbetssätt, styrning, beslutsvägar}":
-      c.processer,
-    // Section B — slot cap 4; fill what we have, empty the rest
-    "{Smärtpunkt 1 — vad som inte fungerar idag och hur det påverkar verksamheten}":
-      sp[0] ?? "",
-    "{Smärtpunkt 2}": sp[1] ?? "",
-    "{Smärtpunkt 3}": sp[2] ?? "",
-    "{Smärtpunkt 4}": sp[3] ?? "",
+    "{Nuläge}": nulage,
+    "{Smärtpunkter}": sp.join("\n"),
   };
 }
 
 // ---------------------------------------------------------------------------
 // Slide 4 — Uppdragsbeskrivning
-// 3 fixed paragraph placeholders (long descriptive text as key)
+// Single {Stycken} placeholder — paragraphs separated by blank line (\n\n).
+// expandMultiline() in _footer.ts clones <a:p> per \n so each stycke becomes
+// its own paragraph, inheriting pPr/rPr from the template placeholder.
 // ---------------------------------------------------------------------------
 
 function buildSlide4Map(ctx: ApplicatorContext): Record<string, string> {
@@ -82,22 +92,17 @@ function buildSlide4Map(ctx: ApplicatorContext): Record<string, string> {
   if (!sec || sec.content.format !== "understanding-assignment") {
     return {};
   }
-  const stycken = sec.content.stycken;
+  const stycken = sec.content.stycken.filter((s) => s && s.trim().length > 0);
 
   return {
-    // Exact placeholder text as written in the template (including trailing period)
-    ["{Uppdraget parafraserat med våra ord — stycke 1. Visa att vi har läst kravspecifikationen noggrant genom att beskriva syftet, målet och huvudsakliga leveranser med egna ord.}"]:
-      stycken[0] ?? "",
-    ["{Uppdraget parafraserat med våra ord — stycke 2. Beskriv omfattning, avgränsningar och förväntat utfall så att upphandlaren ser att vi har förstått uppdraget korrekt.}"]:
-      stycken[1] ?? "",
-    ["{Uppdraget parafraserat med våra ord — stycke 3. Tydliggör vilka intressenter som berörs och hur uppdraget knyter an till kundens övergripande mål.}"]:
-      stycken[2] ?? "",
+    "{Stycken}": stycken.join("\n\n"),
   };
 }
 
 // ---------------------------------------------------------------------------
 // Slide 5 — Utmaningar och värde
-// Section A: utmaningar (cap 4), Section B: värden (cap 4)
+// Two placeholders: {Utmaningar} and {Värden}, each flowing N bullets via \n.
+// Each bullet becomes its own paragraph (inherits bullet marker styling).
 // ---------------------------------------------------------------------------
 
 function buildSlide5Map(ctx: ApplicatorContext): Record<string, string> {
@@ -107,21 +112,11 @@ function buildSlide5Map(ctx: ApplicatorContext): Record<string, string> {
   if (!sec || sec.content.format !== "understanding-vision") {
     return {};
   }
-  const utm = sec.content.utmaningar;
-  const val = sec.content.värden;
+  const utm = sec.content.utmaningar.filter((s) => s && s.trim().length > 0);
+  const val = sec.content.värden.filter((s) => s && s.trim().length > 0);
 
   return {
-    // Utmaningar — cap 4
-    "{Utmaning 1 — en konkret utmaning vi ser i uppdraget och varför den är viktig att hantera}":
-      utm[0] ?? "",
-    "{Utmaning 2}": utm[1] ?? "",
-    "{Utmaning 3}": utm[2] ?? "",
-    "{Utmaning 4}": utm[3] ?? "",
-    // Värden — cap 4
-    "{Värde 1 — mervärde vi kan synliggöra som går utöver ska-kraven, konkret och mätbart}":
-      val[0] ?? "",
-    "{Värde 2}": val[1] ?? "",
-    "{Värde 3}": val[2] ?? "",
-    "{Värde 4}": val[3] ?? "",
+    "{Utmaningar}": utm.join("\n"),
+    "{Värden}": val.join("\n"),
   };
 }

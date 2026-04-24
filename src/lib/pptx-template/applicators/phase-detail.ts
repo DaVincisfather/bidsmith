@@ -133,10 +133,22 @@ function buildPlaceholderMap(phase: ExecutionPhase): Record<string, string> {
   // weeks string since period carries month range.
   const durationValue = phase.duration;
 
-  const acts = phase.activities;
-  const dels = phase.deliverables;
-  const decs = phase.decisions ?? [];
+  const acts = phase.activities.filter((s) => s && s.trim().length > 0);
+  const dels = phase.deliverables.filter((s) => s && s.trim().length > 0);
+  const decs = (phase.decisions ?? []).filter(
+    (s) => s && s.trim().length > 0,
+  );
+  // Only append the standing Go/no-go line if AI didn't already produce
+  // a go/no-go-formulation — otherwise the column shows a duplicate.
+  const hasGoNoGo = decs.some((d) => /go.?no.?go/i.test(d));
+  const allDecs = hasGoNoGo
+    ? decs
+    : [...decs, "Go/no-go till n\u00e4sta fas"];
 
+  // One-box pattern (parallel to slide 3/4/5): each column is a single
+  // textbox with bullets joined by "\n". expandMultiline() in _footer.ts
+  // clones the host paragraph per \n so each bullet becomes its own
+  // paragraph, inheriting pPr/rPr (incl. lnSpc 140%) from the template.
   return {
     // Phase name
     "{Fas 1 \u2014 namn}": phase.name, // em dash U+2014
@@ -145,24 +157,14 @@ function buildPlaceholderMap(phase: ExecutionPhase): Record<string, string> {
     "{M1\u2013M2}": periodValue,        // en dash U+2013
     "{Antal veckor}": durationValue,
 
-    // Activities (cap 4)
-    "{Aktivitet 1 \u2014 vad som g\u00f6rs, av vem, hur}": acts[0] ?? "",
-    "{Aktivitet 2}": acts[1] ?? "",
-    "{Aktivitet 3}": acts[2] ?? "",
-    "{Aktivitet 4}": acts[3] ?? "",
+    // Column A — all activities in one box
+    "{Aktiviteter}": acts.join("\n"),
 
-    // Deliverables (cap 3)
-    "{Leverans 1 \u2014 konkret artefakt, format, mottagare}": dels[0] ?? "",
-    "{Leverans 2}": dels[1] ?? "",
-    "{Leverans 3}": dels[2] ?? "",
+    // Column B — all deliverables in one box
+    "{Leveranser}": dels.join("\n"),
 
-    // Decisions (cap 3). The 3rd slot's placeholder text in the template IS
-    // wrapped in braces — verified by extracting slide7.xml. The audit doc's
-    // hedging ("written without braces") was incorrect.
-    "{Beslut 1 \u2014 vad styrgruppen ska ta st\u00e4llning till vid faslut}":
-      decs[0] ?? "",
-    "{Beslut 2}": decs[1] ?? "",
-    "{Go/no-go till n\u00e4sta fas}": decs[2] ?? "Go/no-go till n\u00e4sta fas",
+    // Column C — all decisions in one box.
+    "{Beslut}": allDecs.join("\n"),
   };
 }
 
