@@ -88,6 +88,7 @@ describe("buildReferenceBundle", () => {
 
     const [s] = await buildReferenceBundle(baseCtx);
     expect(s.key).toBe("reference-v2");
+    if (!s.content) throw new Error("content missing");
     if (s.content.format !== "reference-v2") throw new Error("wrong format");
     expect(s.content.format).toBe("reference-v2");
     expect(s.content.references[0].clientName).toBe("Göteborgs Stad");
@@ -99,6 +100,7 @@ describe("buildReferenceBundle", () => {
     vi.mocked(callClaude).mockResolvedValue({ references: mockRefs });
 
     const [s] = await buildReferenceBundle(baseCtx);
+    if (!s.content) throw new Error("content missing");
     if (s.content.format !== "reference-v2") throw new Error("wrong format");
     expect(s.content.references).toEqual(mockRefs);
   });

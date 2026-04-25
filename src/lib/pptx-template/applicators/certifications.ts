@@ -34,8 +34,8 @@ import {
 export function certificationsApplicator(ctx: ApplicatorContext) {
   const footer = applyFooter(ctx);
 
-  const sec = ctx.sections.find((s) => s.content.format === "certifications");
-  if (!sec || sec.content.format !== "certifications") {
+  const sec = ctx.sections.find((s) => s.content?.format === "certifications");
+  if (!sec || sec.content?.format !== "certifications") {
     return (slide: ISlide) => {
       slide.modify(footer);
     };

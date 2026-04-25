@@ -36,9 +36,9 @@ export function qualityAssuranceApplicator(ctx: ApplicatorContext) {
 
 function buildQualityMap(ctx: ApplicatorContext): Record<string, string> {
   const sec = ctx.sections.find(
-    (s) => s.content.format === "quality-assurance",
+    (s) => s.content?.format === "quality-assurance",
   );
-  if (!sec || sec.content.format !== "quality-assurance") {
+  if (!sec || sec.content?.format !== "quality-assurance") {
     // Missing section — leave placeholders unreplaced so gap is visible
     return {};
   }

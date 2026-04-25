@@ -42,9 +42,9 @@ const SLOT_CAP = 6;
 
 function buildRequirementMatrixMap(ctx: ApplicatorContext): Record<string, string> {
   const sec = ctx.sections.find(
-    (s) => s.content.format === "requirement-matrix-v2",
+    (s) => s.content?.format === "requirement-matrix-v2",
   );
-  if (!sec || sec.content.format !== "requirement-matrix-v2") {
+  if (!sec || sec.content?.format !== "requirement-matrix-v2") {
     return {};
   }
   const c = sec.content;

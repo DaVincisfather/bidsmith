@@ -64,6 +64,7 @@ describe("buildPhasesBundle", () => {
     const sections = await buildPhasesBundle(baseCtx);
     expect(sections).toHaveLength(1);
     expect(sections[0].key).toBe("phases");
+    if (!sections[0].content) throw new Error("content missing");
     if (sections[0].content.format !== "phases") throw new Error();
     expect(sections[0].content.phases).toHaveLength(3);
     expect(sections[0].content.phases[0].period).toBe("M1-M2");

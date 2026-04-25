@@ -61,7 +61,7 @@ function SortableItem({
     transition,
   };
 
-  const icon = FORMAT_ICONS[section.content.format] ?? "\u25CB";
+  const icon = (section.content && FORMAT_ICONS[section.content.format]) ?? "\u25CB";
 
   return (
     <div

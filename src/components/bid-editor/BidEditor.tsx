@@ -130,8 +130,8 @@ export function BidEditor({ bidId, initialSections, initialStatus, styleGuide }:
 
   const isReady = status === "draft" || status === "exported";
   const needsTimpris = sections.some(
-    (s) => s.content.format === "team-pricing"
-      && s.content.members.some((m) => m.timpris === null)
+    (s) => s.content?.format === "team-pricing"
+      && s.content.members?.some((m) => m.timpris === null)
   );
 
   return (

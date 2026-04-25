@@ -29,8 +29,8 @@ export function referenceApplicator(ctx: ApplicatorContext) {
   const cloneIndex = ctx.cloneIndex ?? 0;
 
   // Find the reference-v2 section and get the reference for this clone
-  const sec = ctx.sections.find((s) => s.content.format === "reference-v2");
-  if (!sec || sec.content.format !== "reference-v2") {
+  const sec = ctx.sections.find((s) => s.content?.format === "reference-v2");
+  if (!sec || sec.content?.format !== "reference-v2") {
     return (slide: ISlide) => {
       slide.modify(footer);
     };

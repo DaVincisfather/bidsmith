@@ -52,9 +52,9 @@ function buildProseMap(ctx: ApplicatorContext): Record<string, string> {
 
 function buildSlide3Map(ctx: ApplicatorContext): Record<string, string> {
   const sec = ctx.sections.find(
-    (s) => s.content.format === "understanding-current",
+    (s) => s.content?.format === "understanding-current",
   );
-  if (!sec || sec.content.format !== "understanding-current") {
+  if (!sec || sec.content?.format !== "understanding-current") {
     // Missing section — leave placeholders unreplaced so gap is visible
     return {};
   }
@@ -87,9 +87,9 @@ function buildSlide3Map(ctx: ApplicatorContext): Record<string, string> {
 
 function buildSlide4Map(ctx: ApplicatorContext): Record<string, string> {
   const sec = ctx.sections.find(
-    (s) => s.content.format === "understanding-assignment",
+    (s) => s.content?.format === "understanding-assignment",
   );
-  if (!sec || sec.content.format !== "understanding-assignment") {
+  if (!sec || sec.content?.format !== "understanding-assignment") {
     return {};
   }
   const stycken = sec.content.stycken.filter((s) => s && s.trim().length > 0);
@@ -107,9 +107,9 @@ function buildSlide4Map(ctx: ApplicatorContext): Record<string, string> {
 
 function buildSlide5Map(ctx: ApplicatorContext): Record<string, string> {
   const sec = ctx.sections.find(
-    (s) => s.content.format === "understanding-vision",
+    (s) => s.content?.format === "understanding-vision",
   );
-  if (!sec || sec.content.format !== "understanding-vision") {
+  if (!sec || sec.content?.format !== "understanding-vision") {
     return {};
   }
   const utm = sec.content.utmaningar.filter((s) => s && s.trim().length > 0);

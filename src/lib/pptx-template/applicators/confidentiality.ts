@@ -37,8 +37,8 @@ import {
 export function confidentialityApplicator(ctx: ApplicatorContext) {
   const footer = applyFooter(ctx);
 
-  const sec = ctx.sections.find((s) => s.content.format === "confidentiality");
-  if (!sec || sec.content.format !== "confidentiality") {
+  const sec = ctx.sections.find((s) => s.content?.format === "confidentiality");
+  if (!sec || sec.content?.format !== "confidentiality") {
     return (slide: ISlide) => {
       slide.modify(footer);
     };

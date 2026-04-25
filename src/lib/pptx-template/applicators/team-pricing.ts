@@ -50,8 +50,8 @@ function formatSvSE(n: number | null): string {
 }
 
 function buildTeamPricingMap(ctx: ApplicatorContext): Record<string, string> {
-  const sec = ctx.sections.find((s) => s.content.format === "team-pricing");
-  if (!sec || sec.content.format !== "team-pricing") {
+  const sec = ctx.sections.find((s) => s.content?.format === "team-pricing");
+  if (!sec || sec.content?.format !== "team-pricing") {
     return {};
   }
   const c = sec.content;

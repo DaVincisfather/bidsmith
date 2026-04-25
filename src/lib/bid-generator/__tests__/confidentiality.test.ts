@@ -17,6 +17,7 @@ describe("buildConfidentialitySection", () => {
       secrecyRows: [{ reference: "Bilaga 2", scope: "Personuppgifter", justification: "GDPR" }],
     };
     const s = buildConfidentialitySection(a);
+    if (!s.content) throw new Error("content missing");
     if (s.content.format !== "confidentiality") throw new Error("format mismatch");
     expect(s.content.oslReference).toBe("19 kap 3 §");
     expect(s.content.secrecyRows).toEqual(a.secrecyRows);
@@ -24,6 +25,7 @@ describe("buildConfidentialitySection", () => {
 
   it("falls back to empty string when oslReference is null", () => {
     const s = buildConfidentialitySection(baseAnalysis);
+    if (!s.content) throw new Error("content missing");
     if (s.content.format !== "confidentiality") throw new Error("format mismatch");
     expect(s.content.oslReference).toBe("");
     expect(s.content.secrecyRows).toEqual([]);

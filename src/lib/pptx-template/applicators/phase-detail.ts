@@ -29,8 +29,8 @@ export function phaseDetailApplicator(ctx: ApplicatorContext) {
   const cloneIndex = ctx.cloneIndex ?? 0;
 
   // Find the phases section
-  const sec = ctx.sections.find((s) => s.content.format === "phases");
-  if (!sec || sec.content.format !== "phases") {
+  const sec = ctx.sections.find((s) => s.content?.format === "phases");
+  if (!sec || sec.content?.format !== "phases") {
     // Missing section — return callback that at least applies footer
     return (slide: ISlide) => {
       slide.modify(footer);

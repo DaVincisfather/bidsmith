@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { writeFileSync } from "fs";
+import { writeFileSync, mkdirSync } from "fs";
+import { execFileSync } from "child_process";
 import path from "path";
 
 const client = new Anthropic();
@@ -7,27 +8,26 @@ const client = new Anthropic();
 const rfpScenarios = [
   {
     type: "offentlig",
-    title: "Organisationsöversyn av regional hälso- och sjukvård",
-    scope: "Extern genomlysning av organisationsstruktur och styrmodell",
+    title: "Organisationsöversyn av regional förvaltning",
+    scope:
+      "Extern genomlysning av organisationsstruktur, styrmodell och samverkan inom en region — leverans omfattar nulägesanalys, åtgärdsförslag och implementationsplan",
   },
   {
     type: "privat",
-    title: "Molnmigrering för medelstort retailbolag",
-    scope: "Flytt av legacy-system till Azure/AWS med minimal driftstörning",
-  },
-  {
-    type: "offentlig",
-    title: "Digitaliseringsstrategi för kommunal förvaltning",
-    scope: "Framtagning av strategi och handlingsplan för digital transformation",
+    title: "Strategiutveckling och tillväxtplan för medelstort industribolag",
+    scope:
+      "Marknadsanalys, strategiska alternativ, prioriterad tillväxtplan över tre år samt ledningsworkshop-leverans",
   },
 ];
+
+const OUTPUT_DIR = path.join("data", "synthetic", "rfps batch 2");
 
 async function generateRfp(scenario: (typeof rfpScenarios)[number], index: number) {
   const isPublic = scenario.type === "offentlig";
 
   const message = await client.messages.create({
-    model: "claude-sonnet-4-6-20250514",
-    max_tokens: 3000,
+    model: "claude-sonnet-4-6",
+    max_tokens: 6000,
     messages: [
       {
         role: "user",
@@ -40,15 +40,21 @@ Scope: ${scenario.scope}
 Inkludera:
 - Rubrik och diarienummer (påhittat)
 - Bakgrund och syfte
-- Uppdragsbeskrivning med delmoment
-- Kravspecifikation (ska-krav och bör-krav)
-- Utvärderingskriterier med viktning (t.ex. kompetens 40%, pris 30%, metod 30%)
-- Tidplan och leveranser
+- Uppdragsbeskrivning med delmoment som numbered list
+- Kravspecifikation (ska-krav och bör-krav som bullet-lists)
+- Utvärderingskriterier som markdown-tabell med kolumnerna: Kriterium | Viktning | Beskrivning
+- Tidplan och leveranser som markdown-tabell med kolumnerna: Fas | Period | Leverans
 - Anbudets format och innehållskrav
 - Sista anbudsdag
 ${isPublic ? "- Hänvisning till LOU\n- Upphandlingsform (förenklat förfarande)" : ""}
 
-Gör det realistiskt — som ett riktigt underlag en konsultfirma skulle ta emot.`,
+Formatkrav:
+- Använd # för huvudtitel, ## för sektionsrubriker, ### vid behov
+- Använd **fet text** för avgörande krav och datum
+- Inkludera minst två markdown-tabeller (utvärderingskriterier, tidplan)
+- Inkludera både bullet-lists och numbered lists
+
+Returnera enbart markdown — ingen kringtext, inga code fences. Gör det realistiskt — som ett riktigt underlag en konsultfirma skulle ta emot.`,
       },
     ],
   });
@@ -56,13 +62,18 @@ Gör det realistiskt — som ett riktigt underlag en konsultfirma skulle ta emot
   const content = message.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type");
 
-  const filePath = path.join("data", "synthetic", "rfps", `rfp-${index + 1}.md`);
-  writeFileSync(filePath, content.text);
-  console.log(`Generated: ${filePath}`);
+  mkdirSync(OUTPUT_DIR, { recursive: true });
+  const mdPath = path.join(OUTPUT_DIR, `rfp-${index + 1}.md`);
+  const docxPath = path.join(OUTPUT_DIR, `rfp-${index + 1}.docx`);
+  writeFileSync(mdPath, content.text, "utf-8");
+  execFileSync("python", ["scripts/md-to-docx.py", mdPath, docxPath], {
+    stdio: "inherit",
+  });
+  console.log(`Generated: ${mdPath} + ${path.basename(docxPath)}`);
 }
 
 async function main() {
-  console.log("Generating synthetic RFPs...");
+  console.log(`Generating ${rfpScenarios.length} synthetic management RFPs...`);
   for (let i = 0; i < rfpScenarios.length; i++) {
     await generateRfp(rfpScenarios[i], i);
   }

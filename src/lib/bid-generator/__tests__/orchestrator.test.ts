@@ -32,7 +32,7 @@ const baseCtx: BidContext = {
   },
 };
 
-function mockSection(key: string, format: BidSection["content"]["format"]): BidSection {
+function mockSection(key: string, format: NonNullable<BidSection["content"]>["format"]): BidSection {
   return {
     type: "ai", key, title: key, generatedAt: "2026-04-20",
     // @ts-expect-error — minimal shape for orchestration test

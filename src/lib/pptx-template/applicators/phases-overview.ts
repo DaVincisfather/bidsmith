@@ -30,8 +30,8 @@ import {
 export function phasesOverviewApplicator(ctx: ApplicatorContext) {
   const footer = applyFooter(ctx);
 
-  const sec = ctx.sections.find((s) => s.content.format === "phases");
-  if (!sec || sec.content.format !== "phases") {
+  const sec = ctx.sections.find((s) => s.content?.format === "phases");
+  if (!sec || sec.content?.format !== "phases") {
     return (slide: ISlide) => {
       slide.modify(footer);
     };

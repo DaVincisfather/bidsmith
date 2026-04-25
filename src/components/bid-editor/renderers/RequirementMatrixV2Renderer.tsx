@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { BidSectionContent, StyleGuide } from "@/lib/types";
 
 type MatrixContent = Extract<BidSectionContent, { format: "requirement-matrix-v2" }>;
@@ -24,8 +24,8 @@ export function RequirementMatrixV2Renderer({
         </thead>
         <tbody>
           {content.rows.map((r, i) => (
-            <>
-              <tr key={`r-${i}`} className="border-b align-top">
+            <Fragment key={i}>
+              <tr className="border-b align-top">
                 <td className="py-2">{r.requirement}</td>
                 <td>{r.hurUppfylls}</td>
                 <td>{r.referens}</td>
@@ -40,7 +40,7 @@ export function RequirementMatrixV2Renderer({
                 </td>
               </tr>
               {expanded[i] && (
-                <tr key={`c-${i}`} className="bg-gray-50">
+                <tr className="bg-gray-50">
                   <td colSpan={4} className="py-2 px-4">
                     <ul className="space-y-1">
                       {r.coverage.map((c, j) => (
@@ -64,7 +64,7 @@ export function RequirementMatrixV2Renderer({
                   </td>
                 </tr>
               )}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>

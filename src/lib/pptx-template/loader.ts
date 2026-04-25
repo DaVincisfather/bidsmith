@@ -119,14 +119,14 @@ function getCloneItems(
   key: "phases" | "references",
 ): unknown[] {
   if (key === "phases") {
-    const sec = sections.find((s) => s.content.format === "phases");
-    if (sec && sec.content.format === "phases") {
+    const sec = sections.find((s) => s.content?.format === "phases");
+    if (sec && sec.content?.format === "phases") {
       return sec.content.phases ?? [];
     }
   }
   if (key === "references") {
-    const sec = sections.find((s) => s.content.format === "reference-v2");
-    if (sec && sec.content.format === "reference-v2") {
+    const sec = sections.find((s) => s.content?.format === "reference-v2");
+    if (sec && sec.content?.format === "reference-v2") {
       return sec.content.references ?? [];
     }
   }

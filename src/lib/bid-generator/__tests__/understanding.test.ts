@@ -43,6 +43,7 @@ describe("buildUnderstandingBundle", () => {
     expect(sections[0].key).toBe("understanding-current");
     expect(sections[1].key).toBe("understanding-assignment");
     expect(sections[2].key).toBe("understanding-vision");
+    if (!sections[0].content) throw new Error("content missing");
     if (sections[0].content.format !== "understanding-current") throw new Error();
     expect(sections[0].content.smärtpunkter).toEqual(["A"]);
   });

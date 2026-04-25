@@ -253,7 +253,7 @@ export interface BidSection {
   type: "ai" | "data" | "placeholder";
   key: string;
   title: string;
-  content: BidSectionContent;
+  content?: BidSectionContent;
   generatedAt: string;
 }
 

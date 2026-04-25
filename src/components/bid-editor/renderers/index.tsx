@@ -21,8 +21,12 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
   const content = section.content;
 
   function updateContent(patch: Partial<BidSectionContent>) {
-    if (!onSectionChange) return;
+    if (!onSectionChange || !content) return;
     onSectionChange({ ...section, content: { ...content, ...patch } as BidSectionContent });
+  }
+
+  if (!content) {
+    return <div className="text-amber-600 text-xs italic">Sektion saknar content</div>;
   }
 
   switch (content.format) {
@@ -32,7 +36,6 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
           title={content.title}
           client={content.client}
           date={content.date}
-          style={style}
           onFieldChange={onSectionChange ? (field, value) => {
             updateContent({ [field]: value });
           } : undefined}

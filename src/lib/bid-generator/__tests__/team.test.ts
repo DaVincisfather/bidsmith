@@ -70,6 +70,7 @@ describe("buildTeamBundle", () => {
 
     const [s] = await buildTeamBundle(baseCtx);
     expect(s.key).toBe("team-pricing");
+    if (!s.content) throw new Error("content missing");
     if (s.content.format !== "team-pricing") throw new Error();
     expect(s.content.members[0].timpris).toBeNull();
     expect(s.content.members[0].total).toBeNull();
@@ -85,6 +86,7 @@ describe("buildTeamBundle", () => {
       ],
     });
     const [s] = await buildTeamBundle(baseCtx);
+    if (!s.content) throw new Error("content missing");
     if (s.content.format !== "team-pricing") throw new Error();
     expect(s.content.summary?.totalTimmar).toBe(720);
   });
