@@ -60,6 +60,11 @@ export function phaseDetailApplicator(ctx: ApplicatorContext) {
       // Literal text replacements (longest-first to avoid substring corruption)
       applyLiteralReplacements(literalMap, doc);
 
+      // Color the leading "⚠ " on each risk row red to mirror the bid-editor
+      // RisksRenderer styling. Bid editor uses red-400 (F87171); PPTX uses
+      // red-600 (DC2626) for better contrast on white print backgrounds.
+      colorRiskIcons(doc);
+
       // Move the bottom-of-slide TIDSLINJE highlight bar to match this phase's
       // slot. The template ships with the highlight at M1-M3 (Fas 1 position);
       // for clones 1-3 we relocate it to mirror the slide-6 Gantt bar slot.
@@ -69,6 +74,65 @@ export function phaseDetailApplicator(ctx: ApplicatorContext) {
       footer(doc);
     });
   };
+}
+
+const RISK_ICON = "\u26A0\uFE0E"; // U+26A0 warning sign + U+FE0E text-presentation selector
+const RISK_ICON_COLOR = "DC2626"; // Tailwind red-600 — visible on white, matches bid editor red accent
+const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
+
+/**
+ * Splits every <a:r> whose <a:t> starts with the risk-icon prefix into two
+ * runs: a red-coloured run holding "⚠ " and the original run holding the
+ * remaining risk text. Mirrors the bid-editor RisksRenderer where each risk
+ * is prefixed with a red warning icon.
+ *
+ * Idempotent: skips runs that have already been split (no leading icon left).
+ */
+function colorRiskIcons(doc: XMLDocument): void {
+  const prefix = `${RISK_ICON} `;
+  const tNodes = Array.from(doc.getElementsByTagNameNS(A_NS, "t"));
+  for (const tNode of tNodes) {
+    const text = tNode.textContent ?? "";
+    if (!text.startsWith(prefix)) continue;
+
+    const run = tNode.parentNode as Element | null;
+    if (!run || run.localName !== "r") continue;
+    const runParent = run.parentNode;
+    if (!runParent) continue;
+
+    // Strip the prefix from the original run.
+    tNode.textContent = text.slice(prefix.length);
+
+    // Build the red icon run from a clone of the original rPr (preserves font,
+    // size, language) but with the solidFill replaced by red.
+    const iconRun = doc.createElementNS(A_NS, "a:r");
+    const origRPr = run.getElementsByTagNameNS(A_NS, "rPr")[0];
+    const iconRPr = origRPr
+      ? (origRPr.cloneNode(true) as Element)
+      : doc.createElementNS(A_NS, "a:rPr");
+
+    // Remove any existing solidFill from the cloned rPr.
+    const fills = Array.from(iconRPr.getElementsByTagNameNS(A_NS, "solidFill"));
+    for (const fill of fills) {
+      iconRPr.removeChild(fill);
+    }
+
+    const solidFill = doc.createElementNS(A_NS, "a:solidFill");
+    const srgb = doc.createElementNS(A_NS, "a:srgbClr");
+    srgb.setAttribute("val", RISK_ICON_COLOR);
+    solidFill.appendChild(srgb);
+    // a:rPr children must come before any text — solidFill is a direct child
+    // and ordering inside rPr is flexible for fills, so prepend.
+    iconRPr.insertBefore(solidFill, iconRPr.firstChild);
+
+    const iconT = doc.createElementNS(A_NS, "a:t");
+    iconT.textContent = prefix;
+
+    iconRun.appendChild(iconRPr);
+    iconRun.appendChild(iconT);
+
+    runParent.insertBefore(iconRun, run);
+  }
 }
 
 /**
@@ -138,6 +202,9 @@ function buildPlaceholderMap(phase: ExecutionPhase): Record<string, string> {
   const decs = (phase.decisions ?? []).filter(
     (s) => s && s.trim().length > 0,
   );
+  const risks = (phase.risks ?? [])
+    .filter((s) => s && s.trim().length > 0)
+    .map((r) => `${RISK_ICON} ${r}`);
   // Only append the standing Go/no-go line if AI didn't already produce
   // a go/no-go-formulation — otherwise the column shows a duplicate.
   const hasGoNoGo = decs.some((d) => /go.?no.?go/i.test(d));
@@ -165,6 +232,13 @@ function buildPlaceholderMap(phase: ExecutionPhase): Record<string, string> {
 
     // Column C — all decisions in one box.
     "{Beslut}": allDecs.join("\n"),
+
+    // Goal box (upper-right) — single sentence describing the phase objective.
+    "{M\u00e5l}": phase.objective,
+
+    // Risks box — bullet list with red ⚠ prefix per row (colored in
+    // colorRiskIcons post-processor). Empty string when phase has no risks.
+    "{Risker}": risks.join("\n"),
   };
 }
 

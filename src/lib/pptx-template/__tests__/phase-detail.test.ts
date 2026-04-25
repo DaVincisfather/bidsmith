@@ -398,3 +398,195 @@ describe("phase-detail applicator — footer", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Test 7: Goal box (upper-right) — {Mål} replaced with phase.objective
+// ---------------------------------------------------------------------------
+
+describe("phase-detail applicator — goal box", () => {
+  it("replaces {Mål} with phase.objective on each clone", async () => {
+    const sections: BidSection[] = [
+      {
+        type: "data",
+        key: "cover",
+        title: "Cover",
+        generatedAt: "2026-04-25",
+        content: {
+          format: "cover",
+          title: "Testanbud",
+          client: "TestKund",
+          date: "2026-04-25",
+        },
+      },
+      {
+        type: "data",
+        key: "phases",
+        title: "Genomförande",
+        generatedAt: "2026-04-25",
+        content: {
+          format: "phases",
+          phases: [
+            {
+              name: "Fas A",
+              objective: "OBJECTIVE_A_TEXT kartlägg nuläge",
+              activities: ["GOAL_PHASE_A_FINGERPRINT akt"],
+              deliverables: ["A2"],
+              decisions: [],
+              duration: "4 v",
+              period: "M1\u2013M4",
+            },
+            {
+              name: "Fas B",
+              objective: "OBJECTIVE_B_TEXT leverera prototyp",
+              activities: ["GOAL_PHASE_B_FINGERPRINT akt"],
+              deliverables: ["B2"],
+              decisions: [],
+              duration: "4 v",
+              period: "M5\u2013M8",
+            },
+          ],
+        },
+      },
+    ];
+
+    const buf = await renderTemplate("anbudsmall-v2", sections, master);
+    const zip = await JSZip.loadAsync(buf);
+    const slides = await getAllSlideXml(zip);
+
+    // Identify each phase-detail slide by its unique activity fingerprint;
+    // objective is also rendered on phases-overview (slide 6) so we can't
+    // use it for slide identification.
+    const phaseA = slides.find((s) => s.includes("GOAL_PHASE_A_FINGERPRINT"));
+    const phaseB = slides.find((s) => s.includes("GOAL_PHASE_B_FINGERPRINT"));
+    expect(phaseA).toBeDefined();
+    expect(phaseB).toBeDefined();
+
+    // Goal box on phase-detail slide contains the per-phase objective.
+    expect(phaseA).toContain("OBJECTIVE_A_TEXT kartlägg nuläge");
+    expect(phaseB).toContain("OBJECTIVE_B_TEXT leverera prototyp");
+
+    // No leftover placeholder
+    expect(phaseA).not.toContain("{M\u00e5l}");
+    expect(phaseB).not.toContain("{M\u00e5l}");
+
+    // Per-clone isolation: phase-detail slide A does NOT show phase B's objective.
+    expect(phaseA).not.toContain("OBJECTIVE_B_TEXT");
+    expect(phaseB).not.toContain("OBJECTIVE_A_TEXT");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test 8: Risks box — {Risker} with red ⚠ icon per row
+// ---------------------------------------------------------------------------
+
+describe("phase-detail applicator — risks box", () => {
+  it("renders one row per risk with red warning icon prefix", async () => {
+    const sections: BidSection[] = [
+      {
+        type: "data",
+        key: "cover",
+        title: "Cover",
+        generatedAt: "2026-04-25",
+        content: {
+          format: "cover",
+          title: "Testanbud",
+          client: "TestKund",
+          date: "2026-04-25",
+        },
+      },
+      {
+        type: "data",
+        key: "phases",
+        title: "Genomförande",
+        generatedAt: "2026-04-25",
+        content: {
+          format: "phases",
+          phases: [
+            {
+              name: "Fas med risker",
+              objective: "Adressera risker",
+              activities: ["RISK_PHASE_FINGERPRINT akt"],
+              deliverables: ["levarans"],
+              decisions: [],
+              duration: "4 v",
+              period: "M1\u2013M4",
+              risks: [
+                "RISK_ROW_1 begränsad tillgång till nyckelpersoner",
+                "RISK_ROW_2 leveransberoende från extern part",
+              ],
+            },
+          ],
+        },
+      },
+    ];
+
+    const buf = await renderTemplate("anbudsmall-v2", sections, master);
+    const zip = await JSZip.loadAsync(buf);
+    const slides = await getAllSlideXml(zip);
+
+    const xml = slides.find((s) => s.includes("RISK_PHASE_FINGERPRINT"));
+    expect(xml).toBeDefined();
+
+    // Both risks rendered
+    expect(xml).toContain("RISK_ROW_1 begränsad tillgång till nyckelpersoner");
+    expect(xml).toContain("RISK_ROW_2 leveransberoende från extern part");
+
+    // Warning icon (U+26A0 + variation selector U+FE0E) present in the slide
+    expect(xml).toContain("\u26A0\uFE0E");
+
+    // Red color used for the icon run (Tailwind red-600 hex)
+    expect(xml).toContain("DC2626");
+
+    // No leftover placeholder
+    expect(xml).not.toContain("{Risker}");
+  });
+
+  it("leaves {Risker} empty when phase has no risks", async () => {
+    const sections: BidSection[] = [
+      {
+        type: "data",
+        key: "cover",
+        title: "Cover",
+        generatedAt: "2026-04-25",
+        content: {
+          format: "cover",
+          title: "Testanbud",
+          client: "TestKund",
+          date: "2026-04-25",
+        },
+      },
+      {
+        type: "data",
+        key: "phases",
+        title: "Genomförande",
+        generatedAt: "2026-04-25",
+        content: {
+          format: "phases",
+          phases: [
+            {
+              name: "Riskfri fas",
+              objective: "objektiv",
+              activities: ["NO_RISK_FINGERPRINT akt"],
+              deliverables: ["lev"],
+              decisions: [],
+              duration: "4 v",
+              period: "M1\u2013M4",
+              // risks omitted
+            },
+          ],
+        },
+      },
+    ];
+
+    const buf = await renderTemplate("anbudsmall-v2", sections, master);
+    const zip = await JSZip.loadAsync(buf);
+    const slides = await getAllSlideXml(zip);
+
+    const xml = slides.find((s) => s.includes("NO_RISK_FINGERPRINT"));
+    expect(xml).toBeDefined();
+
+    // Placeholder gone, no orphan icon character
+    expect(xml).not.toContain("{Risker}");
+    expect(xml).not.toContain("\u26A0\uFE0E");
+  });
+});

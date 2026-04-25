@@ -143,6 +143,10 @@ Slides 8, 9, 10 are **not** truly empty illustrative copies — they contain ful
   - `{Beslut 1 — vad styrgruppen ska ta ställning till vid faslut}` — applicator: `phase.decisions[0]`
   - `{Beslut 2}` — applicator: `phase.decisions[1]`
   - `{Go/no-go till nästa fas}` — applicator: `phase.decisions[2]` (note: this is written as a placeholder-style string but has no `{}` — it IS static guidance text; final phase may read "Godkännande av slutleverans". Treat as replaceable.)
+- **Placeholder — Mål (upper-right goal box, single sentence):**
+  - `{Mål}` — applicator: `phase.objective` (one-sentence summary of phase goal; complement to AKTIVITETER, not replacement).
+- **Placeholder — Risker (free-form risk list):**
+  - `{Risker}` — applicator: `phase.risks` joined with newlines, each row prefixed with red `⚠ ` (U+26A0 + U+FE0E text variation selector). Empty string when phase has no risks. Icon color is post-applied via run split — see `colorRiskIcons()` in `phase-detail.ts`.
 - **Static labels:** `A`, `AKTIVITETER`, `B`, `LEVERANSER`, `C`, `BESLUT I STYRGRUPP`, `M1`–`M12`
 - **Footer (replace per clone):** `{Bolagsnamn}`, `{Diarienummer}`, `07 / 17` (update counter to `08 / 17`, etc.)
 - **Cloning plan:** Source = slide 7. Applicator clones 3 times (for Fas 2, 3, 4) and inserts as slides 8, 9, 10. The illustrative copies already in the mockup at positions 8–10 are either removed before rendering or overwritten.
