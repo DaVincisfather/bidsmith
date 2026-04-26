@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { PipelineRail } from "@/components/pipeline/PipelineRail";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile, NotAuthenticatedError, NoOrganizationError } from "@/lib/org";
+import { OrgDropdown } from "@/components/organisation/OrgDropdown";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,11 +22,24 @@ export const metadata: Metadata = {
   description: "AI-driven RFP analysis and consultant matching",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let isSuperUser = false;
+  try {
+    const supabase = await createClient();
+    const { profile } = await getCurrentProfile(supabase);
+    isSuperUser = profile.role === "super_user";
+  } catch (err) {
+    if (
+      !(err instanceof NotAuthenticatedError) &&
+      !(err instanceof NoOrganizationError)
+    ) {
+      throw err;
+    }
+  }
   return (
     <html
       lang="sv"
@@ -47,12 +63,7 @@ export default function RootLayout({
             >
               Radar
             </Link>
-            <Link
-              href="/organisation"
-              className="text-sm text-gray-500 hover:text-gray-900"
-            >
-              Din organisation
-            </Link>
+            <OrgDropdown isSuperUser={isSuperUser} />
           </div>
         </nav>
         <div className="flex-1 grid grid-cols-[1fr_260px] min-h-0">

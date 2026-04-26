@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase";
 import { getCurrentProfile } from "@/lib/org";
 import { countActiveSuperUsers, getOrgSeatLimit } from "@/lib/invites";
+import { OrgBanner } from "@/components/organisation/OrgBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function OrganisationPage() {
   const supabase = await createClient();
   const { profile } = await getCurrentProfile(supabase);
 
-  const [consultantCountResult, seatUsed, seatLimit] = await Promise.all([
+  const [consultantCountResult, seatUsed, seatLimit, orgRow] = await Promise.all([
     supabase
       .from("consultants")
       .select("id", { count: "exact", head: true })
@@ -33,9 +34,15 @@ export default async function OrganisationPage() {
       const service = createServiceClient();
       return getOrgSeatLimit(service, profile.organization_id);
     })(),
+    supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", profile.organization_id)
+      .single<{ name: string }>(),
   ]);
 
   const consultantCount = consultantCountResult.count ?? 0;
+  const orgName = orgRow.data?.name ?? "Organisation";
 
   const cards: Card[] = [
     {
@@ -54,6 +61,12 @@ export default async function OrganisationPage() {
           : undefined,
       hidden: profile.role !== "super_user",
     },
+    {
+      href: "/organisation/settings",
+      title: "Inställningar",
+      description: "Logo, accentfärg och organisationsnamn för PPTX-export.",
+      hidden: profile.role !== "super_user",
+    },
   ];
 
   const visibleCards = cards.filter((c) => !c.hidden);
@@ -61,12 +74,7 @@ export default async function OrganisationPage() {
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-4 py-12 space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold">Din organisation</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Inställningar och data som delas av hela teamet.
-          </p>
-        </div>
+        <OrgBanner displayName={orgName} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {visibleCards.map((card) => (
