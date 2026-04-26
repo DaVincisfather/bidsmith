@@ -42,22 +42,16 @@ export default function RootLayout({
               Analysera RFP
             </Link>
             <Link
-              href="/consultants"
-              className="text-sm text-gray-500 hover:text-gray-900"
-            >
-              Konsulter
-            </Link>
-            <Link
               href="/radar"
               className="text-sm text-gray-500 hover:text-gray-900"
             >
               Radar
             </Link>
             <Link
-              href="/team"
+              href="/organisation"
               className="text-sm text-gray-500 hover:text-gray-900"
             >
-              Team
+              Din organisation
             </Link>
           </div>
         </nav>
