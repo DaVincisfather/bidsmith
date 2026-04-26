@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { OutcomePatch } from "@/lib/types";
-
-const VALID_OUTCOMES = ["won", "lost", "no-bid", "cancelled"] as const;
-const VALID_REASONS = ["pris", "erfarenhet", "team", "kvalitet", "relation", "annat"] as const;
+import { parseBody } from "@/lib/api-helpers";
+import { OutcomePatchSchema } from "@/lib/api-schemas";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -11,29 +9,9 @@ interface RouteContext {
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
-  let body: Partial<OutcomePatch>;
-  try {
-    body = (await request.json()) as Partial<OutcomePatch>;
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON in request body" },
-      { status: 400 }
-    );
-  }
-
-  if (!body.outcome || !VALID_OUTCOMES.includes(body.outcome)) {
-    return NextResponse.json(
-      { error: `outcome must be one of: ${VALID_OUTCOMES.join(", ")}` },
-      { status: 400 }
-    );
-  }
-
-  if (body.lossReason && !VALID_REASONS.includes(body.lossReason)) {
-    return NextResponse.json(
-      { error: `lossReason must be one of: ${VALID_REASONS.join(", ")}` },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseBody(request, OutcomePatchSchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
 
   const supabase = await createClient();
 

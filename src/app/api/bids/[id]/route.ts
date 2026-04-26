@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { parseBody } from "@/lib/api-helpers";
+import { BidPatchSchema } from "@/lib/api-schemas";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -37,36 +39,15 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
-  const body = await request.json();
-  const { outcome, sections } = body as { outcome?: string; sections?: unknown[] };
-
-  const supabase = await createClient();
+  const parsed = await parseBody(request, BidPatchSchema);
+  if (!parsed.ok) return parsed.response;
+  const { outcome, sections } = parsed.data;
 
   const updates: Record<string, unknown> = {};
+  if (outcome) updates.outcome = outcome;
+  if (sections) updates.sections = sections;
 
-  if (outcome) {
-    if (!["won", "lost", "no-bid"].includes(outcome)) {
-      return NextResponse.json(
-        { error: "outcome must be 'won', 'lost', or 'no-bid'" },
-        { status: 400 }
-      );
-    }
-    updates.outcome = outcome;
-  }
-
-  if (sections) {
-    if (!Array.isArray(sections)) {
-      return NextResponse.json(
-        { error: "sections must be an array" },
-        { status: 400 }
-      );
-    }
-    updates.sections = sections;
-  }
-
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
-  }
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("bids")

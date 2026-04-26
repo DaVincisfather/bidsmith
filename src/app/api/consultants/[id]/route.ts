@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { parseBody } from "@/lib/api-helpers";
+import { ConsultantUpdateSchema } from "@/lib/api-schemas";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -28,10 +30,11 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
 export async function PUT(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
+  const parsed = await parseBody(request, ConsultantUpdateSchema);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
   const supabase = await createClient();
-  const body = await request.json();
 
-  // Update consultant base fields
   const { error: updateError } = await supabase
     .from("consultants")
     .update({
@@ -47,7 +50,6 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // Replace competencies if provided
   if (body.competencies) {
     await supabase
       .from("consultant_competencies")
@@ -58,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       const { error: compError } = await supabase
         .from("consultant_competencies")
         .insert(
-          body.competencies.map((c: { competency: string; category: string }) => ({
+          body.competencies.map((c) => ({
             consultant_id: id,
             competency: c.competency,
             category: c.category,
@@ -70,7 +72,6 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     }
   }
 
-  // Replace references if provided
   if (body.references) {
     await supabase
       .from("consultant_references")
@@ -81,15 +82,13 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       const { error: refError } = await supabase
         .from("consultant_references")
         .insert(
-          body.references.map(
-            (r: { title: string; description: string; year: number; sector: string }) => ({
-              consultant_id: id,
-              title: r.title,
-              description: r.description,
-              year: r.year,
-              sector: r.sector,
-            })
-          )
+          body.references.map((r) => ({
+            consultant_id: id,
+            title: r.title,
+            description: r.description,
+            year: r.year,
+            sector: r.sector,
+          }))
         );
       if (refError) {
         return NextResponse.json({ error: refError.message }, { status: 500 });

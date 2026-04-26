@@ -4,17 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getOrgId } from "@/lib/org";
 import { evaluateGoNoGo } from "@/lib/go-no-go-evaluator";
 import { RfpAnalysis, ScoredConsultant } from "@/lib/types";
+import { parseBody } from "@/lib/api-helpers";
+import { GoNoGoCreateSchema } from "@/lib/api-schemas";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { analysisId, teamConsultantIds } = body as {
-    analysisId: string;
-    teamConsultantIds?: string[];
-  };
-
-  if (!analysisId) {
-    return NextResponse.json({ error: "analysisId is required" }, { status: 400 });
-  }
+  const parsed = await parseBody(request, GoNoGoCreateSchema);
+  if (!parsed.ok) return parsed.response;
+  const { analysisId, teamConsultantIds } = parsed.data;
 
   const authed = await createClient();
   const orgId = await getOrgId(authed);

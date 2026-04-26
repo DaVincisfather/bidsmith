@@ -5,21 +5,13 @@ import { getOrgId } from "@/lib/org";
 import { generateAllSections } from "@/lib/bid-generator";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult, BidSection } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
+import { parseBody } from "@/lib/api-helpers";
+import { BidCreateSchema } from "@/lib/api-schemas";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { analysisId, assessmentId, teamConsultantIds } = body as {
-    analysisId: string;
-    assessmentId: string;
-    teamConsultantIds: string[];
-  };
-
-  if (!analysisId || !teamConsultantIds?.length) {
-    return NextResponse.json(
-      { error: "analysisId and teamConsultantIds are required" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseBody(request, BidCreateSchema);
+  if (!parsed.ok) return parsed.response;
+  const { analysisId, assessmentId, teamConsultantIds } = parsed.data;
 
   const authed = await createClient();
   const orgId = await getOrgId(authed);

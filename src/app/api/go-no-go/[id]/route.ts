@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { parseBody } from "@/lib/api-helpers";
+import { GoNoGoDecisionPatchSchema } from "@/lib/api-schemas";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -7,15 +9,9 @@ interface RouteContext {
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
-  const body = await request.json();
-  const { decision } = body as { decision: "go" | "no-go" };
-
-  if (!decision || !["go", "no-go"].includes(decision)) {
-    return NextResponse.json(
-      { error: "decision must be 'go' or 'no-go'" },
-      { status: 400 }
-    );
-  }
+  const parsed = await parseBody(request, GoNoGoDecisionPatchSchema);
+  if (!parsed.ok) return parsed.response;
+  const { decision } = parsed.data;
 
   const supabase = await createClient();
 
