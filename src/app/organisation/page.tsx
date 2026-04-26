@@ -36,13 +36,14 @@ export default async function OrganisationPage() {
     })(),
     supabase
       .from("organizations")
-      .select("name")
+      .select("name, display_name, logo_url")
       .eq("id", profile.organization_id)
-      .single<{ name: string }>(),
+      .single<{ name: string; display_name: string | null; logo_url: string | null }>(),
   ]);
 
   const consultantCount = consultantCountResult.count ?? 0;
-  const orgName = orgRow.data?.name ?? "Organisation";
+  const orgName = orgRow.data?.display_name ?? orgRow.data?.name ?? "Organisation";
+  const logoUrl = orgRow.data?.logo_url ?? null;
 
   const cards: Card[] = [
     {
@@ -74,7 +75,7 @@ export default async function OrganisationPage() {
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-4 py-12 space-y-8">
-        <OrgBanner displayName={orgName} />
+        <OrgBanner displayName={orgName} logoUrl={logoUrl} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {visibleCards.map((card) => (
