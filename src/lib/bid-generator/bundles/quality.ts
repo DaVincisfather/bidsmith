@@ -19,22 +19,30 @@ export const QualityBundleSchema = z.object({
 
 const SYSTEM_PROMPT = `Du skriver kvalitetssäkringssektionen till ett svenskt konsultanbud.
 
-Slot caps: qaProcess 1-2 stycken (längre text), checkpoints 1-4 (korta).
-Välj en lämplig person från teamet som qualityLead.
+PRINCIP: Anbudet ska visa vår ansats översiktligt, inte detaljera processen.
+Behåll flexibilitet i hur uppdraget faktiskt utförs — detaljer förhandlas senare.
+Skriv knapphändigt och konkret. Lås inte fast oss i specifika rutiner.
 
-Skriv konkret och direkt. Undvik markdown och floskler.
+Slot caps (HÅRDA):
+- qaProcess: 1-2 stycken, vardera MAX 2 meningar. Ansats, inte steg-för-steg.
+- escalation.process och escalation.reporting: VARDERA max 1-2 meningar.
+- checkpoints: 1-4, vardera max 1 mening.
+- qualityLead: behåll fullständig — namn, roll/mandat, kontakt.
+
+Välj en lämplig person från teamet som qualityLead.
+Undvik markdown och floskler.
 
 Svara med giltig JSON:
 {
-  "qaProcess": ["Stycke 1 om kvalitetsprocessen", "Stycke 2"],
+  "qaProcess": ["Kort stycke om ansats — max 2 meningar"],
   "qualityLead": {
     "name": "Exakt namn från teamet",
     "roleAndMandate": "Roll och mandat",
     "contact": "e-post/telefon"
   },
   "escalation": {
-    "process": "Hur vi eskalerar problem",
-    "reporting": "Hur vi rapporterar"
+    "process": "Max 1-2 meningar",
+    "reporting": "Max 1-2 meningar"
   },
   "checkpoints": ["Avstämning 1", "Avstämning 2"]
 }`;
