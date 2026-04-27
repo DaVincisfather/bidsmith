@@ -122,5 +122,19 @@ ${poolText}`,
     result.winProbability = 0;
   }
 
+  // Suppress improvements with non-positive impact. The prompt forbids 0 % swaps
+  // but the LLM still produces "+0 %" suggestions where it argues against itself
+  // in the reason field — confusing for the user.
+  result.improvements = result.improvements.filter(
+    (imp) => parseImpactPct(imp.estimatedImpact) > 0,
+  );
+
   return result;
+}
+
+/** Parse "+15 %" / "-5%" / "0 %" → number. Returns NaN if unparseable. */
+function parseImpactPct(s: string): number {
+  const cleaned = s.replace(/[%\s]/g, "").replace(",", ".");
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : NaN;
 }

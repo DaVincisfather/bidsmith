@@ -125,4 +125,43 @@ describe("evaluateGoNoGo post-processing", () => {
     const result = await evaluateGoNoGo(analysis, team, scored);
     expect(result.winProbability).toBe(0);
   });
+
+  it("suppresses improvements with non-positive estimatedImpact", async () => {
+    mockResponse({
+      mustRequirements: [
+        { requirement: "Projektledning", met: true, coveredBy: "Anna" },
+      ],
+      winProbability: 65,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          swap: { remove: "Anna", add: "Bo" },
+          swapIds: { removeId: "c1", addId: "c2" },
+          estimatedImpact: "+0%",
+          reason: "Bo täcker bör-krav men Anna bidrar med juridik — bytet ger ingen nettoeffekt",
+        },
+        {
+          swap: { remove: "Anna", add: "Cecilia" },
+          swapIds: { removeId: "c1", addId: "c3" },
+          estimatedImpact: "+10%",
+          reason: "Cecilia har starkare referens",
+        },
+        {
+          swap: { remove: "Anna", add: "David" },
+          swapIds: { removeId: "c1", addId: "c4" },
+          estimatedImpact: "-5%",
+          reason: "David är junior — försämring",
+        },
+      ],
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, team, scored);
+    expect(result.improvements).toHaveLength(1);
+    expect(result.improvements[0].estimatedImpact).toBe("+10%");
+  });
 });
