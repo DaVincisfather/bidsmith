@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { validateOrgName, validateLogoFile } from "../actions";
+import { validateOrgName, validateLogoFile, validateAccent } from "../actions";
 
 describe("validateOrgName", () => {
   it("accepts 1-64 chars trimmed", () => {
@@ -34,5 +34,21 @@ describe("validateLogoFile", () => {
   it("rejects unsupported MIME types", () => {
     expect(validateLogoFile({ size: 100, type: "image/gif" }).ok).toBe(false);
     expect(validateLogoFile({ size: 100, type: "application/pdf" }).ok).toBe(false);
+  });
+});
+
+describe("validateAccent", () => {
+  it("accepts a 6-char hex with leading #", () => {
+    expect(validateAccent("#1F2937")).toEqual({ ok: true, value: "#1f2937" });
+  });
+
+  it("normalises uppercase hex to lowercase", () => {
+    expect(validateAccent("#ABCDEF")).toEqual({ ok: true, value: "#abcdef" });
+  });
+
+  it("rejects invalid hex", () => {
+    expect(validateAccent("1F2937").ok).toBe(false);
+    expect(validateAccent("#FFF").ok).toBe(false);
+    expect(validateAccent("").ok).toBe(false);
   });
 });

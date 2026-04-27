@@ -5,6 +5,7 @@ import {
   updateOrgNameAction,
   uploadLogoAction,
 } from "@/app/organisation/settings/actions";
+import { AccentSwatches } from "@/components/organisation/AccentSwatches";
 
 type Initial = {
   displayName: string;
@@ -123,20 +124,7 @@ export function SettingsForm({ initial }: { initial: Initial }) {
         </div>
       </div>
 
-      {/* Accent (disabled — activated in PR 3) */}
-      <div className="border border-gray-200 rounded-lg p-4 space-y-3 opacity-50">
-        <div>
-          <h2 className="text-sm font-semibold">Accentfärg (PPTX)</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Aktiveras i nästa version.</p>
-        </div>
-        <div className="flex gap-2">
-          <div
-            className="w-8 h-8 rounded border border-gray-300"
-            style={{ background: initial.accentColor }}
-          />
-          <code className="text-xs text-gray-500 self-center">{initial.accentColor}</code>
-        </div>
-      </div>
+      <AccentSwatches initialAccent={initial.accentColor} />
 
       {message && (
         <p className={"text-sm " + (message.type === "ok" ? "text-green-700" : "text-red-700")}>

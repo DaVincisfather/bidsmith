@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase";
 import { getCurrentProfile } from "@/lib/org";
+import { isValidHex } from "@/lib/organisations";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -38,6 +39,15 @@ export function validateLogoFile(
     return { ok: false, error: "Filen är större än 2 MB" };
   }
   return { ok: true };
+}
+
+export function validateAccent(
+  raw: string
+): { ok: true; value: string } | { ok: false; error: string } {
+  if (!isValidHex(raw)) {
+    return { ok: false, error: "Ogiltig hex-färg (förväntat format: #RRGGBB)" };
+  }
+  return { ok: true, value: raw.toLowerCase() };
 }
 
 export async function updateOrgNameAction(formData: FormData): Promise<ActionResult> {
@@ -110,7 +120,24 @@ export async function uploadLogoAction(formData: FormData): Promise<ActionResult
   }
 }
 
-// Stub — accent activation lands in PR 3.
-export async function updateAccentAction(_formData: FormData): Promise<ActionResult> {
-  return { ok: false, error: "Accentfärg är inte aktiverad ännu" };
+export async function updateAccentAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const raw = String(formData.get("accent_color") ?? "");
+    const v = validateAccent(raw);
+    if (!v.ok) return v;
+
+    const { organizationId } = await requireSuperUser();
+    const service = createServiceClient();
+    const { error } = await service
+      .from("organizations")
+      .update({ accent_color: v.value })
+      .eq("id", organizationId);
+    if (error) return { ok: false, error: error.message };
+
+    revalidatePath("/organisation");
+    revalidatePath("/organisation/settings");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Okänt fel" };
+  }
 }
