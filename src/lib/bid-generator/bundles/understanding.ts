@@ -84,7 +84,7 @@ export async function buildUnderstandingBundle(
     {
       type: "ai",
       key: "understanding-vision",
-      title: "Utmaningar och värde",
+      title: "Vad vi ser",
       content: {
         format: "understanding-vision",
         utmaningar: parsed.vision.utmaningar,

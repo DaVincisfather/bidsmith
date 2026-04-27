@@ -76,7 +76,7 @@ function makeSections(): BidSection[] {
     {
       type: "data",
       key: "understanding-vision",
-      title: "Utmaningar och värde",
+      title: "Vad vi ser",
       generatedAt: "2026-04-19",
       content: {
         format: "understanding-vision",
