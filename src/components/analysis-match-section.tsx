@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TeamProposal } from "./team-proposal";
 import { GoNoGoResultView } from "./go-no-go-result";
 import { GoNoGoResult } from "@/lib/types";
-import Link from "next/link";
 
 interface ScoredConsultant {
   consultantId: string;
@@ -34,6 +34,7 @@ export function AnalysisMatchSection({
   analysisId,
   latestMatch,
 }: AnalysisMatchSectionProps) {
+  const router = useRouter();
   const [match, setMatch] = useState<MatchData | null>(latestMatch);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     latestMatch ? buildDefaultTeamIds(latestMatch.scoredConsultants) : new Set()
@@ -48,7 +49,6 @@ export function AnalysisMatchSection({
   const [goNoGoId, setGoNoGoId] = useState<string | null>(null);
 
   // Bid state
-  const [bidId, setBidId] = useState<string | null>(null);
   const [bidLoading, setBidLoading] = useState(false);
 
   async function triggerMatching() {
@@ -165,10 +165,9 @@ export function AnalysisMatchSection({
       }
 
       const data = await response.json();
-      setBidId(data.id);
+      router.push(`/bids/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
       setBidLoading(false);
     }
   }
@@ -239,16 +238,6 @@ export function AnalysisMatchSection({
             <div className="text-center py-8 text-gray-400 text-sm">
               Skapar anbud och genererar sektioner...
             </div>
-          )}
-
-          {bidId && !bidLoading && (
-            <Link
-              href={`/bids/${bidId}`}
-              className="block w-full text-center bg-gray-900 text-white px-4 py-3 rounded-lg text-sm font-medium
-                         hover:bg-gray-800 transition-colors"
-            >
-              Öppna anbudsredigerare
-            </Link>
           )}
         </>
       )}
