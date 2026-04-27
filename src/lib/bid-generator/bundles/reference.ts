@@ -62,6 +62,7 @@ export async function buildReferenceBundle(
     userContent: formatContext(ctx),
     schema: ReferenceBundleSchema,
     label: "reference bundle",
+    organizationId: ctx.organizationId,
   });
 
   return [

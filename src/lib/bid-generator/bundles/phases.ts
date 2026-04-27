@@ -65,6 +65,7 @@ export async function buildPhasesBundle(ctx: BidContext): Promise<BidSection[]> 
     schema: PhasesV2Schema,
     label: "phases bundle",
     effort: "max",
+    organizationId: ctx.organizationId,
   });
 
   return [

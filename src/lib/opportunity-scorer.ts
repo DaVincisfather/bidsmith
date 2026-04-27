@@ -49,7 +49,8 @@ ${competencyText}`;
 
 export async function scoreOpportunity(
   opportunity: ScoringInput,
-  competencies: CompetencyInput[]
+  competencies: CompetencyInput[],
+  organizationId?: string | null
 ): Promise<OpportunityScore> {
   const userContent = buildScoringPrompt(opportunity, competencies);
 
@@ -60,5 +61,6 @@ export async function scoreOpportunity(
     userContent,
     schema: OpportunityScoreSchema,
     label: "opportunity scoring",
+    organizationId,
   });
 }

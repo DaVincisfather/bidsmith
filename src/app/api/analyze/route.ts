@@ -18,13 +18,14 @@ export async function POST(request: NextRequest) {
     const orgId = await getOrgId(authed);
     const supabase = createServiceClient();
 
-    // Upload file to Supabase Storage
-    const fileName = `${Date.now()}-${file.name}`;
+    // Upload file to Supabase Storage. Path prefix = org_id so the
+    // bucket RLS policies (migration 013) can scope reads/writes.
+    const filePath = `${orgId}/${Date.now()}-${file.name}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
     const { error: uploadError } = await supabase.storage
       .from("rfp-documents")
-      .upload(fileName, buffer, {
+      .upload(filePath, buffer, {
         contentType: file.type,
       });
 
@@ -35,19 +36,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("rfp-documents").getPublicUrl(fileName);
-
     // Parse document to text
     const rawText = await parseDocument(buffer, file.name);
 
-    // Save document record
+    // Save document record. file_url is legacy (kept nullable in 014)
+    // and only file_path is consulted going forward; UI generates a
+    // signed URL on demand via getDocumentSignedUrl.
     const { data: doc, error: docError } = await supabase
       .from("documents")
       .insert({
         file_name: file.name,
-        file_url: publicUrl,
+        file_path: filePath,
         raw_text: rawText,
         organization_id: orgId,
       })
@@ -62,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Analyze with Claude
-    const analysis = await analyzeRfp(rawText);
+    const analysis = await analyzeRfp(rawText, orgId);
 
     // Save analysis
     const { data: analysisRecord, error: analysisError } = await supabase

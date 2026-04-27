@@ -33,7 +33,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const rfpAnalysis = analysisResult.data.analysis as RfpAnalysis;
   const consultants = consultantResult.data.map((row: Record<string, unknown>) => mapConsultantRow(row));
 
-  const result = await matchConsultants(rfpAnalysis, consultants);
+  const result = await matchConsultants(rfpAnalysis, consultants, orgId);
 
   const { data: matchRecord, error: matchError } = await supabase
     .from("matches")

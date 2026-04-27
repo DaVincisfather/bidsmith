@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     teamConsultants,
     scoredConsultants: allScoredConsultants,
     goNoGoResult: goNoGoResult ?? EMPTY_GO_NO_GO,
+    organizationId: orgId,
   };
 
   // Generate sections, saving progress to DB after each

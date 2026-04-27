@@ -43,7 +43,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
   const { data: bid, error: bidError } = await supabase
     .from("bids")
-    .select("id, sections, analysis_id, assessment_id, team_consultant_ids")
+    .select("id, sections, analysis_id, assessment_id, team_consultant_ids, organization_id")
     .eq("id", id)
     .single();
 
@@ -79,6 +79,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     teamConsultants,
     scoredConsultants: (matchResult.data?.[0]?.team_proposal as ScoredConsultant[]) ?? [],
     goNoGoResult: (assessmentResult.data?.result as GoNoGoResult) ?? EMPTY_GO_NO_GO,
+    organizationId: bid.organization_id,
   };
 
   const newSections = await runner(ctx);

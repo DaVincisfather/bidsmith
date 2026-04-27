@@ -13,7 +13,10 @@ export default async function AnalysisPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch analysis
+  // Fetch analysis. file_path is available on the document row when the
+  // user wants the original file — caller should pass it through
+  // getDocumentSignedUrl (lib/storage-urls) since the bucket is private
+  // after migration 013.
   const { data, error } = await supabase
     .from("analyses")
     .select(`
@@ -22,7 +25,7 @@ export default async function AnalysisPage({ params }: PageProps) {
       created_at,
       documents (
         file_name,
-        file_url
+        file_path
       )
     `)
     .eq("id", id)
@@ -34,7 +37,7 @@ export default async function AnalysisPage({ params }: PageProps) {
 
   const document = data.documents as unknown as {
     file_name: string;
-    file_url: string;
+    file_path: string | null;
   };
 
   // Fetch latest match for this analysis

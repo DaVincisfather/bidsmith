@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { validateOrgName, validateLogoFile, validateAccent } from "../actions";
+import { validateOrgName, validateLogoFile, validateAccent } from "../validators";
 
 describe("validateOrgName", () => {
   it("accepts 1-64 chars trimmed", () => {

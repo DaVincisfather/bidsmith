@@ -54,7 +54,8 @@ function formatConsultantsForPrompt(consultants: Consultant[]): string {
 
 export async function matchConsultants(
   analysis: RfpAnalysis,
-  consultants: Consultant[]
+  consultants: Consultant[],
+  organizationId?: string | null
 ): Promise<ScoredMatchResult> {
   const consultantText = formatConsultantsForPrompt(consultants);
 
@@ -71,5 +72,6 @@ ${JSON.stringify(analysis, null, 2)}
 ${consultantText}`,
     schema: ScoredMatchResultSchema,
     label: "consultant matching",
+    organizationId,
   });
 }

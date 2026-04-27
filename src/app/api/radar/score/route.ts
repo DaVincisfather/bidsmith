@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
       try {
         const result = await scoreOpportunity(
           { title: opp.title, summary: opp.summary },
-          competencies
+          competencies,
+          DEFAULT_ORG_ID
         );
 
         await supabase

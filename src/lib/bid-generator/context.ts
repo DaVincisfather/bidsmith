@@ -10,6 +10,7 @@ export interface BidContext {
   teamConsultants: Consultant[];
   scoredConsultants: ScoredConsultant[];
   goNoGoResult: GoNoGoResult;
+  organizationId?: string | null;
 }
 
 export function formatContext(ctx: BidContext): string {

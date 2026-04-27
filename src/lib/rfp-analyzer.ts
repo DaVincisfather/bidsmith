@@ -42,7 +42,10 @@ Var noggrann med att:
 - Extrahera OSL-referens och sekretess-bilagor om RFP:en behandlar sekretess; annars null respektive tom lista
 - Sammanfatta i professionell ton`;
 
-export async function analyzeRfp(rfpText: string): Promise<RfpAnalysis> {
+export async function analyzeRfp(
+  rfpText: string,
+  organizationId?: string | null
+): Promise<RfpAnalysis> {
   return callClaude({
     model: "claude-sonnet-4-6",
     maxTokens: 4000,
@@ -50,5 +53,6 @@ export async function analyzeRfp(rfpText: string): Promise<RfpAnalysis> {
     userContent: `Analysera följande förfrågningsunderlag och returnera en strukturerad JSON-analys:\n\n${rfpText}`,
     schema: RfpAnalysisSchema,
     label: "RFP analysis",
+    organizationId,
   });
 }

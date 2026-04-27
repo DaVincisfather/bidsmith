@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         const rawText = await parseDocument(buffer, file.name);
 
         // Extract structured profile with Sonnet
-        const extraction = await extractConsultant(rawText);
+        const extraction = await extractConsultant(rawText, orgId);
 
         // Insert consultant
         const { data: consultant, error: consultantError } = await supabase

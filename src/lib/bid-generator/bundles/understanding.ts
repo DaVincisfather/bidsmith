@@ -57,6 +57,7 @@ export async function buildUnderstandingBundle(
     schema: UnderstandingBundleSchema,
     label: "understanding bundle",
     effort: "max",
+    organizationId: ctx.organizationId,
   });
 
   const now = new Date().toISOString();

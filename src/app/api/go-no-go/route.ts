@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
   const teamConsultants = await fetchConsultantsByIds(supabase, resolvedTeamIds);
 
-  const result = await evaluateGoNoGo(rfpAnalysis, teamConsultants, allScoredConsultants);
+  const result = await evaluateGoNoGo(rfpAnalysis, teamConsultants, allScoredConsultants, orgId);
 
   const { data: assessment, error: saveError } = await supabase
     .from("go_no_go_assessments")

@@ -41,12 +41,12 @@ export async function POST(
     }
   }
 
-  // 3. Create a document record (radar-sourced, no file upload)
+  // 3. Create a document record (radar-sourced, no file upload).
+  // file_path stays NULL — there is no storage object for ted:// docs.
   const { data: doc, error: docError } = await supabase
     .from("documents")
     .insert({
       file_name: `ted-${opp.title.slice(0, 50)}.txt`,
-      file_url: `ted://notice/${id}`,
       raw_text: inputText,
       organization_id: opp.organization_id,
     })
@@ -58,7 +58,7 @@ export async function POST(
   }
 
   // 4. Run RFP analysis (same as manual upload flow)
-  const analysis = await analyzeRfp(inputText);
+  const analysis = await analyzeRfp(inputText, opp.organization_id);
 
   // 5. Save analysis
   const { data: analysisRecord, error: analysisError } = await supabase

@@ -36,7 +36,8 @@ Regler:
 - Om information saknas, gör en rimlig bedömning baserat på context`;
 
 export async function extractConsultant(
-  cvText: string
+  cvText: string,
+  organizationId?: string | null
 ): Promise<ConsultantExtraction> {
   return callClaude({
     model: "claude-sonnet-4-6",
@@ -45,5 +46,6 @@ export async function extractConsultant(
     userContent: `Analysera följande konsult-CV och returnera en strukturerad JSON-profil:\n\n${cvText}`,
     schema: ConsultantExtractionSchema,
     label: "consultant-extraction",
+    organizationId,
   });
 }

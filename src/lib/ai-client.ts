@@ -1,5 +1,6 @@
 import Anthropic, { APIError } from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { logAiCall } from "@/lib/ai-call-logger";
 
 let _client: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -36,6 +37,9 @@ interface CallClaudeOptions<T> {
   // Opus 4.7+ adaptive thinking. When set, enables reasoning budget via
   // output_config.effort. Omit for Sonnet/Haiku calls that don't need it.
   effort?: ClaudeEffort;
+  // Tenant attribution for ai_call_logs. Null when caller cannot resolve
+  // an org (cron probes, bootstrap flows). Logged as NULL.
+  organizationId?: string | null;
 }
 
 export async function callClaude<T>({
@@ -46,10 +50,12 @@ export async function callClaude<T>({
   schema,
   label,
   effort,
+  organizationId,
 }: CallClaudeOptions<T>): Promise<T> {
   let lastError: unknown;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const startedAt = Date.now();
     try {
       // Streaming is required when the SDK estimates >10 min wall time
       // (max_tokens * 60/128000 > 10). Opus 4.7 + effort=max + 32k tokens
@@ -68,6 +74,23 @@ export async function callClaude<T>({
           : {}),
       });
       const message = await stream.finalMessage();
+
+      const u = (message.usage ?? {}) as {
+        input_tokens?: number;
+        output_tokens?: number;
+        cache_read_input_tokens?: number;
+        cache_creation_input_tokens?: number;
+      };
+      void logAiCall({
+        organizationId: organizationId ?? null,
+        model,
+        label,
+        inputTokens: u.input_tokens ?? 0,
+        outputTokens: u.output_tokens ?? 0,
+        cacheReadTokens: u.cache_read_input_tokens ?? 0,
+        cacheCreationTokens: u.cache_creation_input_tokens ?? 0,
+        latencyMs: Date.now() - startedAt,
+      });
 
       // With adaptive thinking the first block is "thinking"; the text
       // block follows. Find the first text block rather than indexing.
@@ -89,6 +112,17 @@ export async function callClaude<T>({
         await sleep(delay);
         continue;
       }
+      void logAiCall({
+        organizationId: organizationId ?? null,
+        model,
+        label,
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cacheCreationTokens: 0,
+        latencyMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }

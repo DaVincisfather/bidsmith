@@ -56,6 +56,7 @@ export async function buildQualityBundle(ctx: BidContext): Promise<BidSection[]>
     schema: QualityBundleSchema,
     label: "quality bundle",
     effort: "max",
+    organizationId: ctx.organizationId,
   });
 
   return [{

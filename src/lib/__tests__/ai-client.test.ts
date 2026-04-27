@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { z } from "zod";
 import { extractJson, callClaude } from "@/lib/ai-client";
+import { logAiCall } from "@/lib/ai-call-logger";
+
+vi.mock("@/lib/ai-call-logger", () => ({
+  logAiCall: vi.fn().mockResolvedValue(undefined),
+}));
 
 const mockStream = vi.fn();
 vi.mock("@anthropic-ai/sdk", () => {
@@ -29,6 +34,7 @@ mockCreate.mockImplementation((..._args: unknown[]) => streamOf(undefined));
 beforeEach(() => {
   mockStream.mockReset();
   mockStream.mockImplementation((..._args: unknown[]) => streamOf(undefined));
+  vi.mocked(logAiCall).mockClear();
 });
 
 describe("extractJson", () => {
@@ -154,5 +160,56 @@ describe("callClaude — adaptive thinking handling", () => {
     const payload = mockCreate.mock.calls[0][0];
     expect(payload.thinking).toBeUndefined();
     expect(payload.output_config).toBeUndefined();
+  });
+});
+
+describe("callClaude — usage logging", () => {
+  const schema = z.object({ answer: z.string() });
+  const baseArgs = {
+    maxTokens: 1000,
+    system: "sys",
+    userContent: "user",
+    schema,
+    label: "test",
+    model: "claude-sonnet-4-6",
+  };
+
+  it("forwards usage and organizationId to logAiCall on success", async () => {
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: '{"answer": "ok"}' }],
+      usage: {
+        input_tokens: 100,
+        output_tokens: 50,
+        cache_read_input_tokens: 10,
+        cache_creation_input_tokens: 5,
+      },
+    }));
+
+    await callClaude({ ...baseArgs, organizationId: "org-abc" });
+
+    expect(logAiCall).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(logAiCall).mock.calls[0][0];
+    expect(call.organizationId).toBe("org-abc");
+    expect(call.model).toBe("claude-sonnet-4-6");
+    expect(call.label).toBe("test");
+    expect(call.inputTokens).toBe(100);
+    expect(call.outputTokens).toBe(50);
+    expect(call.cacheReadTokens).toBe(10);
+    expect(call.cacheCreationTokens).toBe(5);
+    expect(call.error).toBeUndefined();
+    expect(call.latencyMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("logs zero usage when the response omits it", async () => {
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: '{"answer": "ok"}' }],
+    }));
+
+    await callClaude(baseArgs);
+
+    const call = vi.mocked(logAiCall).mock.calls[0][0];
+    expect(call.inputTokens).toBe(0);
+    expect(call.outputTokens).toBe(0);
+    expect(call.organizationId).toBeNull();
   });
 });

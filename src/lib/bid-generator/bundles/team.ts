@@ -44,6 +44,7 @@ export async function buildTeamBundle(ctx: BidContext): Promise<BidSection[]> {
     userContent: formatContext(ctx),
     schema: TeamBundleSchema,
     label: "team bundle",
+    organizationId: ctx.organizationId,
   });
 
   const members = parsed.members.map((m) => ({
