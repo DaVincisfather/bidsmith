@@ -38,6 +38,13 @@ Fokusera på must- och should-krav. 1-6 rader per matris (template slot cap).
 
 Skriv kort och konkret. Inga floskler, ingen markdown.
 
+KÄLLMATERIAL-TROHET (HÅRD REGEL):
+evidence-fältet ska citera eller parafrasera faktisk CV-text.
+Hitta INTE på årtal, klientnamn, branschdetaljer eller siffror som inte finns i CV:n.
+Om CV:n säger "jobbat på startup inom e-handel" — skriv inte "(2024)" eller annat årtal.
+Om en konsult saknar relevant erfarenhet för ett krav — skriv "NEJ" + kort förklaring,
+hellre än att tillskriva fabricerade meriter.
+
 Svara med giltig JSON:
 {
   "rows": [

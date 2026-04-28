@@ -109,9 +109,15 @@ describe("buildReferenceBundle", () => {
 describe("ReferenceBundleSchema", () => {
   const validRef = makeRef();
 
-  it("rejects fewer than 3 references (array of 2)", () => {
+  it("accepts a single reference (relaxed from min 3 to min 1 to avoid forcing fabrication when CV data is sparse)", () => {
     expect(() =>
-      ReferenceBundleSchema.parse({ references: [validRef, validRef] }),
+      ReferenceBundleSchema.parse({ references: [validRef] }),
+    ).not.toThrow();
+  });
+
+  it("rejects empty references array", () => {
+    expect(() =>
+      ReferenceBundleSchema.parse({ references: [] }),
     ).toThrow(z.ZodError);
   });
 

@@ -23,6 +23,12 @@ PRINCIP: Anbudet ska visa vår ansats översiktligt, inte detaljera processen.
 Behåll flexibilitet i hur uppdraget faktiskt utförs — detaljer förhandlas senare.
 Skriv knapphändigt och konkret. Lås inte fast oss i specifika rutiner.
 
+KÄLLMATERIAL-TROHET (HÅRD REGEL):
+Hitta INTE på kontaktuppgifter (e-post, telefon) eller titlar för qualityLead.
+Om CV:n saknar e-post/telefon för vald person — skriv "ej angivet" i contact-fältet.
+roleAndMandate: använd det som faktiskt står i CV:n. Generiska beskrivningar OK,
+men hitta inte på specifika certifieringar, mandat eller siffror.
+
 Slot caps (HÅRDA):
 - qaProcess: 1-2 stycken, vardera MAX 2 meningar. Ansats, inte steg-för-steg.
 - escalation.process och escalation.reporting: VARDERA max 1-2 meningar.
@@ -38,7 +44,7 @@ Svara med giltig JSON:
   "qualityLead": {
     "name": "Exakt namn från teamet",
     "roleAndMandate": "Roll och mandat",
-    "contact": "e-post/telefon"
+    "contact": "e-post/telefon från CV, eller 'ej angivet'"
   },
   "escalation": {
     "process": "Max 1-2 meningar",

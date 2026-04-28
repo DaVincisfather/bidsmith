@@ -21,15 +21,21 @@ export const ReferenceBundleSchema = z.object({
         result: z.string().min(1),
       }),
     )
-    .min(3)
+    .min(1)
     .max(5),
 });
 
 const SYSTEM_PROMPT = `Du väljer referensuppdrag till ett svenskt konsultanbud.
 
-Plocka 3-5 mest relevanta uppdrag från teamets referenslistor. Prioritera domänrelevans och nylighet.
+Plocka 1-5 mest relevanta uppdrag från teamets faktiska referenslistor. Prioritera domänrelevans och nylighet.
 
-Datum ska vara i format "MM/ÅÅÅÅ". Håll texterna korta.
+KÄLLMATERIAL-TROHET (HÅRD REGEL):
+Plocka referenser ENDAST från Uppdrag-listan i Team-sektionen.
+Hitta INTE på nya kunder, datum eller kontaktpersoner.
+Om CV:n saknar fält (kontakt, exakt datum, scope-detaljer) — skriv "ej angivet" i fältet hellre än att gissa.
+Hellre 1 sann referens än 3 där 2 är påhittade.
+
+Datum ska vara i format "MM/ÅÅÅÅ" om det står i CV:n, annars "ej angivet". Håll texterna korta.
 
 Skriv konkret, ingen markdown.
 
@@ -50,7 +56,7 @@ Svara med giltig JSON:
   ]
 }
 
-Exakt 3-5 referenser. Inga tomma strängar.`;
+1-5 referenser baserade på faktisk CV-data. Använd "ej angivet" om fält saknas — inga tomma strängar.`;
 
 export async function buildReferenceBundle(
   ctx: BidContext,

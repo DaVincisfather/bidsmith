@@ -98,11 +98,19 @@ export function computeBidGeneratorAggregate(
 }
 
 function buildSourceMaterial(context: BidEvalContext): string {
-  const rfp = `## RFP\n${context.analyzerFixture.rfp_text}`;
+  // Pass BOTH raw and structured forms — the bid-generator works from
+  // structured (parsed_profile, analysis), so the judge needs both to avoid
+  // flagging structured-only fields as fabrications. Compact JSON keeps
+  // the structured dumps lean as fixtures scale.
+  const rfpRaw = `## RFP (rå text)\n${context.analyzerFixture.rfp_text}`;
+  const rfpStructured = `## RFP (analyzed structure — what the bid-generator received)\n${JSON.stringify(context.analyzerFixture.golden)}`;
   const cvs = context.consultants
-    .map((c) => `## CV: ${c.parsed_profile.name} (${c.id})\n${c.cv_text}`)
+    .map((c) =>
+      `## CV (rå text): ${c.parsed_profile.name} (${c.id})\n${c.cv_text}\n\n` +
+      `## CV (parsed profile — what the bid-generator received): ${c.parsed_profile.name} (${c.id})\n${JSON.stringify(c.parsed_profile)}`,
+    )
     .join("\n\n");
-  return `${rfp}\n\n${cvs}`;
+  return `${rfpRaw}\n\n${rfpStructured}\n\n${cvs}`;
 }
 
 async function judgeBid(

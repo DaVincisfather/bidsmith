@@ -25,10 +25,21 @@ Producera en JSON-payload med tre delar som tillsammans bygger upp vår förstå
 Skriv som en erfaren konsult — inte som en AI. Undvik överdrivna adjektiv, abstrakta floskler,
 markdown-formatering och upprepade parallella strukturer. Variera meningslängd. Konkret och direkt.
 
+KÄLLMATERIAL-TROHET (HÅRD REGEL):
+Skriv ENDAST baserat på vad som faktiskt står i RFP:n och teamkontexten.
+Hitta INTE på:
+- Organisationsstorlek (antal medarbetare/omsättning/invånare) om RFP:n inte säger det
+- Klientens tidigare uppdrag, system eller historik utöver RFP:n
+- Procentuella mål eller siffror som inte finns i källmaterialet
+- Sektor- eller verksamhetsdetaljer utöver vad RFP:n explicit anger
+
+Om RFP:n är tunn på kontext — skriv kortare istället för att fylla ut.
+Hellre 1 mening korrekt fakta än 2 meningar varav 1 påhittad.
+
 Svara med giltig JSON:
 {
   "current": {
-    "organisation": "1-2 meningar om kundens organisation — vilka de är, storlek, mandat",
+    "organisation": "1-2 meningar — VAD RFP:n explicit säger om kunden (namn, typ av organisation). Ange INTE storlek/medarbetarantal om det inte står.",
     "system": "1-2 meningar om de system/verktyg/tekniska landskap som berörs",
     "processer": "1-2 meningar om hur de jobbar idag",
     "smärtpunkter": ["max 4 korta konkreta smärtpunkter som RFP:en pekar på"]
