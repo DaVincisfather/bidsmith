@@ -20,16 +20,28 @@ consultants:
       level: "expert"
       yearsExperience: 12
       summary: "Senior management consultant med djup erfarenhet av digital transformation i offentlig sektor."
-      competencies: ["digital transformation", "molnmigration", "offentlig sektor", "SAFe", "Scrum"]
+      competencies:
+        - name: "digital transformation"
+          category: "domain"
+        - name: "molnmigration"
+          category: "technical"
+        - name: "offentlig sektor"
+          category: "domain"
+        - name: "SAFe"
+          category: "methodology"
+        - name: "Scrum"
+          category: "methodology"
       projects:
         - client: "Stockholms stad"
           role: "Lead konsult"
           years: "2019-2024"
           description: "Molnmigration för 12 förvaltningar"
+          sector: "public"
         - client: "Region Skåne"
           role: "Digitaliseringsstrateg"
           years: "2015-2019"
           description: "Journalsystem-projekt"
+          sector: "public"
 
   - id: bertil_larsson
     match_profile:
@@ -44,12 +56,19 @@ consultants:
       level: "junior"
       yearsExperience: 2
       summary: "Junior frontend-utvecklare."
-      competencies: ["React", "TypeScript", "e-handel"]
+      competencies:
+        - name: "React"
+          category: "technical"
+        - name: "TypeScript"
+          category: "technical"
+        - name: "e-handel"
+          category: "domain"
       projects:
         - client: "E-handelsstartup AB"
           role: "Utvecklare"
           years: "2024-2026"
           description: "Frontend för kundportal"
+          sector: "private"
 
   - id: cecilia_berg
     match_profile:
@@ -70,13 +89,21 @@ consultants:
       level: "senior"
       yearsExperience: 8
       summary: "Senior konsult med 8 års DX-erfarenhet i privat sektor."
-      competencies: ["digital transformation", "change management", "privat sektor"]
+      competencies:
+        - name: "digital transformation"
+          category: "domain"
+        - name: "change management"
+          category: "methodology"
+        - name: "privat sektor"
+          category: "domain"
       projects:
         - client: "Volvo Cars"
           role: "DX-lead"
           years: "2020-2024"
           description: "Lead för 4 workstreams"
+          sector: "private"
         - client: "IKEA"
           role: "Digitaliseringskonsult"
           years: "2018-2020"
           description: "E-handelsanalys"
+          sector: "private"

@@ -22,3 +22,23 @@ matcher:
   hit_at_k:
     green: 1.00
     yellow: 0.80
+
+bid-generator:
+  structure.pass:
+    green: 1.00
+    yellow: 1.00
+  structure.all_sections_present:
+    green: 1.00
+    yellow: 1.00
+  structure.slot_format_valid:
+    green: 1.00
+    yellow: 1.00
+  structure.empty_fields:
+    green: 1.00
+    yellow: 1.00
+  coverage.recall:
+    green: 0.90
+    yellow: 0.75
+  hallucination.pass:
+    green: 1.00
+    yellow: 1.00

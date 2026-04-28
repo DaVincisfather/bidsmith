@@ -1,0 +1,24 @@
+id: _stub
+analyzer_fixture: _stub
+consultant_ids:
+  - anna_svensson
+  - bertil_larsson
+golden:
+  mandatory_sections:
+    - cover
+    - understanding-current
+    - understanding-assignment
+    - understanding-vision
+    - phases
+    - quality-assurance
+    - requirement-matrix-v2
+    - team-pricing
+    - reference-v2
+    - confidentiality
+    - certifications
+  requirement_coverage:
+    must_cover: []        # stub — calibration sets these for real fixtures
+    should_cover_threshold: 0.8
+  hallucination_allowlist:
+    - "ISO 27001"
+    - "ISO 9001"

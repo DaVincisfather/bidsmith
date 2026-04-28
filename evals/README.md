@@ -1,6 +1,6 @@
 # AI Eval Harness
 
-Verifierar träffsäkerhet i `rfp-analyzer` och `consultant-matcher` via ett fixerat golden set av YAML-fixtures. MVP-primärmål: conviction på att modellen matchar konsulter vars CV:n demonstrerar RFP:ns ska-krav.
+Verifierar träffsäkerhet i `rfp-analyzer`, `consultant-matcher` och `bid-generator` via ett fixerat golden set av YAML-fixtures. MVP-primärmål: conviction på att modellen matchar konsulter vars CV:n demonstrerar RFP:ns ska-krav.
 
 ## Köra evals
 
@@ -10,6 +10,7 @@ source .env.local
 
 npm run eval:analyzer                        # alla analyzer-fixtures
 npm run eval:matcher                         # alla matcher-fixtures (mode: isolated)
+npm run eval:bid-generator                   # alla bid-generator-fixtures
 npm run eval:analyzer -- --fixture _stub     # enskild fixture
 ```
 
@@ -50,6 +51,53 @@ Annotationstid: ~30-40 min per fixture. Svårast: `requirements[]` (lätt att mi
 
 Annotationstid: ~15 min per fixture (största arbetet: välja konsultpool med rätt spridning).
 
+## bid-generator-evaluator
+
+Offline-evaluator för `generateAllSections()` — tre dimensioner:
+
+1. **Struktur** (deterministisk): alla obligatoriska sektioner finns, giltiga v2-slot-format, inga tomma required-fält.
+2. **Coverage** (Sonnet): per-krav-check att anbudet visar hur kravet uppfylls.
+3. **Hallucination** (Sonnet): extraktion av faktapåståenden + källverifiering mot RFP + CV.
+
+### Köra
+
+```bash
+npm run eval:bid-generator                       # alla fixtures
+npm run eval:bid-generator -- --fixture <id>    # enskild fixture
+```
+
+Varje körning skriver `evals/runs/<timestamp>-bid-generator.json` och printar en thresholdad konsoll-rapport.
+
+### Kostnad
+
+Cirka **$0.25–0.45 per fixture** (Opus-generering + Sonnet-judges). OK för manuella körningar; revidera innan CI-integration.
+
+### Kalibreringsflöde (första riktiga fixturen)
+
+Judges är medvetet naiva out-of-the-box — de behöver kalibreras mot en riktig RFP innan metrics blir tillförlitliga.
+
+1. Välj en analyzer-fixture du redan annoterat (t.ex. en TED-RFP).
+2. Kopiera `evals/fixtures/bid-generator/_stub.yaml` till `evals/fixtures/bid-generator/<rfp-id>.yaml`. Sätt `golden.hallucination_allowlist` till de certifieringar/standarder som ditt företag alltid hävdar (t.ex. `["ISO 27001", "ISO 9001"]`). Annotera även `golden.requirement_coverage.must_cover` med krav-ID:n som *måste* adresseras (t.ex. `["req_0", "req_3"]`) — fältet är reserverat för framtida hård gating; nuvarande version rapporterar bara aggregerad `coverage.recall`.
+3. Kör evaluatorn: `npm run eval:bid-generator -- --fixture <rfp-id>`
+4. Öppna JSON-rapporten. För varje judge-fält med `match: false`, läs `evidence` och avgör: hade judgen rätt?
+5. Om judgen gjorde fel — redigera prompten i `evals/harness/core/judges.ts` och kör om.
+6. Stoppa när ≥90% av domarna matchar din manuella läsning. (Specens "weak QA → iterate"-loop.)
+
+Räkna med ~45–60 minuter på första kalibreringspasset per fixture.
+
+### Arkitekturnoteringar
+
+- `scoredConsultants` och `goNoGoResult` i bid-context är *stubbade* (rangordnar efter input-ordning, fast "go"-rekommendation). Evaluatorn bedömer bid-generator-output, inte uppströms matcher/go-no-go-pipelinen.
+- `must_cover`-ID:n använder syntetiska identifierare `req_<index>` baserat på ordningen av krav i analyzer-fixturen.
+- Hallucination-judgen använder en `allowlist` för kända sanna påståenden (t.ex. ISO-certifieringar) som inte skulle dyka upp i RFP/CV-källmaterialet.
+
+### Out of scope (se spec för backlog)
+
+- Tone/style-dimension
+- Runtime-evaluator-integration (planerad som punkt C)
+- CI-integration
+- Sprint-contract / pre-generation-testbara kriterier (planerad som punkt B)
+
 ## Utöka syntetisk konsultpool
 
 Redigera `evals/fixtures/consultants/synthetic-pool.yaml`. Lägg till 1-2 konsulter per körning tills poolen har 8-10 profiler. Viktigt att:
@@ -72,8 +120,10 @@ Första gången du kör en ny fixture: manuellt verifiera 20-30 haiku-equiv-doma
 | `exact` | — | enum, ISO-datum, numeriska värden, strikt string-jämförelse | $0 |
 | `haiku-equiv` | Haiku 4.5 | fält-ekvivalens (title, summary, requirement-description, kompetensnamn) | ~$0.0001 |
 | `sonnet-mhc` | Sonnet 4.6 | must-have coverage per (RFP-krav × konsult-CV) | ~$0.001 |
+| `bid-coverage` | Sonnet 4.6 | per RFP-krav: täcks det av anbudsutkastet? | ~$0.0025 |
+| `bid-hallucination` | Sonnet 4.6 | extraherar faktapåståenden från anbud + verifierar mot källa (RFP+CV) | ~$0.01 per anbud |
 
-Totalkostnad per full eval-körning: < $0.20 (negligerbart vid nuvarande pris).
+Totalkostnad per full eval-körning: < $0.20 för analyzer + matcher (negligerbart). bid-generator ändrar profilen — räkna ~$0.25–0.45 per fixture (Opus-generering + Sonnet-judges).
 
 ## Metrics
 
@@ -98,11 +148,12 @@ evals/
 ├── fixtures/
 │   ├── analyzer/        # per-RFP YAML + full golden
 │   ├── matcher/         # refererar analyzer-fixture + consultant_ids + MHC-förväntan
+│   ├── bid-generator/   # refererar analyzer-fixture + must_cover + hallucination_allowlist
 │   └── consultants/     # delad pool av syntetiska CV:n
 ├── harness/
 │   ├── core/            # domän-agnostisk: runner, judges, metrics, reporter, loader
-│   └── configs/         # modul-specifik: analyzer.ts, matcher.ts
-├── scripts/             # CLI-wrappers: run-analyzer.ts, run-matcher.ts
+│   └── configs/         # modul-specifik: analyzer.ts, matcher.ts, bid-generator.ts
+├── scripts/             # CLI-wrappers: run-analyzer.ts, run-matcher.ts, run-bid-generator.ts
 ├── runs/                # gitignored — per-körning JSON-dumps
 ├── thresholds.yaml      # grönt/gult/rött-gränser
 └── README.md

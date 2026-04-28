@@ -161,15 +161,15 @@ export const matcherConfig: EvalConfig<MatcherFixture, Output, MatcherEvalContex
       yearsExperience: c.parsed_profile.yearsExperience,
       summary: c.parsed_profile.summary,
       rawCvText: c.cv_text,
-      competencies: c.parsed_profile.competencies.map((name) => ({
-        competency: name,
-        category: "technical" as const,
+      competencies: c.parsed_profile.competencies.map((cmp) => ({
+        competency: cmp.name,
+        category: cmp.category,
       })),
       references: c.parsed_profile.projects.map((p) => ({
         title: p.role,
         description: `${p.client}: ${p.description}`,
         year: parseInt(p.years.split("-")[0], 10),
-        sector: "public" as const,
+        sector: p.sector,
       })),
       createdAt: NOW,
       updatedAt: NOW,

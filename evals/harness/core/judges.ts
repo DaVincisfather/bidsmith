@@ -193,3 +193,135 @@ ${cvText}`;
     };
   }
 }
+
+const BidCoverageResponseSchema = z.object({
+  demonstrated: z.boolean(),
+  evidence: z.string(),
+  confidence: z.enum(["high", "medium", "low"]),
+});
+
+export interface BidCoverageJudgeInput {
+  requirement: { id: string; category: string; description: string; priority: string };
+  bidText: string;
+}
+
+export async function bidCoverageJudge(input: BidCoverageJudgeInput): Promise<FieldJudgment> {
+  const { requirement, bidText } = input;
+  const field = `coverage.${requirement.id}`;
+
+  const system = `Du bedömer om ett anbudsutkast demonstrerar att en RFP-krav uppfylls.
+Svara med JSON { "demonstrated": boolean, "evidence": string, "confidence": "high"|"medium"|"low" }.
+
+demonstrated = true endast om anbudet innehåller konkret skrivning som adresserar kravet (kompetens, metod, leverans, referens, certifiering, person).
+evidence = citat eller paraphrase från anbudet som stödjer bedömningen (eller "inte adresserat" om demonstrated=false).
+confidence = "high" om explicit, "medium" om rimlig inferens, "low" om svag inferens.
+
+Var strikt: krav på "5 års erfarenhet" kräver konkret namn + år/projekt. Allmänna fraser ("vi har bred erfarenhet") räcker inte.`;
+
+  const userContent = `Krav (kategori: ${requirement.category}, prioritet: ${requirement.priority}):
+${requirement.description}
+
+Anbudstext:
+${bidText}`;
+
+  try {
+    const judgment = await callClaude({
+      model: SONNET_MODEL,
+      maxTokens: 500,
+      system,
+      userContent,
+      schema: BidCoverageResponseSchema,
+      label: `bid-coverage-judge(${field})`,
+    });
+    return {
+      field,
+      judge: "bid-coverage",
+      match: judgment.demonstrated,
+      evidence: judgment.evidence,
+      confidence: judgment.confidence,
+      golden: requirement,
+      actual: "(bid text)",
+    };
+  } catch (err) {
+    return {
+      field,
+      judge: "bid-coverage",
+      match: false,
+      error: err instanceof Error ? err.message : String(err),
+      golden: requirement,
+      actual: "(bid text)",
+    };
+  }
+}
+
+const HallucinationResponseSchema = z.object({
+  claims: z.array(z.object({
+    claim: z.string(),
+    supported: z.boolean(),
+    evidence: z.string(),
+  })),
+});
+
+export interface BidHallucinationJudgeInput {
+  bidText: string;
+  sourceMaterial: string;
+  allowlist: string[];
+}
+
+export async function bidHallucinationJudge(input: BidHallucinationJudgeInput): Promise<FieldJudgment> {
+  const { bidText, sourceMaterial, allowlist } = input;
+  const field = "hallucination";
+
+  const system = `Du extraherar och verifierar faktapåståenden i ett anbudsutkast mot källmaterialet.
+Svara med JSON { "claims": [{ "claim": string, "supported": boolean, "evidence": string }] }.
+
+Steg:
+1. Extrahera 5-15 specifika faktapåståenden från anbudet — namn, år, projekt-klienter, numeriska värden, certifieringar, roller. Hoppa över allmänna formuleringar.
+2. För varje påstående, kontrollera om det stöds av källmaterialet (RFP + CV:n).
+3. supported = true om källmaterialet bekräftar påståendet (exakt eller via stark inferens). supported = false om källan inte nämner det eller motsäger det.
+4. evidence = citat från källan om supported=true, eller "inte i källa" om supported=false.
+
+Var strikt: en siffra eller ett klientnamn som inte finns i källan = supported=false.`;
+
+  const userContent = `Anbudstext:
+${bidText}
+
+Källmaterial (RFP + CV:n):
+${sourceMaterial}`;
+
+  try {
+    const judgment = await callClaude({
+      model: SONNET_MODEL,
+      maxTokens: 2000,
+      system,
+      userContent,
+      schema: HallucinationResponseSchema,
+      label: `bid-hallucination-judge`,
+    });
+
+    const allowlistMatches = (claim: string) =>
+      allowlist.some((term) => claim.toLowerCase().includes(term.toLowerCase()));
+
+    const unsupported = judgment.claims.filter((c) => !c.supported && !allowlistMatches(c.claim));
+
+    return {
+      field,
+      judge: "bid-hallucination",
+      match: unsupported.length === 0,
+      evidence: unsupported.length === 0
+        ? `${judgment.claims.length} claims, all supported (or allowlisted)`
+        : `unsupported: ${unsupported.map((c) => c.claim).join("; ")}`,
+      golden: { allowlist },
+      actual: judgment.claims,
+    };
+  } catch (err) {
+    return {
+      field,
+      judge: "bid-hallucination",
+      match: false,
+      error: err instanceof Error ? err.message : String(err),
+      golden: { allowlist },
+      actual: null,
+    };
+  }
+}

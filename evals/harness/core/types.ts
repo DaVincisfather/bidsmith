@@ -1,6 +1,6 @@
 // Shared types for the eval harness. Domain-agnostic.
 
-export type JudgeName = "exact" | "haiku-equiv" | "haiku-rubric" | "sonnet-mhc";
+export type JudgeName = "exact" | "haiku-equiv" | "haiku-rubric" | "sonnet-mhc" | "bid-coverage" | "bid-hallucination";
 
 export interface FieldJudgment {
   field: string;              // "title" | "requirements[0]" | "mhc.anna_svensson.krav_2"

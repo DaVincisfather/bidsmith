@@ -10,6 +10,7 @@ const ThresholdPairSchema = z.object({
 const ThresholdsSchema = z.object({
   analyzer: z.record(z.string(), ThresholdPairSchema).default({}),
   matcher: z.record(z.string(), ThresholdPairSchema).default({}),
+  "bid-generator": z.record(z.string(), ThresholdPairSchema).default({}),
 });
 
 export type Thresholds = z.infer<typeof ThresholdsSchema>;

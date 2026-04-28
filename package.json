@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "eval:analyzer": "tsx evals/scripts/run-analyzer.ts",
-    "eval:matcher": "tsx evals/scripts/run-matcher.ts"
+    "eval:matcher": "tsx evals/scripts/run-matcher.ts",
+    "eval:bid-generator": "tsx evals/scripts/run-bid-generator.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

@@ -50,13 +50,21 @@ export const ParsedProfileSchema = z.object({
   level: z.enum(["junior", "intermediate", "senior", "expert"]),
   yearsExperience: z.number(),
   summary: z.string(),
-  competencies: z.array(z.string()),
+  // Object-form only (no string shorthand) — bid-generator branches on
+  // category/sector for some sections, so the eval needs representative input.
+  competencies: z.array(
+    z.object({
+      name: z.string(),
+      category: z.enum(["technical", "domain", "methodology", "certification"]),
+    })
+  ),
   projects: z.array(
     z.object({
       client: z.string(),
       role: z.string(),
       years: z.string(),
       description: z.string(),
+      sector: z.enum(["public", "private"]),
     })
   ),
 });
@@ -101,3 +109,23 @@ export const MatcherFixtureSchema = z.object({
 });
 
 export type MatcherFixture = z.infer<typeof MatcherFixtureSchema>;
+
+// --- Bid-generator fixture ---
+
+export const BidGeneratorFixtureSchema = z.object({
+  id: z.string(),
+  analyzer_fixture: z.string(),
+  consultant_ids: z.array(z.string()).min(1),
+  golden: z.object({
+    mandatory_sections: z.array(z.string()),
+    requirement_coverage: z.object({
+      // Reserved for future hard-gating; the current evaluator only emits
+      // aggregated coverage.recall (see bid-generator.ts).
+      must_cover: z.array(z.string()),
+      should_cover_threshold: z.number().min(0).max(1).default(0.8),
+    }),
+    hallucination_allowlist: z.array(z.string().min(1)).default([]),
+  }),
+});
+
+export type BidGeneratorFixture = z.infer<typeof BidGeneratorFixtureSchema>;

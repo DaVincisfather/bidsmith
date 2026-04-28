@@ -35,6 +35,7 @@ const thresholds = {
     "client": { green: 1.0, yellow: 1.0 },
   },
   matcher: {},
+  "bid-generator": {},
 };
 
 describe("formatConsoleReport", () => {
