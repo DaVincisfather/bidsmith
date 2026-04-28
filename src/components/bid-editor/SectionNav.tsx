@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   DndContext,
   closestCenter,
@@ -103,6 +104,7 @@ export function SectionNav({
   onReorder,
   onRemoveSection,
 }: SectionNavProps) {
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -119,7 +121,7 @@ export function SectionNav({
 
   return (
     <nav className="space-y-0.5">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={sections.map((s) => s.key)} strategy={verticalListSortingStrategy}>
           {sections.map((section) => (
             <SortableItem

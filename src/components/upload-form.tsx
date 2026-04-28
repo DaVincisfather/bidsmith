@@ -58,7 +58,7 @@ export function UploadForm() {
           ) : (
             <div>
               <p className="text-lg font-medium">
-                Ladda upp ett forfrågningsunderlag
+                Ladda upp ett förfrågningsunderlag
               </p>
               <p className="text-sm text-gray-400 mt-1">
                 PDF, Word, Markdown eller textfil
