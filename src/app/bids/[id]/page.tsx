@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { BidEditor } from "@/components/bid-editor/BidEditor";
 import { BidSection, StyleGuide } from "@/lib/types";
+import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
 import { notFound } from "next/navigation";
 
 const DEFAULT_STYLE_GUIDE: StyleGuide = {
@@ -50,6 +51,7 @@ export default async function BidEditorPage({ params }: PageProps) {
       bidId={bid.id}
       initialSections={bid.sections as BidSection[]}
       initialStatus={bid.status}
+      initialStructureEval={(bid.structure_eval as StructureEvalSummary | null) ?? null}
       styleGuide={styleGuide}
     />
   );

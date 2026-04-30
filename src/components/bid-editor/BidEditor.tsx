@@ -2,19 +2,29 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { BidSection, StyleGuide } from "@/lib/types";
+import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
 import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./renderers";
+import { StructureEvalBadge } from "./StructureEvalBadge";
 
 interface BidEditorProps {
   bidId: string;
   initialSections: BidSection[];
   initialStatus: string;
+  initialStructureEval: StructureEvalSummary | null;
   styleGuide: StyleGuide;
 }
 
-export function BidEditor({ bidId, initialSections, initialStatus, styleGuide }: BidEditorProps) {
+export function BidEditor({
+  bidId,
+  initialSections,
+  initialStatus,
+  initialStructureEval,
+  styleGuide,
+}: BidEditorProps) {
   const [sections, setSections] = useState<BidSection[]>(initialSections);
   const [status, setStatus] = useState(initialStatus);
+  const [structureEval, setStructureEval] = useState<StructureEvalSummary | null>(initialStructureEval);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -29,6 +39,7 @@ export function BidEditor({ bidId, initialSections, initialStatus, styleGuide }:
     const data = await res.json();
     setSections(data.sections ?? []);
     setStatus(data.status);
+    setStructureEval(data.structureEval ?? null);
   }, [bidId]);
 
   useEffect(() => {
@@ -138,9 +149,12 @@ export function BidEditor({ bidId, initialSections, initialStatus, styleGuide }:
     <div className="flex h-[calc(100vh-57px)]">
       {/* Left panel — navigation */}
       <aside className="w-56 shrink-0 border-r border-gray-200 overflow-y-auto p-3">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-bold uppercase tracking-wide text-gray-400">Sektioner</h2>
-          <span className="text-[10px] text-gray-400">{sections.length}</span>
+        <div className="mb-3 space-y-2">
+          <StructureEvalBadge eval={structureEval} />
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-gray-400">Sektioner</h2>
+            <span className="text-[10px] text-gray-400">{sections.length}</span>
+          </div>
         </div>
         <SectionNav
           sections={sections}

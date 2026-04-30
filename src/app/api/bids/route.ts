@@ -7,6 +7,11 @@ import { RfpAnalysis, ScoredConsultant, GoNoGoResult, BidSection } from "@/lib/t
 import type { BidContext } from "@/lib/bid-generator";
 import { parseBody } from "@/lib/api-helpers";
 import { BidCreateSchema } from "@/lib/api-schemas";
+import {
+  judgeBidStructure,
+  buildStructureEvalSummary,
+  RUNTIME_MANDATORY_SECTIONS,
+} from "@/lib/eval/bid-structure";
 
 export async function POST(request: NextRequest) {
   const parsed = await parseBody(request, BidCreateSchema);
@@ -82,10 +87,21 @@ export async function POST(request: NextRequest) {
       .eq("id", bid.id);
   });
 
+  // Eval failure must never block the bid save — sections took 2-5 min to
+  // generate and we'd rather show "ej utvärderad" than lose them.
+  let structureEval: ReturnType<typeof buildStructureEvalSummary> | null = null;
+  try {
+    structureEval = buildStructureEvalSummary(
+      judgeBidStructure(sections, RUNTIME_MANDATORY_SECTIONS),
+    );
+  } catch (err) {
+    console.error("structure-judge failed (sections still saved):", err);
+  }
+
   await supabase
     .from("bids")
-    .update({ sections, status: "draft" })
+    .update({ sections, status: "draft", structure_eval: structureEval })
     .eq("id", bid.id);
 
-  return NextResponse.json({ id: bid.id, status: "draft", sections });
+  return NextResponse.json({ id: bid.id, status: "draft", sections, structureEval });
 }

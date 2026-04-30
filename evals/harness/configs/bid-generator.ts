@@ -11,7 +11,7 @@ import {
 } from "../core/fixtures";
 import { loadFixtureFromString } from "../core/fixture-loader";
 import { loadConsultantPool, getConsultantsByIds } from "../core/consultant-pool";
-import { judgeBidStructure, STRUCTURE_FIELDS } from "../core/bid-structure";
+import { judgeBidStructure, STRUCTURE_FIELDS } from "@/lib/eval/bid-structure";
 import { bidCoverageJudge, bidHallucinationJudge } from "../core/judges";
 import { mapWithConcurrency } from "../core/concurrency";
 import { meanMetric } from "../core/metrics";

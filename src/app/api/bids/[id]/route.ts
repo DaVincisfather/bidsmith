@@ -34,6 +34,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     outcome: data.outcome,
     exportedAt: data.exported_at,
     createdAt: data.created_at,
+    structureEval: data.structure_eval,
   });
 }
 
