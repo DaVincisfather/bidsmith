@@ -8,11 +8,39 @@ const PHASE_COLORS = ["#1F5E63", "#8FAF9A", "#2D7A7F", "#5B8A72", "#3D8A8A"];
 interface PhasesRendererProps {
   phases: ExecutionPhase[];
   style: StyleGuide;
-  onPhaseFieldChange?: (phaseIndex: number, field: keyof ExecutionPhase, value: string) => void;
+  onChange?: (phases: ExecutionPhase[]) => void;
 }
 
-export function PhasesRenderer({ phases, style, onPhaseFieldChange }: PhasesRendererProps) {
-  const c = style.colors;
+export function PhasesRenderer({ phases, style: _style, onChange }: PhasesRendererProps) {
+  const editable = !!onChange;
+
+  function updatePhase(i: number, patch: Partial<ExecutionPhase>) {
+    if (!onChange) return;
+    onChange(phases.map((p, j) => j === i ? { ...p, ...patch } : p));
+  }
+
+  function updateDeliverable(i: number, dIdx: number, value: string) {
+    if (!onChange) return;
+    onChange(phases.map((p, j) => j === i
+      ? { ...p, deliverables: p.deliverables.map((d, k) => k === dIdx ? value : d) }
+      : p,
+    ));
+  }
+
+  function updateRisk(i: number, rIdx: number, value: string) {
+    if (!onChange) return;
+    onChange(phases.map((p, j) => j === i
+      ? { ...p, risks: (p.risks ?? []).map((r, k) => k === rIdx ? value : r) }
+      : p,
+    ));
+  }
+
+  function updateHours(i: number, value: string) {
+    if (!onChange) return;
+    const num = Number(value);
+    if (!Number.isFinite(num)) return;
+    updatePhase(i, { hoursEstimate: num });
+  }
 
   return (
     <div className="py-2 space-y-4">
@@ -21,27 +49,36 @@ export function PhasesRenderer({ phases, style, onPhaseFieldChange }: PhasesRend
         return (
           <div key={i} className="rounded-lg border border-gray-200 overflow-hidden">
             <div className="px-6 py-3 flex items-center gap-3" style={{ backgroundColor: barColor }}>
-              {onPhaseFieldChange ? (
+              {editable ? (
                 <EditableText
                   value={phase.name}
-                  onChange={(v) => onPhaseFieldChange(i, "name", v)}
+                  onChange={(v) => updatePhase(i, { name: v })}
                   as="h4"
                   className="font-bold text-white text-sm"
                 />
               ) : (
                 <h4 className="font-bold text-white text-sm">{phase.name}</h4>
               )}
-              {phase.duration && (
-                <span className="ml-auto text-xs text-white/80 shrink-0">{phase.duration}</span>
+              {(editable || phase.duration) && (
+                <span className="ml-auto text-xs text-white/80 shrink-0">
+                  {editable ? (
+                    <EditableText
+                      value={phase.duration}
+                      onChange={(v) => updatePhase(i, { duration: v })}
+                      as="span"
+                      placeholder="Varaktighet"
+                    />
+                  ) : phase.duration}
+                </span>
               )}
             </div>
             <div className="px-6 py-4 grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="font-semibold text-gray-500 text-xs uppercase tracking-wide mb-1">Mål</p>
-                {onPhaseFieldChange ? (
+                {editable ? (
                   <EditableText
                     value={phase.objective}
-                    onChange={(v) => onPhaseFieldChange(i, "objective", v)}
+                    onChange={(v) => updatePhase(i, { objective: v })}
                     as="p"
                     className="text-gray-700"
                   />
@@ -54,7 +91,14 @@ export function PhasesRenderer({ phases, style, onPhaseFieldChange }: PhasesRend
                 <ul className="space-y-1">
                   {phase.deliverables.map((d, j) => (
                     <li key={j} className="flex items-start gap-2 text-gray-700">
-                      <span style={{ color: barColor }}>&#10003;</span> {d}
+                      <span style={{ color: barColor }}>&#10003;</span>{" "}
+                      {editable ? (
+                        <EditableText
+                          value={d}
+                          onChange={(v) => updateDeliverable(i, j, v)}
+                          as="span"
+                        />
+                      ) : d}
                     </li>
                   ))}
                 </ul>
@@ -65,16 +109,46 @@ export function PhasesRenderer({ phases, style, onPhaseFieldChange }: PhasesRend
                   <ul className="space-y-1">
                     {phase.risks.map((r, j) => (
                       <li key={j} className="flex items-start gap-2 text-gray-600 text-xs">
-                        <span className="text-red-400">&#9888;</span> {r}
+                        <span className="text-red-400">&#9888;</span>{" "}
+                        {editable ? (
+                          <EditableText
+                            value={r}
+                            onChange={(v) => updateRisk(i, j, v)}
+                            as="span"
+                          />
+                        ) : r}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-              {phase.hoursEstimate && (
+              {(phase.hoursEstimate !== undefined || phase.period) && (
                 <div className="col-span-2 text-xs text-gray-400">
-                  Uppskattade timmar: {phase.hoursEstimate}h
-                  {phase.period && <> &middot; {phase.period}</>}
+                  {phase.hoursEstimate !== undefined && (
+                    <>
+                      Uppskattade timmar:{" "}
+                      {editable ? (
+                        <EditableText
+                          value={String(phase.hoursEstimate)}
+                          onChange={(v) => updateHours(i, v)}
+                          as="span"
+                        />
+                      ) : phase.hoursEstimate}
+                      h
+                    </>
+                  )}
+                  {phase.period && (
+                    <>
+                      {phase.hoursEstimate !== undefined && " · "}
+                      {editable ? (
+                        <EditableText
+                          value={phase.period}
+                          onChange={(v) => updatePhase(i, { period: v })}
+                          as="span"
+                        />
+                      ) : phase.period}
+                    </>
+                  )}
                 </div>
               )}
             </div>

@@ -62,12 +62,7 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
         <PhasesRenderer
           phases={content.phases}
           style={style}
-          onPhaseFieldChange={onSectionChange ? (phaseIndex, field, value) => {
-            const phases = content.phases.map((p, i) =>
-              i === phaseIndex ? { ...p, [field]: value } : p
-            );
-            updateContent({ phases });
-          } : undefined}
+          onChange={onSectionChange ? (phases) => updateContent({ phases }) : undefined}
         />
       );
     case "understanding-current":
