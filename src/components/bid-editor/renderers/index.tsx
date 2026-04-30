@@ -2,6 +2,17 @@
 
 import { BidSection, BidSectionContent, StyleGuide } from "@/lib/types";
 import { CoverRenderer } from "./CoverRenderer";
+
+type TeamPricingContent = Extract<BidSectionContent, { format: "team-pricing" }>;
+
+function recalcTeamSummary(members: TeamPricingContent["members"]): { totalTimmar: number; totalPris: number | null } {
+  const totalTimmar = members.reduce((acc, m) => acc + m.timmar, 0);
+  const totals = members.map((m) => m.total);
+  const hasNull = totals.includes(null);
+  const totalPris = hasNull ? null : (totals as number[]).reduce((a, b) => a + b, 0);
+  return { totalTimmar, totalPris };
+}
+
 import { PhasesRenderer } from "./PhasesRenderer";
 import { UnderstandingRenderer } from "./UnderstandingRenderer";
 import { QualityAssuranceRenderer } from "./QualityAssuranceRenderer";
@@ -19,6 +30,11 @@ interface SectionRendererProps {
 
 export function SectionRenderer({ section, style, onSectionChange }: SectionRendererProps) {
   const content = section.content;
+
+  function setContent(next: BidSectionContent) {
+    if (!onSectionChange) return;
+    onSectionChange({ ...section, content: next });
+  }
 
   function updateContent(patch: Partial<BidSectionContent>) {
     if (!onSectionChange || !content) return;
@@ -57,9 +73,23 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
     case "understanding-current":
     case "understanding-assignment":
     case "understanding-vision":
-      return <UnderstandingRenderer title={section.title} content={content} style={style} />;
+      return (
+        <UnderstandingRenderer
+          title={section.title}
+          content={content}
+          style={style}
+          onChange={onSectionChange ? setContent : undefined}
+        />
+      );
     case "quality-assurance":
-      return <QualityAssuranceRenderer title={section.title} content={content} style={style} />;
+      return (
+        <QualityAssuranceRenderer
+          title={section.title}
+          content={content}
+          style={style}
+          onChange={onSectionChange ? setContent : undefined}
+        />
+      );
     case "team-pricing":
       return (
         <TeamPricingRenderer
@@ -72,22 +102,62 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
               const total = timpris === null ? null : timpris * m.timmar;
               return { ...m, timpris, total };
             });
-            const totalTimmar = members.reduce((acc, m) => acc + m.timmar, 0);
-            const totals = members.map((m) => m.total);
-            const hasNull = totals.includes(null);
-            const totalPris = hasNull ? null : (totals as number[]).reduce((a, b) => a + b, 0);
-            updateContent({ members, summary: { totalTimmar, totalPris } });
+            updateContent({ members, summary: recalcTeamSummary(members) });
+          } : undefined}
+          onMemberFieldChange={onSectionChange ? (idx, field, value) => {
+            const members = content.members.map((m, i) => {
+              if (i !== idx) return m;
+              if (field === "name" || field === "role") {
+                return { ...m, [field]: value };
+              }
+              const num = Number(value);
+              if (!Number.isFinite(num)) return m;
+              if (field === "timmar") {
+                const total = m.timpris === null ? null : m.timpris * num;
+                return { ...m, timmar: num, total };
+              }
+              return { ...m, omfattningPct: num };
+            });
+            updateContent({ members, summary: recalcTeamSummary(members) });
           } : undefined}
         />
       );
     case "requirement-matrix-v2":
-      return <RequirementMatrixV2Renderer title={section.title} content={content} style={style} />;
+      return (
+        <RequirementMatrixV2Renderer
+          title={section.title}
+          content={content}
+          style={style}
+          onChange={onSectionChange ? setContent : undefined}
+        />
+      );
     case "reference-v2":
-      return <ReferenceV2Renderer title={section.title} content={content} style={style} />;
+      return (
+        <ReferenceV2Renderer
+          title={section.title}
+          content={content}
+          style={style}
+          onChange={onSectionChange ? setContent : undefined}
+        />
+      );
     case "confidentiality":
-      return <ConfidentialityRenderer title={section.title} content={content} style={style} />;
+      return (
+        <ConfidentialityRenderer
+          title={section.title}
+          content={content}
+          style={style}
+          onChange={onSectionChange ? setContent : undefined}
+        />
+      );
     case "certifications":
-      return <CertificationsRenderer title={section.title} content={content} style={style} />;
+      return (
+        <CertificationsRenderer
+          title={section.title}
+          content={content}
+          style={style}
+          onChange={onSectionChange ? setContent : undefined}
+        />
+      );
     default: {
       const _exhaustive: never = content;
       return <div className="text-red-500 text-sm">Unknown format: {JSON.stringify(_exhaustive)}</div>;

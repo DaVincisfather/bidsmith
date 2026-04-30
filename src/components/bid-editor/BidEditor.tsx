@@ -98,23 +98,6 @@ export function BidEditor({
     sectionRefs.current[key]?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  async function handleRegenerate(sectionKey: string) {
-    setError(null);
-    try {
-      const res = await fetch(`/api/bids/${bidId}/regenerate/${sectionKey}`, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Regeneration failed");
-      }
-      const data = await res.json();
-      setSections((prev) => prev.map((s) => (s.key === sectionKey ? data.section : s)));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Regenerering misslyckades");
-    }
-  }
-
   async function downloadPptx() {
     setDownloading(true);
     setError(null);
@@ -201,18 +184,6 @@ export function BidEditor({
                 style={styleGuide}
                 onSectionChange={(updated) => handleSectionChange(section.key, updated)}
               />
-
-              {/* Section toolbar — visible on hover */}
-              {section.type === "ai" && (
-                <div className="absolute -top-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                  <button
-                    onClick={() => handleRegenerate(section.key)}
-                    className="text-xs bg-white border border-gray-200 text-gray-500 hover:text-gray-800 px-2 py-1 rounded shadow-sm"
-                  >
-                    Regenerera
-                  </button>
-                </div>
-              )}
             </div>
           ))}
 

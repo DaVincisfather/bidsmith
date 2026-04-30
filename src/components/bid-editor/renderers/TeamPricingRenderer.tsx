@@ -1,24 +1,35 @@
 "use client";
 import type { BidSectionContent, StyleGuide } from "@/lib/types";
+import { EditableText } from "../EditableText";
 
 type TeamPricingContent = Extract<BidSectionContent, { format: "team-pricing" }>;
+type Member = TeamPricingContent["members"][number];
 
 export function TeamPricingRenderer({
   title,
   content,
   style,
   onTimprisChange,
+  onMemberFieldChange,
 }: {
   title: string;
   content: TeamPricingContent;
   style: StyleGuide;
   onTimprisChange?: (memberIndex: number, timpris: number | null) => void;
+  onMemberFieldChange?: (memberIndex: number, field: "name" | "role" | "omfattningPct" | "timmar", value: string) => void;
 }) {
-  const handleChange = (i: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const editableText = !!onMemberFieldChange;
+
+  const handleTimprisChange = (i: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.trim();
     const next = raw === "" ? null : Number(raw);
     if (next !== null && Number.isNaN(next)) return;
     onTimprisChange?.(i, next);
+  };
+
+  const handleNumberFieldChange = (i: number, field: "omfattningPct" | "timmar") => (value: string) => {
+    if (!onMemberFieldChange) return;
+    onMemberFieldChange(i, field, value);
   };
 
   return (
@@ -36,12 +47,31 @@ export function TeamPricingRenderer({
           </tr>
         </thead>
         <tbody>
-          {content.members.map((m, i) => (
+          {content.members.map((m: Member, i: number) => (
             <tr key={i} className="border-b">
-              <td className="py-2">{m.name}</td>
-              <td>{m.role}</td>
-              <td>{m.omfattningPct}%</td>
-              <td>{m.timmar}</td>
+              <td className="py-2 pr-2">
+                {editableText ? (
+                  <EditableText value={m.name} onChange={(v) => onMemberFieldChange!(i, "name", v)} as="span" />
+                ) : m.name}
+              </td>
+              <td className="pr-2">
+                {editableText ? (
+                  <EditableText value={m.role} onChange={(v) => onMemberFieldChange!(i, "role", v)} as="span" />
+                ) : m.role}
+              </td>
+              <td className="pr-2">
+                {editableText ? (
+                  <span>
+                    <EditableText value={String(m.omfattningPct)} onChange={handleNumberFieldChange(i, "omfattningPct")} as="span" />
+                    <span>%</span>
+                  </span>
+                ) : `${m.omfattningPct}%`}
+              </td>
+              <td className="pr-2">
+                {editableText ? (
+                  <EditableText value={String(m.timmar)} onChange={handleNumberFieldChange(i, "timmar")} as="span" />
+                ) : m.timmar}
+              </td>
               <td>
                 <input
                   type="number"
@@ -49,7 +79,7 @@ export function TeamPricingRenderer({
                   step={10}
                   value={m.timpris ?? ""}
                   placeholder="—"
-                  onChange={handleChange(i)}
+                  onChange={handleTimprisChange(i)}
                   className={`w-24 border rounded px-2 py-1 ${m.timpris === null ? "border-amber-400 bg-amber-50" : ""}`}
                 />
               </td>
