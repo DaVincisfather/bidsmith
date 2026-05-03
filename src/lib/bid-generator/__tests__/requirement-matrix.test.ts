@@ -75,13 +75,15 @@ describe("buildRequirementMatrixBundle", () => {
       ],
     });
 
-    const [s] = await buildRequirementMatrixBundle(baseCtx);
+    const { sections, overflowFlags } = await buildRequirementMatrixBundle(baseCtx, {}, { remaining: 5 });
+    const [s] = sections;
     expect(s.key).toBe("requirement-matrix-v2");
     if (!s.content) throw new Error("content missing");
     if (s.content.format !== "requirement-matrix-v2") throw new Error();
     expect(s.content.rows).toHaveLength(1);
     expect(s.content.rows[0].coverage).toHaveLength(1);
     expect(s.content.rows[0].coverage[0].status).toBe("JA");
+    expect(overflowFlags).toEqual([]);
   });
 });
 

@@ -86,20 +86,23 @@ describe("buildReferenceBundle", () => {
     const mockRefs = [makeRef(), makeRef(), makeRef()];
     vi.mocked(callClaude).mockResolvedValue({ references: mockRefs });
 
-    const [s] = await buildReferenceBundle(baseCtx);
+    const { sections, overflowFlags } = await buildReferenceBundle(baseCtx, {}, { remaining: 5 });
+    const [s] = sections;
     expect(s.key).toBe("reference-v2");
     if (!s.content) throw new Error("content missing");
     if (s.content.format !== "reference-v2") throw new Error("wrong format");
     expect(s.content.format).toBe("reference-v2");
     expect(s.content.references[0].clientName).toBe("Göteborgs Stad");
     expect(s.content.references.length).toBe(3);
+    expect(overflowFlags).toEqual([]);
   });
 
   it("content assembly: references pass through unchanged", async () => {
     const mockRefs = [makeRef(), makeRef(), makeRef()];
     vi.mocked(callClaude).mockResolvedValue({ references: mockRefs });
 
-    const [s] = await buildReferenceBundle(baseCtx);
+    const { sections } = await buildReferenceBundle(baseCtx, {}, { remaining: 5 });
+    const [s] = sections;
     if (!s.content) throw new Error("content missing");
     if (s.content.format !== "reference-v2") throw new Error("wrong format");
     expect(s.content.references).toEqual(mockRefs);

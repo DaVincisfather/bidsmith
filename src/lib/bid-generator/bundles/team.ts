@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
 import type { BidSection } from "@/lib/types";
+import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { formatContext, type BidContext } from "../context";
+import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
+import { renderBudgetTable } from "../render-budget-table";
 
 export const TeamBundleSchema = z.object({
   members: z
@@ -16,6 +19,8 @@ export const TeamBundleSchema = z.object({
     .min(1)
     .max(5),
 });
+
+const TEAM_BUDGET_KEYS: string[] = [];
 
 const SYSTEM_PROMPT = `Du skapar team-pricing-raderna till ett svenskt konsultanbud.
 
@@ -36,15 +41,27 @@ Svara med giltig JSON:
 
 OBS: timpris sätts av bolaget efter generering — inkludera INTE timpris eller total i ditt svar.`;
 
-export async function buildTeamBundle(ctx: BidContext): Promise<BidSection[]> {
-  const parsed = await callClaude({
-    model: "claude-sonnet-4-6",
-    maxTokens: 2000,
-    system: SYSTEM_PROMPT,
-    userContent: formatContext(ctx),
-    schema: TeamBundleSchema,
-    label: "team bundle",
-    organizationId: ctx.organizationId,
+export async function buildTeamBundle(
+  ctx: BidContext,
+  budgets: FieldBudgets,
+  retryBudget: RetryBudget,
+): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
+  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(budgets, TEAM_BUDGET_KEYS);
+
+  const { output: parsed, overflows } = await withBudgetRetry({
+    basePrompt,
+    callLLM: (p) =>
+      callClaude({
+        model: "claude-sonnet-4-6",
+        maxTokens: 2000,
+        system: p,
+        userContent: formatContext(ctx),
+        schema: TeamBundleSchema,
+        label: "team bundle",
+        organizationId: ctx.organizationId,
+      }),
+    budgets,
+    retryBudget,
   });
 
   const members = parsed.members.map((m) => ({
@@ -57,7 +74,7 @@ export async function buildTeamBundle(ctx: BidContext): Promise<BidSection[]> {
   }));
   const totalTimmar = members.reduce((acc, m) => acc + m.timmar, 0);
 
-  return [
+  const sections: BidSection[] = [
     {
       type: "ai",
       key: "team-pricing",
@@ -70,4 +87,6 @@ export async function buildTeamBundle(ctx: BidContext): Promise<BidSection[]> {
       generatedAt: new Date().toISOString(),
     },
   ];
+
+  return { sections, overflowFlags: overflows };
 }

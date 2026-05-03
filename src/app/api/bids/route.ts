@@ -70,22 +70,37 @@ export async function POST(request: NextRequest) {
     organizationId: orgId,
   };
 
-  // Generate sections, saving progress to DB after each
-  const sections = await generateAllSections(ctx, async (section: BidSection) => {
-    const { data: currentBid } = await supabase
-      .from("bids")
-      .select("sections")
-      .eq("id", bid.id)
-      .single();
+  // Generate sections, saving progress to DB after each.
+  // templateName is hardcoded for now — picker is a separate PR.
+  // Wrap in try/catch so a generation failure (loadBudgets throws, callClaude rate-limits, etc)
+  // doesn't leave an orphan bid stuck at status='generating' — bids.status CHECK constraint
+  // accepts only 'generating'/'draft'/'exported', so we DELETE the orphan rather than mark it failed.
+  let sections: BidSection[];
+  let overflowFlags: Awaited<ReturnType<typeof generateAllSections>>["overflowFlags"];
+  try {
+    ({ sections, overflowFlags } = await generateAllSections(ctx, "anbudsmall-v2", async (section: BidSection) => {
+      const { data: currentBid } = await supabase
+        .from("bids")
+        .select("sections")
+        .eq("id", bid.id)
+        .single();
 
-    const currentSections = (currentBid?.sections as BidSection[]) ?? [];
-    currentSections.push(section);
+      const currentSections = (currentBid?.sections as BidSection[]) ?? [];
+      currentSections.push(section);
 
-    await supabase
-      .from("bids")
-      .update({ sections: currentSections })
-      .eq("id", bid.id);
-  });
+      await supabase
+        .from("bids")
+        .update({ sections: currentSections })
+        .eq("id", bid.id);
+    }));
+  } catch (err) {
+    console.error("bid generation failed, deleting orphan row:", err);
+    await supabase.from("bids").delete().eq("id", bid.id);
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Bid generation failed" },
+      { status: 500 },
+    );
+  }
 
   // Eval failure must never block the bid save — sections took 2-5 min to
   // generate and we'd rather show "ej utvärderad" than lose them.
@@ -100,8 +115,8 @@ export async function POST(request: NextRequest) {
 
   await supabase
     .from("bids")
-    .update({ sections, status: "draft", structure_eval: structureEval })
+    .update({ sections, status: "draft", structure_eval: structureEval, overflow_flags: overflowFlags })
     .eq("id", bid.id);
 
-  return NextResponse.json({ id: bid.id, status: "draft", sections, structureEval });
+  return NextResponse.json({ id: bid.id, status: "draft", sections, structureEval, overflowFlags });
 }

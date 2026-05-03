@@ -68,7 +68,8 @@ describe("buildTeamBundle", () => {
       ],
     });
 
-    const [s] = await buildTeamBundle(baseCtx);
+    const { sections, overflowFlags } = await buildTeamBundle(baseCtx, {}, { remaining: 5 });
+    const [s] = sections;
     expect(s.key).toBe("team-pricing");
     if (!s.content) throw new Error("content missing");
     if (s.content.format !== "team-pricing") throw new Error();
@@ -76,6 +77,7 @@ describe("buildTeamBundle", () => {
     expect(s.content.members[0].total).toBeNull();
     expect(s.content.members[0].timmar).toBe(240);
     expect(s.content.summary?.totalPris).toBeNull();
+    expect(overflowFlags).toEqual([]);
   });
 
   it("computes summary.totalTimmar as sum across members", async () => {
@@ -85,7 +87,8 @@ describe("buildTeamBundle", () => {
         { name: "Bo", role: "Arch", omfattningPct: 100, timmar: 480 },
       ],
     });
-    const [s] = await buildTeamBundle(baseCtx);
+    const { sections } = await buildTeamBundle(baseCtx, {}, { remaining: 5 });
+    const [s] = sections;
     if (!s.content) throw new Error("content missing");
     if (s.content.format !== "team-pricing") throw new Error();
     expect(s.content.summary?.totalTimmar).toBe(720);

@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
 import type { BidSection } from "@/lib/types";
+import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { formatContext, type BidContext } from "../context";
+import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
+import { renderBudgetTable } from "../render-budget-table";
 
 export const QualityBundleSchema = z.object({
   qaProcess: z.array(z.string()).min(1).max(2),
@@ -16,6 +19,8 @@ export const QualityBundleSchema = z.object({
   }),
   checkpoints: z.array(z.string()).min(1).max(4),
 });
+
+const QUALITY_BUDGET_KEYS = ["checkpoints[*]"];
 
 const SYSTEM_PROMPT = `Du skriver kvalitetssäkringssektionen till ett svenskt konsultanbud.
 
@@ -53,19 +58,31 @@ Svara med giltig JSON:
   "checkpoints": ["Avstämning 1", "Avstämning 2"]
 }`;
 
-export async function buildQualityBundle(ctx: BidContext): Promise<BidSection[]> {
-  const parsed = await callClaude({
-    model: "claude-opus-4-7",
-    maxTokens: 16000,
-    system: SYSTEM_PROMPT,
-    userContent: formatContext(ctx),
-    schema: QualityBundleSchema,
-    label: "quality bundle",
-    effort: "max",
-    organizationId: ctx.organizationId,
+export async function buildQualityBundle(
+  ctx: BidContext,
+  budgets: FieldBudgets,
+  retryBudget: RetryBudget,
+): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
+  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(budgets, QUALITY_BUDGET_KEYS);
+
+  const { output: parsed, overflows } = await withBudgetRetry({
+    basePrompt,
+    callLLM: (p) =>
+      callClaude({
+        model: "claude-opus-4-7",
+        maxTokens: 16000,
+        system: p,
+        userContent: formatContext(ctx),
+        schema: QualityBundleSchema,
+        label: "quality bundle",
+        effort: "max",
+        organizationId: ctx.organizationId,
+      }),
+    budgets,
+    retryBudget,
   });
 
-  return [{
+  const sections: BidSection[] = [{
     type: "ai",
     key: "quality-assurance",
     title: "Kvalitetssäkring",
@@ -78,4 +95,6 @@ export async function buildQualityBundle(ctx: BidContext): Promise<BidSection[]>
     },
     generatedAt: new Date().toISOString(),
   }];
+
+  return { sections, overflowFlags: overflows };
 }

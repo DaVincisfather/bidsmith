@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
 import type { BidSection } from "@/lib/types";
+import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { formatContext, type BidContext } from "../context";
+import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
+import { renderBudgetTable } from "../render-budget-table";
 
 export const PhasesV2Schema = z.object({
   phases: z
@@ -22,6 +25,15 @@ export const PhasesV2Schema = z.object({
     .min(3)
     .max(4),
 });
+
+const PHASES_BUDGET_KEYS = [
+  "phases[*].name",
+  "phases[*].period",
+  "phases[*].objective",
+  "phases[*].activities[*]",
+  "phases[*].deliverables[*]",
+  "phases[*].decisions[*]",
+];
 
 const SYSTEM_PROMPT = `Du skriver genomförandesektionen i ett svenskt konsultanbud.
 Bryt ner uppdraget i 3-4 faser — mallen visar upp till 4 faser.
@@ -56,19 +68,31 @@ Svara med giltig JSON:
   ]
 }`;
 
-export async function buildPhasesBundle(ctx: BidContext): Promise<BidSection[]> {
-  const parsed = await callClaude({
-    model: "claude-opus-4-7",
-    maxTokens: 32000,
-    system: SYSTEM_PROMPT,
-    userContent: formatContext(ctx),
-    schema: PhasesV2Schema,
-    label: "phases bundle",
-    effort: "max",
-    organizationId: ctx.organizationId,
+export async function buildPhasesBundle(
+  ctx: BidContext,
+  budgets: FieldBudgets,
+  retryBudget: RetryBudget,
+): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
+  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(budgets, PHASES_BUDGET_KEYS);
+
+  const { output: parsed, overflows } = await withBudgetRetry({
+    basePrompt,
+    callLLM: (p) =>
+      callClaude({
+        model: "claude-opus-4-7",
+        maxTokens: 32000,
+        system: p,
+        userContent: formatContext(ctx),
+        schema: PhasesV2Schema,
+        label: "phases bundle",
+        effort: "max",
+        organizationId: ctx.organizationId,
+      }),
+    budgets,
+    retryBudget,
   });
 
-  return [
+  const sections: BidSection[] = [
     {
       type: "ai",
       key: "phases",
@@ -77,4 +101,6 @@ export async function buildPhasesBundle(ctx: BidContext): Promise<BidSection[]> 
       generatedAt: new Date().toISOString(),
     },
   ];
+
+  return { sections, overflowFlags: overflows };
 }

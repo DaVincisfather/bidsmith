@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
 import type { BidSection } from "@/lib/types";
+import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { formatContext, type BidContext } from "../context";
+import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
+import { renderBudgetTable } from "../render-budget-table";
 
 export const UnderstandingBundleSchema = z.object({
   current: z.object({
@@ -18,6 +21,8 @@ export const UnderstandingBundleSchema = z.object({
     värden: z.array(z.string()).min(1).max(4),
   }),
 });
+
+const UNDERSTANDING_BUDGET_KEYS: string[] = [];
 
 const SYSTEM_PROMPT = `Du skriver förståelsesektionerna till ett svenskt konsultanbud.
 Producera en JSON-payload med tre delar som tillsammans bygger upp vår förståelse av uppdraget.
@@ -58,21 +63,31 @@ assignment.stycken: exakt 3 stycken.
 Leverera så många poster som bäst representerar RFP:en inom de gränserna.`;
 
 export async function buildUnderstandingBundle(
-  ctx: BidContext
-): Promise<BidSection[]> {
-  const parsed = await callClaude({
-    model: "claude-opus-4-7",
-    maxTokens: 32000,
-    system: SYSTEM_PROMPT,
-    userContent: formatContext(ctx),
-    schema: UnderstandingBundleSchema,
-    label: "understanding bundle",
-    effort: "max",
-    organizationId: ctx.organizationId,
+  ctx: BidContext,
+  budgets: FieldBudgets,
+  retryBudget: RetryBudget,
+): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
+  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(budgets, UNDERSTANDING_BUDGET_KEYS);
+
+  const { output: parsed, overflows } = await withBudgetRetry({
+    basePrompt,
+    callLLM: (p) =>
+      callClaude({
+        model: "claude-opus-4-7",
+        maxTokens: 32000,
+        system: p,
+        userContent: formatContext(ctx),
+        schema: UnderstandingBundleSchema,
+        label: "understanding bundle",
+        effort: "max",
+        organizationId: ctx.organizationId,
+      }),
+    budgets,
+    retryBudget,
   });
 
   const now = new Date().toISOString();
-  return [
+  const sections: BidSection[] = [
     {
       type: "ai",
       key: "understanding-current",
@@ -105,4 +120,6 @@ export async function buildUnderstandingBundle(
       generatedAt: now,
     },
   ];
+
+  return { sections, overflowFlags: overflows };
 }

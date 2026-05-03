@@ -6,6 +6,9 @@ import type { BidContext } from "@/lib/bid-generator";
 import type { RfpAnalysis } from "@/lib/types";
 
 vi.mock("@/lib/ai-client", () => ({ callClaude: vi.fn() }));
+vi.mock("@/lib/pptx-template/budget-loader", () => ({
+  loadBudgets: vi.fn().mockResolvedValue({}),
+}));
 import { callClaude } from "@/lib/ai-client";
 
 const analysis: RfpAnalysis = {
@@ -73,7 +76,7 @@ beforeEach(() => {
 describe("bid generator → renderer e2e", () => {
   it("produces an 18-slide PPTX with no leftover placeholders", async () => {
     const { generateAllSections } = await import("@/lib/bid-generator");
-    const sections = await generateAllSections(ctx);
+    const { sections } = await generateAllSections(ctx, "anbudsmall-v2");
 
     const buf = await renderTemplate("anbudsmall-v2", sections, {
       companyName: "TestCo",

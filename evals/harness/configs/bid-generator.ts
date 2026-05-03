@@ -157,8 +157,10 @@ export const bidGeneratorConfig: EvalConfig<BidGeneratorFixture, Output, BidEval
   runModule: async (fixture) => {
     const context = await loadContext(fixture);
     const ctx = buildEvalBidContext(context.analyzerFixture, context.consultants);
-    const output = await generateAllSections(ctx);
-    return { output, context };
+    // Eval harness only judges sections; overflowFlags are surfaced in the
+    // editor UI, not in offline eval — pass templateName but discard flags here.
+    const { sections } = await generateAllSections(ctx, "anbudsmall-v2");
+    return { output: sections, context };
   },
   judgeOutput: (fixture, actual, context) => judgeBid(fixture, actual, context),
   // EvalConfig requires (judgments, fixture) — fixture unused for structure-only dimension.

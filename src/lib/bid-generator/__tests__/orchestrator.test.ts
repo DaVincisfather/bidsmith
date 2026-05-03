@@ -8,6 +8,9 @@ vi.mock("../bundles/quality");
 vi.mock("../bundles/requirement-matrix");
 vi.mock("../bundles/team");
 vi.mock("../bundles/reference");
+vi.mock("@/lib/pptx-template/budget-loader", () => ({
+  loadBudgets: vi.fn(),
+}));
 
 import { buildUnderstandingBundle } from "../bundles/understanding";
 import { buildPhasesBundle } from "../bundles/phases";
@@ -15,6 +18,7 @@ import { buildQualityBundle } from "../bundles/quality";
 import { buildRequirementMatrixBundle } from "../bundles/requirement-matrix";
 import { buildTeamBundle } from "../bundles/team";
 import { buildReferenceBundle } from "../bundles/reference";
+import { loadBudgets } from "@/lib/pptx-template/budget-loader";
 import { generateAllSections } from "../index";
 
 const baseAnalysis: RfpAnalysis = {
@@ -47,22 +51,43 @@ beforeEach(() => {
   vi.mocked(buildRequirementMatrixBundle).mockReset();
   vi.mocked(buildTeamBundle).mockReset();
   vi.mocked(buildReferenceBundle).mockReset();
+  vi.mocked(loadBudgets).mockReset();
 
-  vi.mocked(buildUnderstandingBundle).mockResolvedValue([
-    mockSection("understanding-current", "understanding-current"),
-    mockSection("understanding-assignment", "understanding-assignment"),
-    mockSection("understanding-vision", "understanding-vision"),
-  ]);
-  vi.mocked(buildPhasesBundle).mockResolvedValue([mockSection("phases", "phases")]);
-  vi.mocked(buildQualityBundle).mockResolvedValue([mockSection("quality-assurance", "quality-assurance")]);
-  vi.mocked(buildRequirementMatrixBundle).mockResolvedValue([mockSection("requirement-matrix-v2", "requirement-matrix-v2")]);
-  vi.mocked(buildTeamBundle).mockResolvedValue([mockSection("team-pricing", "team-pricing")]);
-  vi.mocked(buildReferenceBundle).mockResolvedValue([mockSection("reference-v2", "reference-v2")]);
+  vi.mocked(loadBudgets).mockResolvedValue({});
+
+  vi.mocked(buildUnderstandingBundle).mockResolvedValue({
+    sections: [
+      mockSection("understanding-current", "understanding-current"),
+      mockSection("understanding-assignment", "understanding-assignment"),
+      mockSection("understanding-vision", "understanding-vision"),
+    ],
+    overflowFlags: [],
+  });
+  vi.mocked(buildPhasesBundle).mockResolvedValue({
+    sections: [mockSection("phases", "phases")],
+    overflowFlags: [],
+  });
+  vi.mocked(buildQualityBundle).mockResolvedValue({
+    sections: [mockSection("quality-assurance", "quality-assurance")],
+    overflowFlags: [],
+  });
+  vi.mocked(buildRequirementMatrixBundle).mockResolvedValue({
+    sections: [mockSection("requirement-matrix-v2", "requirement-matrix-v2")],
+    overflowFlags: [],
+  });
+  vi.mocked(buildTeamBundle).mockResolvedValue({
+    sections: [mockSection("team-pricing", "team-pricing")],
+    overflowFlags: [],
+  });
+  vi.mocked(buildReferenceBundle).mockResolvedValue({
+    sections: [mockSection("reference-v2", "reference-v2")],
+    overflowFlags: [],
+  });
 });
 
 describe("generateAllSections", () => {
   it("returns 11 sections across all bundles + deterministic", async () => {
-    const sections = await generateAllSections(baseCtx);
+    const { sections, overflowFlags } = await generateAllSections(baseCtx, "anbudsmall-v2");
     const keys = sections.map((s) => s.key);
     expect(keys).toContain("cover");
     expect(keys).toContain("understanding-current");
@@ -76,16 +101,43 @@ describe("generateAllSections", () => {
     expect(keys).toContain("confidentiality");
     expect(keys).toContain("certifications");
     expect(sections).toHaveLength(11);
+    expect(overflowFlags).toEqual([]);
+  });
+
+  it("loads budgets for the named template", async () => {
+    await generateAllSections(baseCtx, "anbudsmall-v2");
+    expect(loadBudgets).toHaveBeenCalledWith("anbudsmall-v2");
+  });
+
+  it("aggregates overflowFlags across bundles", async () => {
+    vi.mocked(buildPhasesBundle).mockResolvedValue({
+      sections: [mockSection("phases", "phases")],
+      overflowFlags: [
+        { slide: 4, fieldPath: "phases[0].name", fieldLabel: "phase name", length: 80, budget: 60 },
+      ],
+    });
+    vi.mocked(buildQualityBundle).mockResolvedValue({
+      sections: [mockSection("quality-assurance", "quality-assurance")],
+      overflowFlags: [
+        { slide: 9, fieldPath: "checkpoints[0]", fieldLabel: "checkpoints (each item)", length: 200, budget: 150 },
+      ],
+    });
+
+    const { overflowFlags } = await generateAllSections(baseCtx, "anbudsmall-v2");
+    expect(overflowFlags).toHaveLength(2);
+    expect(overflowFlags.map((o) => o.fieldPath).sort()).toEqual(
+      ["checkpoints[0]", "phases[0].name"].sort(),
+    );
   });
 
   it("invokes onSectionComplete once per section", async () => {
     const spy = vi.fn();
-    await generateAllSections(baseCtx, spy);
+    await generateAllSections(baseCtx, "anbudsmall-v2", spy);
     expect(spy).toHaveBeenCalledTimes(11);
   });
 
   it("throws on bundle failure (no silent fallback)", async () => {
     vi.mocked(buildPhasesBundle).mockRejectedValue(new Error("boom"));
-    await expect(generateAllSections(baseCtx)).rejects.toThrow("boom");
+    await expect(generateAllSections(baseCtx, "anbudsmall-v2")).rejects.toThrow("boom");
   });
 });

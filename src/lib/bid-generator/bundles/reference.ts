@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
 import type { BidSection } from "@/lib/types";
+import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { formatContext, type BidContext } from "../context";
+import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
+import { renderBudgetTable } from "../render-budget-table";
 
 export const ReferenceBundleSchema = z.object({
   references: z
@@ -24,6 +27,8 @@ export const ReferenceBundleSchema = z.object({
     .min(1)
     .max(5),
 });
+
+const REFERENCE_BUDGET_KEYS: string[] = [];
 
 const SYSTEM_PROMPT = `Du väljer referensuppdrag till ett svenskt konsultanbud.
 
@@ -60,18 +65,28 @@ Svara med giltig JSON:
 
 export async function buildReferenceBundle(
   ctx: BidContext,
-): Promise<BidSection[]> {
-  const parsed = await callClaude({
-    model: "claude-sonnet-4-6",
-    maxTokens: 3000,
-    system: SYSTEM_PROMPT,
-    userContent: formatContext(ctx),
-    schema: ReferenceBundleSchema,
-    label: "reference bundle",
-    organizationId: ctx.organizationId,
+  budgets: FieldBudgets,
+  retryBudget: RetryBudget,
+): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
+  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(budgets, REFERENCE_BUDGET_KEYS);
+
+  const { output: parsed, overflows } = await withBudgetRetry({
+    basePrompt,
+    callLLM: (p) =>
+      callClaude({
+        model: "claude-sonnet-4-6",
+        maxTokens: 3000,
+        system: p,
+        userContent: formatContext(ctx),
+        schema: ReferenceBundleSchema,
+        label: "reference bundle",
+        organizationId: ctx.organizationId,
+      }),
+    budgets,
+    retryBudget,
   });
 
-  return [
+  const sections: BidSection[] = [
     {
       type: "ai",
       key: "reference-v2",
@@ -83,4 +98,6 @@ export async function buildReferenceBundle(
       generatedAt: new Date().toISOString(),
     },
   ];
+
+  return { sections, overflowFlags: overflows };
 }

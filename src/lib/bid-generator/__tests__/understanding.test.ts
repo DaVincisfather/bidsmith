@@ -38,7 +38,7 @@ describe("buildUnderstandingBundle", () => {
       vision: { utmaningar: ["U1"], värden: ["V1"] },
     });
 
-    const sections = await buildUnderstandingBundle(baseCtx);
+    const { sections, overflowFlags } = await buildUnderstandingBundle(baseCtx, {}, { remaining: 5 });
     expect(sections).toHaveLength(3);
     expect(sections[0].key).toBe("understanding-current");
     expect(sections[1].key).toBe("understanding-assignment");
@@ -46,11 +46,12 @@ describe("buildUnderstandingBundle", () => {
     if (!sections[0].content) throw new Error("content missing");
     if (sections[0].content.format !== "understanding-current") throw new Error();
     expect(sections[0].content.smärtpunkter).toEqual(["A"]);
+    expect(overflowFlags).toEqual([]);
   });
 
   it("propagates validation errors (no silent fallback)", async () => {
     vi.mocked(callClaude).mockRejectedValue(new Error("Invalid response"));
-    await expect(buildUnderstandingBundle(baseCtx)).rejects.toThrow("Invalid response");
+    await expect(buildUnderstandingBundle(baseCtx, {}, { remaining: 5 })).rejects.toThrow("Invalid response");
   });
 });
 

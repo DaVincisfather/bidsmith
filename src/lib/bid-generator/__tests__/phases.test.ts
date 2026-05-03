@@ -61,7 +61,7 @@ describe("buildPhasesBundle", () => {
       ],
     });
 
-    const sections = await buildPhasesBundle(baseCtx);
+    const { sections, overflowFlags } = await buildPhasesBundle(baseCtx, {}, { remaining: 5 });
     expect(sections).toHaveLength(1);
     expect(sections[0].key).toBe("phases");
     if (!sections[0].content) throw new Error("content missing");
@@ -69,6 +69,7 @@ describe("buildPhasesBundle", () => {
     expect(sections[0].content.phases).toHaveLength(3);
     expect(sections[0].content.phases[0].period).toBe("M1-M2");
     expect(sections[0].content.phases[0].decisions).toEqual(["Go/no-go till fas 2"]);
+    expect(overflowFlags).toEqual([]);
   });
 });
 

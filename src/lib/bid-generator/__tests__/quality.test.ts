@@ -37,12 +37,14 @@ describe("buildQualityBundle", () => {
       escalation: { process: "Veckovis", reporting: "Månadsrapport" },
       checkpoints: ["CP1", "CP2"],
     });
-    const [s] = await buildQualityBundle(baseCtx);
+    const { sections, overflowFlags } = await buildQualityBundle(baseCtx, {}, { remaining: 5 });
+    const [s] = sections;
     expect(s.key).toBe("quality-assurance");
     if (!s.content) throw new Error("content missing");
     if (s.content.format !== "quality-assurance") throw new Error();
     expect(s.content.qualityLead.name).toBe("Anna");
     expect(s.content.checkpoints).toEqual(["CP1", "CP2"]);
+    expect(overflowFlags).toEqual([]);
   });
 });
 
