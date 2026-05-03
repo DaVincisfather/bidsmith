@@ -3,9 +3,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { BidSection, StyleGuide } from "@/lib/types";
 import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
+import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
+import { verifyFieldBudgets } from "@/lib/pptx-template/verify-budgets";
 import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./renderers";
 import { StructureEvalBadge } from "./StructureEvalBadge";
+import { OverflowChecklist } from "./OverflowChecklist";
 
 interface BidEditorProps {
   bidId: string;
@@ -13,6 +16,8 @@ interface BidEditorProps {
   initialStatus: string;
   initialStructureEval: StructureEvalSummary | null;
   styleGuide: StyleGuide;
+  budgets: FieldBudgets;
+  initialOverflowFlags: OverflowFlag[];
 }
 
 export function BidEditor({
@@ -21,16 +26,42 @@ export function BidEditor({
   initialStatus,
   initialStructureEval,
   styleGuide,
+  budgets,
+  initialOverflowFlags,
 }: BidEditorProps) {
   const [sections, setSections] = useState<BidSection[]>(initialSections);
   const [status, setStatus] = useState(initialStatus);
   const [structureEval, setStructureEval] = useState<StructureEvalSummary | null>(initialStructureEval);
+  const [overflowFlags, setOverflowFlags] = useState<OverflowFlag[]>(initialOverflowFlags);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Walk all sections, run each section's content through verifyFieldBudgets.
+  // Each section has its own data shape (phases / quality / etc.); verifyFieldBudgets
+  // resolves only the budget paths that match — other paths return zero leaves silently.
+  const recomputeOverflowFlags = useCallback(
+    (updated: BidSection[]): OverflowFlag[] => {
+      const seen = new Set<string>();
+      const allFlags: OverflowFlag[] = [];
+      for (const section of updated) {
+        if (!section.content) continue;
+        const { overflows } = verifyFieldBudgets(section.content, budgets);
+        for (const o of overflows) {
+          // Dedup if multiple sections share a fieldPath (e.g. duplicate phases sections)
+          const key = `${o.slide}-${o.fieldPath}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          allFlags.push(o);
+        }
+      }
+      return allFlags;
+    },
+    [budgets],
+  );
 
   // Poll while generating
   const poll = useCallback(async () => {
@@ -40,6 +71,7 @@ export function BidEditor({
     setSections(data.sections ?? []);
     setStatus(data.status);
     setStructureEval(data.structureEval ?? null);
+    setOverflowFlags(data.overflowFlags ?? []);
   }, [bidId]);
 
   useEffect(() => {
@@ -48,15 +80,15 @@ export function BidEditor({
     return () => clearInterval(interval);
   }, [status, poll]);
 
-  // Auto-save sections to Supabase
+  // Auto-save sections + overflow flags to Supabase
   const saveSections = useCallback(
-    async (updated: BidSection[]) => {
+    async (updated: BidSection[], flags: OverflowFlag[]) => {
       setSaving(true);
       try {
         const res = await fetch(`/api/bids/${bidId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sections: updated }),
+          body: JSON.stringify({ sections: updated, overflowFlags: flags }),
         });
         if (!res.ok) {
           const data = await res.json();
@@ -71,26 +103,40 @@ export function BidEditor({
     [bidId]
   );
 
-  function debouncedSave(updated: BidSection[]) {
+  function debouncedSave(updated: BidSection[], flags: OverflowFlag[]) {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => saveSections(updated), 1500);
+    saveTimeoutRef.current = setTimeout(() => saveSections(updated, flags), 1500);
   }
 
   function handleSectionChange(key: string, updated: BidSection) {
     const next = sections.map((s) => (s.key === key ? updated : s));
     setSections(next);
-    debouncedSave(next);
+    const newFlags = recomputeOverflowFlags(next);
+    setOverflowFlags(newFlags);
+    debouncedSave(next, newFlags);
   }
 
   function handleReorder(reordered: BidSection[]) {
     setSections(reordered);
-    debouncedSave(reordered);
+    // Reorder doesn't change content lengths — keep current flags.
+    debouncedSave(reordered, overflowFlags);
   }
 
   function handleRemoveSection(key: string) {
     const next = sections.filter((s) => s.key !== key);
     setSections(next);
-    debouncedSave(next);
+    // Recompute so flags pointing at the deleted section's fields disappear.
+    const newFlags = recomputeOverflowFlags(next);
+    setOverflowFlags(newFlags);
+    debouncedSave(next, newFlags);
+  }
+
+  function onJumpToField(flag: OverflowFlag) {
+    const el = document.querySelector(`[data-field-path="${flag.fieldPath}"]`);
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus();
+    }
   }
 
   function scrollToSection(key: string) {
@@ -183,6 +229,7 @@ export function BidEditor({
                 section={section}
                 style={styleGuide}
                 onSectionChange={(updated) => handleSectionChange(section.key, updated)}
+                budgets={budgets}
               />
             </div>
           ))}
@@ -210,8 +257,10 @@ export function BidEditor({
         )}
       </main>
 
-      {/* Right panel — placeholder for Phase 2 AI chat */}
-      {/* <aside className="w-80 shrink-0 border-l border-gray-200" /> */}
+      {/* Right panel — pre-export overflow checklist (OverflowChecklist owns its own aside + styling) */}
+      <div className="shrink-0 p-4">
+        <OverflowChecklist flags={overflowFlags} onJumpToField={onJumpToField} />
+      </div>
     </div>
   );
 }

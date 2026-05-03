@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ConsultantExtractionSchema } from "./ai-schemas";
+import { OverflowFlagSchema } from "./pptx-template/budget-types";
 
 // Why: route handlers used to do `body as { ... }` casts and hand-rolled enum
 // checks. Centralised here so a single source of truth defines what each
@@ -15,10 +16,12 @@ export const BidPatchSchema = z
   .object({
     outcome: z.enum(["won", "lost", "no-bid"]).optional(),
     sections: z.array(z.unknown()).optional(),
+    overflowFlags: OverflowFlagSchema.array().optional(),
   })
-  .refine((v) => v.outcome !== undefined || v.sections !== undefined, {
-    message: "No valid fields to update",
-  });
+  .refine(
+    (v) => v.outcome !== undefined || v.sections !== undefined || v.overflowFlags !== undefined,
+    { message: "No valid fields to update" },
+  );
 
 // --- Bid: PATCH /api/bids/[id]/outcome ---
 

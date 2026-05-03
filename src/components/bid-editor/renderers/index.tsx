@@ -1,6 +1,7 @@
 "use client";
 
 import { BidSection, BidSectionContent, StyleGuide } from "@/lib/types";
+import type { FieldBudgets } from "@/lib/pptx-template/budget-types";
 import { CoverRenderer } from "./CoverRenderer";
 
 type TeamPricingContent = Extract<BidSectionContent, { format: "team-pricing" }>;
@@ -26,9 +27,10 @@ interface SectionRendererProps {
   section: BidSection;
   style: StyleGuide;
   onSectionChange?: (updated: BidSection) => void;
+  budgets?: FieldBudgets;
 }
 
-export function SectionRenderer({ section, style, onSectionChange }: SectionRendererProps) {
+export function SectionRenderer({ section, style, onSectionChange, budgets }: SectionRendererProps) {
   const content = section.content;
 
   function setContent(next: BidSectionContent) {
@@ -63,6 +65,7 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
           phases={content.phases}
           style={style}
           onChange={onSectionChange ? (phases) => updateContent({ phases }) : undefined}
+          budgets={budgets}
         />
       );
     case "understanding-current":
@@ -83,6 +86,7 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
           content={content}
           style={style}
           onChange={onSectionChange ? setContent : undefined}
+          budgets={budgets}
         />
       );
     case "team-pricing":
@@ -151,6 +155,7 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
           content={content}
           style={style}
           onChange={onSectionChange ? setContent : undefined}
+          budgets={budgets}
         />
       );
     default: {

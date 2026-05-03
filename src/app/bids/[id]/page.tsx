@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { BidEditor } from "@/components/bid-editor/BidEditor";
 import { BidSection, StyleGuide } from "@/lib/types";
 import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
+import { loadBudgets } from "@/lib/pptx-template/budget-loader";
+import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { notFound } from "next/navigation";
 
 const DEFAULT_STYLE_GUIDE: StyleGuide = {
@@ -46,6 +48,9 @@ export default async function BidEditorPage({ params }: PageProps) {
 
   const styleGuide: StyleGuide = (org?.style_guide as StyleGuide) ?? DEFAULT_STYLE_GUIDE;
 
+  // Hardcoded template for now — picker comes in a separate PR.
+  const budgets = await loadBudgets("anbudsmall-v2");
+
   return (
     <BidEditor
       bidId={bid.id}
@@ -53,6 +58,8 @@ export default async function BidEditorPage({ params }: PageProps) {
       initialStatus={bid.status}
       initialStructureEval={(bid.structure_eval as StructureEvalSummary | null) ?? null}
       styleGuide={styleGuide}
+      budgets={budgets}
+      initialOverflowFlags={(bid.overflow_flags as OverflowFlag[]) ?? []}
     />
   );
 }

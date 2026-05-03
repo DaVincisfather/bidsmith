@@ -1,5 +1,6 @@
 "use client";
 import type { BidSectionContent, StyleGuide } from "@/lib/types";
+import type { FieldBudgets } from "@/lib/pptx-template/budget-types";
 import { EditableText } from "../EditableText";
 
 type QAContent = Extract<BidSectionContent, { format: "quality-assurance" }>;
@@ -9,11 +10,13 @@ export function QualityAssuranceRenderer({
   content,
   style,
   onChange,
+  budgets,
 }: {
   title: string;
   content: QAContent;
   style: StyleGuide;
   onChange?: (next: QAContent) => void;
+  budgets?: FieldBudgets;
 }) {
   const editable = !!onChange;
 
@@ -118,6 +121,8 @@ export function QualityAssuranceRenderer({
                       checkpoints: content.checkpoints.map((x, j) => j === i ? v : x),
                     })}
                     as="span"
+                    dataFieldPath={`checkpoints[${i}]`}
+                    budget={budgets?.["checkpoints[*]"]}
                   />
                 ) : c}
               </li>
