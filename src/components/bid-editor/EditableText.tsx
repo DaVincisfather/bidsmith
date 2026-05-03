@@ -77,14 +77,19 @@ export function EditableText({
   );
 
   // No wrapper when there's no counter to position — keeps HTML clean for the
-  // ~40+ EditableText instances that don't pass a budget (PR-routine flag).
-  // Use <div> not <span> so the wrapper is valid even when Tag is a block element (h4/p).
+  // ~40+ EditableText instances that don't pass a budget.
   if (budget === undefined) {
     return tagElement;
   }
 
+  // Wrapper element must match Tag's display context to keep HTML valid in both
+  // directions: <span> Tag inside <p> needs span wrapper (div-in-p invalid);
+  // <h4>/<p>/<li> Tag needs div wrapper (block-in-span invalid). CSS class
+  // controls actual display, the element name controls validity.
+  const Wrapper = Tag === "span" ? "span" : "div";
+
   return (
-    <div className="relative inline-block w-full">
+    <Wrapper className="relative inline-block w-full">
       {tagElement}
       <span
         data-testid="char-counter"
@@ -94,6 +99,6 @@ export function EditableText({
       >
         {length}/{budget}
       </span>
-    </div>
+    </Wrapper>
   );
 }
