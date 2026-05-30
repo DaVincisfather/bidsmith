@@ -3,7 +3,7 @@ import { parseDocument } from "@/lib/document-parser";
 import { extractConsultant } from "@/lib/consultant-extractor";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { getOrgId } from "@/lib/org";
+import { getUserId } from "@/lib/org";
 
 interface UploadResult {
   fileName: string;
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const authed = await createClient();
-    const orgId = await getOrgId(authed);
+    const userId = await getUserId(authed);
     const supabase = createServiceClient();
     const results: UploadResult[] = [];
 
@@ -32,14 +32,13 @@ export async function POST(request: NextRequest) {
         // Parse document text
         const rawText = await parseDocument(buffer, file.name);
 
-        // Extract structured profile with Sonnet
-        const extraction = await extractConsultant(rawText, orgId);
+        // Extract structured profile with Sonnet — pass userId for AI cost attribution
+        const extraction = await extractConsultant(rawText, userId);
 
         // Insert consultant
         const { data: consultant, error: consultantError } = await supabase
           .from("consultants")
           .insert({
-            organization_id: orgId,
             name: extraction.name,
             level: extraction.level,
             years_experience: extraction.yearsExperience,

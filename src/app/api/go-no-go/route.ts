@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, fetchConsultantsByIds } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { getOrgId } from "@/lib/org";
 import { evaluateGoNoGo } from "@/lib/go-no-go-evaluator";
 import { RfpAnalysis, ScoredConsultant } from "@/lib/types";
 import { parseBody } from "@/lib/api-helpers";
@@ -12,8 +11,8 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) return parsed.response;
   const { analysisId, teamConsultantIds } = parsed.data;
 
-  const authed = await createClient();
-  const orgId = await getOrgId(authed);
+  // Middleware guarantees authentication; no org scoping in single-workspace model.
+  await createClient();
   const supabase = createServiceClient();
 
   // Fetch analysis + match in parallel
@@ -45,13 +44,12 @@ export async function POST(request: NextRequest) {
 
   const teamConsultants = await fetchConsultantsByIds(supabase, resolvedTeamIds);
 
-  const result = await evaluateGoNoGo(rfpAnalysis, teamConsultants, allScoredConsultants, orgId);
+  const result = await evaluateGoNoGo(rfpAnalysis, teamConsultants, allScoredConsultants);
 
   const { data: assessment, error: saveError } = await supabase
     .from("go_no_go_assessments")
     .insert({
       analysis_id: analysisId,
-      organization_id: orgId,
       team_consultant_ids: resolvedTeamIds,
       result,
     })

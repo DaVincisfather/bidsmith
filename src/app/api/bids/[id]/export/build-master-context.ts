@@ -3,7 +3,6 @@ import type { MasterContext } from "@/lib/pptx-template/types";
 
 interface BuildMasterContextInput {
   analysis: RfpAnalysis;
-  organizationName: string;
   now: Date;
 }
 
@@ -11,7 +10,8 @@ export function buildMasterContext(
   input: BuildMasterContextInput,
 ): MasterContext {
   return {
-    companyName: input.organizationName,
+    // companyName comes from workspace_settings in the future; blank for now.
+    companyName: "",
     clientName: input.analysis.client,
     bidName: input.analysis.title,
     // diaryNumber is optional on RfpAnalysis — default to empty string when absent

@@ -91,8 +91,7 @@ function formatPoolForPrompt(
 export async function evaluateGoNoGo(
   analysis: RfpAnalysis,
   teamConsultants: Consultant[],
-  allScoredConsultants: ScoredConsultant[],
-  organizationId?: string | null
+  allScoredConsultants: ScoredConsultant[]
 ): Promise<GoNoGoResult> {
   const teamIds = teamConsultants.map((c) => c.id);
   const teamText = formatTeamForPrompt(teamConsultants, allScoredConsultants);
@@ -114,7 +113,6 @@ ${teamText}
 ${poolText}`,
     schema: GoNoGoResultSchema,
     label: "Go/No-Go evaluation",
-    organizationId,
   });
 
   // Enforce hard rule: if any must-requirement is unmet, winProbability must be 0.

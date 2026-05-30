@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { getOrgId } from "@/lib/org";
 import { renderTemplate } from "@/lib/pptx-template/loader";
 import { BidSection, RfpAnalysis } from "@/lib/types";
 import { buildMasterContext } from "./build-master-context";
@@ -12,15 +11,14 @@ interface RouteContext {
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
-  const authed = await createClient();
-  const orgId = await getOrgId(authed);
+  // Middleware guarantees authentication; no org scoping in single-workspace model.
+  await createClient();
   const supabase = createServiceClient();
 
   const { data: bid, error: bidError } = await supabase
     .from("bids")
     .select("*")
     .eq("id", id)
-    .eq("organization_id", orgId)
     .single();
 
   if (bidError || !bid) {
@@ -34,21 +32,11 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const [
-    { data: analysisRow, error: analysisError },
-    { data: org, error: orgError },
-  ] = await Promise.all([
-    supabase
-      .from("analyses")
-      .select("analysis")
-      .eq("id", bid.analysis_id)
-      .single(),
-    supabase
-      .from("organizations")
-      .select("name")
-      .eq("id", bid.organization_id)
-      .single(),
-  ]);
+  const { data: analysisRow, error: analysisError } = await supabase
+    .from("analyses")
+    .select("analysis")
+    .eq("id", bid.analysis_id)
+    .single();
 
   if (analysisError || !analysisRow) {
     return NextResponse.json(
@@ -57,17 +45,9 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  if (orgError || !org) {
-    return NextResponse.json(
-      { error: "Organization not found" },
-      { status: 404 },
-    );
-  }
-
   const sections = bid.sections as BidSection[];
   const master = buildMasterContext({
     analysis: analysisRow.analysis as RfpAnalysis,
-    organizationName: org.name,
     now: new Date(),
   });
 
