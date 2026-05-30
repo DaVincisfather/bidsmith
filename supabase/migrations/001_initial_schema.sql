@@ -228,6 +228,31 @@ create trigger template_configs_updated_at
   for each row
   execute function trigger_set_updated_at();
 
+-- Required seed: both known templates with initial field budgets.
+-- The bid-generator throws TemplateConfigMissingError without these rows.
+-- anbudsmall-colors is seeded with the same values as v2 until calibrated separately.
+insert into template_configs (name, budgets) values
+  ('anbudsmall-v2', jsonb_build_object(
+    'phases[*].objective', 120,
+    'phases[*].activities[*]', 120,
+    'phases[*].deliverables[*]', 100,
+    'phases[*].decisions[*]', 100,
+    'phases[*].name', 40,
+    'phases[*].period', 10,
+    'checkpoints[*]', 80,
+    'certs[*].description', 80
+  )),
+  ('anbudsmall-colors', jsonb_build_object(
+    'phases[*].objective', 120,
+    'phases[*].activities[*]', 120,
+    'phases[*].deliverables[*]', 100,
+    'phases[*].decisions[*]', 100,
+    'phases[*].name', 40,
+    'phases[*].period', 10,
+    'checkpoints[*]', 80,
+    'certs[*].description', 80
+  ));
+
 -- ---------------------------------------------------------------------------
 -- workspace_settings: single-row table for workspace-wide configuration
 -- style_guide: StyleGuide jsonb consumed by the bid editor
