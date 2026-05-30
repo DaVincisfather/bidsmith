@@ -6,7 +6,6 @@ const PUBLIC_PATHS = [
   "/login",
   "/auth/callback",
   "/auth/signout",
-  "/invites/accept",
   "/api/radar/fetch",
   "/api/radar/score",
 ];
