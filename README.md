@@ -52,24 +52,17 @@ Claude API · Vercel.
 
 ## Getting started
 
+**See [SETUP.md](SETUP.md) for the full 10-minute guide** — Supabase project, database
+schema, storage bucket, environment variables, and email login, step by step.
+
+The short version:
+
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Configure environment
-cp .env.local.example .env.local
-# Fill in:
-#   ANTHROPIC_API_KEY
-#   NEXT_PUBLIC_SUPABASE_URL
-#   NEXT_PUBLIC_SUPABASE_ANON_KEY
-#   SUPABASE_SERVICE_ROLE_KEY
-
-# 3. Set up the database
-# Apply the migrations in supabase/migrations/ (in order) via the Supabase SQL Editor.
-
-# 4. Run
-npm run dev
-# → http://localhost:3000
+cp .env.local.example .env.local   # fill in your keys (see SETUP.md)
+# → run supabase/migrations/001_initial_schema.sql in the Supabase SQL Editor
+# → create a private storage bucket named "rfp-documents"
+npm run dev                         # → http://localhost:3000
 ```
 
 ### Running the evaluators
