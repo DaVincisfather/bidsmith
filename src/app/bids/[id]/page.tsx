@@ -39,14 +39,16 @@ export default async function BidEditorPage({ params }: PageProps) {
     notFound();
   }
 
-  // Fetch organization style guide
-  const { data: org } = await supabase
-    .from("organizations")
+  // Fetch the workspace style guide (single-row table). Falls back to the
+  // built-in default until a workspace uploads its own template/styling.
+  const { data: workspace } = await supabase
+    .from("workspace_settings")
     .select("style_guide")
-    .eq("id", bid.organization_id)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
-  const styleGuide: StyleGuide = (org?.style_guide as StyleGuide) ?? DEFAULT_STYLE_GUIDE;
+  const styleGuide: StyleGuide =
+    (workspace?.style_guide as StyleGuide) ?? DEFAULT_STYLE_GUIDE;
 
   // Hardcoded template for now — picker comes in a separate PR.
   const budgets = await loadBudgets("anbudsmall-v2");

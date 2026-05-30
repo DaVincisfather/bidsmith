@@ -10,7 +10,7 @@ export class NotAuthenticatedError extends Error {
 
 /**
  * Returns the authenticated user's id. In single-workspace Bidsmith there is no
- * organization scoping — user_id is used only for attribution (who created a bid,
+ * workspace scoping — user_id is used only for attribution (who created a bid,
  * whose API usage). All logged-in users share one workspace.
  */
 export async function getUserId(supabase?: SupabaseClient): Promise<string> {
