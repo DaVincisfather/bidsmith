@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agentic Dealflow",
+  title: "Bidsmith",
   description: "AI-driven RFP analysis and consultant matching",
 };
 
@@ -49,7 +49,7 @@ export default async function RootLayout({
         <nav className="border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
             <Link href="/" className="font-bold text-lg">
-              Agentic Dealflow
+              Bidsmith
             </Link>
             <Link
               href="/"
