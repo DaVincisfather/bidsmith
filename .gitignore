@@ -58,3 +58,6 @@ docs/tech-stack.png
 # eval runs (local outputs, not shared)
 /evals/runs
 .gstack/
+
+# Claude Code local settings
+.claude/
