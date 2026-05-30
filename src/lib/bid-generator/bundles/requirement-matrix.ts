@@ -81,7 +81,7 @@ export async function buildRequirementMatrixBundle(
         userContent: formatContext(ctx),
         schema: RequirementMatrixBundleSchema,
         label: "requirement-matrix bundle",
-        organizationId: ctx.organizationId,
+        userId: ctx.userId,
       }),
     budgets,
     retryBudget,

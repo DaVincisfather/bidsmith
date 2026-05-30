@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, fetchConsultantsByIds, EMPTY_GO_NO_GO } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { getOrgId } from "@/lib/org";
+import { getUserId } from "@/lib/org";
 import { generateAllSections } from "@/lib/bid-generator";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult, BidSection } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   const { analysisId, assessmentId, teamConsultantIds } = parsed.data;
 
   const authed = await createClient();
-  const orgId = await getOrgId(authed);
+  const userId = await getUserId(authed);
   const supabase = createServiceClient();
 
   // Fetch all context in parallel
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     .insert({
       analysis_id: analysisId,
       assessment_id: assessmentId || null,
-      organization_id: orgId,
+      created_by: userId,
       team_consultant_ids: teamConsultantIds,
       status: "generating",
     })
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     teamConsultants,
     scoredConsultants: allScoredConsultants,
     goNoGoResult: goNoGoResult ?? EMPTY_GO_NO_GO,
-    organizationId: orgId,
+    userId,
   };
 
   // Generate sections, saving progress to DB after each.

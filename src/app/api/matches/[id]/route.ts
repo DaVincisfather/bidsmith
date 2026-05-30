@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, mapConsultantRow } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { getOrgId } from "@/lib/org";
 import { CONSULTANT_SELECT } from "@/lib/constants";
 import { matchConsultants } from "@/lib/consultant-matcher";
 import { RfpAnalysis } from "@/lib/types";
+import { getUserId } from "@/lib/org";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -12,14 +12,16 @@ interface RouteContext {
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { id: analysisId } = await params;
+  // Middleware guarantees authentication; no org scoping needed — all users
+  // share one consultant bank in the single-workspace model.
   const authed = await createClient();
-  const orgId = await getOrgId(authed);
+  const userId = await getUserId(authed);
   const supabase = createServiceClient();
 
   // Fetch analysis + consultants in parallel
   const [analysisResult, consultantResult] = await Promise.all([
     supabase.from("analyses").select("analysis").eq("id", analysisId).single(),
-    supabase.from("consultants").select(CONSULTANT_SELECT).eq("organization_id", orgId),
+    supabase.from("consultants").select(CONSULTANT_SELECT),
   ]);
 
   if (analysisResult.error || !analysisResult.data) {
@@ -33,13 +35,12 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const rfpAnalysis = analysisResult.data.analysis as RfpAnalysis;
   const consultants = consultantResult.data.map((row: Record<string, unknown>) => mapConsultantRow(row));
 
-  const result = await matchConsultants(rfpAnalysis, consultants, orgId);
+  const result = await matchConsultants(rfpAnalysis, consultants, userId);
 
   const { data: matchRecord, error: matchError } = await supabase
     .from("matches")
     .insert({
       analysis_id: analysisId,
-      organization_id: orgId,
       team_proposal: result.scoredConsultants,
       team_evaluation: null,
     })

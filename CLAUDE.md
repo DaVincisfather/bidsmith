@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Agentic Dealflow — CLAUDE.md
+# Bidsmith — CLAUDE.md
 
 > Ärver globala instruktioner från `~/projects/CLAUDE.md`. Här ligger bara projektspecifika tillägg.
 
@@ -52,6 +52,7 @@ Vid ändringar i befintlig kod:
 - Zod-schemas i `ai-schemas.ts` — validera alla AI-responses, lägg till schema där om det saknas
 - markitdown-js för dokumentparsning (PDF, DOCX, PPTX, XLSX) — inte mammoth/pdf-parse
 - DB-migreringar: namnge `NNN_beskrivning.sql`, applicera manuellt via Supabase SQL Editor
+- **Redigera ALDRIG en applicerad migration** — skriv en ny migration med `ALTER` istället. Att ändra historik orsakar drift mellan dev/prod schema.
 - Filstorlek-gräns: 20MB i document-parser
 - Rate limits: håll koll vid externa API-anrop
 - Encoding: explicit UTF-8 för alla strängoperationer med svenska tecken

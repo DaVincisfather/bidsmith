@@ -3,7 +3,7 @@ import { parseDocument } from "@/lib/document-parser";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { getOrgId } from "@/lib/org";
+import { getUserId } from "@/lib/org";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,12 +15,12 @@ export async function POST(request: NextRequest) {
     }
 
     const authed = await createClient();
-    const orgId = await getOrgId(authed);
+    const userId = await getUserId(authed);
     const supabase = createServiceClient();
 
-    // Upload file to Supabase Storage. Path prefix = org_id so the
-    // bucket RLS policies (migration 013) can scope reads/writes.
-    const filePath = `${orgId}/${Date.now()}-${file.name}`;
+    // Upload file to Supabase Storage. Path prefix = user_id for storage
+    // organisation; bucket RLS policies scope reads/writes per user.
+    const filePath = `${userId}/${Date.now()}-${file.name}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
     const { error: uploadError } = await supabase.storage
@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
         file_name: file.name,
         file_path: filePath,
         raw_text: rawText,
-        organization_id: orgId,
       })
       .select()
       .single();
@@ -60,8 +59,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Analyze with Claude
-    const analysis = await analyzeRfp(rawText, orgId);
+    // Analyze with Claude — pass userId for AI cost attribution
+    const analysis = await analyzeRfp(rawText, userId);
 
     // Save analysis
     const { data: analysisRecord, error: analysisError } = await supabase
@@ -69,7 +68,6 @@ export async function POST(request: NextRequest) {
       .insert({
         document_id: doc.id,
         analysis,
-        organization_id: orgId,
       })
       .select()
       .single();

@@ -76,7 +76,7 @@ export async function buildQualityBundle(
         schema: QualityBundleSchema,
         label: "quality bundle",
         effort: "max",
-        organizationId: ctx.organizationId,
+        userId: ctx.userId,
       }),
     budgets,
     retryBudget,

@@ -58,7 +58,7 @@ export async function buildTeamBundle(
         userContent: formatContext(ctx),
         schema: TeamBundleSchema,
         label: "team bundle",
-        organizationId: ctx.organizationId,
+        userId: ctx.userId,
       }),
     budgets,
     retryBudget,

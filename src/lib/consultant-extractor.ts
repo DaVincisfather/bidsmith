@@ -37,7 +37,7 @@ Regler:
 
 export async function extractConsultant(
   cvText: string,
-  organizationId?: string | null
+  userId?: string | null
 ): Promise<ConsultantExtraction> {
   return callClaude({
     model: "claude-sonnet-4-6",
@@ -46,6 +46,6 @@ export async function extractConsultant(
     userContent: `Analysera följande konsult-CV och returnera en strukturerad JSON-profil:\n\n${cvText}`,
     schema: ConsultantExtractionSchema,
     label: "consultant-extraction",
-    organizationId,
+    userId,
   });
 }

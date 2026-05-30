@@ -1,6 +1,5 @@
 export interface OrganizationCompetency {
   id: string;
-  organizationId: string;
   name: string;
   description: string;
   keywords: string[];
@@ -13,7 +12,6 @@ export type OpportunityStatus = "new" | "scored" | "dismissed" | "analyzing";
 
 export interface RfpOpportunity {
   id: string;
-  organizationId: string;
   tedNoticeId: string;
   title: string;
   buyer: string | null;

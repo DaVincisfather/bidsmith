@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getOrgId } from "@/lib/org";
 import { sortBidSummaries } from "@/lib/pipeline";
 import type { BidSummary, PipelineStats, RfpAnalysis } from "@/lib/types";
 
@@ -8,7 +7,6 @@ const MAX_ITEMS = 8;
 
 export async function GET() {
   const supabase = await createClient();
-  const orgId = await getOrgId(supabase);
 
   const { data: bids, error } = await supabase
     .from("bids")
@@ -17,7 +15,6 @@ export async function GET() {
       competitor_name, loss_reason, loss_comment, exported_at,
       analyses!inner(id, analysis)
     `)
-    .eq("organization_id", orgId)
     .not("exported_at", "is", null);
 
   if (error) {

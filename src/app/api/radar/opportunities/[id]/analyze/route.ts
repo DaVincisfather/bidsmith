@@ -12,7 +12,7 @@ export async function POST(
   // 1. Get the opportunity
   const { data: opp, error: oppError } = await supabase
     .from("rfp_opportunities")
-    .select("id, title, summary, raw_xml, organization_id")
+    .select("id, title, summary, raw_xml")
     .eq("id", id)
     .single();
 
@@ -48,7 +48,6 @@ export async function POST(
     .insert({
       file_name: `ted-${opp.title.slice(0, 50)}.txt`,
       raw_text: inputText,
-      organization_id: opp.organization_id,
     })
     .select()
     .single();
@@ -58,7 +57,7 @@ export async function POST(
   }
 
   // 4. Run RFP analysis (same as manual upload flow)
-  const analysis = await analyzeRfp(inputText, opp.organization_id);
+  const analysis = await analyzeRfp(inputText);
 
   // 5. Save analysis
   const { data: analysisRecord, error: analysisError } = await supabase
@@ -66,7 +65,6 @@ export async function POST(
     .insert({
       document_id: doc.id,
       analysis,
-      organization_id: opp.organization_id,
     })
     .select()
     .single();

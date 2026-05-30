@@ -17,7 +17,7 @@ beforeEach(() => {
 describe("logAiCall", () => {
   it("inserts a row with computed cost and tokens", async () => {
     await logAiCall({
-      organizationId: "org-123",
+      userId: "user-123",
       model: "claude-sonnet-4-6",
       label: "rfp-analyzer",
       inputTokens: 1000,
@@ -29,7 +29,7 @@ describe("logAiCall", () => {
 
     expect(mockInsert).toHaveBeenCalledTimes(1);
     const row = mockInsert.mock.calls[0][0];
-    expect(row.organization_id).toBe("org-123");
+    expect(row.user_id).toBe("user-123");
     expect(row.model).toBe("claude-sonnet-4-6");
     expect(row.label).toBe("rfp-analyzer");
     expect(row.input_tokens).toBe(1000);
@@ -41,7 +41,7 @@ describe("logAiCall", () => {
 
   it("logs an error string when provided", async () => {
     await logAiCall({
-      organizationId: null,
+      userId: null,
       model: "claude-opus-4-7",
       label: "bid-generator",
       inputTokens: 0,
@@ -54,7 +54,7 @@ describe("logAiCall", () => {
 
     const row = mockInsert.mock.calls[0][0];
     expect(row.error).toBe("rate limited");
-    expect(row.organization_id).toBeNull();
+    expect(row.user_id).toBeNull();
   });
 
   it("never throws when the insert fails", async () => {
@@ -62,7 +62,7 @@ describe("logAiCall", () => {
 
     await expect(
       logAiCall({
-        organizationId: "org-1",
+        userId: "user-1",
         model: "claude-sonnet-4-6",
         label: "x",
         inputTokens: 0,
@@ -81,7 +81,7 @@ describe("logAiCall", () => {
 
     await expect(
       logAiCall({
-        organizationId: null,
+        userId: null,
         model: "x",
         label: "y",
         inputTokens: 0,

@@ -80,7 +80,7 @@ export async function buildUnderstandingBundle(
         schema: UnderstandingBundleSchema,
         label: "understanding bundle",
         effort: "max",
-        organizationId: ctx.organizationId,
+        userId: ctx.userId,
       }),
     budgets,
     retryBudget,

@@ -21,7 +21,6 @@ export function createServiceClient(): SupabaseClient {
 export function mapConsultantRow(row: Record<string, unknown>): Consultant {
   return {
     id: row.id as string,
-    organizationId: row.organization_id as string,
     name: row.name as string,
     level: row.level as Consultant["level"],
     yearsExperience: row.years_experience as number | null,

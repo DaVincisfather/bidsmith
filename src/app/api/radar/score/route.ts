@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { scoreOpportunity } from "@/lib/opportunity-scorer";
 
-import { DEFAULT_ORG_ID } from "@/lib/constants";
 const BATCH_SIZE = 20;
 
 export async function POST(request: NextRequest) {
@@ -15,11 +14,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
 
-    // 1. Get unscored opportunities
+    // 1. Get unscored opportunities (single workspace — no org filter)
     const { data: opportunities, error: oppError } = await supabase
       .from("rfp_opportunities")
       .select("id, title, summary")
-      .eq("organization_id", DEFAULT_ORG_ID)
       .eq("status", "new")
       .limit(BATCH_SIZE);
 
@@ -31,11 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "No opportunities to score", scored: 0 });
     }
 
-    // 2. Get org competencies
+    // 2. Get competencies (single workspace — no org filter)
     const { data: competencies, error: compError } = await supabase
       .from("organization_competencies")
-      .select("name, description, keywords")
-      .eq("organization_id", DEFAULT_ORG_ID);
+      .select("name, description, keywords");
 
     if (compError || !competencies || competencies.length === 0) {
       return NextResponse.json({ error: "No competencies found" }, { status: 500 });
@@ -47,8 +44,7 @@ export async function POST(request: NextRequest) {
       try {
         const result = await scoreOpportunity(
           { title: opp.title, summary: opp.summary },
-          competencies,
-          DEFAULT_ORG_ID
+          competencies
         );
 
         await supabase

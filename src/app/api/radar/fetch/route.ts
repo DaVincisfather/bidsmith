@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { fetchTedNotices } from "@/lib/ted-client";
 
-import { DEFAULT_ORG_ID } from "@/lib/constants";
-
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
@@ -14,11 +12,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient();
 
-    // 1. Get org's CPV codes from competencies
+    // 1. Get CPV codes from competencies (single workspace — no org filter)
     const { data: competencies, error: compError } = await supabase
       .from("organization_competencies")
-      .select("cpv_codes")
-      .eq("organization_id", DEFAULT_ORG_ID);
+      .select("cpv_codes");
 
     if (compError) {
       return NextResponse.json({ error: compError.message }, { status: 500 });
@@ -43,7 +40,6 @@ export async function POST(request: NextRequest) {
     const { data: existing } = await supabase
       .from("rfp_opportunities")
       .select("ted_notice_id")
-      .eq("organization_id", DEFAULT_ORG_ID)
       .in("ted_notice_id", tedIds);
 
     const existingIds = new Set((existing ?? []).map((e: { ted_notice_id: string }) => e.ted_notice_id));
@@ -55,7 +51,6 @@ export async function POST(request: NextRequest) {
 
     // 4. Insert new opportunities
     const rows = newNotices.map((n) => ({
-      organization_id: DEFAULT_ORG_ID,
       ted_notice_id: n.tedNoticeId,
       title: n.title,
       buyer: n.buyer,

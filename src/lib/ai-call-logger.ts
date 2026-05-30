@@ -2,7 +2,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { calculateCostUsd } from "@/lib/ai-cost";
 
 export interface LogAiCallInput {
-  organizationId: string | null;
+  userId: string | null;
   model: string;
   label: string;
   inputTokens: number;
@@ -25,7 +25,7 @@ export async function logAiCall(input: LogAiCallInput): Promise<void> {
 
     const client = createServiceClient();
     const { error } = await client.from("ai_call_logs").insert({
-      organization_id: input.organizationId,
+      user_id: input.userId,
       model: input.model,
       label: input.label,
       input_tokens: input.inputTokens,

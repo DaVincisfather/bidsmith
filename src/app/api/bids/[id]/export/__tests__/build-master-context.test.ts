@@ -18,15 +18,14 @@ const baseAnalysis: RfpAnalysis = {
 };
 
 describe("buildMasterContext", () => {
-  it("populates all fields from analysis + organization", () => {
+  it("populates all fields from analysis", () => {
     const ctx = buildMasterContext({
       analysis: { ...baseAnalysis, diaryNumber: "VGR-2026-0042" },
-      organizationName: "Edgren Konsult AB",
       now: new Date("2026-04-19T10:00:00Z"),
     });
 
     expect(ctx).toEqual({
-      companyName: "Edgren Konsult AB",
+      companyName: "",
       clientName: "Region Västra Götaland",
       bidName: "Strategiskt utvecklingsstöd",
       diaryNumber: "VGR-2026-0042",
@@ -37,7 +36,6 @@ describe("buildMasterContext", () => {
   it("falls back to empty diaryNumber when analysis has none", () => {
     const ctx = buildMasterContext({
       analysis: baseAnalysis,
-      organizationName: "Edgren Konsult AB",
       now: new Date("2026-04-19T10:00:00Z"),
     });
 
@@ -49,7 +47,6 @@ describe("buildMasterContext", () => {
     // return "2026-04-22", Stockholm-aware path returns "2026-04-23".
     const ctx = buildMasterContext({
       analysis: baseAnalysis,
-      organizationName: "Org",
       now: new Date("2026-04-22T23:30:00Z"),
     });
 

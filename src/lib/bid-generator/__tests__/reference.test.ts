@@ -26,7 +26,6 @@ const baseCtx: BidContext = {
   teamConsultants: [
     {
       id: "c1",
-      organizationId: "o",
       name: "Anna",
       level: "senior",
       yearsExperience: 12,

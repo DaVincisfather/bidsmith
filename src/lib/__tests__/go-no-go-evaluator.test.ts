@@ -41,7 +41,6 @@ const analysis: RfpAnalysis = {
 const team: Consultant[] = [
   {
     id: "c1",
-    organizationId: "org1",
     name: "Anna",
     level: "senior",
     yearsExperience: 10,
