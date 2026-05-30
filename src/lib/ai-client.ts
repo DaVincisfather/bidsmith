@@ -37,9 +37,9 @@ interface CallClaudeOptions<T> {
   // Opus 4.7+ adaptive thinking. When set, enables reasoning budget via
   // output_config.effort. Omit for Sonnet/Haiku calls that don't need it.
   effort?: ClaudeEffort;
-  // Tenant attribution for ai_call_logs. Null when caller cannot resolve
-  // an org (cron probes, bootstrap flows). Logged as NULL.
-  organizationId?: string | null;
+  // User attribution for ai_call_logs. Null when caller cannot resolve
+  // a user (cron probes, unauthenticated flows). Logged as NULL.
+  userId?: string | null;
 }
 
 export async function callClaude<T>({
@@ -50,7 +50,7 @@ export async function callClaude<T>({
   schema,
   label,
   effort,
-  organizationId,
+  userId,
 }: CallClaudeOptions<T>): Promise<T> {
   let lastError: unknown;
 
@@ -82,7 +82,7 @@ export async function callClaude<T>({
         cache_creation_input_tokens?: number;
       };
       void logAiCall({
-        organizationId: organizationId ?? null,
+        userId: userId ?? null,
         model,
         label,
         inputTokens: u.input_tokens ?? 0,
@@ -113,7 +113,7 @@ export async function callClaude<T>({
         continue;
       }
       void logAiCall({
-        organizationId: organizationId ?? null,
+        userId: userId ?? null,
         model,
         label,
         inputTokens: 0,

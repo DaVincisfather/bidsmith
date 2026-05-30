@@ -16,7 +16,7 @@ const baseAnalysis: RfpAnalysis = {
 const baseCtx: BidContext = {
   analysis: baseAnalysis,
   teamConsultants: [{
-    id: "c1", organizationId: "o", name: "Anna", level: "senior",
+    id: "c1", name: "Anna", level: "senior",
     yearsExperience: 10, summary: null, rawCvText: null,
     competencies: [], references: [], createdAt: "", updatedAt: "",
   }],

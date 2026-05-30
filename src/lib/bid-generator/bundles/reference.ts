@@ -80,7 +80,7 @@ export async function buildReferenceBundle(
         userContent: formatContext(ctx),
         schema: ReferenceBundleSchema,
         label: "reference bundle",
-        organizationId: ctx.organizationId,
+        userId: ctx.userId,
       }),
     budgets,
     retryBudget,

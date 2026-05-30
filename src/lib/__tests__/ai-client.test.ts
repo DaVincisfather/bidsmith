@@ -174,7 +174,7 @@ describe("callClaude — usage logging", () => {
     model: "claude-sonnet-4-6",
   };
 
-  it("forwards usage and organizationId to logAiCall on success", async () => {
+  it("forwards usage and userId to logAiCall on success", async () => {
     mockCreate.mockReturnValue(streamOf({
       content: [{ type: "text", text: '{"answer": "ok"}' }],
       usage: {
@@ -185,11 +185,11 @@ describe("callClaude — usage logging", () => {
       },
     }));
 
-    await callClaude({ ...baseArgs, organizationId: "org-abc" });
+    await callClaude({ ...baseArgs, userId: "user-abc" });
 
     expect(logAiCall).toHaveBeenCalledTimes(1);
     const call = vi.mocked(logAiCall).mock.calls[0][0];
-    expect(call.organizationId).toBe("org-abc");
+    expect(call.userId).toBe("user-abc");
     expect(call.model).toBe("claude-sonnet-4-6");
     expect(call.label).toBe("test");
     expect(call.inputTokens).toBe(100);
@@ -210,6 +210,6 @@ describe("callClaude — usage logging", () => {
     const call = vi.mocked(logAiCall).mock.calls[0][0];
     expect(call.inputTokens).toBe(0);
     expect(call.outputTokens).toBe(0);
-    expect(call.organizationId).toBeNull();
+    expect(call.userId).toBeNull();
   });
 });

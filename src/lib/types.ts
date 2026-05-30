@@ -72,7 +72,6 @@ export interface ConsultantExtraction {
 
 export interface Consultant {
   id: string;
-  organizationId: string;
   name: string;
   level: ConsultantLevel;
   yearsExperience: number | null;
@@ -99,7 +98,6 @@ export interface ScoredMatchResult {
 export interface MatchRecord {
   id: string;
   analysisId: string;
-  organizationId: string;
   scoredConsultants: ScoredConsultant[];
   createdAt: string;
 }
@@ -137,7 +135,6 @@ export type GoNoGoDecision = "pending" | "go" | "no-go";
 export interface GoNoGoAssessment {
   id: string;
   analysisId: string;
-  organizationId: string;
   teamConsultantIds: string[];
   result: GoNoGoResult;
   decision: GoNoGoDecision;
@@ -264,7 +261,7 @@ export interface Bid {
   id: string;
   analysisId: string;
   assessmentId: string | null;
-  organizationId: string;
+  createdBy: string | null;
   teamConsultantIds: string[];
   sections: BidSection[];
   status: BidStatus;

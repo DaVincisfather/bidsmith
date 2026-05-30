@@ -86,7 +86,7 @@ export async function buildPhasesBundle(
         schema: PhasesV2Schema,
         label: "phases bundle",
         effort: "max",
-        organizationId: ctx.organizationId,
+        userId: ctx.userId,
       }),
     budgets,
     retryBudget,

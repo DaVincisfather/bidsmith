@@ -44,7 +44,7 @@ Var noggrann med att:
 
 export async function analyzeRfp(
   rfpText: string,
-  organizationId?: string | null
+  userId?: string | null
 ): Promise<RfpAnalysis> {
   return callClaude({
     model: "claude-sonnet-4-6",
@@ -53,6 +53,6 @@ export async function analyzeRfp(
     userContent: `Analysera följande förfrågningsunderlag och returnera en strukturerad JSON-analys:\n\n${rfpText}`,
     schema: RfpAnalysisSchema,
     label: "RFP analysis",
-    organizationId,
+    userId,
   });
 }
