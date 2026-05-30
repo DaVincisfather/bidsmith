@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getOrgId } from "@/lib/org";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -8,12 +7,10 @@ export async function GET(request: NextRequest) {
   const minScore = searchParams.get("min_score");
 
   const supabase = await createClient();
-  const orgId = await getOrgId(supabase);
 
   let query = supabase
     .from("rfp_opportunities")
     .select("id, ted_notice_id, title, buyer, cpv_codes, deadline, estimated_value, summary, ted_url, relevance_score, relevance_reasoning, status, analysis_id, fetched_at, scored_at, created_at")
-    .eq("organization_id", orgId)
     .order("relevance_score", { ascending: false, nullsFirst: false })
     .order("deadline", { ascending: true, nullsFirst: true });
 
