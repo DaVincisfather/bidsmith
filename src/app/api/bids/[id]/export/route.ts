@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
+import { getUserId } from "@/lib/org";
 import { renderTemplate } from "@/lib/pptx-template/loader";
 import { BidSection, RfpAnalysis } from "@/lib/types";
 import { buildMasterContext } from "./build-master-context";
@@ -12,7 +13,8 @@ interface RouteContext {
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
   // Middleware guarantees authentication; no org scoping in single-workspace model.
-  await createClient();
+  const authed = await createClient();
+  await getUserId(authed);
   const supabase = createServiceClient();
 
   const { data: bid, error: bidError } = await supabase

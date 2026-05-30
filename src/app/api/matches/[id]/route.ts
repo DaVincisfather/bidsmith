@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CONSULTANT_SELECT } from "@/lib/constants";
 import { matchConsultants } from "@/lib/consultant-matcher";
 import { RfpAnalysis } from "@/lib/types";
+import { getUserId } from "@/lib/org";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -13,7 +14,8 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { id: analysisId } = await params;
   // Middleware guarantees authentication; no org scoping needed — all users
   // share one consultant bank in the single-workspace model.
-  await createClient();
+  const authed = await createClient();
+  const userId = await getUserId(authed);
   const supabase = createServiceClient();
 
   // Fetch analysis + consultants in parallel
@@ -33,7 +35,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const rfpAnalysis = analysisResult.data.analysis as RfpAnalysis;
   const consultants = consultantResult.data.map((row: Record<string, unknown>) => mapConsultantRow(row));
 
-  const result = await matchConsultants(rfpAnalysis, consultants);
+  const result = await matchConsultants(rfpAnalysis, consultants, userId);
 
   const { data: matchRecord, error: matchError } = await supabase
     .from("matches")

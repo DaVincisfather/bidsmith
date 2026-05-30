@@ -34,7 +34,6 @@ export function analyzerGoldenToRfpAnalysis(golden: AnalyzerFixture["golden"]): 
 function toConsultant(c: SyntheticConsultant): Consultant {
   return {
     id: c.id,
-    organizationId: "eval-harness",
     name: c.parsed_profile.name,
     level: c.parsed_profile.level,
     yearsExperience: c.parsed_profile.yearsExperience,
