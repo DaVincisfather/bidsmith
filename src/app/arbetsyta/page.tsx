@@ -2,6 +2,9 @@ import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase";
 import { getWorkspaceStats, formatUsd } from "@/lib/stats";
 
+// Reads live workspace data; never prerender at build time.
+export const dynamic = "force-dynamic";
+
 export default async function ArbetsytaPage() {
   const supabase = createServiceClient();
   const [{ count }, stats] = await Promise.all([
