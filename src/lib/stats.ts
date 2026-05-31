@@ -1,3 +1,6 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServiceClient } from "@/lib/supabase";
+
 export type StatsPeriod = "all" | "30d" | "ytd";
 
 export interface UserStats {
@@ -120,4 +123,44 @@ export function aggregate(
     winRate: winRate(wins, losses),
     perUser,
   };
+}
+
+async function loadEmails(supabase: SupabaseClient): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  try {
+    // One page of 1000 covers the demo. Loop pages if the user count grows.
+    const { data, error } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    if (error || !data) return map;
+    for (const u of data.users) {
+      if (u.email) map.set(u.id, u.email);
+    }
+  } catch {
+    // Degrade: aggregate() falls back to a userId prefix.
+  }
+  return map;
+}
+
+export async function getWorkspaceStats(period: StatsPeriod): Promise<WorkspaceStats> {
+  const supabase = createServiceClient();
+  const start = periodStart(period);
+
+  let costQuery = supabase.from("ai_call_logs").select("user_id, cost_usd");
+  if (start) costQuery = costQuery.gte("created_at", start);
+  const { data: costRows } = await costQuery;
+
+  let bidQuery = supabase
+    .from("bids")
+    .select("created_by, outcome")
+    .not("outcome", "is", null);
+  if (start) bidQuery = bidQuery.gte("created_at", start);
+  const { data: bidRows } = await bidQuery;
+
+  const emailById = await loadEmails(supabase);
+
+  return aggregate(
+    (costRows as CostRow[]) ?? [],
+    (bidRows as BidRow[]) ?? [],
+    emailById,
+    period
+  );
 }

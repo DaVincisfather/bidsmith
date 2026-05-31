@@ -1,11 +1,38 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   periodStart,
   aggregate,
   formatUsd,
   formatPct,
   parsePeriod,
+  getWorkspaceStats,
 } from "@/lib/stats";
+import { createServiceClient } from "@/lib/supabase";
+
+vi.mock("@/lib/supabase", () => ({ createServiceClient: vi.fn() }));
+
+// Thenable query-builder stub: select/gte/not chain, awaits to { data, error }.
+function queryStub(rows: unknown[]) {
+  const b: Record<string, unknown> = {};
+  b.select = () => b;
+  b.gte = () => b;
+  b.not = () => b;
+  b.then = (resolve: (v: { data: unknown[]; error: null }) => unknown) =>
+    resolve({ data: rows, error: null });
+  return b;
+}
+
+function clientStub(opts: {
+  costRows: unknown[];
+  bidRows: unknown[];
+  listUsers: ReturnType<typeof vi.fn>;
+}) {
+  return {
+    from: (table: string) =>
+      queryStub(table === "ai_call_logs" ? opts.costRows : opts.bidRows),
+    auth: { admin: { listUsers: opts.listUsers } },
+  };
+}
 
 describe("periodStart", () => {
   const now = new Date("2026-05-31T12:00:00.000Z");
@@ -103,5 +130,42 @@ describe("aggregate", () => {
     expect(unknown?.email).toBe("Okänd");
     expect(unknown?.costUsd).toBe(5);
     expect(unknown?.wins).toBe(1);
+  });
+});
+
+describe("getWorkspaceStats", () => {
+  beforeEach(() => vi.mocked(createServiceClient).mockReset());
+
+  it("maps user_id → email when listUsers succeeds", async () => {
+    const listUsers = vi.fn().mockResolvedValue({
+      data: { users: [{ id: "user-aaaa1111", email: "stefan@example.se" }] },
+      error: null,
+    });
+    vi.mocked(createServiceClient).mockReturnValue(
+      clientStub({
+        costRows: [{ user_id: "user-aaaa1111", cost_usd: 10 }],
+        bidRows: [{ created_by: "user-aaaa1111", outcome: "won" }],
+        listUsers,
+      }) as never
+    );
+
+    const stats = await getWorkspaceStats("all");
+    expect(stats.perUser[0].email).toBe("stefan@example.se");
+    expect(stats.totalCostUsd).toBe(10);
+    expect(stats.wins).toBe(1);
+  });
+
+  it("degrades to userId prefix when listUsers throws", async () => {
+    const listUsers = vi.fn().mockRejectedValue(new Error("forbidden"));
+    vi.mocked(createServiceClient).mockReturnValue(
+      clientStub({
+        costRows: [{ user_id: "user-aaaa1111", cost_usd: 5 }],
+        bidRows: [],
+        listUsers,
+      }) as never
+    );
+
+    const stats = await getWorkspaceStats("all");
+    expect(stats.perUser[0].email).toBe("user-aaa");
   });
 });
