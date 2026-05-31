@@ -38,8 +38,8 @@ export default function RootLayout({
             <Link href="/" className="text-sm text-gray-500 hover:text-gray-900">
               Analysera RFP
             </Link>
-            <Link href="/consultants" className="text-sm text-gray-500 hover:text-gray-900">
-              Konsulter
+            <Link href="/arbetsyta" className="text-sm text-gray-500 hover:text-gray-900">
+              Arbetsyta
             </Link>
             <Link href="/radar" className="text-sm text-gray-500 hover:text-gray-900">
               Radar
