@@ -7,6 +7,9 @@ import {
   type StatsPeriod,
 } from "@/lib/stats";
 
+// Reads live workspace data (also implicitly dynamic via searchParams); be explicit.
+export const dynamic = "force-dynamic";
+
 const PERIODS: { key: StatsPeriod; label: string }[] = [
   { key: "all", label: "Allt" },
   { key: "30d", label: "30 dgr" },
