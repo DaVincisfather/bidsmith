@@ -14,17 +14,17 @@ export default async function ConsultantsPage() {
     .order("name");
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-paper">
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">Konsulter</h1>
+          <h1 className="text-2xl font-display font-normal">Konsulter</h1>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <ConsultantList initialData={consultants || []} />
           </div>
           <div>
-            <h2 className="text-lg font-semibold mb-4">Ladda upp CV:n</h2>
+            <h2 className="text-lg font-display font-normal mb-4">Ladda upp CV:n</h2>
             <ConsultantUploadWrapper />
           </div>
         </div>

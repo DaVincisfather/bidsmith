@@ -97,7 +97,7 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="text-2xl font-bold border-b border-gray-300 focus:outline-none focus:border-gray-900"
+              className="text-2xl font-bold border-b border-rule focus:outline-none focus:border-accent"
             />
           ) : (
             <h1 className="text-2xl font-bold">{consultant.name}</h1>
@@ -107,7 +107,7 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
               <select
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                className="border border-rule rounded px-2 py-1 text-sm"
               >
                 <option value="junior">Junior</option>
                 <option value="intermediate">Medel</option>
@@ -115,12 +115,12 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
                 <option value="expert">Expert</option>
               </select>
             ) : (
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-ink-mute">
                 {LEVEL_LABELS[consultant.level] || consultant.level}
               </span>
             )}
             {consultant.years_experience && (
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-ink-mute">
                 {consultant.years_experience} års erfarenhet
               </span>
             )}
@@ -132,13 +132,13 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="bg-gray-900 text-white px-4 py-1.5 rounded text-sm hover:bg-gray-800 disabled:bg-gray-300"
+                className="bg-ink text-white px-4 py-1.5 rounded text-sm hover:bg-accent-ink disabled:bg-paper-2"
               >
                 {saving ? "Sparar..." : "Spara"}
               </button>
               <button
                 onClick={() => setEditing(false)}
-                className="border border-gray-300 px-4 py-1.5 rounded text-sm hover:bg-gray-50"
+                className="border border-rule px-4 py-1.5 rounded text-sm hover:bg-paper-2"
               >
                 Avbryt
               </button>
@@ -146,7 +146,7 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
           ) : (
             <button
               onClick={() => setEditing(true)}
-              className="border border-gray-300 px-4 py-1.5 rounded text-sm hover:bg-gray-50"
+              className="border border-rule px-4 py-1.5 rounded text-sm hover:bg-paper-2"
             >
               Redigera
             </button>
@@ -156,22 +156,22 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
 
       {/* Summary */}
       <section>
-        <h2 className="text-lg font-semibold mb-2">Sammanfattning</h2>
+        <h2 className="text-lg font-display font-normal mb-2">Sammanfattning</h2>
         {editing ? (
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             rows={3}
-            className="w-full border border-gray-300 rounded p-3 text-sm focus:outline-none focus:border-gray-900"
+            className="w-full border border-rule rounded p-3 text-sm focus:outline-none focus:border-accent"
           />
         ) : (
-          <p className="text-gray-700">{consultant.summary || "Ingen sammanfattning"}</p>
+          <p className="text-ink-soft">{consultant.summary || "Ingen sammanfattning"}</p>
         )}
       </section>
 
       {/* Competencies */}
       <section>
-        <h2 className="text-lg font-semibold mb-3">Kompetenser</h2>
+        <h2 className="text-lg font-display font-normal mb-3">Kompetenser</h2>
         <div className="flex flex-wrap gap-2">
           {consultant.consultant_competencies.map((c) => (
             <span
@@ -189,20 +189,20 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
 
       {/* References */}
       <section>
-        <h2 className="text-lg font-semibold mb-3">Uppdrag</h2>
+        <h2 className="text-lg font-display font-normal mb-3">Uppdrag</h2>
         <div className="space-y-3">
           {consultant.consultant_references.map((r) => (
-            <div key={r.id} className="p-4 bg-gray-50 rounded-lg">
+            <div key={r.id} className="p-4 bg-paper-2 rounded-lg">
               <div className="flex items-center justify-between mb-1">
                 <span className="font-medium">{r.title}</span>
-                <div className="flex items-center gap-2 text-xs text-gray-400">
+                <div className="flex items-center gap-2 text-xs text-ink-mute">
                   <span>{r.year}</span>
-                  <span className={r.sector === "public" ? "text-blue-500" : "text-gray-500"}>
+                  <span className={r.sector === "public" ? "text-blue-500" : "text-ink-mute"}>
                     {r.sector === "public" ? "Offentlig" : "Privat"}
                   </span>
                 </div>
               </div>
-              <p className="text-sm text-gray-600">{r.description}</p>
+              <p className="text-sm text-ink-soft">{r.description}</p>
             </div>
           ))}
         </div>
