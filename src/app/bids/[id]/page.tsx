@@ -8,14 +8,14 @@ import { notFound } from "next/navigation";
 
 const DEFAULT_STYLE_GUIDE: StyleGuide = {
   colors: {
-    primary: "#1F5E63",
-    primaryLight: "#2D7A7F",
-    secondary: "#8FAF9A",
-    secondaryLight: "#B3CABA",
-    accent: "#1F5E63",
-    dark: "#1A1A1A",
-    light: "#E8E6DF",
-    muted: "#6B7280",
+    primary: "#7A2230",
+    primaryLight: "#9A3340",
+    secondary: "#BE969A",
+    secondaryLight: "#E0CFD1",
+    accent: "#7A2230",
+    dark: "#14120E",
+    light: "#F3EFE7",
+    muted: "#8A847A",
   },
   font: "Calibri",
   logoUrl: "",
