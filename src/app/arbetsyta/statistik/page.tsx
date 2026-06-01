@@ -37,8 +37,8 @@ export default async function StatistikPage({
                 href={`/arbetsyta/statistik?period=${p.key}`}
                 className={
                   p.key === period
-                    ? "rounded bg-ink px-3 py-1 text-paper"
-                    : "rounded px-3 py-1 text-ink-mute hover:text-ink"
+                    ? "rounded border border-ink bg-ink px-3 py-1 text-paper"
+                    : "rounded border border-rule px-3 py-1 text-ink-mute hover:text-ink hover:border-ink"
                 }
               >
                 {p.label}

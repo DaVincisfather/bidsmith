@@ -195,7 +195,7 @@ export function BidEditor({
       </aside>
 
       {/* Center panel — document view */}
-      <main className="flex-1 overflow-y-auto bg-paper-2">
+      <main className="flex-1 overflow-y-auto bg-white">
         <div className="max-w-3xl mx-auto py-8 px-6 space-y-8">
           {needsTimpris && (
             <div className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
