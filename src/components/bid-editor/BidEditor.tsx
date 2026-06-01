@@ -9,6 +9,7 @@ import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./renderers";
 import { StructureEvalBadge } from "./StructureEvalBadge";
 import { OverflowChecklist } from "./OverflowChecklist";
+import { ForgeLoader } from "../ForgeLoader";
 
 interface BidEditorProps {
   bidId: string;
@@ -204,8 +205,8 @@ export function BidEditor({
           )}
 
           {status === "generating" && sections.length === 0 && (
-            <div className="text-center py-16 text-ink-mute text-sm">
-              Genererar anbudssektioner...
+            <div className="py-16 flex justify-center">
+              <ForgeLoader size={64} />
             </div>
           )}
 
