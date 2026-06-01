@@ -30,28 +30,28 @@ export function OutcomeEnrichmentForm({ outcome, onSave, onSkip }: Props) {
   const showLossFields = outcome === "lost";
 
   return (
-    <div className="bg-white border border-gray-200 rounded-md p-3.5 mt-2 text-sm">
-      <p className="text-xs text-gray-600 italic mb-3">
+    <div className="bg-paper border border-rule rounded-md p-3.5 mt-2 text-sm">
+      <p className="text-xs text-ink-soft italic mb-3">
         💡 Valfria detaljer — tränar modellen. Hoppa över om du inte vet.
       </p>
       <div className="grid grid-cols-2 gap-3">
         {showLossFields && (
           <>
             <label className="block">
-              <span className="block text-xs text-gray-700 mb-1 font-medium">Vem vann?</span>
+              <span className="block text-xs text-ink-soft mb-1 font-medium">Vem vann?</span>
               <input
                 value={competitorName}
                 onChange={(e) => setCompetitorName(e.target.value)}
                 placeholder="Konkurrentens namn"
-                className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                className="w-full px-2 py-1.5 border border-rule rounded text-sm"
               />
             </label>
             <label className="block">
-              <span className="block text-xs text-gray-700 mb-1 font-medium">Varför förlorade vi?</span>
+              <span className="block text-xs text-ink-soft mb-1 font-medium">Varför förlorade vi?</span>
               <select
                 value={lossReason}
                 onChange={(e) => setLossReason(e.target.value as LossReason | "")}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
+                className="w-full px-2 py-1.5 border border-rule rounded text-sm"
               >
                 <option value="">— Välj —</option>
                 {REASONS.map((r) => (
@@ -64,25 +64,25 @@ export function OutcomeEnrichmentForm({ outcome, onSave, onSkip }: Props) {
           </>
         )}
         <label className="block col-span-2">
-          <span className="block text-xs text-gray-700 mb-1 font-medium">Fri kommentar</span>
+          <span className="block text-xs text-ink-soft mb-1 font-medium">Fri kommentar</span>
           <textarea
             value={lossComment}
             onChange={(e) => setLossComment(e.target.value)}
             placeholder="Vad lärde vi oss?"
-            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm min-h-[60px] resize-y"
+            className="w-full px-2 py-1.5 border border-rule rounded text-sm min-h-[60px] resize-y"
           />
         </label>
       </div>
       <div className="flex gap-2 mt-3">
         <button
           onClick={() => onSave({ competitorName, lossReason, lossComment })}
-          className="px-3 py-1.5 bg-black text-white rounded text-xs"
+          className="px-3 py-1.5 bg-ink hover:bg-accent-ink text-white rounded text-xs"
         >
           Spara
         </button>
         <button
           onClick={onSkip}
-          className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded text-xs"
+          className="px-3 py-1.5 border border-rule text-ink-soft rounded text-xs"
         >
           Hoppa över
         </button>

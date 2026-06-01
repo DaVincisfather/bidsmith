@@ -29,13 +29,13 @@ export function PipelineRail() {
   const awaiting = (bidItems ?? []).filter((b) => b.outcome === null);
 
   return (
-    <aside className="bg-[#f8f8f7] border-l border-gray-200 p-4 h-full">
-      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-600 mb-2">
+    <aside className="bg-paper-2 border-l border-rule p-4 h-full">
+      <h3 className="text-[10px] font-bold uppercase tracking-wider text-ink-mute mb-2">
         Pipen {pipeItems && `· ${pipeItems.length} RFPs`}
       </h3>
-      {pipeItems === null && <p className="text-xs text-gray-500">Laddar…</p>}
+      {pipeItems === null && <p className="text-xs text-ink-mute">Laddar…</p>}
       {pipeItems && pipeItems.length === 0 && (
-        <p className="text-xs text-gray-500 italic">
+        <p className="text-xs text-ink-mute italic">
           Inga aktuella RFPs. Ladda upp eller kika på <a href="/radar" className="underline">Radar →</a>
         </p>
       )}
@@ -43,12 +43,12 @@ export function PipelineRail() {
         <PipelineRow key={item.id} item={item} />
       ))}
 
-      <h3 className="text-[10px] font-bold uppercase tracking-wider text-gray-600 mt-6 mb-2">
+      <h3 className="text-[10px] font-bold uppercase tracking-wider text-ink-mute mt-6 mb-2">
         Inlämnade {stats && `· ${stats.awaitingCount + stats.loggedCount} anbud`}
       </h3>
-      {bidItems === null && <p className="text-xs text-gray-500">Laddar…</p>}
+      {bidItems === null && <p className="text-xs text-ink-mute">Laddar…</p>}
       {bidItems && bidItems.length === 0 && (
-        <p className="text-xs text-gray-500 italic">
+        <p className="text-xs text-ink-mute italic">
           Inga inlämnade anbud än. Exporterar du ett anbud hamnar det här.
         </p>
       )}
@@ -66,12 +66,12 @@ export function PipelineRail() {
       )}
 
       {stats && stats.loggedCount > 0 && (
-        <p className="text-[11px] text-gray-500 mt-4 pt-3 border-t border-gray-200 leading-relaxed">
+        <p className="text-[11px] text-ink-mute mt-4 pt-3 border-t border-rule leading-relaxed">
           Du har loggat {stats.loggedCount} utfall — Go/No-Go-rekommendationer är nu kalibrerade mot er firma.
         </p>
       )}
       {stats && stats.loggedCount === 0 && awaiting.length > 0 && (
-        <p className="text-[11px] text-gray-500 mt-4 pt-3 border-t border-gray-200 leading-relaxed">
+        <p className="text-[11px] text-ink-mute mt-4 pt-3 border-t border-rule leading-relaxed">
           Logga ditt första utfall för att börja träna modellen mot er firma.
         </p>
       )}
