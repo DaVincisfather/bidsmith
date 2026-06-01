@@ -63,7 +63,7 @@ export function ConsultantUpload({ onComplete }: ConsultantUploadProps) {
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+        <div className="border-2 border-dashed border-rule rounded-lg p-6 text-center">
           <input
             type="file"
             accept=".docx,.doc,.md,.txt"
@@ -72,20 +72,20 @@ export function ConsultantUpload({ onComplete }: ConsultantUploadProps) {
             className="hidden"
             id="cv-upload"
           />
-          <label htmlFor="cv-upload" className="cursor-pointer text-gray-600 hover:text-gray-900">
+          <label htmlFor="cv-upload" className="cursor-pointer text-ink-soft hover:text-ink">
             {files.length > 0 ? (
               <span className="font-medium">{files.length} fil(er) valda</span>
             ) : (
               <div>
                 <p className="font-medium">Ladda upp CV:n</p>
-                <p className="text-sm text-gray-400 mt-1">Word, Markdown eller textfil. Flera filer samtidigt.</p>
+                <p className="text-sm text-ink-mute mt-1">Word, Markdown eller textfil. Flera filer samtidigt.</p>
               </div>
             )}
           </label>
         </div>
 
         {files.length > 0 && (
-          <ul className="text-sm text-gray-500 space-y-1">
+          <ul className="text-sm text-ink-mute space-y-1">
             {files.map((f, i) => (
               <li key={i}>{f.name}</li>
             ))}
@@ -101,15 +101,15 @@ export function ConsultantUpload({ onComplete }: ConsultantUploadProps) {
         <button
           type="submit"
           disabled={files.length === 0 || loading}
-          className="w-full bg-gray-900 text-white py-2.5 px-6 rounded-lg font-medium
-                     hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-ink text-white py-2.5 px-6 rounded-lg font-medium
+                     hover:bg-accent-ink disabled:bg-paper-2 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? "Extraherar profiler..." : `Ladda upp ${files.length > 0 ? `(${files.length})` : ""}`}
         </button>
       </form>
 
       {progress && (
-        <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-2">
+        <div className="bg-paper-2 p-4 rounded-lg text-sm space-y-2">
           <p className="font-medium">
             {progress.successful} av {progress.total} lyckades
           </p>

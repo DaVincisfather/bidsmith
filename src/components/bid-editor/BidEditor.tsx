@@ -177,12 +177,12 @@ export function BidEditor({
   return (
     <div className="flex h-[calc(100vh-57px)]">
       {/* Left panel — navigation */}
-      <aside className="w-56 shrink-0 border-r border-gray-200 overflow-y-auto p-3">
+      <aside className="w-56 shrink-0 border-r border-rule overflow-y-auto p-3">
         <div className="mb-3 space-y-2">
           <StructureEvalBadge eval={structureEval} />
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase tracking-wide text-gray-400">Sektioner</h2>
-            <span className="text-[10px] text-gray-400">{sections.length}</span>
+            <h2 className="text-xs font-mono font-bold uppercase tracking-wide text-ink-mute">Sektioner</h2>
+            <span className="text-[10px] text-ink-mute">{sections.length}</span>
           </div>
         </div>
         <SectionNav
@@ -195,7 +195,7 @@ export function BidEditor({
       </aside>
 
       {/* Center panel — document view */}
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 overflow-y-auto bg-white">
         <div className="max-w-3xl mx-auto py-8 px-6 space-y-8">
           {needsTimpris && (
             <div className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -204,7 +204,7 @@ export function BidEditor({
           )}
 
           {status === "generating" && sections.length === 0 && (
-            <div className="text-center py-16 text-gray-400 text-sm">
+            <div className="text-center py-16 text-ink-mute text-sm">
               Genererar anbudssektioner...
             </div>
           )}
@@ -236,12 +236,12 @@ export function BidEditor({
 
           {/* Footer actions */}
           {isReady && (
-            <div className="pt-4 border-t border-gray-200">
+            <div className="pt-4 border-t border-rule">
               <button
                 onClick={downloadPptx}
                 disabled={downloading}
-                className="w-full bg-gray-900 text-white px-4 py-3 rounded-lg text-sm font-medium
-                           hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-ink text-white px-4 py-3 rounded-lg text-sm font-medium
+                           hover:bg-accent-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {downloading ? "Exporterar..." : "Ladda ner PowerPoint"}
               </button>
@@ -251,7 +251,7 @@ export function BidEditor({
 
         {/* Saving indicator */}
         {saving && (
-          <div className="fixed bottom-4 right-4 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full">
+          <div className="fixed bottom-4 right-4 bg-ink text-white text-xs px-3 py-1.5 rounded-full">
             Sparar...
           </div>
         )}

@@ -86,7 +86,7 @@ export function OpportunityList() {
             key={tab.key}
             onClick={() => setFilter(tab.key)}
             className={`text-xs px-3 py-1 rounded-full ${
-              filter === tab.key ? "bg-[#1F5E63] text-white" : "bg-[#E8E6DF] text-gray-700"
+              filter === tab.key ? "bg-accent text-paper" : "bg-paper-2 text-ink-soft"
             }`}
           >
             {tab.label} ({tab.count})
@@ -94,11 +94,11 @@ export function OpportunityList() {
         ))}
       </div>
       {loading ? (
-        <div className="text-sm text-gray-500 py-8 text-center">Laddar...</div>
+        <div className="text-sm text-ink-mute py-8 text-center">Laddar...</div>
       ) : opportunities.length === 0 ? (
-        <div className="text-sm text-gray-500 py-8 text-center">Inga upphandlingar att visa.</div>
+        <div className="text-sm text-ink-mute py-8 text-center">Inga upphandlingar att visa.</div>
       ) : (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="border border-rule rounded-lg overflow-hidden">
           {opportunities.map((opp) => (
             <OpportunityRow
               key={opp.id}

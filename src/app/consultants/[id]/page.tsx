@@ -26,11 +26,11 @@ export default async function ConsultantPage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-paper">
       <div className="max-w-2xl mx-auto px-4 py-12">
         <Link
           href="/consultants"
-          className="text-sm text-gray-400 hover:text-gray-600 mb-8 inline-block"
+          className="text-sm text-ink-mute hover:text-ink-soft mb-8 inline-block"
         >
           &larr; Alla konsulter
         </Link>

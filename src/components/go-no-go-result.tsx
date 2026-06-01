@@ -33,7 +33,7 @@ function recommendationColor(rec: GoNoGoRecommendation): string {
 }
 
 function probabilityColor(p: number): string {
-  if (p === 0) return "text-gray-900 bg-gray-100";
+  if (p === 0) return "text-ink bg-paper-2";
   if (p >= 70) return "text-green-700 bg-green-50";
   if (p >= 40) return "text-yellow-700 bg-yellow-50";
   return "text-red-700 bg-red-50";
@@ -50,7 +50,7 @@ export function GoNoGoResultView({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Go/No-Go-bedömning</h3>
+        <h3 className="text-lg font-display font-normal">Go/No-Go-bedömning</h3>
         <span
           className={`px-3 py-1 rounded-full text-sm font-medium border ${recommendationColor(result.recommendation)}`}
         >
@@ -70,7 +70,7 @@ export function GoNoGoResultView({
 
       {/* Must requirements */}
       <div>
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">Ska-krav</h4>
+        <h4 className="text-sm font-semibold text-ink-soft mb-2">Ska-krav</h4>
         <div className="space-y-1">
           {result.mustRequirements.map((req, i) => (
             <div
@@ -85,7 +85,7 @@ export function GoNoGoResultView({
                   {req.requirement}
                 </span>
                 {req.coveredBy && (
-                  <span className="text-gray-500 ml-1">— {req.coveredBy}</span>
+                  <span className="text-ink-mute ml-1">— {req.coveredBy}</span>
                 )}
               </div>
             </div>
@@ -101,10 +101,10 @@ export function GoNoGoResultView({
       {/* Strengths */}
       {result.strengths.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Styrkor</h4>
+          <h4 className="text-sm font-semibold text-ink-soft mb-2">Styrkor</h4>
           <ul className="space-y-1">
             {result.strengths.map((s, i) => (
-              <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+              <li key={i} className="text-sm text-ink-soft flex items-start gap-2">
                 <span className="text-green-500 shrink-0 mt-0.5">+</span>
                 {s}
               </li>
@@ -116,10 +116,10 @@ export function GoNoGoResultView({
       {/* Gaps */}
       {result.gaps.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Luckor</h4>
+          <h4 className="text-sm font-semibold text-ink-soft mb-2">Luckor</h4>
           <ul className="space-y-1">
             {result.gaps.map((g, i) => (
-              <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+              <li key={i} className="text-sm text-ink-soft flex items-start gap-2">
                 <span className="text-red-400 shrink-0 mt-0.5">-</span>
                 {g}
               </li>
@@ -131,7 +131,7 @@ export function GoNoGoResultView({
       {/* Improvement suggestions */}
       {result.improvements.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">
+          <h4 className="text-sm font-semibold text-ink-soft mb-2">
             Förbättringsförslag
           </h4>
           <div className="space-y-2">
@@ -152,24 +152,24 @@ export function GoNoGoResultView({
       )}
 
       {/* Reasoning */}
-      <div className="border-t border-gray-200 pt-4">
-        <p className="text-sm text-gray-600">{result.reasoning}</p>
+      <div className="border-t border-rule pt-4">
+        <p className="text-sm text-ink-soft">{result.reasoning}</p>
       </div>
 
       {/* Actions */}
       <div className="flex gap-3">
         <button
           onClick={onUnlock}
-          className="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium
-                     hover:bg-gray-50 transition-colors"
+          className="flex-1 border border-rule text-ink-soft px-4 py-2 rounded-lg text-sm font-medium
+                     hover:bg-paper-2 transition-colors"
         >
           Tillbaka till team
         </button>
         <button
           onClick={onProceedToBid}
           disabled={bidLoading}
-          className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium
-                     hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          className="flex-1 bg-ink text-white px-4 py-2 rounded-lg text-sm font-medium
+                     hover:bg-accent-ink disabled:bg-rule disabled:cursor-not-allowed transition-colors"
         >
           {bidLoading ? "Genererar anbud..." : "Gå vidare till anbud"}
         </button>

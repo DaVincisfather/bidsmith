@@ -31,11 +31,11 @@ export function SubmittedRow({ bid }: { bid: BidSummary }) {
   return (
     <Link
       href={`/bids/${bid.id}`}
-      className="block bg-[#fafafa] rounded-r mb-1.5 px-3 py-2 hover:bg-gray-100 transition-colors"
+      className="block bg-paper rounded-r mb-1.5 px-3 py-2 hover:bg-paper-2 transition-colors"
       style={{ borderLeft: borderStyle }}
     >
-      <div className="text-sm font-medium text-gray-900 truncate">{bid.title}</div>
-      <div className="text-xs text-gray-600 mt-0.5">
+      <div className="text-sm font-medium text-ink truncate">{bid.title}</div>
+      <div className="text-xs text-ink-soft mt-0.5">
         {outcomeLabel(bid)}
         {bid.outcome === null && ` · ${daysSinceExport(bid.exportedAt)}d sen`}
         {bid.outcome === "lost" && bid.competitorName && ` · mot ${bid.competitorName}`}

@@ -27,7 +27,7 @@ function scoreColor(score: number): string {
   if (score >= 80) return "bg-green-100 text-green-700";
   if (score >= 60) return "bg-blue-100 text-blue-700";
   if (score >= 40) return "bg-yellow-100 text-yellow-700";
-  return "bg-gray-100 text-gray-500";
+  return "bg-paper-2 text-ink-mute";
 }
 
 export function TeamProposal({
@@ -52,8 +52,8 @@ export function TeamProposal({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Teamförslag</h3>
-        <span className="text-sm text-gray-500">
+        <h3 className="text-lg font-display font-normal">Teamförslag</h3>
+        <span className="text-sm text-ink-mute">
           {teamCount} konsult{teamCount !== 1 ? "er" : ""} valda
         </span>
       </div>
@@ -63,15 +63,15 @@ export function TeamProposal({
         if (!consultants || consultants.length === 0) return null;
 
         return (
-          <div key={level} className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="px-4 py-2 bg-gray-50 flex items-center justify-between">
+          <div key={level} className="border border-rule rounded-lg overflow-hidden">
+            <div className="px-4 py-2 bg-paper-2 flex items-center justify-between">
               <span className="font-medium text-sm">{LEVEL_LABELS[level]}</span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-ink-mute">
                 {consultants.filter((c) => selectedIds.has(c.consultantId)).length} / {consultants.length}
               </span>
             </div>
 
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-rule">
               {consultants.map((c) => {
                 const selected = selectedIds.has(c.consultantId);
                 return (
@@ -90,7 +90,7 @@ export function TeamProposal({
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm ${selected ? "font-medium" : "text-gray-600"}`}>
+                        <span className={`text-sm ${selected ? "font-medium" : "text-ink-soft"}`}>
                           {c.consultantName}
                         </span>
                         <span className={`text-xs font-mono px-2 py-0.5 rounded shrink-0 ${scoreColor(c.score)}`}>
@@ -98,7 +98,7 @@ export function TeamProposal({
                         </span>
                       </div>
                       {selected && (
-                        <p className="text-sm text-gray-500 mt-1">{c.reasoning}</p>
+                        <p className="text-sm text-ink-mute mt-1">{c.reasoning}</p>
                       )}
                     </div>
                   </div>

@@ -28,26 +28,26 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
     <div className="space-y-10">
       {/* Header */}
       <header>
-        <p className="text-xs font-mono text-gray-400 mb-2">{fileName}</p>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+        <p className="text-xs font-mono text-ink-mute mb-2">{fileName}</p>
+        <h1 className="text-3xl font-display font-normal tracking-tight text-ink">
           {analysis.title}
         </h1>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {analysis.client && (
-            <span className="text-gray-600">
-              <span className="text-gray-400">Kund</span>{" "}
+            <span className="text-ink-soft">
+              <span className="text-ink-mute">Kund</span>{" "}
               <span className="font-medium">{analysis.client}</span>
             </span>
           )}
           {analysis.deadline && (
-            <span className="text-gray-600">
-              <span className="text-gray-400">Deadline</span>{" "}
+            <span className="text-ink-soft">
+              <span className="text-ink-mute">Deadline</span>{" "}
               <span className="font-medium">{analysis.deadline}</span>
             </span>
           )}
           {analysis.estimatedScope && (
-            <span className="text-gray-600">
-              <span className="text-gray-400">Omfattning</span>{" "}
+            <span className="text-ink-soft">
+              <span className="text-ink-mute">Omfattning</span>{" "}
               <span className="font-medium">{analysis.estimatedScope}</span>
             </span>
           )}
@@ -56,19 +56,19 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
 
       {/* Sammanfattning — callout, drar blicken */}
       <section>
-        <div className="border-l-2 border-gray-900 pl-5 py-1">
-          <p className="text-base leading-relaxed text-gray-900">
+        <div className="border-l-2 border-accent pl-5 py-1">
+          <p className="text-base leading-relaxed text-ink">
             {analysis.summary}
           </p>
           {expanded && hasBackground && (
-            <p className="text-sm leading-relaxed text-gray-700 mt-3">
+            <p className="text-sm leading-relaxed text-ink-soft mt-3">
               {analysis.background}
             </p>
           )}
           {hasBackground && (
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="mt-3 text-xs text-gray-500 hover:text-gray-900 underline-offset-2 hover:underline"
+              className="mt-3 text-xs text-ink-mute hover:text-ink underline-offset-2 hover:underline"
             >
               {expanded ? "Visa mindre" : "Se mer"}
             </button>
@@ -79,28 +79,28 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
       {/* Kravmatris */}
       <section>
         <div className="flex items-baseline justify-between mb-3">
-          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+          <h2 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-ink-mute">
             Kravmatris
           </h2>
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-ink-mute">
             {analysis.requirements.length} krav
           </span>
         </div>
-        <div className="border-t border-gray-100">
+        <div className="border-t border-rule">
           {analysis.requirements.map((req, i) => (
             <div
               key={i}
-              className="border-b border-gray-100 py-3 grid grid-cols-[84px_1fr] sm:grid-cols-[84px_140px_1fr] gap-x-4 gap-y-1 items-start"
+              className="border-b border-rule py-3 grid grid-cols-[84px_1fr] sm:grid-cols-[84px_140px_1fr] gap-x-4 gap-y-1 items-start"
             >
               <span
-                className={`text-[11px] font-medium px-2 py-0.5 rounded border inline-flex items-center justify-center w-fit ${PRIORITY_CLASSES[req.priority] ?? "bg-gray-50 text-gray-700 border-gray-100"}`}
+                className={`text-[11px] font-medium px-2 py-0.5 rounded border inline-flex items-center justify-center w-fit ${PRIORITY_CLASSES[req.priority] ?? "bg-paper-2 text-ink-soft border-rule"}`}
               >
                 {PRIORITY_LABELS[req.priority] ?? req.priority}
               </span>
-              <span className="hidden sm:block text-xs text-gray-500 pt-1">
+              <span className="hidden sm:block text-xs text-ink-mute pt-1">
                 {req.category}
               </span>
-              <p className="col-span-2 sm:col-span-1 text-sm text-gray-800 leading-relaxed">
+              <p className="col-span-2 sm:col-span-1 text-sm text-ink-soft leading-relaxed">
                 {req.description}
               </p>
             </div>
@@ -111,23 +111,23 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
       {/* Utvärderingskriterier */}
       {analysis.evaluationCriteria.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-3">
+          <h2 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-ink-mute mb-3">
             Utvärderingskriterier
           </h2>
-          <div className="border-t border-gray-100">
+          <div className="border-t border-rule">
             {analysis.evaluationCriteria.map((crit, i) => (
               <div
                 key={i}
-                className="border-b border-gray-100 py-3 flex items-start gap-4"
+                className="border-b border-rule py-3 flex items-start gap-4"
               >
-                <span className="text-xs font-mono text-gray-500 w-12 shrink-0 pt-1">
+                <span className="text-xs font-mono text-ink-mute w-12 shrink-0 pt-1">
                   {crit.weight}%
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-ink">
                     {crit.name}
                   </p>
-                  <p className="text-sm text-gray-600 mt-0.5 leading-relaxed">
+                  <p className="text-sm text-ink-soft mt-0.5 leading-relaxed">
                     {crit.description}
                   </p>
                 </div>
@@ -140,14 +140,14 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
       {/* Kompetenser */}
       {analysis.requiredCompetencies.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-3">
+          <h2 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-ink-mute mb-3">
             Efterfrågade kompetenser
           </h2>
           <div className="flex flex-wrap gap-1.5">
             {analysis.requiredCompetencies.map((comp, i) => (
               <span
                 key={i}
-                className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded"
+                className="text-xs text-ink-soft bg-paper-2 px-2 py-1 rounded"
               >
                 {comp}
               </span>
@@ -159,12 +159,12 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
       {/* Att observera */}
       {analysis.redFlags.length > 0 && (
         <section>
-          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-3">
+          <h2 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-ink-mute mb-3">
             Att observera
           </h2>
           <div className="border-l-2 border-amber-400 pl-4 space-y-2">
             {analysis.redFlags.map((flag, i) => (
-              <p key={i} className="text-sm text-gray-800 leading-relaxed">
+              <p key={i} className="text-sm text-ink-soft leading-relaxed">
                 {flag}
               </p>
             ))}

@@ -4,7 +4,7 @@ import { ExecutionPhase, StyleGuide } from "@/lib/types";
 import type { FieldBudgets } from "@/lib/pptx-template/budget-types";
 import { EditableText } from "../EditableText";
 
-const PHASE_COLORS = ["#1F5E63", "#8FAF9A", "#2D7A7F", "#5B8A72", "#3D8A8A"];
+const PHASE_COLORS = ["#7A2230", "#9A3340", "#B65560", "#5E1822", "#C98A90"];
 
 interface PhasesRendererProps {
   phases: ExecutionPhase[];

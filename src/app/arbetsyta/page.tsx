@@ -13,23 +13,23 @@ export default async function ArbetsytaPage() {
   ]);
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-paper">
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-2xl font-bold mb-8">Arbetsyta</h1>
+        <h1 className="text-2xl font-display font-normal mb-8">Arbetsyta</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <Link
             href="/consultants"
-            className="block rounded-lg border border-gray-200 p-6 hover:border-gray-400"
+            className="block rounded-lg border border-rule p-6 hover:border-accent"
           >
-            <h2 className="text-lg font-semibold">Konsulter</h2>
-            <p className="mt-1 text-sm text-gray-500">{count ?? 0} konsulter</p>
+            <h2 className="text-lg font-display font-normal">Konsulter</h2>
+            <p className="mt-1 text-sm text-ink-mute">{count ?? 0} konsulter</p>
           </Link>
           <Link
             href="/arbetsyta/statistik"
-            className="block rounded-lg border border-gray-200 p-6 hover:border-gray-400"
+            className="block rounded-lg border border-rule p-6 hover:border-accent"
           >
-            <h2 className="text-lg font-semibold">Statistik</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-lg font-display font-normal">Statistik</h2>
+            <p className="mt-1 text-sm text-ink-mute">
               {formatUsd(stats.totalCostUsd)} · {stats.bidsSubmitted} anbud
             </p>
           </Link>

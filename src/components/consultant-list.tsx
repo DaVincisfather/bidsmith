@@ -52,7 +52,7 @@ export function ConsultantList({ initialData }: ConsultantListProps) {
         <select
           value={filterLevel}
           onChange={(e) => setFilterLevel(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-1.5 text-sm"
+          className="border border-rule rounded px-3 py-1.5 text-sm"
         >
           <option value="">Alla nivåer</option>
           <option value="junior">Junior</option>
@@ -65,34 +65,34 @@ export function ConsultantList({ initialData }: ConsultantListProps) {
           placeholder="Filtrera kompetens..."
           value={filterCompetency}
           onChange={(e) => setFilterCompetency(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-1.5 text-sm flex-1"
+          className="border border-rule rounded px-3 py-1.5 text-sm flex-1"
         />
       </div>
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <p className="text-gray-400 text-sm py-8 text-center">
+        <p className="text-ink-mute text-sm py-8 text-center">
           {initialData.length === 0
             ? "Inga konsulter ännu. Ladda upp CV:n för att börja."
             : "Inga konsulter matchar filtret."}
         </p>
       ) : (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="border border-rule rounded-lg overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-paper-2">
               <tr>
-                <th className="text-left px-4 py-2 font-medium text-gray-600">Namn</th>
-                <th className="text-left px-4 py-2 font-medium text-gray-600">Nivå</th>
-                <th className="text-left px-4 py-2 font-medium text-gray-600">Kompetenser</th>
+                <th className="text-left px-4 py-2 font-medium text-ink-soft">Namn</th>
+                <th className="text-left px-4 py-2 font-medium text-ink-soft">Nivå</th>
+                <th className="text-left px-4 py-2 font-medium text-ink-soft">Kompetenser</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-rule">
               {filtered.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50">
+                <tr key={c.id} className="hover:bg-paper-2">
                   <td className="px-4 py-3">
                     <Link
                       href={`/consultants/${c.id}`}
-                      className="font-medium text-gray-900 hover:underline"
+                      className="font-medium text-ink hover:underline"
                     >
                       {c.name}
                     </Link>
@@ -105,12 +105,12 @@ export function ConsultantList({ initialData }: ConsultantListProps) {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {c.consultant_competencies.slice(0, 4).map((cc, i) => (
-                        <span key={i} className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
+                        <span key={i} className="bg-paper-2 text-ink-soft px-2 py-0.5 rounded text-xs">
                           {cc.competency}
                         </span>
                       ))}
                       {c.consultant_competencies.length > 4 && (
-                        <span className="text-gray-400 text-xs">
+                        <span className="text-ink-mute text-xs">
                           +{c.consultant_competencies.length - 4}
                         </span>
                       )}

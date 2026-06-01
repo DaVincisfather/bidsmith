@@ -67,7 +67,7 @@ export function EditableText({
       suppressContentEditableWarning
       onInput={handleInput}
       onBlur={handleBlur}
-      className={`outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-1 rounded px-0.5 -mx-0.5 ${className}`}
+      className={`outline-none focus:ring-2 focus:ring-accent-soft focus:ring-offset-1 rounded px-0.5 -mx-0.5 ${className}`}
       data-placeholder={placeholder}
       data-field-path={dataFieldPath}
       style={style}
@@ -94,7 +94,7 @@ export function EditableText({
       <span
         data-testid="char-counter"
         className={`absolute -bottom-4 right-0 text-[10px] tabular-nums ${
-          length > budget ? "text-red-600 font-medium" : "text-gray-400"
+          length > budget ? "text-red-600 font-medium" : "text-ink-mute"
         }`}
       >
         {length}/{budget}
