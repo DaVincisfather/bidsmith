@@ -175,7 +175,7 @@ export function AnalysisMatchSection({
   return (
     <div className="border-t border-rule pt-8 mt-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Teammatchning</h2>
+        <h2 className="text-xl font-display font-normal">Teammatchning</h2>
         {!teamLocked && (
           <button
             onClick={triggerMatching}

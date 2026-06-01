@@ -52,7 +52,7 @@ export function TeamProposal({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Teamförslag</h3>
+        <h3 className="text-lg font-display font-normal">Teamförslag</h3>
         <span className="text-sm text-ink-mute">
           {teamCount} konsult{teamCount !== 1 ? "er" : ""} valda
         </span>

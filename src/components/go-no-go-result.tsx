@@ -50,7 +50,7 @@ export function GoNoGoResultView({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Go/No-Go-bedömning</h3>
+        <h3 className="text-lg font-display font-normal">Go/No-Go-bedömning</h3>
         <span
           className={`px-3 py-1 rounded-full text-sm font-medium border ${recommendationColor(result.recommendation)}`}
         >
