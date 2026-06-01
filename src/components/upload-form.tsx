@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ForgeLoader } from "./ForgeLoader";
 
 export function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
@@ -37,6 +38,14 @@ export function UploadForm() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="py-16 flex justify-center">
+        <ForgeLoader size={72} />
+      </div>
+    );
   }
 
   return (

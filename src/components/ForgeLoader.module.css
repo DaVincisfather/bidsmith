@@ -1,0 +1,87 @@
+/* ForgeLoader — alternating hammer strikes (right / left), fading in/out between blows.
+   Tokens (--accent etc.) come from globals.css. */
+
+.wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7em;
+}
+
+.svg {
+  display: block;
+  overflow: visible;
+}
+
+.anvil {
+  transform-box: view-box;
+  transform-origin: 100px 110px;
+  animation: fl-anvil 1.3s ease-in-out infinite;
+}
+.anvil * { stroke: var(--accent); }
+
+.hammer {
+  transform-box: view-box;
+  transform-origin: 156px 81px;
+  animation: fl-strike 2.6s linear infinite;
+}
+
+.sparks {
+  transform-box: view-box;
+  transform-origin: 96px 80px;
+  animation: fl-spark 2.6s linear infinite;
+}
+.sparks line { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+
+/* left striker: same timeline, mirrored about x=100, offset by half so blows alternate */
+.mirror {
+  transform-box: view-box;
+  transform: translate(200px, 0) scale(-1, 1);
+}
+.mirror .hammer,
+.mirror .sparks { animation-delay: 1.3s; }
+
+.label {
+  font-family: "Fraunces", serif;
+  font-style: italic;
+  font-size: 1em;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+}
+.dots { margin-left: 0.05em; }
+.dot { animation: fl-dot 1.3s infinite; }
+.dot:nth-child(2) { animation-delay: 0.18s; }
+.dot:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes fl-strike {
+  0%   { opacity: 0; transform: translateY(-13px) rotate(20deg); }
+  7%   { opacity: 1; transform: translateY(-12px) rotate(16deg); }
+  18%  { opacity: 1; transform: translateY(-12px) rotate(16deg); }
+  30%  { opacity: 1; transform: translateY(6px)  rotate(-99deg); }
+  35%  { opacity: 1; transform: translateY(2px)  rotate(-90deg); }
+  42%  { opacity: 1; transform: translateY(-7px) rotate(-58deg); }
+  49%  { opacity: 0; transform: translateY(-13px) rotate(18deg); }
+  100% { opacity: 0; transform: translateY(-13px) rotate(20deg); }
+}
+@keyframes fl-spark {
+  0%, 27% { opacity: 0; transform: scale(0.2); }
+  31%     { opacity: 1; transform: scale(1); }
+  45%     { opacity: 0; transform: scale(1.7); }
+  100%    { opacity: 0; }
+}
+@keyframes fl-anvil {
+  0%, 54% { transform: translateY(0); }
+  61%     { transform: translateY(2.5px); }
+  72%     { transform: translateY(0); }
+  100%    { transform: translateY(0); }
+}
+@keyframes fl-dot {
+  0%, 80%, 100% { opacity: 0.25; }
+  40%           { opacity: 1; }
+}
+
+/* respect reduced-motion: drop the swing, keep a calm single anvil + static hammer */
+@media (prefers-reduced-motion: reduce) {
+  .hammer, .sparks, .anvil, .dot { animation: none; }
+  .mirror { display: none; }
+}

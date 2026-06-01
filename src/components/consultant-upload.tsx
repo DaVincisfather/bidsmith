@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ForgeLoader } from "./ForgeLoader";
 
 interface UploadResult {
   fileName: string;
@@ -62,6 +63,11 @@ export function ConsultantUpload({ onComplete }: ConsultantUploadProps) {
 
   return (
     <div className="space-y-4">
+      {loading ? (
+        <div className="py-12 flex justify-center">
+          <ForgeLoader size={64} />
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="border-2 border-dashed border-rule rounded-lg p-6 text-center">
           <input
@@ -107,6 +113,7 @@ export function ConsultantUpload({ onComplete }: ConsultantUploadProps) {
           {loading ? "Extraherar profiler..." : `Ladda upp ${files.length > 0 ? `(${files.length})` : ""}`}
         </button>
       </form>
+      )}
 
       {progress && (
         <div className="bg-paper-2 p-4 rounded-lg text-sm space-y-2">

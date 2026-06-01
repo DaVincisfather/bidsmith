@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TeamProposal } from "./team-proposal";
 import { GoNoGoResultView } from "./go-no-go-result";
 import { GoNoGoResult } from "@/lib/types";
+import { ForgeLoader } from "./ForgeLoader";
 
 interface ScoredConsultant {
   consultantId: string;
@@ -219,8 +220,8 @@ export function AnalysisMatchSection({
           )}
 
           {goNoGoLoading && (
-            <div className="text-center py-8 text-ink-mute text-sm">
-              Analyserar teamets chanser...
+            <div className="py-8 flex justify-center">
+              <ForgeLoader />
             </div>
           )}
 
@@ -235,11 +236,17 @@ export function AnalysisMatchSection({
           )}
 
           {bidLoading && (
-            <div className="text-center py-8 text-ink-mute text-sm">
-              Skapar anbud och genererar sektioner...
+            <div className="py-8 flex justify-center">
+              <ForgeLoader />
             </div>
           )}
         </>
+      )}
+
+      {loading && !match && (
+        <div className="py-8 flex justify-center">
+          <ForgeLoader />
+        </div>
       )}
 
       {!match && !loading && (
