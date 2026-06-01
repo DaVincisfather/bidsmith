@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Bidsmith palette — Junto DNA, burgundy */
+  --paper: #faf8f4;
+  --paper-2: #f3efe7;
+  --ink: #14120e;
+  --ink-soft: #4a463e;
+  --ink-mute: #8a847a;
+  --rule: #e4dfd4;
+  --accent: oklch(0.42 0.12 25);
+  --accent-ink: oklch(0.32 0.1 25);
+  --accent-soft: oklch(0.94 0.02 25);
+
+  /* semantic — meaning preserved */
   --urgency-urgent: #dc2626;
   --urgency-soon: #d97706;
   --urgency-later: #10b981;
@@ -13,21 +23,25 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-mute: var(--ink-mute);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter-tight);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
 }
