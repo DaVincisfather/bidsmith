@@ -69,26 +69,26 @@ function SortableItem({
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer group transition-colors ${
-        isActive ? "bg-gray-100 font-medium" : "hover:bg-gray-50"
+        isActive ? "bg-paper-2 font-medium" : "hover:bg-paper-2"
       }`}
       onClick={onClick}
     >
       <span
         {...attributes}
         {...listeners}
-        className="cursor-grab text-gray-400 hover:text-gray-600"
+        className="cursor-grab text-ink-mute hover:text-ink-soft"
         title="Dra för att flytta"
       >
         &#x2630;
       </span>
-      <span className="text-gray-400 text-xs w-4 text-center">{icon}</span>
+      <span className="text-ink-mute text-xs w-4 text-center">{icon}</span>
       <span className="truncate flex-1">{section.title}</span>
       <button
         onClick={(e) => {
           e.stopPropagation();
           onRemove();
         }}
-        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity text-xs"
+        className="opacity-0 group-hover:opacity-100 text-ink-mute hover:text-red-500 transition-opacity text-xs"
         title="Ta bort"
       >
         &times;
