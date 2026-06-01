@@ -41,7 +41,7 @@ export function UploadForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+      <div className="border-2 border-dashed border-rule rounded-lg p-8 text-center">
         <input
           type="file"
           accept=".pdf,.docx,.doc,.md,.txt"
@@ -51,7 +51,7 @@ export function UploadForm() {
         />
         <label
           htmlFor="file-upload"
-          className="cursor-pointer text-gray-600 hover:text-gray-900"
+          className="cursor-pointer text-ink-soft hover:text-ink"
         >
           {file ? (
             <span className="text-lg font-medium">{file.name}</span>
@@ -60,7 +60,7 @@ export function UploadForm() {
               <p className="text-lg font-medium">
                 Ladda upp ett förfrågningsunderlag
               </p>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-ink-mute mt-1">
                 PDF, Word, Markdown eller textfil
               </p>
             </div>
@@ -77,8 +77,8 @@ export function UploadForm() {
       <button
         type="submit"
         disabled={!file || loading}
-        className="w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-medium
-                   hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed
+        className="w-full bg-ink text-white py-3 px-6 rounded-lg font-medium
+                   hover:bg-accent-ink disabled:bg-rule disabled:cursor-not-allowed
                    transition-colors"
       >
         {loading ? "Analyserar..." : "Analysera"}

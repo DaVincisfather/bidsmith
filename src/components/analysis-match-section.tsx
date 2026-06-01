@@ -173,15 +173,15 @@ export function AnalysisMatchSection({
   }
 
   return (
-    <div className="border-t border-gray-200 pt-8 mt-8 space-y-6">
+    <div className="border-t border-rule pt-8 mt-8 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Teammatchning</h2>
         {!teamLocked && (
           <button
             onClick={triggerMatching}
             disabled={loading}
-            className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium
-                       hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="bg-ink text-white px-4 py-2 rounded-lg text-sm font-medium
+                       hover:bg-accent-ink disabled:bg-rule disabled:cursor-not-allowed transition-colors"
           >
             {loading
               ? "Matchar..."
@@ -211,15 +211,15 @@ export function AnalysisMatchSection({
             <button
               onClick={lockTeamAndEvaluate}
               disabled={selectedIds.size === 0}
-              className="w-full border-2 border-dashed border-gray-300 text-gray-600 px-4 py-3 rounded-lg text-sm font-medium
-                         hover:border-gray-400 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full border-2 border-dashed border-rule text-ink-soft px-4 py-3 rounded-lg text-sm font-medium
+                         hover:border-accent hover:text-ink disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Lås team ({selectedIds.size} valda) och kör Go/No-Go-analys
             </button>
           )}
 
           {goNoGoLoading && (
-            <div className="text-center py-8 text-gray-400 text-sm">
+            <div className="text-center py-8 text-ink-mute text-sm">
               Analyserar teamets chanser...
             </div>
           )}
@@ -235,7 +235,7 @@ export function AnalysisMatchSection({
           )}
 
           {bidLoading && (
-            <div className="text-center py-8 text-gray-400 text-sm">
+            <div className="text-center py-8 text-ink-mute text-sm">
               Skapar anbud och genererar sektioner...
             </div>
           )}
@@ -243,7 +243,7 @@ export function AnalysisMatchSection({
       )}
 
       {!match && !loading && (
-        <p className="text-gray-400 text-sm text-center py-8">
+        <p className="text-ink-mute text-sm text-center py-8">
           Klicka &quot;Matcha konsulter&quot; för att generera ett teamförslag.
         </p>
       )}
