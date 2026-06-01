@@ -115,7 +115,7 @@ export function OutcomeSheet({ awaiting, onClose, onCommitted }: Props) {
                     <button
                       disabled={savingId === bid.id}
                       onClick={() => commitOutcome(bid.id, "lost")}
-                      className="px-3 py-1.5 bg-white text-red-600 border border-red-600 rounded text-xs disabled:opacity-50"
+                      className="px-3 py-1.5 bg-paper text-red-600 border border-red-600 rounded text-xs disabled:opacity-50"
                     >
                       Förlorad
                     </button>

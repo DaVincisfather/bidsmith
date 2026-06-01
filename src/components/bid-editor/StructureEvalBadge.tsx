@@ -17,7 +17,7 @@ export function StructureEvalBadge({ eval: structureEval }: StructureEvalBadgePr
   if (!structureEval) {
     return (
       <div
-        className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500"
+        className="inline-flex items-center gap-1.5 rounded-full bg-paper-2 px-2 py-0.5 text-[10px] font-medium text-ink-mute"
         title="Strukturutvärdering körs inte för detta anbud (skapat före runtime-evaluator)."
       >
         Struktur: ej utvärderad
