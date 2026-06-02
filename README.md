@@ -1,6 +1,18 @@
-# Bidsmith
+<h1>
+  <img src="docs/brand/mark.svg" alt="" height="32" valign="middle" />
+  &nbsp;Bidsmith
+</h1>
 
 **From a public tender to a first-draft proposal — forged in minutes, finished by a senior consultant.**
+
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-3178c6.svg)](LICENSE)
+![Next.js 16](https://img.shields.io/badge/Next.js-16-000000.svg)
+![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)
+![PRs welcome](https://img.shields.io/badge/PRs-welcome-842D2A.svg)
+
+<p align="center">
+  <img src="docs/screenshots/hero.png" alt="Bidsmith — reading a tender and drafting the proposal" width="860" />
+</p>
 
 Bidsmith is an AI agent for consulting firms that turns a request for proposal (RFP)
 plus your consultant profiles into a structured, editable bid draft. It does the
@@ -18,9 +30,9 @@ Built for mid-sized management and IT consultancies (≈20–100 consultants).
 
 ## What it does
 
-Bidsmith runs a tender through a pipeline of focused AI steps. Each step receives the
-*compressed output* of the previous one — not the raw documents — which keeps prompts
-tight and cost predictable.
+Bidsmith puts a tender on the anvil and works it through a sequence of focused AI
+steps. Each step receives the *compressed output* of the previous one — not the raw
+documents — which keeps prompts tight and cost predictable.
 
 1. **Requirement analysis** — parses the RFP and extracts structured requirements.
 2. **Consultant matching** — ranks your consultant pool against those requirements.
@@ -31,6 +43,17 @@ tight and cost predictable.
 
 A built-in **bid editor** lets the consultant edit every section inline, with overflow
 checks against the template's layout budget so the exported deck stays clean.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/matching.png" alt="Consultant matching ranked against the tender requirements" /></td>
+<td width="50%"><img src="docs/screenshots/matrix.png" alt="Requirement matrix extracted from the RFP" /></td>
+</tr>
+<tr>
+<td align="center"><sub><b>Consultant matching</b> — your pool ranked against the tender, with a per-fit score and rationale</sub></td>
+<td align="center"><sub><b>Requirement matrix</b> — must / should requirements extracted straight from the RFP</sub></td>
+</tr>
+</table>
 
 ## How it's built
 
@@ -89,6 +112,12 @@ evals/                      Offline evaluation harness
 supabase/migrations/        Database schema
 docs/architecture.html      Architecture overview
 ```
+
+## Contributing
+
+Bidsmith is open source and contributions are welcome. Open an issue to discuss a
+change, or send a pull request against `main`. Keep changes focused, match the existing
+style, and run the evaluators before submitting.
 
 ## A note on data
 
