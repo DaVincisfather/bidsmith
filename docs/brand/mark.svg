@@ -1,0 +1,10 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bidsmith anvil mark">
+  <g fill="none" stroke="#842D2A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- thin concentric outer rings (Junto seal family) -->
+    <circle cx="100" cy="100" r="92" stroke-width="2"/>
+    <circle cx="100" cy="100" r="80" stroke-width="1"/>
+    <!-- anvil silhouette: flat top face, pointed horn (right), stepped step (left),
+         narrow waist, splayed base. One closed monoline path. -->
+    <path d="M62 82 L120 82 L138 84 L152 91 L138 96 L120 98 L116 98 L116 104 L122 104 L118 118 L126 118 L132 132 L68 132 L74 118 L82 118 L78 104 L84 104 L84 90 L62 90 Z"/>
+  </g>
+</svg>
