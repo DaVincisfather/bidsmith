@@ -3,6 +3,19 @@ import { createServiceClient } from "@/lib/supabase";
 
 export type StatsPeriod = "all" | "30d" | "ytd";
 
+export interface PendingBid {
+  id: string;
+  title: string;
+  status: "draft" | "exported";
+}
+
+export interface PendingRow {
+  id: string;
+  created_by: string | null;
+  status: "draft" | "exported";
+  title: string;
+}
+
 export interface UserStats {
   userId: string;
   email: string;
@@ -11,6 +24,7 @@ export interface UserStats {
   wins: number;
   losses: number;
   winRate: number | null;
+  pending: PendingBid[];
 }
 
 export interface WorkspaceStats {
@@ -20,6 +34,7 @@ export interface WorkspaceStats {
   wins: number;
   losses: number;
   winRate: number | null;
+  pendingCount: number;
   perUser: UserStats[];
 }
 
@@ -67,16 +82,17 @@ export function aggregate(
   costRows: CostRow[],
   bidRows: BidRow[],
   emailById: Map<string, string>,
-  period: StatsPeriod
+  period: StatsPeriod,
+  pendingRows: PendingRow[] = []
 ): WorkspaceStats {
   const byUser = new Map<
     string,
-    { costUsd: number; bidsSubmitted: number; wins: number; losses: number }
+    { costUsd: number; bidsSubmitted: number; wins: number; losses: number; pending: PendingBid[] }
   >();
   const ensure = (id: string) => {
     let u = byUser.get(id);
     if (!u) {
-      u = { costUsd: 0, bidsSubmitted: 0, wins: 0, losses: 0 };
+      u = { costUsd: 0, bidsSubmitted: 0, wins: 0, losses: 0, pending: [] };
       byUser.set(id, u);
     }
     return u;
@@ -93,6 +109,13 @@ export function aggregate(
     if (r.outcome === "won") u.wins += 1;
     else if (r.outcome === "lost") u.losses += 1;
   }
+  for (const r of pendingRows) {
+    ensure(r.created_by ?? UNKNOWN_USER).pending.push({
+      id: r.id,
+      title: r.title,
+      status: r.status,
+    });
+  }
 
   const perUser: UserStats[] = [...byUser.entries()]
     .map(([userId, u]) => ({
@@ -106,6 +129,7 @@ export function aggregate(
       wins: u.wins,
       losses: u.losses,
       winRate: winRate(u.wins, u.losses),
+      pending: u.pending,
     }))
     .sort((a, b) => b.costUsd - a.costUsd);
 
@@ -113,6 +137,7 @@ export function aggregate(
   const bidsSubmitted = perUser.reduce((s, u) => s + u.bidsSubmitted, 0);
   const wins = perUser.reduce((s, u) => s + u.wins, 0);
   const losses = perUser.reduce((s, u) => s + u.losses, 0);
+  const pendingCount = pendingRows.length;
 
   return {
     period,
@@ -121,6 +146,7 @@ export function aggregate(
     wins,
     losses,
     winRate: winRate(wins, losses),
+    pendingCount,
     perUser,
   };
 }

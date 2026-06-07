@@ -131,6 +131,44 @@ describe("aggregate", () => {
     expect(unknown?.costUsd).toBe(5);
     expect(unknown?.wins).toBe(1);
   });
+
+  it("buckets pending bids per user and counts the total", () => {
+    const pending = [
+      { id: "b1", created_by: "user-aaaa1111", status: "draft" as const, title: "RFP Alfa" },
+      { id: "b2", created_by: "user-aaaa1111", status: "exported" as const, title: "RFP Beta" },
+      { id: "b3", created_by: "user-bbbb2222", status: "draft" as const, title: "RFP Gamma" },
+    ];
+    const result = aggregate([], [], emails, "all", pending);
+
+    expect(result.pendingCount).toBe(3);
+    const a = result.perUser.find((u) => u.userId === "user-aaaa1111");
+    expect(a?.pending.map((p) => p.title)).toEqual(["RFP Alfa", "RFP Beta"]);
+    const b = result.perUser.find((u) => u.userId === "user-bbbb2222");
+    expect(b?.pending).toEqual([{ id: "b3", title: "RFP Gamma", status: "draft" }]);
+  });
+
+  it("pending bids do not affect bidsSubmitted / wins / losses", () => {
+    const result = aggregate(
+      [],
+      [{ created_by: "user-aaaa1111", outcome: "won" }],
+      emails,
+      "all",
+      [{ id: "b1", created_by: "user-aaaa1111", status: "draft" as const, title: "RFP X" }]
+    );
+    expect(result.bidsSubmitted).toBe(1);
+    expect(result.wins).toBe(1);
+    expect(result.perUser.find((u) => u.userId === "user-aaaa1111")?.pending).toHaveLength(1);
+  });
+
+  it("buckets pending with null created_by as 'Okänd' and surfaces pending-only users", () => {
+    const result = aggregate([], [], emails, "all", [
+      { id: "b1", created_by: null, status: "exported" as const, title: "RFP Noll" },
+    ]);
+    const unknown = result.perUser.find((u) => u.userId === "unknown");
+    expect(unknown?.email).toBe("Okänd");
+    expect(unknown?.pending).toHaveLength(1);
+    expect(unknown?.costUsd).toBe(0);
+  });
 });
 
 describe("getWorkspaceStats", () => {
