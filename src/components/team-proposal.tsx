@@ -97,7 +97,7 @@ export function TeamProposal({
                           {c.score}/100
                         </span>
                       </div>
-                      {selected && (
+                      {selected && c.reasoning && (
                         <p className="text-sm text-ink-mute mt-1">{c.reasoning}</p>
                       )}
                     </div>
