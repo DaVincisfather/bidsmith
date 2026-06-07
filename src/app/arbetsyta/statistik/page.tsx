@@ -6,6 +6,7 @@ import {
   formatPct,
   type StatsPeriod,
 } from "@/lib/stats";
+import { StatsTable } from "./StatsTable";
 
 // Reads live workspace data (also implicitly dynamic via searchParams); be explicit.
 export const dynamic = "force-dynamic";
@@ -49,41 +50,11 @@ export default async function StatistikPage({
 
         <p className="mb-8 text-sm text-ink">
           Total: {formatUsd(stats.totalCostUsd)} · {stats.bidsSubmitted} anbud ·
-          win-rate {formatPct(stats.winRate)} ({stats.wins} W / {stats.losses} L)
+          win-rate {formatPct(stats.winRate)} ({stats.wins} W / {stats.losses} L) ·{" "}
+          {stats.pendingCount} pågående
         </p>
 
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-rule text-left text-ink-mute">
-              <th className="py-2 font-medium">Användare</th>
-              <th className="py-2 text-right font-medium">Kostnad</th>
-              <th className="py-2 text-right font-medium">Anbud</th>
-              <th className="py-2 text-right font-medium">W / L</th>
-              <th className="py-2 text-right font-medium">Win-rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.perUser.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-4 text-ink-mute">
-                  Ingen data ännu.
-                </td>
-              </tr>
-            ) : (
-              stats.perUser.map((u) => (
-                <tr key={u.userId} className="border-b border-rule">
-                  <td className="py-2">{u.email}</td>
-                  <td className="py-2 text-right">{formatUsd(u.costUsd)}</td>
-                  <td className="py-2 text-right">{u.bidsSubmitted}</td>
-                  <td className="py-2 text-right">
-                    {u.wins} / {u.losses}
-                  </td>
-                  <td className="py-2 text-right">{formatPct(u.winRate)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <StatsTable perUser={stats.perUser} />
       </div>
     </main>
   );
