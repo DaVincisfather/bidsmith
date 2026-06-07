@@ -166,6 +166,13 @@ async function loadEmails(supabase: SupabaseClient): Promise<Map<string, string>
   return map;
 }
 
+interface PendingQueryRow {
+  id: string;
+  created_by: string | null;
+  status: string;
+  analyses: unknown; // !inner join: { analysis: RfpAnalysis } — cast on read (mirrors dashboard route)
+}
+
 export async function getWorkspaceStats(period: StatsPeriod): Promise<WorkspaceStats> {
   const supabase = createServiceClient();
   const start = periodStart(period);
@@ -181,12 +188,30 @@ export async function getWorkspaceStats(period: StatsPeriod): Promise<WorkspaceS
   if (start) bidQuery = bidQuery.gte("created_at", start);
   const { data: bidRows } = await bidQuery;
 
+  // Pending bids ignore the period filter: an open bid from 60 days ago is
+  // exactly what you want to chase, so it must not be hidden under "30 dgr".
+  const { data: pendingRaw } = await supabase
+    .from("bids")
+    .select("id, created_by, status, analyses!inner(analysis)")
+    .is("outcome", null)
+    .in("status", ["draft", "exported"]);
+
+  const pendingRows: PendingRow[] = ((pendingRaw as PendingQueryRow[]) ?? []).map((r) => ({
+    id: r.id,
+    created_by: r.created_by,
+    status: r.status as PendingBid["status"],
+    title:
+      (r.analyses as unknown as { analysis: { title?: string } })?.analysis?.title ??
+      "Namnlös RFP",
+  }));
+
   const emailById = await loadEmails(supabase);
 
   return aggregate(
     (costRows as CostRow[]) ?? [],
     (bidRows as BidRow[]) ?? [],
     emailById,
-    period
+    period,
+    pendingRows
   );
 }
