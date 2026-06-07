@@ -67,7 +67,7 @@ function formatTeamForPrompt(
       return `- ${c.name} [id: ${c.id}] (${c.level}, score: ${score?.score ?? "N/A"})
   Kompetenser: ${comps}
   Uppdrag: ${refs}
-  AI-bedömning: ${score?.reasoning ?? "N/A"}`;
+  AI-bedömning: ${score?.reasoning || "N/A"}`;
     })
     .join("\n\n");
 }
@@ -81,10 +81,10 @@ function formatPoolForPrompt(
 
   return available
     .sort((a, b) => b.score - a.score)
-    .map(
-      (c) =>
-        `- ${c.consultantName} [id: ${c.consultantId}] (${c.level}, score: ${c.score}): ${c.reasoning}`
-    )
+    .map((c) => {
+      const note = c.reasoning ? `: ${c.reasoning}` : "";
+      return `- ${c.consultantName} [id: ${c.consultantId}] (${c.level}, score: ${c.score})${note}`;
+    })
     .join("\n");
 }
 

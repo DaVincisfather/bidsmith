@@ -26,7 +26,7 @@ export function formatContext(ctx: BidContext): string {
       return `- ${c.name} (${c.level}, score: ${score?.score ?? "N/A"})
   Kompetenser: ${comps}
   Uppdrag: ${refs}
-  AI-bedömning: ${score?.reasoning ?? "N/A"}`;
+  AI-bedömning: ${score?.reasoning || "N/A"}`;
     })
     .join("\n\n");
 
