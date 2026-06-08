@@ -36,9 +36,7 @@ interface FailedBundle {
   error: string;
 }
 
-// Total AI bundles in a bid (mirror of BID_BUNDLE_COUNT in bid-generator) and
-// human-readable Swedish names for the partial-generation warning.
-const BID_BUNDLE_COUNT = 6;
+// Human-readable Swedish names for the AI bundles, for the partial-generation warning.
 const BUNDLE_LABELS_SV: Record<string, string> = {
   understanding: "Förståelse",
   phases: "Faser",
@@ -231,7 +229,8 @@ export function AnalysisMatchSection({
       {partialBid && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded text-sm space-y-2">
           <p className="font-medium">
-            {partialBid.failedBundles.length} av {BID_BUNDLE_COUNT} sektioner kunde inte genereras
+            {partialBid.failedBundles.length}{" "}
+            {partialBid.failedBundles.length === 1 ? "sektion" : "sektioner"} kunde inte genereras
           </p>
           <p>
             Utkastet sparades utan:{" "}
