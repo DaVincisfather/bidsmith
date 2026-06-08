@@ -31,6 +31,23 @@ function buildDefaultTeamIds(scored: ScoredConsultant[]): Set<string> {
   return new Set(top.map((c) => c.consultantId));
 }
 
+interface FailedBundle {
+  bundle: string;
+  error: string;
+}
+
+// Total AI bundles in a bid (mirror of BID_BUNDLE_COUNT in bid-generator) and
+// human-readable Swedish names for the partial-generation warning.
+const BID_BUNDLE_COUNT = 6;
+const BUNDLE_LABELS_SV: Record<string, string> = {
+  understanding: "Förståelse",
+  phases: "Faser",
+  quality: "Kvalitetssäkring",
+  "requirement-matrix": "Kravmatris",
+  team: "Team & pris",
+  reference: "Referenser",
+};
+
 export function AnalysisMatchSection({
   analysisId,
   latestMatch,
@@ -51,6 +68,10 @@ export function AnalysisMatchSection({
 
   // Bid state
   const [bidLoading, setBidLoading] = useState(false);
+  const [partialBid, setPartialBid] = useState<{
+    id: string;
+    failedBundles: FailedBundle[];
+  } | null>(null);
 
   async function triggerMatching() {
     setLoading(true);
@@ -148,6 +169,7 @@ export function AnalysisMatchSection({
 
     setBidLoading(true);
     setError(null);
+    setPartialBid(null);
 
     try {
       const response = await fetch("/api/bids", {
@@ -166,6 +188,13 @@ export function AnalysisMatchSection({
       }
 
       const data = await response.json();
+      if (Array.isArray(data.failedBundles) && data.failedBundles.length > 0) {
+        // Partiellt utkast: navigera inte tyst till ett ofullständigt anbud —
+        // visa vilka sektioner som saknas och låt användaren öppna det medvetet.
+        setPartialBid({ id: data.id, failedBundles: data.failedBundles });
+        setBidLoading(false);
+        return;
+      }
       router.push(`/bids/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -196,6 +225,28 @@ export function AnalysisMatchSection({
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
           {error}
+        </div>
+      )}
+
+      {partialBid && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded text-sm space-y-2">
+          <p className="font-medium">
+            {partialBid.failedBundles.length} av {BID_BUNDLE_COUNT} sektioner kunde inte genereras
+          </p>
+          <p>
+            Utkastet sparades utan:{" "}
+            {partialBid.failedBundles
+              .map((f) => BUNDLE_LABELS_SV[f.bundle] ?? f.bundle)
+              .join(", ")}
+            . Öppna utkastet för att granska, eller kör anbudsgenereringen igen för att försöka på nytt.
+          </p>
+          <button
+            onClick={() => router.push(`/bids/${partialBid.id}`)}
+            className="bg-ink text-white px-4 py-2 rounded-lg text-xs font-medium
+                       hover:bg-accent-ink transition-colors"
+          >
+            Öppna utkastet ändå
+          </button>
         </div>
       )}
 
