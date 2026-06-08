@@ -11,7 +11,17 @@ function getClient(): Anthropic {
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 
+// Thrown when a 200 response can't be turned into a schema-valid object
+// (no JSON found, wrong content block, JSON.parse failure, Zod mismatch).
+// Distinct from transport errors so the retry loop re-prompts: model drift
+// (a stray enum alias, an extra field, a truncated array) is almost always
+// fixed by a fresh generation rather than hard-failing an expensive call.
+class ResponseFormatError extends Error {}
+
 function isRetryable(error: unknown): boolean {
+  if (error instanceof ResponseFormatError) {
+    return true;
+  }
   if (error instanceof APIError) {
     return error.status === 429 || error.status === 529 || error.status >= 500;
   }
@@ -96,20 +106,23 @@ export async function callClaude<T>({
       // block follows. Find the first text block rather than indexing.
       const content = message.content.find((b) => b.type === "text");
       if (!content || content.type !== "text") {
-        throw new Error(`Unexpected response type for ${label}`);
+        throw new ResponseFormatError(`Unexpected response type for ${label}`);
       }
 
       const json = extractJson(content.text);
       if (!json) {
-        throw new Error(`No JSON found in response for ${label}`);
+        throw new ResponseFormatError(`No JSON found in response for ${label}`);
       }
 
       return parseAndValidate(json, schema, label);
     } catch (error) {
       lastError = error;
       if (attempt < MAX_RETRIES - 1 && isRetryable(error)) {
-        const delay = BASE_DELAY_MS * Math.pow(2, attempt);
-        await sleep(delay);
+        // Transport errors (429/5xx) get exponential backoff; format errors
+        // are model drift with no server to back off from — re-prompt at once.
+        if (!(error instanceof ResponseFormatError)) {
+          await sleep(BASE_DELAY_MS * Math.pow(2, attempt));
+        }
         continue;
       }
       void logAiCall({
@@ -173,7 +186,7 @@ function parseAndValidate<T>(
   try {
     raw = JSON.parse(jsonStr);
   } catch {
-    throw new Error(`Invalid JSON in response for ${label}`);
+    throw new ResponseFormatError(`Invalid JSON in response for ${label}`);
   }
 
   const parsed = schema.safeParse(raw);
@@ -185,7 +198,9 @@ function parseAndValidate<T>(
       const received = getAtPath(raw, issue.path);
       return `${pathStr}: ${issue.message} (received: ${JSON.stringify(received)})`;
     });
-    throw new Error(`Invalid ${label} response:\n  - ${lines.join("\n  - ")}`);
+    throw new ResponseFormatError(
+      `Invalid ${label} response:\n  - ${lines.join("\n  - ")}`
+    );
   }
   return parsed.data;
 }
