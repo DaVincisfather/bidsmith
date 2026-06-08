@@ -2,12 +2,19 @@
 import { describe, it, expect } from "vitest";
 import Automizer from "pptx-automizer";
 import path from "path";
+import os from "os";
+import { existsSync } from "fs";
 
-describe("pptx-automizer smoke", () => {
+const TEMPLATE_DIR = path.resolve("data/design mockups");
+// The .pptx mockup is gitignored, so it's absent in fresh checkouts/CI —
+// skip rather than fail. It runs locally where the file is present.
+const hasTemplate = existsSync(path.join(TEMPLATE_DIR, "Anbudsmall-v2.pptx"));
+
+describe.skipIf(!hasTemplate)("pptx-automizer smoke", () => {
   it("loads mockup and writes a copy without errors", async () => {
     const automizer = new Automizer({
-      templateDir: path.resolve("data/design mockups"),
-      outputDir: path.resolve("/tmp"),
+      templateDir: TEMPLATE_DIR,
+      outputDir: os.tmpdir(),
       removeExistingSlides: false,
     });
 

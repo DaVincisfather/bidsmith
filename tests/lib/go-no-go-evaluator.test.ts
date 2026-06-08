@@ -29,7 +29,6 @@ const mockAnalysis: RfpAnalysis = {
 const mockTeam: Consultant[] = [
   {
     id: "c1",
-    organizationId: "org1",
     name: "Anna Lindström",
     level: "senior",
     yearsExperience: 15,
@@ -54,7 +53,9 @@ const mockScored: ScoredConsultant[] = [
   { consultantId: "c3", consultantName: "Maria Svensson", level: "intermediate", score: 71, reasoning: "Bra erfarenhet" },
 ];
 
-describe("evaluateGoNoGo", () => {
+// Live-API integration test: skips unless ANTHROPIC_API_KEY is set
+// (npm test stays offline; run with `npm run test:integration`).
+describe.skipIf(!process.env.ANTHROPIC_API_KEY)("evaluateGoNoGo", () => {
   it("returns a structured Go/No-Go result", async () => {
     const result = await evaluateGoNoGo(mockAnalysis, mockTeam, mockScored);
 
@@ -76,5 +77,5 @@ describe("evaluateGoNoGo", () => {
 
     // mustRequirements should have entries
     expect(result.mustRequirements.length).toBeGreaterThan(0);
-  }, 30000);
+  }, 120000);
 });
