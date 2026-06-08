@@ -111,8 +111,11 @@ export interface MustRequirementCheck {
 }
 
 export interface ImprovementSuggestion {
-  swap: { remove: string; add: string };
-  swapIds: { removeId: string; addId: string };
+  // Nullable throughout when the suggestion isn't a concrete consultant swap;
+  // the evaluator filters these out so persisted/rendered improvements always
+  // have a real remove/add pair.
+  swap: { remove: string | null; add: string | null } | null;
+  swapIds: { removeId: string | null; addId: string | null } | null;
   estimatedImpact: string;
   reason: string;
 }
