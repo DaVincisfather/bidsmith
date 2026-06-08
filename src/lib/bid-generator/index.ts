@@ -17,6 +17,34 @@ export type { BidContext } from "./context";
 
 const GLOBAL_RETRY_CAP = 5;
 
+// Stable identifiers matching the order bundles are dispatched below.
+const BUNDLE_LABELS = [
+  "understanding",
+  "phases",
+  "quality",
+  "requirement-matrix",
+  "team",
+  "reference",
+] as const;
+
+// Total AI bundles dispatched — lets callers detect a total wipeout
+// (every bundle failed = nothing worth saving) vs a partial draft.
+export const BID_BUNDLE_COUNT = BUNDLE_LABELS.length;
+
+export interface FailedBundle {
+  bundle: (typeof BUNDLE_LABELS)[number];
+  error: string;
+}
+
+export interface GenerateAllSectionsResult {
+  sections: BidSection[];
+  overflowFlags: OverflowFlag[];
+  // Bundles that rejected. Empty on full success. When non-empty, `sections`
+  // holds whatever succeeded — the caller decides whether a partial draft is
+  // worth saving rather than discarding the bundles that already cost money.
+  failedBundles: FailedBundle[];
+}
+
 /**
  * Runs 6 AI bundles in parallel + 3 deterministic generators to produce the
  * full set of BidSections for a v2 template.
@@ -25,6 +53,10 @@ const GLOBAL_RETRY_CAP = 5;
  * RetryBudget across all bundles (so a single bundle blowing up retries doesn't
  * starve the rest), and aggregates per-bundle overflowFlags into one array.
  *
+ * Bundles run under allSettled, not Promise.all: one bundle failing must not
+ * throw away the (expensive Opus) output of the five that succeeded. Rejections
+ * are returned in `failedBundles` for the caller to surface.
+ *
  * onSectionComplete is invoked sequentially in v2-template section order,
  * awaited per call (blocks overall completion).
  */
@@ -32,7 +64,7 @@ export async function generateAllSections(
   ctx: BidContext,
   templateName: string,
   onSectionComplete?: (section: BidSection) => void | Promise<void>,
-): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
+): Promise<GenerateAllSectionsResult> {
   const budgets = await loadBudgets(templateName);
   const retryBudget: RetryBudget = { remaining: GLOBAL_RETRY_CAP };
 
@@ -41,7 +73,7 @@ export async function generateAllSections(
   const certifications = buildCertificationsSection();
   const confidentiality = buildConfidentialitySection(ctx.analysis);
 
-  const bundleResults = await Promise.all([
+  const settled = await Promise.allSettled([
     buildUnderstandingBundle(ctx, budgets, retryBudget),
     buildPhasesBundle(ctx, budgets, retryBudget),
     buildQualityBundle(ctx, budgets, retryBudget),
@@ -49,6 +81,20 @@ export async function generateAllSections(
     buildTeamBundle(ctx, budgets, retryBudget),
     buildReferenceBundle(ctx, budgets, retryBudget),
   ]);
+
+  const bundleResults: { sections: BidSection[]; overflowFlags: OverflowFlag[] }[] = [];
+  const failedBundles: FailedBundle[] = [];
+  settled.forEach((result, i) => {
+    if (result.status === "fulfilled") {
+      bundleResults.push(result.value);
+    } else {
+      const reason = result.reason;
+      failedBundles.push({
+        bundle: BUNDLE_LABELS[i],
+        error: reason instanceof Error ? reason.message : String(reason),
+      });
+    }
+  });
 
   const sections: BidSection[] = [
     cover,
@@ -65,5 +111,5 @@ export async function generateAllSections(
     }
   }
 
-  return { sections, overflowFlags };
+  return { sections, overflowFlags, failedBundles };
 }
