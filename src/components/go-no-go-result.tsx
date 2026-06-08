@@ -135,18 +135,20 @@ export function GoNoGoResultView({
             Förbättringsförslag
           </h4>
           <div className="space-y-2">
-            {result.improvements.map((imp, i) => (
-              <div
-                key={i}
-                className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm"
-              >
-                <div className="font-medium text-blue-900">
-                  Byt {imp.swap.remove} → {imp.swap.add}{" "}
-                  <span className="text-blue-600">{imp.estimatedImpact}</span>
+            {result.improvements.map((imp, i) =>
+              imp.swap?.remove && imp.swap?.add ? (
+                <div
+                  key={i}
+                  className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm"
+                >
+                  <div className="font-medium text-blue-900">
+                    Byt {imp.swap.remove} → {imp.swap.add}{" "}
+                    <span className="text-blue-600">{imp.estimatedImpact}</span>
+                  </div>
+                  <p className="text-blue-800 mt-1">{imp.reason}</p>
                 </div>
-                <p className="text-blue-800 mt-1">{imp.reason}</p>
-              </div>
-            ))}
+              ) : null
+            )}
           </div>
         </div>
       )}

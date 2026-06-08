@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, fetchConsultantsByIds, EMPTY_GO_NO_GO } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
-import { generateAllSections } from "@/lib/bid-generator";
+import { generateAllSections, BID_BUNDLE_COUNT, type FailedBundle } from "@/lib/bid-generator";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult, BidSection } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
 import { parseBody } from "@/lib/api-helpers";
@@ -72,13 +72,15 @@ export async function POST(request: NextRequest) {
 
   // Generate sections, saving progress to DB after each.
   // templateName is hardcoded for now — picker is a separate PR.
-  // Wrap in try/catch so a generation failure (loadBudgets throws, callClaude rate-limits, etc)
-  // doesn't leave an orphan bid stuck at status='generating' — bids.status CHECK constraint
-  // accepts only 'generating'/'draft'/'exported', so we DELETE the orphan rather than mark it failed.
+  // Wrap in try/catch so an infra failure (loadBudgets throws, etc) doesn't
+  // leave an orphan bid stuck at status='generating' — bids.status CHECK
+  // constraint accepts only 'generating'/'draft'/'exported', so we DELETE the
+  // orphan rather than mark it failed.
   let sections: BidSection[];
   let overflowFlags: Awaited<ReturnType<typeof generateAllSections>>["overflowFlags"];
+  let failedBundles: FailedBundle[];
   try {
-    ({ sections, overflowFlags } = await generateAllSections(ctx, "anbudsmall-v2", async (section: BidSection) => {
+    ({ sections, overflowFlags, failedBundles } = await generateAllSections(ctx, "anbudsmall-v2", async (section: BidSection) => {
       const { data: currentBid } = await supabase
         .from("bids")
         .select("sections")
@@ -102,6 +104,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Every bundle failed → no AI content was produced (only deterministic
+  // cover/confidentiality/certifications), so there's nothing worth keeping.
+  // Treat it like an infra failure: delete the orphan and report it.
+  if (failedBundles.length >= BID_BUNDLE_COUNT) {
+    console.error("all bid bundles failed, deleting orphan row:", failedBundles);
+    await supabase.from("bids").delete().eq("id", bid.id);
+    return NextResponse.json(
+      { error: "Bid generation failed", failedBundles },
+      { status: 500 },
+    );
+  }
+  // Some bundles failed but others succeeded: keep the partial draft rather
+  // than discarding the (already billed) Opus output. The response flags it so
+  // the UI can tell the user which sections to regenerate.
+  if (failedBundles.length > 0) {
+    console.warn("bid generation partial — some bundles failed:", failedBundles);
+  }
+
   // Eval failure must never block the bid save — sections took 2-5 min to
   // generate and we'd rather show "ej utvärderad" than lose them.
   let structureEval: ReturnType<typeof buildStructureEvalSummary> | null = null;
@@ -118,5 +138,12 @@ export async function POST(request: NextRequest) {
     .update({ sections, status: "draft", structure_eval: structureEval, overflow_flags: overflowFlags })
     .eq("id", bid.id);
 
-  return NextResponse.json({ id: bid.id, status: "draft", sections, structureEval, overflowFlags });
+  return NextResponse.json({
+    id: bid.id,
+    status: "draft",
+    sections,
+    structureEval,
+    overflowFlags,
+    failedBundles,
+  });
 }

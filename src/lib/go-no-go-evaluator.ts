@@ -124,11 +124,15 @@ ${poolText}`,
     result.winProbability = 0;
   }
 
-  // Suppress improvements with non-positive impact. The prompt forbids 0 % swaps
-  // but the LLM still produces "+0 %" suggestions where it argues against itself
-  // in the reason field — confusing for the user.
+  // Suppress improvements that aren't actionable: a null swap (no concrete
+  // consultant change) or non-positive impact. The prompt forbids 0 % swaps
+  // but the LLM still produces "+0 %" suggestions where it argues against
+  // itself in the reason field — confusing for the user.
   result.improvements = result.improvements.filter(
-    (imp) => parseImpactPct(imp.estimatedImpact) > 0,
+    (imp) =>
+      imp.swap?.remove != null &&
+      imp.swap?.add != null &&
+      parseImpactPct(imp.estimatedImpact) > 0,
   );
 
   return result;

@@ -3,9 +3,12 @@ import { createServiceClient } from "@/lib/supabase";
 import { fetchTedNotices } from "@/lib/ted-client";
 
 export async function POST(request: NextRequest) {
+  // Fail closed: a missing CRON_SECRET must reject, not skip the check.
+  // This route is in middleware PUBLIC_PATHS and runs with the service-role
+  // (RLS-bypassing) client, so the secret is its only gate.
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUserId } from "@/lib/org";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 
 export async function POST(
@@ -8,6 +9,9 @@ export async function POST(
 ) {
   const { id } = await params;
   const supabase = await createClient();
+  // Route is auth-gated by middleware; attribute the analysis cost to the
+  // triggering user so it isn't bucketed as "Okänd" in workspace stats.
+  const userId = await getUserId(supabase);
 
   // 1. Get the opportunity
   const { data: opp, error: oppError } = await supabase
@@ -57,7 +61,7 @@ export async function POST(
   }
 
   // 4. Run RFP analysis (same as manual upload flow)
-  const analysis = await analyzeRfp(inputText);
+  const analysis = await analyzeRfp(inputText, userId);
 
   // 5. Save analysis
   const { data: analysisRecord, error: analysisError } = await supabase

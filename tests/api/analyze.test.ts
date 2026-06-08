@@ -5,7 +5,9 @@ import { parseDocument } from "@/lib/document-parser";
 import { readFileSync } from "fs";
 import path from "path";
 
-describe("End-to-end: parse + analyze", () => {
+// Live-API integration test: skips unless ANTHROPIC_API_KEY is set
+// (npm test stays offline; run with `npm run test:integration`).
+describe.skipIf(!process.env.ANTHROPIC_API_KEY)("End-to-end: parse + analyze", () => {
   it("parses a synthetic RFP and produces valid analysis", async () => {
     const rfpPath = path.join(
       process.cwd(),
@@ -40,5 +42,5 @@ describe("End-to-end: parse + analyze", () => {
     );
     expect(totalWeight).toBeGreaterThanOrEqual(90);
     expect(totalWeight).toBeLessThanOrEqual(110);
-  }, 30000);
+  }, 120000);
 });

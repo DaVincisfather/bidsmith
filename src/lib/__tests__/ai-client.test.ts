@@ -106,6 +106,22 @@ describe("callClaude — validation error formatting", () => {
       /items\.1\.priority.*nope/
     );
   });
+
+  it("re-prompts on a schema-invalid response and succeeds on retry", async () => {
+    const schema = z.object({ answer: z.string() });
+    mockCreate
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: '{"answer": 123}' }], // wrong type
+      }))
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: '{"answer": "ok"}' }], // valid
+      }));
+
+    const result = await callClaude({ ...baseArgs, schema });
+
+    expect(result).toEqual({ answer: "ok" });
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("callClaude — adaptive thinking handling", () => {

@@ -108,8 +108,16 @@ export const GoNoGoResultSchema = z.object({
   gaps: z.array(z.string()),
   improvements: z.array(
     z.object({
-      swap: z.object({ remove: z.string(), add: z.string() }),
-      swapIds: z.object({ removeId: z.string(), addId: z.string() }),
+      // Nullable throughout: when there's no concrete swap to suggest (strong
+      // team / "go"), the model returns either swap:null or an object with null
+      // leaves (e.g. { remove: null, add: null }). The evaluator drops these
+      // post-parse, so only actionable swaps reach the UI.
+      swap: z
+        .object({ remove: z.string().nullable(), add: z.string().nullable() })
+        .nullable(),
+      swapIds: z
+        .object({ removeId: z.string().nullable(), addId: z.string().nullable() })
+        .nullable(),
       estimatedImpact: z.string(),
       reason: z.string(),
     })

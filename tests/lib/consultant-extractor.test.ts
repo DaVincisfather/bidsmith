@@ -5,7 +5,9 @@ import { ConsultantExtraction } from "@/lib/types";
 import { readFileSync } from "fs";
 import path from "path";
 
-describe("extractConsultant", () => {
+// Live-API integration test: skips unless ANTHROPIC_API_KEY is set
+// (npm test stays offline; run with `npm run test:integration`).
+describe.skipIf(!process.env.ANTHROPIC_API_KEY)("extractConsultant", () => {
   it("extracts structured profile from a synthetic CV", async () => {
     const cvPath = path.join(
       process.cwd(),
@@ -45,5 +47,5 @@ describe("extractConsultant", () => {
     expect(ref).toHaveProperty("description");
     expect(ref).toHaveProperty("year");
     expect(["public", "private"]).toContain(ref.sector);
-  }, 30000);
+  }, 120000);
 });

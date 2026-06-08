@@ -29,7 +29,6 @@ const mockAnalysis: RfpAnalysis = {
 const mockConsultants: Consultant[] = [
   {
     id: "c1",
-    organizationId: "org1",
     name: "Anna Lindström",
     level: "senior",
     yearsExperience: 12,
@@ -48,7 +47,6 @@ const mockConsultants: Consultant[] = [
   },
   {
     id: "c2",
-    organizationId: "org1",
     name: "Erik Johansson",
     level: "intermediate",
     yearsExperience: 5,
@@ -66,7 +64,9 @@ const mockConsultants: Consultant[] = [
   },
 ];
 
-describe("matchConsultants", () => {
+// Live-API integration test: skips unless ANTHROPIC_API_KEY is set
+// (npm test stays offline; run with `npm run test:integration`).
+describe.skipIf(!process.env.ANTHROPIC_API_KEY)("matchConsultants", () => {
   it("scores all consultants individually against the RFP", async () => {
     const result: ScoredMatchResult = await matchConsultants(mockAnalysis, mockConsultants);
 
@@ -90,5 +90,5 @@ describe("matchConsultants", () => {
     expect(anna).toBeDefined();
     expect(erik).toBeDefined();
     expect(anna!.score).toBeGreaterThan(erik!.score);
-  }, 30000);
+  }, 120000);
 });

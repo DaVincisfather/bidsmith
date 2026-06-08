@@ -135,6 +135,26 @@ describe("aggregate", () => {
     expect(result.perUser[0].winRate).toBeNull();
   });
 
+  it("groups cost by label (cost desc), including userless radar calls", () => {
+    const result = aggregate(
+      [
+        { user_id: "user-aaaa1111", cost_usd: 2, label: "RFP analysis" },
+        { user_id: null, cost_usd: 5, label: "opportunity scoring" },
+        { user_id: "user-aaaa1111", cost_usd: 1, label: "RFP analysis" },
+        { user_id: "user-bbbb2222", cost_usd: 0.5 }, // no label
+      ],
+      [],
+      emails,
+      "all"
+    );
+
+    expect(result.costByLabel).toEqual([
+      { label: "opportunity scoring", costUsd: 5 },
+      { label: "RFP analysis", costUsd: 3 },
+      { label: "Okänd typ", costUsd: 0.5 },
+    ]);
+  });
+
   it("buckets null user_id / created_by as 'Okänd'", () => {
     const result = aggregate(
       [{ user_id: null, cost_usd: 5 }],

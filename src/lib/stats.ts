@@ -27,6 +27,11 @@ export interface UserStats {
   pending: PendingBid[];
 }
 
+export interface CostByLabel {
+  label: string;
+  costUsd: number;
+}
+
 export interface WorkspaceStats {
   period: StatsPeriod;
   totalCostUsd: number;
@@ -36,11 +41,15 @@ export interface WorkspaceStats {
   winRate: number | null;
   pendingCount: number;
   perUser: UserStats[];
+  // AI spend grouped by call type (ai_call_logs.label), cost desc. Surfaces
+  // background/radar spend (e.g. "opportunity scoring") that carries no user.
+  costByLabel: CostByLabel[];
 }
 
 export interface CostRow {
   user_id: string | null;
   cost_usd: number | string;
+  label?: string | null;
 }
 
 export interface BidRow {
@@ -98,9 +107,13 @@ export function aggregate(
     return u;
   };
 
+  const byLabel = new Map<string, number>();
   for (const r of costRows) {
     const id = r.user_id ?? UNKNOWN_USER;
-    ensure(id).costUsd += Number(r.cost_usd) || 0;
+    const cost = Number(r.cost_usd) || 0;
+    ensure(id).costUsd += cost;
+    const label = r.label ?? "Okänd typ";
+    byLabel.set(label, (byLabel.get(label) ?? 0) + cost);
   }
   for (const r of bidRows) {
     if (r.outcome == null) continue; // query already filters; defensive
@@ -139,6 +152,10 @@ export function aggregate(
   const losses = perUser.reduce((s, u) => s + u.losses, 0);
   const pendingCount = pendingRows.length;
 
+  const costByLabel: CostByLabel[] = [...byLabel.entries()]
+    .map(([label, costUsd]) => ({ label, costUsd }))
+    .sort((a, b) => b.costUsd - a.costUsd);
+
   return {
     period,
     totalCostUsd,
@@ -148,6 +165,7 @@ export function aggregate(
     winRate: winRate(wins, losses),
     pendingCount,
     perUser,
+    costByLabel,
   };
 }
 
@@ -177,7 +195,7 @@ export async function getWorkspaceStats(period: StatsPeriod): Promise<WorkspaceS
   const supabase = createServiceClient();
   const start = periodStart(period);
 
-  let costQuery = supabase.from("ai_call_logs").select("user_id, cost_usd");
+  let costQuery = supabase.from("ai_call_logs").select("user_id, cost_usd, label");
   if (start) costQuery = costQuery.gte("created_at", start);
   const { data: costRows } = await costQuery;
 

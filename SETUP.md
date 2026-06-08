@@ -60,7 +60,7 @@ Open `.env.local` and fill in the values. Each one is explained in the file:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → `anon` `public` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → `service_role` (secret) |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` for local dev |
-| `CRON_SECRET` | Optional — only for the TED radar background jobs |
+| `CRON_SECRET` | Required if you use the TED radar. The `/api/radar/fetch` and `/api/radar/score` endpoints reject **all** requests unless this is set and sent as `Authorization: Bearer <CRON_SECRET>`. Leave unset to keep the radar background jobs disabled (they will 401). |
 
 ## 6. Enable email login in Supabase
 

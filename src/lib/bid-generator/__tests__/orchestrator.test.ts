@@ -136,8 +136,18 @@ describe("generateAllSections", () => {
     expect(spy).toHaveBeenCalledTimes(11);
   });
 
-  it("throws on bundle failure (no silent fallback)", async () => {
+  it("captures a failed bundle in failedBundles without discarding the rest", async () => {
     vi.mocked(buildPhasesBundle).mockRejectedValue(new Error("boom"));
-    await expect(generateAllSections(baseCtx, "anbudsmall-v2")).rejects.toThrow("boom");
+
+    const { sections, failedBundles } = await generateAllSections(baseCtx, "anbudsmall-v2");
+
+    // The failure is reported, not thrown...
+    expect(failedBundles).toEqual([{ bundle: "phases", error: "boom" }]);
+    // ...and the five surviving bundles' (paid) output is preserved.
+    const keys = sections.map((s) => s.key);
+    expect(keys).not.toContain("phases");
+    expect(keys).toContain("cover");
+    expect(keys).toContain("understanding-current");
+    expect(keys).toContain("reference-v2");
   });
 });

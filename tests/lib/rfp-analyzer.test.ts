@@ -5,7 +5,9 @@ import { RfpAnalysis } from "@/lib/types";
 import { readFileSync } from "fs";
 import path from "path";
 
-describe("analyzeRfp", () => {
+// Live-API integration test: skips unless ANTHROPIC_API_KEY is set
+// (npm test stays offline; run with `npm run test:integration`).
+describe.skipIf(!process.env.ANTHROPIC_API_KEY)("analyzeRfp", () => {
   it("returns a structured analysis from a synthetic RFP", async () => {
     const rfpPath = path.join(
       process.cwd(),
@@ -36,5 +38,5 @@ describe("analyzeRfp", () => {
     expect(crit).toHaveProperty("name");
     expect(crit).toHaveProperty("weight");
     expect(typeof crit.weight).toBe("number");
-  }, 30000);
+  }, 120000);
 });

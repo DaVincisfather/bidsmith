@@ -155,7 +155,6 @@ export const matcherConfig: EvalConfig<MatcherFixture, Output, MatcherEvalContex
     const NOW = new Date().toISOString();
     const consultantsForMatcher: Consultant[] = context.consultants.map((c) => ({
       id: c.id,
-      organizationId: "eval-harness",
       name: c.parsed_profile.name,
       level: c.parsed_profile.level,
       yearsExperience: c.parsed_profile.yearsExperience,
