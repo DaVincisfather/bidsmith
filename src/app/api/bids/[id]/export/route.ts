@@ -62,7 +62,19 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     now: new Date(),
   });
 
-  const buffer = await renderTemplate("anbudsmall-v2", sections, master);
+  // PPTX rendering touches template files + section data of varying shape —
+  // a rendering bug must surface as a clean 500, not an unhandled crash, and
+  // must not mark the bid as exported.
+  let buffer: Buffer;
+  try {
+    buffer = await renderTemplate("anbudsmall-v2", sections, master);
+  } catch (err) {
+    console.error(`PPTX render failed for bid ${id}:`, err);
+    return NextResponse.json(
+      { error: "PPTX rendering failed. Check section contents and try again." },
+      { status: 500 },
+    );
+  }
 
   await supabase
     .from("bids")

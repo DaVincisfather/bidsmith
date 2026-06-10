@@ -1,41 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { parseBody } from "@/lib/api-helpers";
+import { parseBody, parseUuidParam } from "@/lib/api-helpers";
 import { ConsultantUpdateSchema } from "@/lib/api-schemas";
+import { CONSULTANT_API_SELECT } from "@/lib/constants";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const idResult = parseUuidParam(rawId, "consultant id");
+  if (!idResult.ok) return idResult.response;
+  const id = idResult.data;
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("consultants")
-    .select(`
-      *,
-      consultant_competencies (id, competency, category),
-      consultant_references (id, title, description, year, sector)
-    `)
+    .select(CONSULTANT_API_SELECT)
     .eq("id", id)
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 404 });
+    return NextResponse.json({ error: "Consultant not found" }, { status: 404 });
   }
 
   return NextResponse.json(data);
 }
 
 export async function PUT(request: NextRequest, { params }: RouteContext) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const idResult = parseUuidParam(rawId, "consultant id");
+  if (!idResult.ok) return idResult.response;
+  const id = idResult.data;
   const parsed = await parseBody(request, ConsultantUpdateSchema);
   if (!parsed.ok) return parsed.response;
   const body = parsed.data;
   const supabase = await createClient();
 
-  const { error: updateError } = await supabase
+  const { data: updatedRows, error: updateError } = await supabase
     .from("consultants")
     .update({
       name: body.name,
@@ -44,10 +47,18 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       summary: body.summary,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  // Postgres updates of a non-existent row are not an error — they match
+  // zero rows. Without this check, PUT on an unknown id returned 200 with
+  // a null body.
+  if (!updatedRows || updatedRows.length === 0) {
+    return NextResponse.json({ error: "Consultant not found" }, { status: 404 });
   }
 
   if (body.competencies) {
@@ -99,11 +110,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   // Return updated consultant
   const { data } = await supabase
     .from("consultants")
-    .select(`
-      *,
-      consultant_competencies (id, competency, category),
-      consultant_references (id, title, description, year, sector)
-    `)
+    .select(CONSULTANT_API_SELECT)
     .eq("id", id)
     .single();
 
@@ -111,13 +118,24 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const idResult = parseUuidParam(rawId, "consultant id");
+  if (!idResult.ok) return idResult.response;
+  const id = idResult.data;
   const supabase = await createClient();
 
-  const { error } = await supabase.from("consultants").delete().eq("id", id);
+  const { data: deletedRows, error } = await supabase
+    .from("consultants")
+    .delete()
+    .eq("id", id)
+    .select("id");
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!deletedRows || deletedRows.length === 0) {
+    return NextResponse.json({ error: "Consultant not found" }, { status: 404 });
   }
 
   return NextResponse.json({ deleted: true });

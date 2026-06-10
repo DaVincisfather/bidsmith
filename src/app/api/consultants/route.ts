@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { CONSULTANT_API_SELECT } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -9,11 +10,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("consultants")
-    .select(`
-      *,
-      consultant_competencies (id, competency, category),
-      consultant_references (id, title, description, year, sector)
-    `)
+    .select(CONSULTANT_API_SELECT)
     .order("name");
 
   if (level) {

@@ -56,6 +56,15 @@ export async function fetchConsultantsByIds(
     throw new Error("Could not fetch consultants");
   }
 
+  // .in() silently returns fewer rows when ids are stale (deleted consultant
+  // still referenced by a team). A bid generated for a smaller team than
+  // team_consultant_ids claims is worse than failing loudly here.
+  const found = new Set(data.map((row: Record<string, unknown>) => row.id));
+  const missing = ids.filter((id) => !found.has(id));
+  if (missing.length > 0) {
+    throw new Error(`Consultants not found: ${missing.join(", ")}`);
+  }
+
   return data.map((row: Record<string, unknown>) => mapConsultantRow(row));
 }
 

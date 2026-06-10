@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { parseBody } from "@/lib/api-helpers";
+import { parseBody, parseUuidParam } from "@/lib/api-helpers";
 import { OutcomePatchSchema } from "@/lib/api-schemas";
 
 interface RouteContext {
@@ -8,7 +8,10 @@ interface RouteContext {
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const idResult = parseUuidParam(rawId, "bid id");
+  if (!idResult.ok) return idResult.response;
+  const id = idResult.data;
   const parsed = await parseBody(request, OutcomePatchSchema);
   if (!parsed.ok) return parsed.response;
   const body = parsed.data;
