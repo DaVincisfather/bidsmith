@@ -10,6 +10,11 @@ vi.mock("../bundles/team");
 vi.mock("@/lib/pptx-template/budget-loader", () => ({
   loadBudgets: vi.fn(),
 }));
+// Prewarm sväljer fel själv, men mockas här så orchestrator-testet aldrig
+// försöker konstruera en riktig Anthropic-klient.
+vi.mock("@/lib/ai-client", () => ({
+  prewarmContextCache: vi.fn().mockResolvedValue(undefined),
+}));
 
 import { buildUnderstandingBundle } from "../bundles/understanding";
 import { buildPhasesBundle } from "../bundles/phases";
