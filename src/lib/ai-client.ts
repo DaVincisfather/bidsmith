@@ -50,6 +50,9 @@ interface CallClaudeOptions<T> {
   // User attribution for ai_call_logs. Null when caller cannot resolve
   // a user (cron probes, unauthenticated flows). Logged as NULL.
   userId?: string | null;
+  // Bid attribution for ai_call_logs — set for bid-generation calls so
+  // cost per bid is queryable. Null for calls with no bid.
+  bidId?: string | null;
 }
 
 export async function callClaude<T>({
@@ -61,6 +64,7 @@ export async function callClaude<T>({
   label,
   effort,
   userId,
+  bidId,
 }: CallClaudeOptions<T>): Promise<T> {
   let lastError: unknown;
 
@@ -93,6 +97,7 @@ export async function callClaude<T>({
       };
       void logAiCall({
         userId: userId ?? null,
+        bidId: bidId ?? null,
         model,
         label,
         inputTokens: u.input_tokens ?? 0,
@@ -127,6 +132,7 @@ export async function callClaude<T>({
       }
       void logAiCall({
         userId: userId ?? null,
+        bidId: bidId ?? null,
         model,
         label,
         inputTokens: 0,

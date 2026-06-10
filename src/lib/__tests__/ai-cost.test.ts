@@ -12,16 +12,22 @@ describe("getModelPricing", () => {
     expect(p.outputPerMTok).toBe(15);
   });
 
+  it("returns Opus 4.8 pricing", () => {
+    const p = getModelPricing("claude-opus-4-8");
+    expect(p.inputPerMTok).toBe(5);
+    expect(p.outputPerMTok).toBe(25);
+  });
+
   it("returns Opus 4.7 pricing", () => {
     const p = getModelPricing("claude-opus-4-7");
-    expect(p.inputPerMTok).toBe(15);
-    expect(p.outputPerMTok).toBe(75);
+    expect(p.inputPerMTok).toBe(5);
+    expect(p.outputPerMTok).toBe(25);
   });
 
   it("returns Opus 4.6 pricing", () => {
     const p = getModelPricing("claude-opus-4-6");
-    expect(p.inputPerMTok).toBe(15);
-    expect(p.outputPerMTok).toBe(75);
+    expect(p.inputPerMTok).toBe(5);
+    expect(p.outputPerMTok).toBe(25);
   });
 
   it("returns Haiku 4.5 pricing for the dated alias", () => {

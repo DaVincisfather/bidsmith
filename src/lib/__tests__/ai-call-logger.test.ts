@@ -57,6 +57,33 @@ describe("logAiCall", () => {
     expect(row.user_id).toBeNull();
   });
 
+  it("logs bid_id when provided and null when omitted", async () => {
+    await logAiCall({
+      userId: "user-1",
+      bidId: "bid-42",
+      model: "claude-opus-4-7",
+      label: "phases bundle",
+      inputTokens: 10,
+      outputTokens: 10,
+      cacheReadTokens: 0,
+      cacheCreationTokens: 0,
+      latencyMs: 5,
+    });
+    expect(mockInsert.mock.calls[0][0].bid_id).toBe("bid-42");
+
+    await logAiCall({
+      userId: "user-1",
+      model: "claude-sonnet-4-6",
+      label: "consultant matching",
+      inputTokens: 10,
+      outputTokens: 10,
+      cacheReadTokens: 0,
+      cacheCreationTokens: 0,
+      latencyMs: 5,
+    });
+    expect(mockInsert.mock.calls[1][0].bid_id).toBeNull();
+  });
+
   it("never throws when the insert fails", async () => {
     mockInsert.mockResolvedValue({ error: { message: "db down" } });
 

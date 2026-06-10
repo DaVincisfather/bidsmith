@@ -77,6 +77,7 @@ export async function buildQualityBundle(
         label: "quality bundle",
         effort: "max",
         userId: ctx.userId,
+        bidId: ctx.bidId,
       }),
     budgets,
     retryBudget,

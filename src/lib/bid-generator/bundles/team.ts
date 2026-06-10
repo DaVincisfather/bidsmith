@@ -59,6 +59,7 @@ export async function buildTeamBundle(
         schema: TeamBundleSchema,
         label: "team bundle",
         userId: ctx.userId,
+        bidId: ctx.bidId,
       }),
     budgets,
     retryBudget,

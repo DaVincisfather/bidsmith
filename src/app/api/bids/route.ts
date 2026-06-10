@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
     scoredConsultants: allScoredConsultants,
     goNoGoResult: goNoGoResult ?? EMPTY_GO_NO_GO,
     userId,
+    bidId: bid.id,
   };
 
   // Generation runs after the response is sent (Vercel: waitUntil). The
