@@ -183,8 +183,9 @@ export async function prewarmContextCache(
   model: string,
   cachedContext: string,
 ): Promise<void> {
+  const startedAt = Date.now();
   try {
-    await getClient().messages.create({
+    const message = await getClient().messages.create({
       model,
       max_tokens: 0,
       system: [
@@ -195,6 +196,25 @@ export async function prewarmContextCache(
         },
       ],
       messages: [{ role: "user", content: "warmup" }],
+    });
+    // Cache-skrivningen kostar 1,25× input — logga så kostnaden per anbud
+    // inte undervärderas i ai_call_logs.
+    const u = (message.usage ?? {}) as {
+      input_tokens?: number;
+      output_tokens?: number;
+      cache_read_input_tokens?: number;
+      cache_creation_input_tokens?: number;
+    };
+    void logAiCall({
+      userId: null,
+      bidId: null,
+      model,
+      label: "context prewarm",
+      inputTokens: u.input_tokens ?? 0,
+      outputTokens: u.output_tokens ?? 0,
+      cacheReadTokens: u.cache_read_input_tokens ?? 0,
+      cacheCreationTokens: u.cache_creation_input_tokens ?? 0,
+      latencyMs: Date.now() - startedAt,
     });
   } catch {
     // Avsiktligt tyst — cache-miss är bara dyrare, inte fel.
