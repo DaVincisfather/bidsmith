@@ -34,6 +34,15 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     );
   }
 
+  // Failed bids stay in the DB (they used to be deleted) — exporting one
+  // would flip it to 'exported' and count it as submitted in the stats.
+  if (bid.status === "failed") {
+    return NextResponse.json(
+      { error: "Bid generation failed. Re-run generation before exporting." },
+      { status: 409 },
+    );
+  }
+
   const { data: analysisRow, error: analysisError } = await supabase
     .from("analyses")
     .select("analysis")

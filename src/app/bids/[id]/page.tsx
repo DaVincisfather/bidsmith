@@ -4,6 +4,7 @@ import { BidSection, StyleGuide } from "@/lib/types";
 import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
 import { loadBudgets } from "@/lib/pptx-template/budget-loader";
 import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
+import type { FailedBundle } from "@/lib/bundle-labels";
 import { notFound } from "next/navigation";
 
 const DEFAULT_STYLE_GUIDE: StyleGuide = {
@@ -62,6 +63,8 @@ export default async function BidEditorPage({ params }: PageProps) {
       styleGuide={styleGuide}
       budgets={budgets}
       initialOverflowFlags={(bid.overflow_flags as OverflowFlag[]) ?? []}
+      initialFailedBundles={(bid.failed_bundles as FailedBundle[]) ?? []}
+      initialGenerationError={(bid.generation_error as string | null) ?? null}
     />
   );
 }

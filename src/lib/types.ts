@@ -257,7 +257,7 @@ export interface BidSection {
   generatedAt: string;
 }
 
-export type BidStatus = "generating" | "draft" | "exported";
+export type BidStatus = "generating" | "draft" | "exported" | "failed";
 export type BidOutcome = "won" | "lost" | "no-bid" | "cancelled";
 
 export interface Bid {

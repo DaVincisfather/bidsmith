@@ -7,21 +7,42 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
+// POST /api/bids' maxDuration is 300 s — past that the platform has killed
+// the background job without reaching its failure handler. 7 min = the kill
+// point plus buffer, so a dead generation doesn't poll for long.
+const STALE_GENERATING_MS = 7 * 60 * 1000;
+
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  let { data } = await supabase
     .from("bids")
     .select("*")
     .eq("id", id)
     .single();
 
-  if (error || !data) {
+  if (!data) {
     return NextResponse.json(
-      { error: error?.message ?? "Bid not found" },
+      { error: "Bid not found" },
       { status: 404 }
     );
+  }
+
+  if (
+    data.status === "generating" &&
+    Date.now() - new Date(data.created_at).getTime() > STALE_GENERATING_MS
+  ) {
+    // Watchdog: without this, a bid whose generator died (maxDuration
+    // exceeded, deploy, crash) stays 'generating' and polls forever.
+    const { data: failed } = await supabase
+      .from("bids")
+      .update({ status: "failed", generation_error: "Generation timed out" })
+      .eq("id", id)
+      .eq("status", "generating")
+      .select()
+      .single();
+    if (failed) data = failed;
   }
 
   return NextResponse.json({
@@ -36,6 +57,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     createdAt: data.created_at,
     structureEval: data.structure_eval,
     overflowFlags: data.overflow_flags ?? [],
+    failedBundles: data.failed_bundles ?? [],
+    generationError: data.generation_error ?? null,
   });
 }
 

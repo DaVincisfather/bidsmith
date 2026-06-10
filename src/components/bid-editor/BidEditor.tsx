@@ -5,6 +5,7 @@ import { BidSection, StyleGuide } from "@/lib/types";
 import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
 import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { verifyFieldBudgets } from "@/lib/pptx-template/verify-budgets";
+import { BUNDLE_LABELS_SV, type FailedBundle } from "@/lib/bundle-labels";
 import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./renderers";
 import { StructureEvalBadge } from "./StructureEvalBadge";
@@ -19,6 +20,8 @@ interface BidEditorProps {
   styleGuide: StyleGuide;
   budgets: FieldBudgets;
   initialOverflowFlags: OverflowFlag[];
+  initialFailedBundles: FailedBundle[];
+  initialGenerationError: string | null;
 }
 
 export function BidEditor({
@@ -29,11 +32,15 @@ export function BidEditor({
   styleGuide,
   budgets,
   initialOverflowFlags,
+  initialFailedBundles,
+  initialGenerationError,
 }: BidEditorProps) {
   const [sections, setSections] = useState<BidSection[]>(initialSections);
   const [status, setStatus] = useState(initialStatus);
   const [structureEval, setStructureEval] = useState<StructureEvalSummary | null>(initialStructureEval);
   const [overflowFlags, setOverflowFlags] = useState<OverflowFlag[]>(initialOverflowFlags);
+  const [failedBundles, setFailedBundles] = useState<FailedBundle[]>(initialFailedBundles);
+  const [generationError, setGenerationError] = useState<string | null>(initialGenerationError);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -73,6 +80,8 @@ export function BidEditor({
     setStatus(data.status);
     setStructureEval(data.structureEval ?? null);
     setOverflowFlags(data.overflowFlags ?? []);
+    setFailedBundles(data.failedBundles ?? []);
+    setGenerationError(data.generationError ?? null);
   }, [bidId]);
 
   useEffect(() => {
@@ -207,6 +216,22 @@ export function BidEditor({
           {status === "generating" && sections.length === 0 && (
             <div className="py-16 flex justify-center">
               <ForgeLoader size={64} />
+            </div>
+          )}
+
+          {status === "failed" && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+              Genereringen misslyckades{generationError ? `: ${generationError}` : ""}.
+              Gå tillbaka till analysen och kör anbudsgenereringen igen.
+            </div>
+          )}
+
+          {status !== "generating" && status !== "failed" && failedBundles.length > 0 && (
+            <div className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {failedBundles.length === 1 ? "En sektion" : `${failedBundles.length} sektioner`} kunde
+              inte genereras:{" "}
+              {failedBundles.map((f) => BUNDLE_LABELS_SV[f.bundle] ?? f.bundle).join(", ")}.
+              Utkastet är ofullständigt.
             </div>
           )}
 

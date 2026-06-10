@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TeamProposal } from "./team-proposal";
 import { GoNoGoResultView } from "./go-no-go-result";
 import { GoNoGoResult } from "@/lib/types";
+import { BUNDLE_LABELS_SV, type FailedBundle } from "@/lib/bundle-labels";
 import { ForgeLoader } from "./ForgeLoader";
 
 interface ScoredConsultant {
@@ -31,26 +32,55 @@ function buildDefaultTeamIds(scored: ScoredConsultant[]): Set<string> {
   return new Set(top.map((c) => c.consultantId));
 }
 
-interface FailedBundle {
-  bundle: string;
-  error: string;
+interface BidStatus {
+  status: string;
+  failedBundles: FailedBundle[];
+  generationError: string | null;
 }
 
-// Human-readable Swedish names for the AI bundles, for the partial-generation warning.
-const BUNDLE_LABELS_SV: Record<string, string> = {
-  understanding: "Förståelse",
-  phases: "Faser",
-  quality: "Kvalitetssäkring",
-  "requirement-matrix": "Kravmatris",
-  team: "Team & pris",
-  reference: "Referenser",
-};
+// POST /api/bids returns 202 before generation finishes (it runs server-side
+// in the background). Poll until the bid leaves 'generating' so the
+// partial/failure UX below still applies. Returns null if the component
+// unmounted mid-poll — generation continues server-side, nothing to do here.
+// A single failed poll must NOT surface as "generation failed" (the user
+// would re-run and pay for a duplicate) — only give up after several in a row.
+async function pollBidUntilDone(
+  bidId: string,
+  isMounted: () => boolean,
+): Promise<BidStatus | null> {
+  let consecutiveFailures = 0;
+  for (;;) {
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    if (!isMounted()) return null;
+    try {
+      const res = await fetch(`/api/bids/${bidId}`);
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      consecutiveFailures = 0;
+      const bid: BidStatus = await res.json();
+      if (bid.status !== "generating") return bid;
+    } catch {
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= 5) {
+        throw new Error("Kunde inte hämta anbudsstatus");
+      }
+    }
+  }
+}
 
 export function AnalysisMatchSection({
   analysisId,
   latestMatch,
 }: AnalysisMatchSectionProps) {
   const router = useRouter();
+  // The bid poll runs for minutes; without this guard it would setState on an
+  // unmounted component and yank the user to /bids/{id} long after they left.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const [match, setMatch] = useState<MatchData | null>(latestMatch);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     latestMatch ? buildDefaultTeamIds(latestMatch.scoredConsultants) : new Set()
@@ -186,15 +216,21 @@ export function AnalysisMatchSection({
       }
 
       const data = await response.json();
-      if (Array.isArray(data.failedBundles) && data.failedBundles.length > 0) {
+      const bid = await pollBidUntilDone(data.id, () => mountedRef.current);
+      if (!bid) return; // user left the page; generation continues server-side
+      if (bid.status === "failed") {
+        throw new Error(bid.generationError || "Bid generation failed");
+      }
+      if (bid.failedBundles.length > 0) {
         // Partiellt utkast: navigera inte tyst till ett ofullständigt anbud —
         // visa vilka sektioner som saknas och låt användaren öppna det medvetet.
-        setPartialBid({ id: data.id, failedBundles: data.failedBundles });
+        setPartialBid({ id: data.id, failedBundles: bid.failedBundles });
         setBidLoading(false);
         return;
       }
       router.push(`/bids/${data.id}`);
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : "Something went wrong");
       setBidLoading(false);
     }
