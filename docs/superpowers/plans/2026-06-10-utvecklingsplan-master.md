@@ -6,6 +6,10 @@
 > detaljplanen först. Detaljplaner exekveras via superpowers:subagent-driven-development
 > eller superpowers:executing-plans.
 
+> **Reviderad 2026-06-10** efter merge av PR #9 (async generering + failed-status),
+> #10 (Opus-prisfix + `ai_call_logs.bid_id`) och #12 (referensbundle → deterministisk
+> tom mall): modelltabellen, fas 0-tasks och fas 3/5-beskrivningarna är synkade mot main.
+
 **Mål:** Göra bidsmith generellt användbar för olika konsultbolag (mall/profil som data,
 fler output-format), robust i drift (kö-baserad pipeline), självförbättrande
 (kunskapslager + utfallsdata) och tokeneffektiv — med en mätbar modellstrategi där
@@ -27,7 +31,7 @@ pptx-automizer, Claude API (`@anthropic-ai/sdk`), Vercel. Befintlig eval-harness
 | 0 | Modellbas & API-modernisering | Liten | Rör `ai-client.ts` som allt annat bygger på; sänker kostnad/flakiness direkt |
 | 1 | A/B-harness: Opus 4.8 vs Fable 5 | Liten–medel | Mätinstrumentet måste finnas innan vi ändrar skrivsteget; återanvänds för all senare kvalitetsmätning |
 | 2 | Mall & profil som data | Stor | Största produktvärdet — gör white-labeling till konfiguration istället för fork |
-| 3 | Pipeline som kö-jobb | Medel | Tar bort Vercel-timeout-taket; förutsättning för längre Fable/Opus-körningar och fas 4–5 |
+| 3 | Pipeline som kö-jobb | Medel | Ersätter PR #9:s after()-interim (300 s-tak kvarstår där); retry per steg; förutsättning för längre Fable/Opus-körningar och fas 4–5 |
 | 4 | Output-adapters (DOCX + kravsvar) | Medel | Kräver mallmanifest (fas 2); svensk offentlig upphandling levereras ofta inte som PPTX |
 | 5 | Kunskapslager & utfallsåterkoppling | Stor | Störst kvalitetshävstång över tid; kräver driftdata och fas 3:s persistens |
 | 6 | Tokenoptimering radar (Batch API) | Liten | Fristående; kan köras närhelst |
@@ -49,7 +53,8 @@ Sonnet 4.6 `claude-sonnet-4-6` $3/$15 · Haiku 4.5 `claude-haiku-4-5` $1/$5.
 | Matchning (`consultant-matcher.ts`) | Haiku-prefilter + Sonnet 4.6 | Oförändrat; embeddings-pre-rank i fas 5 |
 | Go/No-Go (`go-no-go-evaluator.ts`) | Sonnet 4.6 | Sonnet 4.6 + kalibreringsdata (fas 5) |
 | Skrivbundles: understanding, phases, quality | **Opus 4.7** | **Opus 4.8 nu (fas 0); Fable 5 om A/B i fas 1 motiverar det** |
-| Skrivbundles: team, reference, requirement-matrix | Sonnet 4.6 | Sonnet 4.6 |
+| Skrivbundles: team, requirement-matrix | Sonnet 4.6 | Sonnet 4.6 |
+| Referenssektion | Deterministisk tom mall (PR #12) — ingen AI | Vault-matad referensväljare (efter fas 5) |
 | RFP-radar (`opportunity-scorer.ts`) | Haiku 4.5 | Haiku 4.5 via Batch API (fas 6) |
 | Eval-judges (`evals/`, `src/lib/eval/`) | Sonnet 4.6 | Sonnet 4.6 — judge får aldrig vara samma modell som jämförs |
 
@@ -68,7 +73,8 @@ Fable och stannar på Sonnet/Haiku.
 för JSON-extraktion, prompt caching. Allt i `src/lib/`, inga produktytor ändras.
 
 **Filer:** Skapa `src/lib/models.ts`. Ändra `src/lib/ai-client.ts`, `src/lib/ai-cost.ts`,
-alla 12 call-sites med hårdkodade modellsträngar (se `grep -r "claude-" src/lib`),
+alla 11 call-sites med hårdkodade modellsträngar (se `grep -r "claude-" src/lib`;
+referensbundlen är borta sedan PR #12),
 `src/lib/__tests__/ai-client.test.ts`, `src/lib/__tests__/ai-cost.test.ts`.
 
 Uppgifter (detaljplan med TDD-steg skrivs vid fasstart):
@@ -77,10 +83,10 @@ Uppgifter (detaljplan med TDD-steg skrivs vid fasstart):
    `MODELS = { extraction, matching, prefilter, writing, writingChallenger, judge, radar }`.
    Ersätt hårdkodade ID:n i alla call-sites. → Verifiera: `grep -rn "claude-" src/`
    träffar endast `models.ts`, `ai-cost.ts` och tester; `npx vitest run` grönt.
-2. **`ai-cost.ts` — prisuppdatering.** Lägg till `claude-opus-4-8` {5, 25} och
-   `claude-fable-5` {10, 50}; korrigera `claude-opus-4-7`/`claude-opus-4-6` till {5, 25}
-   enligt aktuell prislista; uppdatera "Last verified"-kommentaren. → Verifiera: uppdaterade
-   `ai-cost.test.ts` passerar.
+2. **`ai-cost.ts` — prisrad för Fable 5.** Opus-priserna är redan korrigerade och
+   `claude-opus-4-8` tillagd (PR #10, mergad 2026-06-10). Kvar: lägg till
+   `claude-fable-5` {10, 50} och skärp models-pristestet så fallback räknas som fel.
+   → Verifiera: `ai-cost.test.ts` + `models.test.ts` passerar.
 3. **Migrera skrivbundles Opus 4.7 → 4.8.** Endast modell-ID via `MODELS.writing`
    (4.7→4.8 har inga API-brytande ändringar; adaptive thinking + effort används redan).
    → Verifiera: `npm run eval:bid-generator` passerar trösklarna i `evals/thresholds.yaml`.
@@ -97,7 +103,7 @@ Uppgifter (detaljplan med TDD-steg skrivs vid fasstart):
    beroende på modell — mindre prompts cachas tyst inte, vilket är ofarligt).
    Strukturera system: stabil del (instruktioner + framtida org-profil) FÖRE breakpoint,
    volatilt (RFP-innehåll) i user-content som idag. → Verifiera: vid generering av ett
-   anbud (6 bundles mot samma RFP) visar `ai_call_logs` `cache_read_input_tokens > 0`
+   anbud (5 bundles mot samma RFP) visar `ai_call_logs` `cache_read_input_tokens > 0`
    från andra anropet och framåt.
 
 **Framgångskriterier fas 0:** Alla vitest + alla tre evals gröna; ett testanbud genererat
@@ -183,6 +189,12 @@ generera anbud → korrekt mall, färger, ton; Ekan-flödet oförändrat (golden
 timeout-taket, ger retry per steg och progress i UI, och förbereder utbrytning av
 `@bidsmith/core` för headless-körning.
 
+**Relation till PR #9 (mergad 2026-06-10):** generering körs redan asynkront via `after()`
+med `maxDuration: 300`, status `failed` + `failed_bundles` persisterade och en
+stale-watchdog i `GET /api/bids/[id]`. Fas 3 ersätter after()-flödet (vars 300 s-tak
+kvarstår) men ska ÅTERANVÄNDA statusmaskineriet och klient-pollingen — bygg inte ett
+parallellt felhanteringssystem.
+
 **Rekommenderat vägval:** pg-boss ovanpå befintlig Supabase-Postgres — ingen ny
 infrastruktur, ingen ny leverantör. (Alternativ: Inngest/Trigger.dev om managed önskas;
 beslut tas vid fasstart.) Worker körs som separat Node-process (lokalt/VPS/Railway);
@@ -240,8 +252,10 @@ Uppgifter:
 1. pgvector-migration; indexera tidigare anbud (per sektion), referensuppdrag, vunna FU.
 2. Retrieval in i skrivbundles: top-k relevanta referenser in i prompten (efter
    cache-breakpoint, de varierar per RFP).
-3. `outcome`-fält på bids (won/lost/no_answer + anteckning) + enkel UI; go/no-go-prompten
-   får aggregerad historisk träffbild ("av 12 liknande upphandlingar vann ni 3").
+3. Utfallsloggning finns redan (won/lost/no-bid/cancelled + förlustorsak, konkurrent och
+   kommentar via `PATCH /api/bids/[id]/outcome`). Kvar: visa loggat utfall på `/bids/[id]`
+   och ge go/no-go-prompten aggregerad historisk träffbild ("av 12 liknande upphandlingar
+   vann ni 3").
 4. Embeddings-pre-rank i `consultant-matcher` före Haiku/Sonnet-stegen — sänker
    matchningskostnaden vid 80+ konsulter till nära noll för uppenbara icke-matchningar.
    → Verifiera mot matcher-evals: ingen försämring av `expected_top_k`-träff.
@@ -262,7 +276,8 @@ Uppgifter:
 1. `opportunity-scorer` batchvariant: skapa batch (`client.messages.batches.create`),
    polla, hämta resultat; cron-flödet skriver resultat när batchen är klar istället för
    synkront.
-2. Kostnadslogg: `ai_call_logs` får batch-flagga så halveringen syns i uppföljning.
+2. Kostnadslogg: `ai_call_logs` får batch-flagga (ny migration — `bid_id`-kolumnen finns
+   redan sedan PR #10) så halveringen syns i uppföljning.
 
 **Framgångskriterier fas 6:** Radar körs via batch i drift; kostnad per scorad notis
 halverad i `ai_call_logs` jämfört med baslinjen.

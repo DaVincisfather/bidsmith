@@ -4,6 +4,10 @@
 > (rekommenderat) eller superpowers:executing-plans för att exekvera denna plan task-för-task.
 > Steg använder checkbox-syntax (`- [ ]`) för spårning.
 
+> **Reviderad 2026-06-10** efter merge av PR #9/#10/#12: Opus-priserna är redan fixade
+> (Task 2 reducerad till Fable 5-raden), referensbundlen är borttagen (fem skrivbundles,
+> inte sex) och `CallClaudeOptions` har numera även `bidId`.
+
 **Mål:** Centraliserat modellregistry, korrekt kostnadsdata, structured outputs istället för
 JSON-extraktion ur fritext, samt prompt caching av delad anbudskontext — utan att någon
 produktyta ändras.
@@ -12,7 +16,7 @@ produktyta ändras.
 inte strängar). `callClaude()` får `output_config.format` (JSON Schema genererat från befintliga
 Zod-scheman via Zod v4:s `z.toJSONSchema` + sanering) och en `cachedContext`-option som renderar
 system som blockarray med `cache_control`. Bundlarnas delade kontext flyttas från `userContent`
-till `cachedContext`; en `max_tokens: 0`-prewarm per modellgrupp gör att alla sex parallella
+till `cachedContext`; en `max_tokens: 0`-prewarm per modellgrupp gör att alla fem parallella
 bundles läser cachen utan att parallellismen offras.
 
 **Tech-stack:** TypeScript strict, `@anthropic-ai/sdk` ^0.80.0, Zod ^4.3.6, vitest.
@@ -51,7 +55,6 @@ enligt commitstegen nedan.
   `src/lib/bid-generator/bundles/phases.ts:82`,
   `src/lib/bid-generator/bundles/quality.ts:72`,
   `src/lib/bid-generator/bundles/team.ts:55`,
-  `src/lib/bid-generator/bundles/reference.ts:77`,
   `src/lib/bid-generator/bundles/requirement-matrix.ts:78`
 
 Rollmappning (exakt):
@@ -65,10 +68,13 @@ Rollmappning (exakt):
 | `go-no-go-evaluator.ts` | `"claude-sonnet-4-6"` | `MODELS.gonogo` |
 | `opportunity-scorer.ts` | `"claude-haiku-4-5-20251001"` | `MODELS.radar` |
 | `understanding/phases/quality.ts` | `"claude-opus-4-7"` | `MODELS.writing` (**= 4.8, modellbytet sker här**) |
-| `team/reference/requirement-matrix.ts` | `"claude-sonnet-4-6"` | `MODELS.writingSupport` |
+| `team/requirement-matrix.ts` | `"claude-sonnet-4-6"` | `MODELS.writingSupport` |
 
 `MODELS.writingChallenger` (Fable 5) och `MODELS.judge` har inga call-sites i `src/` ännu —
 de konsumeras av fas 1:s A/B-harness. De definieras nu så att registryt är komplett.
+
+Referensbundlen är borttagen (PR #12 — deterministisk tom mall i
+`deterministic/reference.ts`), så skrivbundlarna är fem, inte sex.
 
 - [ ] **Steg 1.1: Skriv failande test**
 
@@ -183,27 +189,22 @@ git commit -m "feat: centralt modellregistry, skrivbundles Opus 4.7 -> 4.8"
 
 ---
 
-## Task 2: Prisuppdatering i ai-cost.ts
+## Task 2: Prisrad för Fable 5 i ai-cost.ts
 
 **Filer:**
-- Ändra: `src/lib/ai-cost.ts:8-13`
+- Ändra: `src/lib/ai-cost.ts` (PRICING-tabellen)
 - Ändra test: `src/lib/__tests__/ai-cost.test.ts`
 - Ändra test: `src/lib/__tests__/models.test.ts` (skärp pristestet)
 
-Aktuella listpriser (USD/MTok in/ut, verifierade 2026-06-10 mot claude-api-skillens
-modelltabell): Fable 5 10/50 · Opus 4.8 5/25 · Opus 4.7 5/25 · Opus 4.6 5/25 ·
-Sonnet 4.6 3/15 · Haiku 4.5 1/5. Tabellen i koden har 15/75 för Opus 4.7/4.6 — inaktuellt.
+> Reviderat 2026-06-10: PR #10 korrigerade redan Opus 4.7/4.6 till 5/25, la till
+> `claude-opus-4-8` {5, 25} och uppdaterade "Last verified"-kommentaren. Kvar här är
+> endast Fable 5-raden (fas 1:s utmanare) och skärpningen av models-pristestet.
 
-- [ ] **Steg 2.1: Uppdatera/skriv failande tester**
+- [ ] **Steg 2.1: Skriv failande tester**
 
-I `ai-cost.test.ts`: uppdatera befintliga assertions som räknar med 15/75 för
-`claude-opus-4-7` till 5/25, och lägg till:
+I `ai-cost.test.ts` (opus-4-8-testet finns redan sedan PR #10):
 
 ```typescript
-it("prissätter claude-opus-4-8", () => {
-  expect(getModelPricing("claude-opus-4-8")).toEqual({ inputPerMTok: 5, outputPerMTok: 25 });
-});
-
 it("prissätter claude-fable-5", () => {
   expect(getModelPricing("claude-fable-5")).toEqual({ inputPerMTok: 10, outputPerMTok: 50 });
 });
@@ -230,22 +231,15 @@ OBS: `getModelPricing` varnar bara en gång per modell (`warnedModels`-set). Anr
 - [ ] **Steg 2.2: Kör testerna, verifiera FAIL**
 
 Kör: `npx vitest run src/lib/__tests__/ai-cost.test.ts src/lib/__tests__/models.test.ts`
-Förväntat: FAIL — opus-4-8/fable-5 saknar prisrad; 4.7-priset fel.
+Förväntat: FAIL — `claude-fable-5` saknar prisrad.
 
-- [ ] **Steg 2.3: Uppdatera pristabellen**
+- [ ] **Steg 2.3: Lägg till raden**
 
 ```typescript
-// Anthropic list prices (USD per 1M tokens). Last verified: 2026-06-10.
-// Update here when Anthropic publishes new prices.
-const PRICING: Record<string, ModelPricing> = {
   "claude-fable-5": { inputPerMTok: 10, outputPerMTok: 50 },
-  "claude-opus-4-8": { inputPerMTok: 5, outputPerMTok: 25 },
-  "claude-opus-4-7": { inputPerMTok: 5, outputPerMTok: 25 },
-  "claude-opus-4-6": { inputPerMTok: 5, outputPerMTok: 25 },
-  "claude-sonnet-4-6": { inputPerMTok: 3, outputPerMTok: 15 },
-  "claude-haiku-4-5-20251001": { inputPerMTok: 1, outputPerMTok: 5 },
-};
 ```
+
+överst i `PRICING` — övriga rader är redan korrekta sedan PR #10.
 
 - [ ] **Steg 2.4: Kör testerna, verifiera PASS** — `npx vitest run` → allt grönt.
 
@@ -253,7 +247,7 @@ const PRICING: Record<string, ModelPricing> = {
 
 ```bash
 git add src/lib/ai-cost.ts src/lib/__tests__/ai-cost.test.ts src/lib/__tests__/models.test.ts
-git commit -m "fix: prisrader for Opus 4.8 + Fable 5, korrigera Opus 4.7/4.6 till 5/25"
+git commit -m "fix: prisrad for Fable 5 (A/B-utmanare i fas 1)"
 ```
 
 ---
@@ -263,7 +257,8 @@ git commit -m "fix: prisrader for Opus 4.8 + Fable 5, korrigera Opus 4.7/4.6 til
 **Filer:**
 - Skapa: `src/lib/structured-output-schema.ts`
 - Skapa test: `src/lib/__tests__/structured-output-schema.test.ts`
-- Ändra: `src/lib/ai-client.ts` (request-bygget, rad ~74-85)
+- Ändra: `src/lib/ai-client.ts` (request-bygget i stream-anropet; OBS att
+  `CallClaudeOptions` sedan PR #10 även har `bidId` — rör den inte)
 - Ändra test: `src/lib/__tests__/ai-client.test.ts` (nya payload-assertions)
 
 **Designbeslut:**
@@ -444,7 +439,7 @@ Uppdatera det till att assertera att `thinking` utelämnas och `output_config.ef
 
 - [ ] **Steg 3.7: Wira in i callClaude**
 
-I `ai-client.ts`, ersätt request-bygget (rad ~74-85):
+I `ai-client.ts`, ersätt request-bygget (stream-anropet i retry-loopen):
 
 ```typescript
 import { toStructuredOutputSchema } from "@/lib/structured-output-schema";
@@ -510,17 +505,17 @@ git commit -m "feat: structured outputs via output_config.format i callClaude"
 **Filer:**
 - Ändra: `src/lib/ai-client.ts` (`CallClaudeOptions`, system-rendering, ny export `prewarmContextCache`)
 - Ändra test: `src/lib/__tests__/ai-client.test.ts`
-- Ändra: alla sex bundle-filer i `src/lib/bid-generator/bundles/`
+- Ändra: alla fem bundle-filerna i `src/lib/bid-generator/bundles/`
 - Ändra: `src/lib/bid-generator/index.ts` (prewarm före parallell dispatch)
 
 **Designbeslut (läs innan implementation):**
 - Cache är prefixmatchning i ordningen tools → system → messages. Bundlarna har OLIKA
   system-prompts men DELAR `formatContext(ctx)`. Därför flyttas den delade kontexten till
   ett FÖRSTA system-block med `cache_control`, och den bundle-specifika prompten blir
-  system-block två. Prefixet (block 1) är då byte-identiskt över alla sex bundles —
+  system-block två. Prefixet (block 1) är då byte-identiskt över alla fem bundles —
   `formatContext` är en ren funktion av ctx, så identiteten är garanterad.
-- Cachen är modellskopad: Opus-trion (understanding/phases/quality) och Sonnet-trion
-  (requirement-matrix/team/reference) har separata cacher.
+- Cachen är modellskopad: Opus-trion (understanding/phases/quality) och Sonnet-duon
+  (requirement-matrix/team) har separata cacher.
 - Bundlarna körs parallellt (`Promise.allSettled` i `bid-generator/index.ts`) — parallella
   anrop kan inte läsa en cache som håller på att skrivas. Lösning: en
   **`max_tokens: 0`-prewarm per modellgrupp** (dokumenterat mönster för cache-förvärmning)
@@ -640,7 +635,7 @@ fungerar det ändå inte, fall tillbaka på `max_tokens: 1` och notera i koden v
 
 - [ ] **Steg 5.4: Kör, verifiera PASS.**
 
-- [ ] **Steg 5.5: Flytta delad kontext i alla sex bundles**
+- [ ] **Steg 5.5: Flytta delad kontext i alla fem bundles**
 
 I varje bundle-fil (mönstret är identiskt — exempel `understanding.ts`):
 
@@ -655,11 +650,12 @@ callClaude({
   label: "understanding bundle",
   effort: "max",
   userId: ctx.userId,
+  bidId: ctx.bidId,
 }),
 ```
 
 Kontexten lämnar alltså `userContent` (idag `formatContext(ctx)`) och blir `cachedContext`;
-`userContent` blir den fasta instruktionsraden ovan i alla sex filer.
+`userContent` blir den fasta instruktionsraden ovan i alla fem filer.
 
 - [ ] **Steg 5.6: Prewarm i bid-generator/index.ts**
 
@@ -703,7 +699,8 @@ git commit -m "feat: prompt caching av delad anbudskontext + prewarm per modellg
   cachedContext-vägen.)
 - [ ] **Steg 6.2: Cacheverifiering på riktigt anbud.** Generera ett anbud end-to-end i
   dev-miljön (syntetisk data från `data/synthetic/`). Kontrollera i `ai_call_logs`:
-  - De sex bundle-anropen + 2 prewarm-rader finns.
+  - De fem bundle-anropen + 2 prewarm-rader finns (filtrera på `bid_id` — kolumnen
+    finns sedan PR #10).
   - `cache_read_input_tokens > 0` för bundle-anropen i respektive modellgrupp
     (alla tre i gruppen läser — prewarm skrev).
   - Om `cache_read_input_tokens = 0` överallt: kontrollera att `formatContext`-utfallet
