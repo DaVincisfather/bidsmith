@@ -20,7 +20,15 @@ export async function GET(request: NextRequest) {
     query = query.neq("status", "new");
   }
   if (minScore) {
-    query = query.gte("relevance_score", parseInt(minScore, 10));
+    const parsed = Number.parseInt(minScore, 10);
+    // NaN would reach Postgres and come back as a leaked DB error.
+    if (Number.isNaN(parsed)) {
+      return NextResponse.json(
+        { error: "Invalid min_score: expected a number" },
+        { status: 400 },
+      );
+    }
+    query = query.gte("relevance_score", parsed);
   }
 
   const { data, error } = await query;

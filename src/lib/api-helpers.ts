@@ -45,3 +45,24 @@ export async function parseBody<T>(
 
   return { ok: true, data: parsed.data };
 }
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Validates a route path param that must be a UUID.
+ *
+ * Why: a malformed id otherwise reaches Postgres, which throws
+ * "invalid input syntax for type uuid" — a raw DB error leaked to the
+ * client with the wrong status code (500 instead of 400).
+ */
+export function parseUuidParam(id: string, name = "id"): ParseResult<string> {
+  if (UUID_RE.test(id)) return { ok: true, data: id };
+  return {
+    ok: false,
+    response: NextResponse.json(
+      { error: `Invalid ${name}: expected a UUID` },
+      { status: 400 }
+    ),
+  };
+}
