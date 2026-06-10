@@ -1,6 +1,7 @@
 import Anthropic, { APIError } from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { logAiCall } from "@/lib/ai-call-logger";
+import { toStructuredOutputSchema } from "@/lib/structured-output-schema";
 
 let _client: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -53,6 +54,11 @@ interface CallClaudeOptions<T> {
   // Bid attribution for ai_call_logs — set for bid-generation calls so
   // cost per bid is queryable. Null for calls with no bid.
   bidId?: string | null;
+  // Delad kontext (t.ex. formatContext(ctx) i bid-generatorn) som renderas som
+  // första system-block med cache_control. Byte-identisk över parallella anrop
+  // → prefixet cacheas; den anropsspecifika prompten ligger i block två och
+  // invaliderar inte cachen vid overflow-/format-retries.
+  cachedContext?: string;
 }
 
 export async function callClaude<T>({
@@ -65,8 +71,20 @@ export async function callClaude<T>({
   effort,
   userId,
   bidId,
+  cachedContext,
 }: CallClaudeOptions<T>): Promise<T> {
   let lastError: unknown;
+
+  // Nödlucka: BIDSMITH_STRUCTURED_OUTPUTS=off återgår till fritext + extractJson
+  // om API:t skulle avvisa något sanerat schema i drift. Tas bort i fas 1 om oanvänd.
+  const useStructuredOutputs = process.env.BIDSMITH_STRUCTURED_OUTPUTS !== "off";
+  // Beräknas EN gång — inte per retry-attempt.
+  const outputConfig: Record<string, unknown> = {
+    ...(effort ? { effort } : {}),
+    ...(useStructuredOutputs
+      ? { format: { type: "json_schema", schema: toStructuredOutputSchema(schema) } }
+      : {}),
+  };
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const startedAt = Date.now();
@@ -78,13 +96,20 @@ export async function callClaude<T>({
       const stream = getClient().messages.stream({
         model,
         max_tokens: maxTokens,
-        system,
+        system: cachedContext
+          ? [
+              {
+                type: "text" as const,
+                text: cachedContext,
+                cache_control: { type: "ephemeral" as const },
+              },
+              { type: "text" as const, text: system },
+            ]
+          : system,
         messages: [{ role: "user", content: userContent }],
-        ...(effort
-          ? {
-              thinking: { type: "adaptive" as const },
-              output_config: { effort },
-            }
+        ...(effort ? { thinking: { type: "adaptive" as const } } : {}),
+        ...(Object.keys(outputConfig).length > 0
+          ? { output_config: outputConfig }
           : {}),
       });
       const message = await stream.finalMessage();

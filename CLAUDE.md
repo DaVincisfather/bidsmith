@@ -14,9 +14,13 @@ AI-agent som tar offertförfrågan + konsultprofiler och producerar anbudsutkast
 
 ## Modellstrategi
 
-- **Extraction/matchning:** Sonnet — mekaniskt, strukturerar JSON
-- **Anbudsskrivning:** Opus — kvalitetskritiskt, här avgörs vinst/förlust
-- **Pre-filter (framtida):** Haiku — eliminera irrelevanta CV:n vid 80+ konsulter
+- **`src/lib/models.ts` är enda sanningskällan** — roller (extraction/prefilter/matching/
+  gonogo/radar/writing/writingSupport/writingChallenger/judge), aldrig hårdkodade modellsträngar.
+  Modellbyte = enradsändring där + eval-körning. Varje modell måste ha prisrad i `ai-cost.ts`
+  (testat i `models.test.ts`).
+- **Skrivbundles:** Opus 4.8 (`MODELS.writing`) — kvalitetskritiskt; A/B mot Fable 5
+  (`MODELS.writingChallenger`) avgörs i fas 1
+- **Extraction/matchning/go-no-go:** Sonnet; **prefilter/radar:** Haiku
 - **Princip:** Varje steg får föregående stegs komprimerade output, inte rådokumenten
 
 ## Arbetsregler
@@ -48,7 +52,12 @@ Vid ändringar i befintlig kod:
 
 ### Projektspecifika gotchas
 
-- `callClaude()` i `ai-client.ts` hanterar retry + JSON-extraktion — använd den, skriv inte egen
+- `callClaude()` i `ai-client.ts` hanterar retry + structured outputs (`output_config.format`
+  ur Zod-schemat, nödlucka `BIDSMITH_STRUCTURED_OUTPUTS=off`) — använd den, skriv inte egen
+- `callClaude` tar `cachedContext` för delad kontext (cachat system-block). OBS:
+  `output_config.format` deltar i cache-prefixet — anrop med olika scheman delar ALDRIG
+  cache; prewarm utan format värmer inget (se fas 0-resultatdokumentet). Cachen ger
+  träff vid retries/regenerering med samma schema.
 - Zod-schemas i `ai-schemas.ts` — validera alla AI-responses, lägg till schema där om det saknas
 - markitdown-js för dokumentparsning (PDF, DOCX, PPTX, XLSX) — inte mammoth/pdf-parse
 - DB-migreringar: namnge `NNN_beskrivning.sql`, applicera manuellt via Supabase SQL Editor

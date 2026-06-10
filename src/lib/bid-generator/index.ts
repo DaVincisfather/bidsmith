@@ -68,6 +68,13 @@ export async function generateAllSections(
   const budgets = await loadBudgets(templateName);
   const retryBudget: RetryBudget = { remaining: GLOBAL_RETRY_CAP };
 
+  // Ingen cache-prewarm här, trots att bundlarna delar formatContext(ctx):
+  // output_config.format (structured outputs) deltar i cache-prefixet, så
+  // bundles med olika scheman kan aldrig läsa varandras cache — en delad
+  // värmning vore ren kostnad. cachedContext i varje bundle ger ändå
+  // cacheträff vid overflow-/format-retries och regenerering inom TTL
+  // (verifierat empiriskt 2026-06-10, se fas 0-resultatdokumentet).
+
   // Deterministic generators — no await needed.
   const cover = buildCoverSection(ctx.analysis);
   const certifications = buildCertificationsSection();
