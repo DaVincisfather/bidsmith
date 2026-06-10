@@ -7,6 +7,7 @@ export interface ModelPricing {
 }
 
 const PRICING: Record<string, ModelPricing> = {
+  "claude-fable-5": { inputPerMTok: 10, outputPerMTok: 50 },
   "claude-opus-4-8": { inputPerMTok: 5, outputPerMTok: 25 },
   "claude-opus-4-7": { inputPerMTok: 5, outputPerMTok: 25 },
   "claude-opus-4-6": { inputPerMTok: 5, outputPerMTok: 25 },

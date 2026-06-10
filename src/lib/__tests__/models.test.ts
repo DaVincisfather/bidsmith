@@ -1,8 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MODELS } from "@/lib/models";
-import { getModelPricing } from "@/lib/ai-cost";
+import { getModelPricing, _resetWarnedModelsForTests } from "@/lib/ai-cost";
 
 describe("MODELS registry", () => {
+  beforeEach(() => {
+    // getModelPricing varnar bara en gång per modell — nollställ så att
+    // fallback-testet nedan inte påverkas av tidigare körda tester.
+    _resetWarnedModelsForTests();
+  });
+
   it("definierar alla roller med giltiga modell-ID-prefix", () => {
     const roles = [
       "extraction", "prefilter", "matching", "gonogo",
@@ -18,12 +24,14 @@ describe("MODELS registry", () => {
     expect(MODELS.writingChallenger).toBe("claude-fable-5");
   });
 
-  it("varje modell i registryt har en prisrad (ingen fallback-varning)", () => {
+  it("varje modell i registryt har en egen prisrad (ingen fallback)", () => {
     // getModelPricing loggar varning + faller tillbaka på Sonnet-pris för okända
     // modeller — registryt får aldrig peka på en modell utan prisrad.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     for (const model of new Set(Object.values(MODELS))) {
-      const p = getModelPricing(model);
-      expect(p).toBeDefined();
+      getModelPricing(model);
     }
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
