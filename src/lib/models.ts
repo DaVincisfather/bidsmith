@@ -18,7 +18,8 @@ export const MODELS = {
   radar: "claude-haiku-4-5-20251001",
   // Kvalitetskritiska skrivbundles: understanding, phases, quality.
   writing: "claude-opus-4-8",
-  // Övriga skrivbundles: team, reference, requirement-matrix.
+  // Övriga skrivbundles: team, requirement-matrix. (reference är deterministisk
+  // tom mall sedan PR #12 — ingen modell.)
   writingSupport: "claude-sonnet-4-6",
   // Utmanare i A/B-test av anbudstext (fas 1) — ingen produktionsanvändning.
   writingChallenger: "claude-fable-5",
