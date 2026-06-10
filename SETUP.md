@@ -59,7 +59,6 @@ Open `.env.local` and fill in the values. Each one is explained in the file:
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API → "Project URL" (looks like `https://<ref>.supabase.co` — not the dashboard URL) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → `anon` `public` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → `service_role` (secret) |
-| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` for local dev |
 | `CRON_SECRET` | Required if you use the TED radar. The `/api/radar/fetch` and `/api/radar/score` endpoints reject **all** requests unless this is set and sent as `Authorization: Bearer <CRON_SECRET>`. Leave unset to keep the radar background jobs disabled (they will 401). |
 
 ## 6. Enable email login in Supabase
@@ -73,6 +72,10 @@ Bidsmith logs people in with a magic link (no passwords).
 
 > Tip: for a frictionless demo, you can turn **off** "Confirm email" under
 > Authentication → Providers → Email, so the magic link logs in directly.
+
+> Troubleshooting: if `npm run dev` starts on another port (e.g. 3001 because
+> 3000 was busy), the magic link will be rejected until you add that URL to
+> **Redirect URLs** too (`http://localhost:3001/**`).
 
 ## 7. Run it
 
@@ -95,7 +98,7 @@ To give colleagues a URL they can log into:
 
 1. Push your repo to GitHub and import it into [Vercel](https://vercel.com/new).
 2. Add the same environment variables in Vercel → Project → Settings → Environment
-   Variables. Set `NEXT_PUBLIC_SITE_URL` to your Vercel URL.
+   Variables.
 3. In Supabase → Authentication → URL Configuration, add the Vercel URL (with `/**`)
    to **Redirect URLs**.
 4. Deploy. Anyone you invite can now log in with their email.
