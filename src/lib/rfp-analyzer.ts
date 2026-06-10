@@ -1,6 +1,7 @@
 import { RfpAnalysis } from "./types";
 import { RfpAnalysisSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
+import { MODELS } from "./models";
 
 const SYSTEM_PROMPT = `Du är en expert på att analysera förfrågningsunderlag (RFP:er) för konsultuppdrag.
 Du läser ett RFP-dokument och producerar en strukturerad analys i JSON-format.
@@ -47,7 +48,7 @@ export async function analyzeRfp(
   userId?: string | null
 ): Promise<RfpAnalysis> {
   return callClaude({
-    model: "claude-sonnet-4-6",
+    model: MODELS.extraction,
     maxTokens: 4000,
     system: SYSTEM_PROMPT,
     userContent: `Analysera följande förfrågningsunderlag och returnera en strukturerad JSON-analys:\n\n${rfpText}`,

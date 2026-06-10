@@ -1,4 +1,5 @@
 import { callClaude } from "./ai-client";
+import { MODELS } from "./models";
 import { ConsultantExtractionSchema } from "./ai-schemas";
 import { ConsultantExtraction } from "./types";
 
@@ -40,7 +41,7 @@ export async function extractConsultant(
   userId?: string | null
 ): Promise<ConsultantExtraction> {
   return callClaude({
-    model: "claude-sonnet-4-6",
+    model: MODELS.extraction,
     maxTokens: 4000,
     system: SYSTEM_PROMPT,
     userContent: `Analysera följande konsult-CV och returnera en strukturerad JSON-profil:\n\n${cvText}`,

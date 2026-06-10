@@ -18,6 +18,10 @@ describe("getModelPricing", () => {
     expect(p.outputPerMTok).toBe(25);
   });
 
+  it("prissätter claude-fable-5", () => {
+    expect(getModelPricing("claude-fable-5")).toEqual({ inputPerMTok: 10, outputPerMTok: 50 });
+  });
+
   it("returns Opus 4.7 pricing", () => {
     const p = getModelPricing("claude-opus-4-7");
     expect(p.inputPerMTok).toBe(5);

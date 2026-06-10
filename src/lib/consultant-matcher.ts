@@ -7,6 +7,7 @@ import {
 } from "./types";
 import { ScoredMatchResultSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
+import { MODELS } from "./models";
 
 // Two-stage matching.
 //
@@ -23,8 +24,8 @@ import { callClaude } from "./ai-client";
 
 export const DEFAULT_DEEP_PER_LEVEL = 5;
 
-const PREFILTER_MODEL = "claude-haiku-4-5-20251001";
-const DEEP_MODEL = "claude-sonnet-4-6";
+const PREFILTER_MODEL = MODELS.prefilter;
+const DEEP_MODEL = MODELS.matching;
 
 // Output scales with how many consultants the model must emit, so the token cap
 // is sized to the pool/shortlist instead of a fixed 8000 (which truncated past

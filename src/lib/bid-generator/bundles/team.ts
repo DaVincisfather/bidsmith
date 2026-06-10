@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
+import { MODELS } from "@/lib/models";
 import type { BidSection } from "@/lib/types";
 import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { formatContext, type BidContext } from "../context";
@@ -52,7 +53,7 @@ export async function buildTeamBundle(
     basePrompt,
     callLLM: (p) =>
       callClaude({
-        model: "claude-sonnet-4-6",
+        model: MODELS.writingSupport,
         maxTokens: 2000,
         system: p,
         userContent: formatContext(ctx),

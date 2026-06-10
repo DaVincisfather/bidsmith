@@ -6,6 +6,7 @@ import {
 } from "./types";
 import { GoNoGoResultSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
+import { MODELS } from "./models";
 
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
 Du får en RFP-analys, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
@@ -107,7 +108,7 @@ export async function evaluateGoNoGo(
   const poolText = formatPoolForPrompt(allScoredConsultants, teamIds);
 
   const result = await callClaude({
-    model: "claude-sonnet-4-6",
+    model: MODELS.gonogo,
     maxTokens: 4000,
     system: SYSTEM_PROMPT,
     userContent: `Bedöm detta teams chanser att vinna följande upphandling.

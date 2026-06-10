@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase";
 import { FieldBudgetsSchema, type FieldBudgets } from "./budget-types";
 
 export class TemplateConfigMissingError extends Error {
@@ -31,7 +31,10 @@ export async function loadBudgets(templateName: string): Promise<FieldBudgets> {
   const cached = cache.get(templateName);
   if (cached !== undefined) return cached;
 
-  const supabase = await createClient();
+  // Service-klienten, inte cookie-klienten: template_configs är global konfig
+  // (RLS: using(true) för authenticated) och loadBudgets anropas även utanför
+  // Next:s request-scope — eval-harnessen kör via tsx där cookies() kastar.
+  const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("template_configs")
     .select("budgets")
