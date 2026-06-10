@@ -6,7 +6,8 @@
 
 > **Reviderad 2026-06-10** efter merge av PR #9/#10/#12: Opus-priserna är redan fixade
 > (Task 2 reducerad till Fable 5-raden), referensbundlen är borttagen (fem skrivbundles,
-> inte sex) och `CallClaudeOptions` har numera även `bidId`.
+> inte sex) och `CallClaudeOptions` har numera även `bidId`. Fasen levereras dessutom
+> som TVÅ PR:er — se Branchstrategi.
 
 **Mål:** Centraliserat modellregistry, korrekt kostnadsdata, structured outputs istället för
 JSON-extraktion ur fritext, samt prompt caching av delad anbudskontext — utan att någon
@@ -27,8 +28,16 @@ Inga nya beroenden.
 `ANTHROPIC_API_KEY` i `.env.local`) körs i Task 4 och Task 6 — de kostar pengar, kör dem inte
 per steg.
 
-**Branchstrategi:** Allt arbete på branch `fas-0-modellbas`. En commit per avslutat task-steg
-enligt commitstegen nedan.
+**Branchstrategi:** Fasen levereras som TVÅ PR:er med var sin eval-grind:
+
+- **PR A** — Task 0–2 på branch `fas-0a-modellregistry`: registry + Fable 5-prisrad +
+  Opus 4.7 → 4.8. Liten och riskfri; skeppar 4.8-textkvaliteten till produktion direkt
+  istället för att vänta bakom structured outputs.
+- **PR B** — Task 3–6 på branch `fas-0b-structured-outputs-caching`, skapad från `main`
+  EFTER att PR A mergats. Fasens riskdel (formatgaranti + kontextflytt till system-block)
+  granskas isolerat och kan revertas utan att röra modellbytet.
+
+En commit per avslutat task-steg enligt commitstegen nedan.
 
 ---
 
@@ -39,7 +48,7 @@ enligt commitstegen nedan.
 - [ ] **Steg 0.1:** `npm install` i repo-roten.
 - [ ] **Steg 0.2:** Kör `npx vitest run`. Förväntat: grönt (baslinje). Om något redan är rött —
   STOPPA och rapportera innan ändringar görs.
-- [ ] **Steg 0.3:** `git checkout -b fas-0-modellbas`
+- [ ] **Steg 0.3:** `git checkout -b fas-0a-modellregistry`
 
 ---
 
@@ -250,9 +259,19 @@ git add src/lib/ai-cost.ts src/lib/__tests__/ai-cost.test.ts src/lib/__tests__/m
 git commit -m "fix: prisrad for Fable 5 (A/B-utmanare i fas 1)"
 ```
 
+- [ ] **Steg 2.6: Eval-grind för 4.8-bytet.** Kör `npm run eval:bid-generator` (kräver
+  `ANTHROPIC_API_KEY` i `.env.local`) → PASS mot `evals/thresholds.yaml`. Detta grindar
+  modellbytet från Task 1. Notera kostnad/tokens per modul ur run-dumpen — det är
+  baslinjen PR B:s cachingvinst jämförs mot.
+
+- [ ] **Steg 2.7: Öppna PR A** mot `main` (registry, prisrad, 4.8-byte, eval-resultat).
+  Task 3–6 påbörjas först när PR A är mergad.
+
 ---
 
 ## Task 3: Structured outputs i callClaude
+
+> **PR B börjar här:** `git checkout main && git pull && git checkout -b fas-0b-structured-outputs-caching`
 
 **Filer:**
 - Skapa: `src/lib/structured-output-schema.ts`
@@ -487,8 +506,8 @@ git commit -m "feat: structured outputs via output_config.format i callClaude"
 
 - [ ] **Steg 4.1:** Kör `npm run eval:analyzer` → alla fixtures PASS mot `evals/thresholds.yaml`.
 - [ ] **Steg 4.2:** Kör `npm run eval:matcher` → PASS.
-- [ ] **Steg 4.3:** Kör `npm run eval:bid-generator` → PASS. Detta validerar samtidigt
-  Opus 4.8-bytet från Task 1.
+- [ ] **Steg 4.3:** Kör `npm run eval:bid-generator` → PASS. (Opus 4.8-bytet är redan
+  grindat i PR A steg 2.6 — här valideras structured outputs-vägen.)
 - [ ] **Steg 4.4:** Kontrollera run-dumparna i `evals/runs/`: antalet format-omkörningar
   (ResponseFormatError-retries) ska vara noll eller nära noll. Notera kostnad/tokens per
   modul — detta är **kostnadsbaslinjen före caching**.
@@ -721,12 +740,12 @@ git commit -m "feat: prompt caching av delad anbudskontext + prewarm per modellg
 ```bash
 git add docs/superpowers/plans/2026-06-10-fas-0-resultat.md CLAUDE.md
 git commit -m "docs: fas 0-resultat med kostnadsbaslinje, uppdaterad modellstrategi"
-git push -u origin fas-0-modellbas
+git push -u bidsmith fas-0b-structured-outputs-caching
 ```
 
-- [ ] **Steg 6.6:** Öppna PR mot `main` med sammanfattning av: registry, prisfix,
-  structured outputs, caching, eval-resultat före/efter. Använd
-  superpowers:finishing-a-development-branch.
+- [ ] **Steg 6.6:** Öppna PR B mot `main` med sammanfattning av: structured outputs,
+  caching, eval-resultat före/efter (registry + prisrad + 4.8-bytet gick i PR A).
+  Använd superpowers:finishing-a-development-branch.
 
 ---
 
@@ -740,7 +759,7 @@ git push -u origin fas-0-modellbas
    för bundle-anrop (eller dokumenterat att kontexten ligger under cache-minimum).
 5. Noll format-retries i eval-körningarna.
 6. `2026-06-10-fas-0-resultat.md` finns med kostnadsbaslinje före/efter.
-7. PR öppnad mot `main`.
+7. Båda PR:erna (A: registry/4.8, B: structured outputs/caching) mergade mot `main`.
 
 ## Kända risker i denna fas
 
