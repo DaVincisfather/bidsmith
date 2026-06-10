@@ -1,4 +1,5 @@
 import { callClaude } from "./ai-client";
+import { MODELS } from "./models";
 import { OpportunityScoreSchema } from "./ai-schemas";
 import type { OpportunityScore } from "./types-radar";
 
@@ -54,7 +55,7 @@ export async function scoreOpportunity(
   const userContent = buildScoringPrompt(opportunity, competencies);
 
   return callClaude({
-    model: "claude-haiku-4-5-20251001",
+    model: MODELS.radar,
     maxTokens: 300,
     system: SYSTEM_PROMPT,
     userContent,
