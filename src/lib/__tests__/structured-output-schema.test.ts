@@ -38,6 +38,20 @@ describe("toStructuredOutputSchema", () => {
     expect(result.properties.level.enum).toEqual(["junior", "senior"]);
   });
 
+  it("filtrerar inte fältnamn som råkar heta constraint-nyckelord", () => {
+    // Nycklar under "properties" är fältnamn, inte JSON Schema-nyckelord —
+    // ett fält döpt "pattern"/"minimum" får inte tyst strykas ur API-schemat.
+    const schema = z.object({ pattern: z.string(), minimum: z.number() });
+    const result = toStructuredOutputSchema(schema) as {
+      properties: Record<string, unknown>;
+      required: string[];
+    };
+    expect(Object.keys(result.properties)).toEqual(
+      expect.arrayContaining(["pattern", "minimum"]),
+    );
+    expect(result.required).toEqual(expect.arrayContaining(["pattern", "minimum"]));
+  });
+
   it("klarar ett verkligt produktionsschema (smoke)", () => {
     // Kastar toStructuredOutputSchema på något verkligt schema ska det synas
     // i test, inte i drift.

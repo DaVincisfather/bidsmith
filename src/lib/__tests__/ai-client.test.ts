@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { z } from "zod";
 import { extractJson, callClaude } from "@/lib/ai-client";
 import { logAiCall } from "@/lib/ai-call-logger";
@@ -210,13 +210,18 @@ describe("callClaude — structured outputs", () => {
     expect(payload.thinking).toEqual({ type: "adaptive" });
   });
 
+  // Städa env-stubbar även när en assertion failar — annars läcker
+  // SO=off till efterföljande tester i filen.
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("utelamnar format nar BIDSMITH_STRUCTURED_OUTPUTS=off", async () => {
     vi.stubEnv("BIDSMITH_STRUCTURED_OUTPUTS", "off");
     mockCreate.mockReturnValue(okResponse());
     await callClaude({ ...baseArgs, schema });
     const payload = mockCreate.mock.calls[0][0];
     expect(payload.output_config?.format).toBeUndefined();
-    vi.unstubAllEnvs();
   });
 });
 

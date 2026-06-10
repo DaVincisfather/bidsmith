@@ -35,8 +35,10 @@ kontextdelen av input (cache-write 1,25×) — försumbart mot outputkostnaden, 
 intjänat vid första retry.
 
 Övriga API-empiri: `max_tokens: 0`-prewarm accepterades av API:t (planens risk föll inte ut);
-Sonnet 4.6 cachade prefix på ~1 055 tokens (planens antagna minimum 2 048 är för högt);
-schema-injektionen kostar ~215 tokens/anrop för ett trivialt schema.
+ett kontextblock på ~1 055 tokens cachades hos Sonnet 4.6 — men eftersom schemat räknas in
+i prefixet gäller det dokumenterade minimumet (2 048) sannolikt totalen, inte kontexten
+ensam; anta inte att små Sonnet-kontexter cachas. Schema-injektionen kostar ~215
+tokens/anrop för ett trivialt schema.
 
 ## Eval-grindar
 

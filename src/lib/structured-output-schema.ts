@@ -17,7 +17,14 @@ function sanitize(node: unknown): unknown {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (UNSUPPORTED_KEYWORDS.has(key)) continue;
-    out[key] = sanitize(value);
+    // Nycklar under "properties" är fältnamn, inte schemanyckelord — ett fält
+    // döpt "pattern"/"minimum" ska behållas; bara dess VÄRDE saneras.
+    out[key] =
+      key === "properties" && value && typeof value === "object" && !Array.isArray(value)
+        ? Object.fromEntries(
+            Object.entries(value).map(([k, v]) => [k, sanitize(v)]),
+          )
+        : sanitize(value);
   }
   if (out.type === "object") {
     out.additionalProperties = false;
