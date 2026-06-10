@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { z } from "zod";
-import { extractJson, callClaude, prewarmContextCache } from "@/lib/ai-client";
+import { extractJson, callClaude } from "@/lib/ai-client";
 import { logAiCall } from "@/lib/ai-call-logger";
 
 vi.mock("@/lib/ai-call-logger", () => ({
@@ -8,8 +8,6 @@ vi.mock("@/lib/ai-call-logger", () => ({
 }));
 
 const mockStream = vi.fn();
-// prewarm streamar inte — separat mock för messages.create.
-const mockCreatePlain = vi.fn();
 vi.mock("@anthropic-ai/sdk", () => {
   class APIError extends Error {
     status: number;
@@ -19,7 +17,7 @@ vi.mock("@anthropic-ai/sdk", () => {
     }
   }
   class Anthropic {
-    messages = { stream: mockStream, create: mockCreatePlain };
+    messages = { stream: mockStream };
   }
   return { default: Anthropic, APIError };
 });
@@ -36,7 +34,6 @@ mockCreate.mockImplementation((..._args: unknown[]) => streamOf(undefined));
 beforeEach(() => {
   mockStream.mockReset();
   mockStream.mockImplementation((..._args: unknown[]) => streamOf(undefined));
-  mockCreatePlain.mockReset();
   vi.mocked(logAiCall).mockClear();
 });
 
@@ -256,23 +253,6 @@ describe("callClaude — cachedContext", () => {
     mockCreate.mockReturnValue(okResponse());
     await callClaude(baseArgs);
     expect(mockCreate.mock.calls[0][0].system).toBe("sys");
-  });
-});
-
-describe("prewarmContextCache", () => {
-  it("skickar max_tokens 0 med cachat systemblock, utan format/thinking", async () => {
-    mockCreatePlain.mockResolvedValue({ usage: {} });
-    await prewarmContextCache("claude-opus-4-8", "KONTEXT");
-    const payload = mockCreatePlain.mock.calls[0][0];
-    expect(payload.max_tokens).toBe(0);
-    expect(payload.system[0].cache_control).toEqual({ type: "ephemeral" });
-    expect(payload.output_config).toBeUndefined();
-    expect(payload.thinking).toBeUndefined();
-  });
-
-  it("svaljer fel — prewarm far aldrig falla en generering", async () => {
-    mockCreatePlain.mockRejectedValue(new Error("boom"));
-    await expect(prewarmContextCache("claude-opus-4-8", "KONTEXT")).resolves.toBeUndefined();
   });
 });
 

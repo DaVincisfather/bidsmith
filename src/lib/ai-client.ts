@@ -174,53 +174,6 @@ export async function callClaude<T>({
   throw lastError;
 }
 
-// Förvärmer prompt-cachen för en modell genom ett max_tokens: 0-anrop med
-// enbart det delade kontextblocket. Körs en gång per modellgrupp innan
-// parallella bundle-anrop så att de läser cachen istället för att alla
-// betala fullpris. Fel sväljs — värmning får aldrig fälla en generering.
-// OBS: inget output_config/thinking här — avvisas med max_tokens: 0.
-export async function prewarmContextCache(
-  model: string,
-  cachedContext: string,
-): Promise<void> {
-  const startedAt = Date.now();
-  try {
-    const message = await getClient().messages.create({
-      model,
-      max_tokens: 0,
-      system: [
-        {
-          type: "text" as const,
-          text: cachedContext,
-          cache_control: { type: "ephemeral" as const },
-        },
-      ],
-      messages: [{ role: "user", content: "warmup" }],
-    });
-    // Cache-skrivningen kostar 1,25× input — logga så kostnaden per anbud
-    // inte undervärderas i ai_call_logs.
-    const u = (message.usage ?? {}) as {
-      input_tokens?: number;
-      output_tokens?: number;
-      cache_read_input_tokens?: number;
-      cache_creation_input_tokens?: number;
-    };
-    void logAiCall({
-      userId: null,
-      bidId: null,
-      model,
-      label: "context prewarm",
-      inputTokens: u.input_tokens ?? 0,
-      outputTokens: u.output_tokens ?? 0,
-      cacheReadTokens: u.cache_read_input_tokens ?? 0,
-      cacheCreationTokens: u.cache_creation_input_tokens ?? 0,
-      latencyMs: Date.now() - startedAt,
-    });
-  } catch {
-    // Avsiktligt tyst — cache-miss är bara dyrare, inte fel.
-  }
-}
-
 // Extract JSON by finding matching braces — ignores braces inside string literals
 // so values like {"msg": "hello } world"} parse correctly.
 export function extractJson(text: string): string | null {

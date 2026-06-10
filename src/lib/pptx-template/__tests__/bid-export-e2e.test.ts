@@ -5,10 +5,7 @@ import { renderTemplate } from "../loader";
 import type { BidContext } from "@/lib/bid-generator";
 import type { RfpAnalysis } from "@/lib/types";
 
-vi.mock("@/lib/ai-client", () => ({
-  callClaude: vi.fn(),
-  prewarmContextCache: vi.fn().mockResolvedValue(undefined),
-}));
+vi.mock("@/lib/ai-client", () => ({ callClaude: vi.fn() }));
 vi.mock("@/lib/pptx-template/budget-loader", () => ({
   loadBudgets: vi.fn().mockResolvedValue({}),
 }));

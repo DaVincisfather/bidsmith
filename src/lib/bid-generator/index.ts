@@ -1,6 +1,4 @@
 import type { BidSection } from "@/lib/types";
-import { prewarmContextCache } from "@/lib/ai-client";
-import { MODELS } from "@/lib/models";
 import { loadBudgets } from "@/lib/pptx-template/budget-loader";
 import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { buildCoverSection } from "./deterministic/cover";
@@ -12,7 +10,7 @@ import { buildPhasesBundle } from "./bundles/phases";
 import { buildQualityBundle } from "./bundles/quality";
 import { buildRequirementMatrixBundle } from "./bundles/requirement-matrix";
 import { buildTeamBundle } from "./bundles/team";
-import { formatContext, type BidContext } from "./context";
+import type { BidContext } from "./context";
 import type { RetryBudget } from "./with-budget-retry";
 
 export type { BidContext } from "./context";
@@ -70,15 +68,12 @@ export async function generateAllSections(
   const budgets = await loadBudgets(templateName);
   const retryBudget: RetryBudget = { remaining: GLOBAL_RETRY_CAP };
 
-  // Cachen är modellskopad och parallella anrop kan inte läsa en cache som
-  // håller på att skrivas — en max_tokens 0-värmning per modellgrupp innan
-  // dispatch gör att alla bundles i gruppen läser istället för att skriva.
-  // Sekunder, inte minuter: max_tokens 0 returnerar direkt efter prefill.
-  const sharedContext = formatContext(ctx);
-  await Promise.allSettled([
-    prewarmContextCache(MODELS.writing, sharedContext),
-    prewarmContextCache(MODELS.writingSupport, sharedContext),
-  ]);
+  // Ingen cache-prewarm här, trots att bundlarna delar formatContext(ctx):
+  // output_config.format (structured outputs) deltar i cache-prefixet, så
+  // bundles med olika scheman kan aldrig läsa varandras cache — en delad
+  // värmning vore ren kostnad. cachedContext i varje bundle ger ändå
+  // cacheträff vid overflow-/format-retries och regenerering inom TTL
+  // (verifierat empiriskt 2026-06-10, se fas 0-resultatdokumentet).
 
   // Deterministic generators — no await needed.
   const cover = buildCoverSection(ctx.analysis);
