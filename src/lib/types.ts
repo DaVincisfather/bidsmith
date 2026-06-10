@@ -89,6 +89,10 @@ export interface ScoredConsultant {
   level: ConsultantLevel;
   score: number;
   reasoning: string;
+  // Set when the prefilter model omitted this consultant and the score is a
+  // defensive default (0), not a real assessment. Lets UI/evals tell a real
+  // zero from an unscored one.
+  prefilterMiss?: boolean;
 }
 
 export interface ScoredMatchResult {

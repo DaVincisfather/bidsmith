@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/ai-client", () => ({
   callClaude: vi.fn(),
@@ -10,6 +10,7 @@ import {
   matchConsultants,
   selectTopNPerLevel,
   mergeDeepReasoning,
+  reconcilePrefilter,
   DEFAULT_DEEP_PER_LEVEL,
 } from "@/lib/consultant-matcher";
 import {
@@ -119,6 +120,107 @@ describe("mergeDeepReasoning", () => {
     const s2 = merged.find((c) => c.consultantId === "s2")!;
     expect(s2.reasoning).toBe("haiku-s2");
   });
+
+  it("adopts the deep score and clears prefilterMiss when the deep pass assessed an unscored consultant", () => {
+    const missEntry: ScoredConsultant = {
+      consultantId: "s3",
+      consultantName: "Konsult s3",
+      level: "senior",
+      score: 0,
+      reasoning: "",
+      prefilterMiss: true,
+    };
+    const merged = mergeDeepReasoning(
+      [...base, missEntry],
+      [scored("s3", "senior", 77, "deep-s3")],
+    );
+    const s3 = merged.find((c) => c.consultantId === "s3")!;
+    expect(s3.score).toBe(77);
+    expect(s3.reasoning).toBe("deep-s3");
+    expect(s3.prefilterMiss).toBeUndefined();
+  });
+});
+
+// --- reconcilePrefilter (pure) --------------------------------------------
+
+describe("reconcilePrefilter", () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    warnSpy.mockRestore();
+  });
+
+  const pool: Consultant[] = [
+    consultant("s1", "senior"),
+    consultant("s2", "senior"),
+    consultant("i1", "intermediate"),
+  ];
+
+  it("re-adds consultants the prefilter omitted, with score 0 and prefilterMiss", () => {
+    const result = reconcilePrefilter(pool, [scored("s1", "senior", 90)]);
+    expect(result).toHaveLength(3);
+    const s2 = result.find((c) => c.consultantId === "s2")!;
+    expect(s2.score).toBe(0);
+    expect(s2.prefilterMiss).toBe(true);
+    expect(s2.consultantName).toBe("Konsult s2");
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("drops ids the prefilter hallucinated", () => {
+    const result = reconcilePrefilter(pool, [
+      scored("s1", "senior", 90),
+      scored("ghost", "senior", 99),
+      scored("s2", "senior", 70),
+      scored("i1", "intermediate", 60),
+    ]);
+    expect(result).toHaveLength(3);
+    expect(result.map((c) => c.consultantId)).not.toContain("ghost");
+  });
+
+  it("takes canonical name/level from the pool when the model drifts", () => {
+    const drifted: ScoredConsultant = {
+      consultantId: "s1",
+      consultantName: "Fel Namn",
+      level: "junior",
+      score: 88,
+      reasoning: "",
+    };
+    const result = reconcilePrefilter(pool, [
+      drifted,
+      scored("s2", "senior", 70),
+      scored("i1", "intermediate", 60),
+    ]);
+    const s1 = result.find((c) => c.consultantId === "s1")!;
+    expect(s1.consultantName).toBe("Konsult s1");
+    expect(s1.level).toBe("senior");
+    expect(s1.score).toBe(88); // the score is the model's to set
+  });
+
+  it("keeps the first score and warns when the prefilter scores the same consultant twice", () => {
+    const result = reconcilePrefilter(pool, [
+      scored("s1", "senior", 90),
+      scored("s1", "senior", 40),
+      scored("s2", "senior", 70),
+      scored("i1", "intermediate", 60),
+    ]);
+    expect(result).toHaveLength(3);
+    const s1 = result.find((c) => c.consultantId === "s1")!;
+    expect(s1.score).toBe(90);
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("passes a complete prefilter output through without flags or warnings", () => {
+    const result = reconcilePrefilter(pool, [
+      scored("s1", "senior", 90),
+      scored("s2", "senior", 70),
+      scored("i1", "intermediate", 60),
+    ]);
+    expect(result).toHaveLength(3);
+    expect(result.every((c) => !c.prefilterMiss)).toBe(true);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
 });
 
 // --- matchConsultants orchestration (mocked AI) --------------------------
@@ -221,6 +323,35 @@ describe("matchConsultants (two-stage)", () => {
 
   it("exposes a sane default for deep-reasoning breadth", () => {
     expect(DEFAULT_DEEP_PER_LEVEL).toBeGreaterThanOrEqual(3);
+  });
+
+  it("survives a prefilter that omits and hallucinates consultants", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const pool = [consultant("s1", "senior"), consultant("s2", "senior")];
+
+    vi.mocked(callClaude).mockImplementation(async (opts: { model: string }) => {
+      if (opts.model.includes("haiku")) {
+        // Haiku drops s2 and invents "ghost".
+        return {
+          scoredConsultants: [
+            scored("s1", "senior", 90),
+            scored("ghost", "senior", 80),
+          ],
+        } as ScoredMatchResult as never;
+      }
+      return {
+        scoredConsultants: [scored("s1", "senior", 90, "deep")],
+      } as ScoredMatchResult as never;
+    });
+
+    const result = await matchConsultants(analysis, pool, null, 1);
+    warnSpy.mockRestore();
+
+    const ids = result.scoredConsultants.map((c) => c.consultantId).sort();
+    expect(ids).toEqual(["s1", "s2"]);
+    const s2 = result.scoredConsultants.find((c) => c.consultantId === "s2")!;
+    expect(s2.score).toBe(0);
+    expect(s2.prefilterMiss).toBe(true);
   });
 
   it("scales the prefilter token cap with pool size (no fixed 8000 truncation)", async () => {

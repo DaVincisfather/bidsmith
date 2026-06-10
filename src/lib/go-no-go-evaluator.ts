@@ -64,7 +64,14 @@ function formatTeamForPrompt(
       const refs = c.references
         .map((r) => `${r.title} (${r.year}, ${r.sector})`)
         .join("; ");
-      return `- ${c.name} [id: ${c.id}] (${c.level}, score: ${score?.score ?? "N/A"})
+      // prefilterMiss = defensive 0, not an assessment — a literal "score: 0"
+      // would read as "terrible match" to the judge.
+      const scoreText = score
+        ? score.prefilterMiss
+          ? "ej scorad"
+          : String(score.score)
+        : "N/A";
+      return `- ${c.name} [id: ${c.id}] (${c.level}, score: ${scoreText})
   Kompetenser: ${comps}
   Uppdrag: ${refs}
   AI-bedömning: ${score?.reasoning || "N/A"}`;
@@ -83,7 +90,8 @@ function formatPoolForPrompt(
     .sort((a, b) => b.score - a.score)
     .map((c) => {
       const note = c.reasoning ? `: ${c.reasoning}` : "";
-      return `- ${c.consultantName} [id: ${c.consultantId}] (${c.level}, score: ${c.score})${note}`;
+      const scoreText = c.prefilterMiss ? "ej scorad" : String(c.score);
+      return `- ${c.consultantName} [id: ${c.consultantId}] (${c.level}, score: ${scoreText})${note}`;
     })
     .join("\n");
 }
