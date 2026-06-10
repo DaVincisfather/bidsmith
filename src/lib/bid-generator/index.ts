@@ -4,12 +4,12 @@ import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { buildCoverSection } from "./deterministic/cover";
 import { buildCertificationsSection } from "./deterministic/certifications";
 import { buildConfidentialitySection } from "./deterministic/confidentiality";
+import { buildReferenceSection } from "./deterministic/reference";
 import { buildUnderstandingBundle } from "./bundles/understanding";
 import { buildPhasesBundle } from "./bundles/phases";
 import { buildQualityBundle } from "./bundles/quality";
 import { buildRequirementMatrixBundle } from "./bundles/requirement-matrix";
 import { buildTeamBundle } from "./bundles/team";
-import { buildReferenceBundle } from "./bundles/reference";
 import type { BidContext } from "./context";
 import type { RetryBudget } from "./with-budget-retry";
 
@@ -18,13 +18,13 @@ export type { BidContext } from "./context";
 const GLOBAL_RETRY_CAP = 5;
 
 // Stable identifiers matching the order bundles are dispatched below.
+// References are deliberately NOT an AI bundle — see deterministic/reference.ts.
 const BUNDLE_LABELS = [
   "understanding",
   "phases",
   "quality",
   "requirement-matrix",
   "team",
-  "reference",
 ] as const;
 
 // Total AI bundles dispatched — lets callers detect a total wipeout
@@ -46,7 +46,7 @@ export interface GenerateAllSectionsResult {
 }
 
 /**
- * Runs 6 AI bundles in parallel + 3 deterministic generators to produce the
+ * Runs 5 AI bundles in parallel + 4 deterministic generators to produce the
  * full set of BidSections for a v2 template.
  *
  * Loads field budgets for templateName from template_configs, shares a single
@@ -72,6 +72,7 @@ export async function generateAllSections(
   const cover = buildCoverSection(ctx.analysis);
   const certifications = buildCertificationsSection();
   const confidentiality = buildConfidentialitySection(ctx.analysis);
+  const reference = buildReferenceSection();
 
   const settled = await Promise.allSettled([
     buildUnderstandingBundle(ctx, budgets, retryBudget),
@@ -79,7 +80,6 @@ export async function generateAllSections(
     buildQualityBundle(ctx, budgets, retryBudget),
     buildRequirementMatrixBundle(ctx, budgets, retryBudget),
     buildTeamBundle(ctx, budgets, retryBudget),
-    buildReferenceBundle(ctx, budgets, retryBudget),
   ]);
 
   const bundleResults: { sections: BidSection[]; overflowFlags: OverflowFlag[] }[] = [];
@@ -96,9 +96,11 @@ export async function generateAllSections(
     }
   });
 
+  // Reference keeps its old position (right after the team bundle's output).
   const sections: BidSection[] = [
     cover,
     ...bundleResults.flatMap((r) => r.sections),
+    reference,
     confidentiality,
     certifications,
   ];
