@@ -11,6 +11,11 @@
 --   lost afterwards)
 -- ---------------------------------------------------------------------------
 
+-- bids_status_check is the Postgres auto-generated name for 001's inline
+-- column check. If this DROP fails on an older database lineage, find the
+-- actual name first:
+--   select conname from pg_constraint
+--   where conrelid = 'bids'::regclass and contype = 'c';
 alter table bids drop constraint bids_status_check;
 alter table bids add constraint bids_status_check
   check (status in ('generating', 'draft', 'exported', 'failed'));

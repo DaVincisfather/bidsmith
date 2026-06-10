@@ -80,6 +80,9 @@ export async function runBidGeneration(
     console.error("structure-judge failed (sections still saved):", err);
   }
 
+  // Guarded on status: if the stale-generating watchdog already marked this
+  // bid 'failed' (runner outlived the window), 'failed' is terminal — a late
+  // finish must not resurrect the bid the user was told to re-run.
   await supabase
     .from("bids")
     .update({
@@ -89,7 +92,8 @@ export async function runBidGeneration(
       overflow_flags: overflowFlags,
       failed_bundles: failedBundles,
     })
-    .eq("id", bidId);
+    .eq("id", bidId)
+    .eq("status", "generating");
 }
 
 async function markFailed(
@@ -105,7 +109,8 @@ async function markFailed(
       generation_error: message,
       failed_bundles: failedBundles,
     })
-    .eq("id", bidId);
+    .eq("id", bidId)
+    .eq("status", "generating");
   if (error) {
     console.error(`failed to mark bid ${bidId} as failed: ${error.message}`);
   }

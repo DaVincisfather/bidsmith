@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TeamProposal } from "./team-proposal";
 import { GoNoGoResultView } from "./go-no-go-result";
@@ -40,14 +40,30 @@ interface BidStatus {
 
 // POST /api/bids returns 202 before generation finishes (it runs server-side
 // in the background). Poll until the bid leaves 'generating' so the
-// partial/failure UX below still applies.
-async function pollBidUntilDone(bidId: string): Promise<BidStatus> {
+// partial/failure UX below still applies. Returns null if the component
+// unmounted mid-poll — generation continues server-side, nothing to do here.
+// A single failed poll must NOT surface as "generation failed" (the user
+// would re-run and pay for a duplicate) — only give up after several in a row.
+async function pollBidUntilDone(
+  bidId: string,
+  isMounted: () => boolean,
+): Promise<BidStatus | null> {
+  let consecutiveFailures = 0;
   for (;;) {
     await new Promise((resolve) => setTimeout(resolve, 4000));
-    const res = await fetch(`/api/bids/${bidId}`);
-    if (!res.ok) throw new Error("Kunde inte hämta anbudsstatus");
-    const bid: BidStatus = await res.json();
-    if (bid.status !== "generating") return bid;
+    if (!isMounted()) return null;
+    try {
+      const res = await fetch(`/api/bids/${bidId}`);
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      consecutiveFailures = 0;
+      const bid: BidStatus = await res.json();
+      if (bid.status !== "generating") return bid;
+    } catch {
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= 5) {
+        throw new Error("Kunde inte hämta anbudsstatus");
+      }
+    }
   }
 }
 
@@ -56,6 +72,15 @@ export function AnalysisMatchSection({
   latestMatch,
 }: AnalysisMatchSectionProps) {
   const router = useRouter();
+  // The bid poll runs for minutes; without this guard it would setState on an
+  // unmounted component and yank the user to /bids/{id} long after they left.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   const [match, setMatch] = useState<MatchData | null>(latestMatch);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     latestMatch ? buildDefaultTeamIds(latestMatch.scoredConsultants) : new Set()
@@ -191,7 +216,8 @@ export function AnalysisMatchSection({
       }
 
       const data = await response.json();
-      const bid = await pollBidUntilDone(data.id);
+      const bid = await pollBidUntilDone(data.id, () => mountedRef.current);
+      if (!bid) return; // user left the page; generation continues server-side
       if (bid.status === "failed") {
         throw new Error(bid.generationError || "Bid generation failed");
       }
@@ -204,6 +230,7 @@ export function AnalysisMatchSection({
       }
       router.push(`/bids/${data.id}`);
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : "Something went wrong");
       setBidLoading(false);
     }

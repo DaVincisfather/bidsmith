@@ -7,10 +7,10 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// Generation normally finishes well within POST /api/bids' maxDuration
-// (300 s). A bid still 'generating' after this long means the background job
-// was killed without reaching its failure handler.
-const STALE_GENERATING_MS = 15 * 60 * 1000;
+// POST /api/bids' maxDuration is 300 s — past that the platform has killed
+// the background job without reaching its failure handler. 7 min = the kill
+// point plus buffer, so a dead generation doesn't poll for long.
+const STALE_GENERATING_MS = 7 * 60 * 1000;
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
