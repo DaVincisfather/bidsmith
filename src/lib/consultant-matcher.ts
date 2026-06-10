@@ -134,6 +134,58 @@ ${consultantText}`,
 }
 
 /**
+ * Stage 1.5 — reconcile the prefilter output against the input pool. LLM
+ * rankers drop and hallucinate entries at scale: an omitted consultant would
+ * otherwise vanish silently from matching (and could never be shortlisted),
+ * and a hallucinated id would survive into the stored result. Canonical
+ * identity (id, name, level) always comes from the pool — level decides which
+ * top-N bucket a consultant competes in, so model drift there is not cosmetic.
+ * Omitted consultants get score 0 + `prefilterMiss` so they stay visible
+ * without outranking actually-scored ones.
+ */
+export function reconcilePrefilter(
+  consultants: Consultant[],
+  scored: ScoredConsultant[],
+): ScoredConsultant[] {
+  const poolIds = new Set(consultants.map((c) => c.id));
+  const scoredById = new Map<string, ScoredConsultant>();
+  const hallucinated: string[] = [];
+  for (const s of scored) {
+    if (poolIds.has(s.consultantId)) scoredById.set(s.consultantId, s);
+    else hallucinated.push(s.consultantId);
+  }
+  if (hallucinated.length > 0) {
+    console.warn(
+      `[matcher] prefilter returned ${hallucinated.length} id(s) not in the pool, dropped: ${hallucinated.join(", ")}`,
+    );
+  }
+
+  const missed: string[] = [];
+  const reconciled = consultants.map((c): ScoredConsultant => {
+    const s = scoredById.get(c.id);
+    if (!s) {
+      missed.push(c.id);
+      return {
+        consultantId: c.id,
+        consultantName: c.name,
+        level: c.level,
+        score: 0,
+        reasoning: "",
+        prefilterMiss: true,
+      };
+    }
+    return { ...s, consultantName: c.name, level: c.level };
+  });
+  if (missed.length > 0) {
+    console.warn(
+      `[matcher] prefilter omitted ${missed.length} consultant(s), defaulted to score 0: ${missed.join(", ")}`,
+    );
+  }
+
+  return reconciled;
+}
+
+/**
  * Stage 2 — Sonnet writes the rich rationale for the shortlist only.
  */
 async function deepReasonSelected(
@@ -208,7 +260,10 @@ export async function matchConsultants(
 ): Promise<ScoredMatchResult> {
   if (consultants.length === 0) return { scoredConsultants: [] };
 
-  const base = await prefilterScoreAll(analysis, consultants, userId);
+  const base = reconcilePrefilter(
+    consultants,
+    await prefilterScoreAll(analysis, consultants, userId),
+  );
 
   const topIds = selectTopNPerLevel(base, deepPerLevel);
   const selected = consultants.filter((c) => topIds.has(c.id));
