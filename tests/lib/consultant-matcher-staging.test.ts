@@ -120,6 +120,25 @@ describe("mergeDeepReasoning", () => {
     const s2 = merged.find((c) => c.consultantId === "s2")!;
     expect(s2.reasoning).toBe("haiku-s2");
   });
+
+  it("adopts the deep score and clears prefilterMiss when the deep pass assessed an unscored consultant", () => {
+    const missEntry: ScoredConsultant = {
+      consultantId: "s3",
+      consultantName: "Konsult s3",
+      level: "senior",
+      score: 0,
+      reasoning: "",
+      prefilterMiss: true,
+    };
+    const merged = mergeDeepReasoning(
+      [...base, missEntry],
+      [scored("s3", "senior", 77, "deep-s3")],
+    );
+    const s3 = merged.find((c) => c.consultantId === "s3")!;
+    expect(s3.score).toBe(77);
+    expect(s3.reasoning).toBe("deep-s3");
+    expect(s3.prefilterMiss).toBeUndefined();
+  });
 });
 
 // --- reconcilePrefilter (pure) --------------------------------------------
@@ -177,6 +196,19 @@ describe("reconcilePrefilter", () => {
     expect(s1.consultantName).toBe("Konsult s1");
     expect(s1.level).toBe("senior");
     expect(s1.score).toBe(88); // the score is the model's to set
+  });
+
+  it("keeps the first score and warns when the prefilter scores the same consultant twice", () => {
+    const result = reconcilePrefilter(pool, [
+      scored("s1", "senior", 90),
+      scored("s1", "senior", 40),
+      scored("s2", "senior", 70),
+      scored("i1", "intermediate", 60),
+    ]);
+    expect(result).toHaveLength(3);
+    const s1 = result.find((c) => c.consultantId === "s1")!;
+    expect(s1.score).toBe(90);
+    expect(warnSpy).toHaveBeenCalled();
   });
 
   it("passes a complete prefilter output through without flags or warnings", () => {

@@ -23,7 +23,14 @@ export function formatContext(ctx: BidContext): string {
       const refs = c.references
         .map((r) => `${r.title} (${r.year}, ${r.sector})`)
         .join("; ");
-      return `- ${c.name} (${c.level}, score: ${score?.score ?? "N/A"})
+      // prefilterMiss = defensive 0, not an assessment — don't feed the bid
+      // writer a literal "score: 0" for a user-selected team member.
+      const scoreText = score
+        ? score.prefilterMiss
+          ? "ej scorad"
+          : String(score.score)
+        : "N/A";
+      return `- ${c.name} (${c.level}, score: ${scoreText})
   Kompetenser: ${comps}
   Uppdrag: ${refs}
   AI-bedömning: ${score?.reasoning || "N/A"}`;

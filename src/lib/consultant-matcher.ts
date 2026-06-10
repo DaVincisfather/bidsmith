@@ -150,13 +150,25 @@ export function reconcilePrefilter(
   const poolIds = new Set(consultants.map((c) => c.id));
   const scoredById = new Map<string, ScoredConsultant>();
   const hallucinated: string[] = [];
+  const duplicates: string[] = [];
   for (const s of scored) {
-    if (poolIds.has(s.consultantId)) scoredById.set(s.consultantId, s);
-    else hallucinated.push(s.consultantId);
+    if (!poolIds.has(s.consultantId)) {
+      hallucinated.push(s.consultantId);
+    } else if (scoredById.has(s.consultantId)) {
+      // First score wins — arbitrary either way, but deterministic and logged.
+      duplicates.push(s.consultantId);
+    } else {
+      scoredById.set(s.consultantId, s);
+    }
   }
   if (hallucinated.length > 0) {
     console.warn(
       `[matcher] prefilter returned ${hallucinated.length} id(s) not in the pool, dropped: ${hallucinated.join(", ")}`,
+    );
+  }
+  if (duplicates.length > 0) {
+    console.warn(
+      `[matcher] prefilter scored ${duplicates.length} consultant(s) more than once, kept first: ${duplicates.join(", ")}`,
     );
   }
 
@@ -240,6 +252,11 @@ export function selectTopNPerLevel(
  * survives (nobody disappears); only the reasoning is replaced for those the
  * deep pass covered. The ranking score stays on the base (Haiku) score, and the
  * long tail keeps its empty rationale.
+ *
+ * Exception: a prefilterMiss consultant has a defensive 0, not a real score.
+ * If the deep pass covered them (small level shortlisted everyone), Sonnet's
+ * score is the only real assessment — adopt it and clear the flag, instead of
+ * displaying "0/100" next to a rich rationale.
  */
 export function mergeDeepReasoning(
   base: ScoredConsultant[],
@@ -248,7 +265,11 @@ export function mergeDeepReasoning(
   const deepById = new Map(deep.map((d) => [d.consultantId, d]));
   return base.map((b) => {
     const d = deepById.get(b.consultantId);
-    return d ? { ...b, reasoning: d.reasoning } : b;
+    if (!d) return b;
+    if (b.prefilterMiss) {
+      return { ...b, reasoning: d.reasoning, score: d.score, prefilterMiss: undefined };
+    }
+    return { ...b, reasoning: d.reasoning };
   });
 }
 
