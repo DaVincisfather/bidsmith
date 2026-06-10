@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TeamProposal } from "./team-proposal";
 import { GoNoGoResultView } from "./go-no-go-result";
 import { GoNoGoResult } from "@/lib/types";
+import { BUNDLE_LABELS_SV, type FailedBundle } from "@/lib/bundle-labels";
 import { ForgeLoader } from "./ForgeLoader";
 
 interface ScoredConsultant {
@@ -31,20 +32,24 @@ function buildDefaultTeamIds(scored: ScoredConsultant[]): Set<string> {
   return new Set(top.map((c) => c.consultantId));
 }
 
-interface FailedBundle {
-  bundle: string;
-  error: string;
+interface BidStatus {
+  status: string;
+  failedBundles: FailedBundle[];
+  generationError: string | null;
 }
 
-// Human-readable Swedish names for the AI bundles, for the partial-generation warning.
-const BUNDLE_LABELS_SV: Record<string, string> = {
-  understanding: "Förståelse",
-  phases: "Faser",
-  quality: "Kvalitetssäkring",
-  "requirement-matrix": "Kravmatris",
-  team: "Team & pris",
-  reference: "Referenser",
-};
+// POST /api/bids returns 202 before generation finishes (it runs server-side
+// in the background). Poll until the bid leaves 'generating' so the
+// partial/failure UX below still applies.
+async function pollBidUntilDone(bidId: string): Promise<BidStatus> {
+  for (;;) {
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    const res = await fetch(`/api/bids/${bidId}`);
+    if (!res.ok) throw new Error("Kunde inte hämta anbudsstatus");
+    const bid: BidStatus = await res.json();
+    if (bid.status !== "generating") return bid;
+  }
+}
 
 export function AnalysisMatchSection({
   analysisId,
@@ -186,10 +191,14 @@ export function AnalysisMatchSection({
       }
 
       const data = await response.json();
-      if (Array.isArray(data.failedBundles) && data.failedBundles.length > 0) {
+      const bid = await pollBidUntilDone(data.id);
+      if (bid.status === "failed") {
+        throw new Error(bid.generationError || "Bid generation failed");
+      }
+      if (bid.failedBundles.length > 0) {
         // Partiellt utkast: navigera inte tyst till ett ofullständigt anbud —
         // visa vilka sektioner som saknas och låt användaren öppna det medvetet.
-        setPartialBid({ id: data.id, failedBundles: data.failedBundles });
+        setPartialBid({ id: data.id, failedBundles: bid.failedBundles });
         setBidLoading(false);
         return;
       }
