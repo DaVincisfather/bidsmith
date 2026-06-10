@@ -11,6 +11,9 @@ export interface BidContext {
   scoredConsultants: ScoredConsultant[];
   goNoGoResult: GoNoGoResult;
   userId?: string | null;
+  // The bid row these bundles generate content for — threaded into
+  // ai_call_logs.bid_id so cost per bid is queryable.
+  bidId?: string | null;
 }
 
 export function formatContext(ctx: BidContext): string {

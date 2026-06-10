@@ -3,6 +3,9 @@ import { calculateCostUsd } from "@/lib/ai-cost";
 
 export interface LogAiCallInput {
   userId: string | null;
+  // Bid attribution — set for bid-generation calls so cost per bid is
+  // queryable. Null for calls with no bid (analysis, matching, radar).
+  bidId?: string | null;
   model: string;
   label: string;
   inputTokens: number;
@@ -26,6 +29,7 @@ export async function logAiCall(input: LogAiCallInput): Promise<void> {
     const client = createServiceClient();
     const { error } = await client.from("ai_call_logs").insert({
       user_id: input.userId,
+      bid_id: input.bidId ?? null,
       model: input.model,
       label: input.label,
       input_tokens: input.inputTokens,

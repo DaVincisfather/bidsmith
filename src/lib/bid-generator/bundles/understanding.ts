@@ -81,6 +81,7 @@ export async function buildUnderstandingBundle(
         label: "understanding bundle",
         effort: "max",
         userId: ctx.userId,
+        bidId: ctx.bidId,
       }),
     budgets,
     retryBudget,

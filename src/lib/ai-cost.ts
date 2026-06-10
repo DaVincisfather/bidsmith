@@ -1,21 +1,24 @@
-// Anthropic list prices (USD per 1M tokens). Last verified: 2026-04-27.
+// Anthropic list prices (USD per 1M tokens). Last verified: 2026-06-10.
 // Update here when Anthropic publishes new prices.
+// NB: Opus 4.5+ is $5/$25 — the old $15/$75 tier was Opus 4.1 and earlier.
 export interface ModelPricing {
   inputPerMTok: number;
   outputPerMTok: number;
 }
 
 const PRICING: Record<string, ModelPricing> = {
-  "claude-opus-4-7": { inputPerMTok: 15, outputPerMTok: 75 },
-  "claude-opus-4-6": { inputPerMTok: 15, outputPerMTok: 75 },
+  "claude-opus-4-8": { inputPerMTok: 5, outputPerMTok: 25 },
+  "claude-opus-4-7": { inputPerMTok: 5, outputPerMTok: 25 },
+  "claude-opus-4-6": { inputPerMTok: 5, outputPerMTok: 25 },
   "claude-sonnet-4-6": { inputPerMTok: 3, outputPerMTok: 15 },
   "claude-haiku-4-5-20251001": { inputPerMTok: 1, outputPerMTok: 5 },
 };
 
 // Sonnet is the cheapest "real" model — falling back to it for an unknown
-// Opus call would silently undercount cost ~5×. We still return *something*
-// (the logger is fire-and-forget and we don't want to crash a paid call over
-// a missing pricing row), but warn so the gap shows up in server logs.
+// Opus call would silently undercount cost (~1.7× on Opus output). We still
+// return *something* (the logger is fire-and-forget and we don't want to
+// crash a paid call over a missing pricing row), but warn so the gap shows
+// up in server logs.
 const FALLBACK: ModelPricing = PRICING["claude-sonnet-4-6"];
 
 const CACHE_READ_MULTIPLIER = 0.1;

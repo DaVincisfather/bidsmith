@@ -87,6 +87,7 @@ export async function buildPhasesBundle(
         label: "phases bundle",
         effort: "max",
         userId: ctx.userId,
+        bidId: ctx.bidId,
       }),
     budgets,
     retryBudget,
