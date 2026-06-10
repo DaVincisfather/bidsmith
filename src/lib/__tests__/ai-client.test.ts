@@ -158,15 +158,13 @@ describe("callClaude — adaptive thinking handling", () => {
 
     await callClaude({ ...baseArgs, model: "claude-opus-4-7", effort: "high" });
 
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        thinking: { type: "adaptive" },
-        output_config: { effort: "high" },
-      })
-    );
+    const payload = mockCreate.mock.calls[0][0];
+    expect(payload.thinking).toEqual({ type: "adaptive" });
+    // output_config bär numera även format — asserta effort-nyckeln, inte exakt objekt.
+    expect(payload.output_config.effort).toBe("high");
   });
 
-  it("omits thinking + output_config when effort is not set", async () => {
+  it("omits thinking + output_config.effort when effort is not set", async () => {
     mockCreate.mockReturnValue(streamOf({
       content: [{ type: "text", text: '{"answer": "ok"}' }],
     }));
@@ -175,7 +173,50 @@ describe("callClaude — adaptive thinking handling", () => {
 
     const payload = mockCreate.mock.calls[0][0];
     expect(payload.thinking).toBeUndefined();
-    expect(payload.output_config).toBeUndefined();
+    // output_config skickas numera alltid (format) — men utan effort-nyckel.
+    expect(payload.output_config?.effort).toBeUndefined();
+  });
+});
+
+describe("callClaude — structured outputs", () => {
+  const schema = z.object({ a: z.number().min(0) });
+  const baseArgs = {
+    maxTokens: 1000,
+    system: "sys",
+    userContent: "user",
+    label: "test",
+    model: "claude-sonnet-4-6",
+  };
+  const okResponse = () => streamOf({
+    content: [{ type: "text", text: '{"a": 1}' }],
+    usage: {},
+  });
+
+  it("skickar output_config.format med sanerat JSON Schema", async () => {
+    mockCreate.mockReturnValue(okResponse());
+    await callClaude({ ...baseArgs, schema });
+    const payload = mockCreate.mock.calls[0][0];
+    expect(payload.output_config.format.type).toBe("json_schema");
+    expect(payload.output_config.format.schema.additionalProperties).toBe(false);
+    expect(JSON.stringify(payload.output_config.format.schema)).not.toContain("minimum");
+  });
+
+  it("kombinerar format med effort i samma output_config", async () => {
+    mockCreate.mockReturnValue(okResponse());
+    await callClaude({ ...baseArgs, schema, effort: "high" });
+    const payload = mockCreate.mock.calls[0][0];
+    expect(payload.output_config.effort).toBe("high");
+    expect(payload.output_config.format.type).toBe("json_schema");
+    expect(payload.thinking).toEqual({ type: "adaptive" });
+  });
+
+  it("utelamnar format nar BIDSMITH_STRUCTURED_OUTPUTS=off", async () => {
+    vi.stubEnv("BIDSMITH_STRUCTURED_OUTPUTS", "off");
+    mockCreate.mockReturnValue(okResponse());
+    await callClaude({ ...baseArgs, schema });
+    const payload = mockCreate.mock.calls[0][0];
+    expect(payload.output_config?.format).toBeUndefined();
+    vi.unstubAllEnvs();
   });
 });
 

@@ -1,6 +1,7 @@
 import Anthropic, { APIError } from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { logAiCall } from "@/lib/ai-call-logger";
+import { toStructuredOutputSchema } from "@/lib/structured-output-schema";
 
 let _client: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -68,6 +69,17 @@ export async function callClaude<T>({
 }: CallClaudeOptions<T>): Promise<T> {
   let lastError: unknown;
 
+  // Nödlucka: BIDSMITH_STRUCTURED_OUTPUTS=off återgår till fritext + extractJson
+  // om API:t skulle avvisa något sanerat schema i drift. Tas bort i fas 1 om oanvänd.
+  const useStructuredOutputs = process.env.BIDSMITH_STRUCTURED_OUTPUTS !== "off";
+  // Beräknas EN gång — inte per retry-attempt.
+  const outputConfig: Record<string, unknown> = {
+    ...(effort ? { effort } : {}),
+    ...(useStructuredOutputs
+      ? { format: { type: "json_schema", schema: toStructuredOutputSchema(schema) } }
+      : {}),
+  };
+
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const startedAt = Date.now();
     try {
@@ -80,11 +92,9 @@ export async function callClaude<T>({
         max_tokens: maxTokens,
         system,
         messages: [{ role: "user", content: userContent }],
-        ...(effort
-          ? {
-              thinking: { type: "adaptive" as const },
-              output_config: { effort },
-            }
+        ...(effort ? { thinking: { type: "adaptive" as const } } : {}),
+        ...(Object.keys(outputConfig).length > 0
+          ? { output_config: outputConfig }
           : {}),
       });
       const message = await stream.finalMessage();
