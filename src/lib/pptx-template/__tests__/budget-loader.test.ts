@@ -12,8 +12,11 @@ const mockEq = vi.fn(() => ({ single: mockSingle }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 const mockFrom = vi.fn(() => ({ select: mockSelect }));
 
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: () => Promise.resolve({ from: mockFrom }),
+// budget-loader läser global template-konfig och ska använda service-klienten
+// (samma mönster som ai-call-logger/stats) — cookie-klienten kraschar utanför
+// Next:s request-scope, t.ex. i eval-harnessen.
+vi.mock("@/lib/supabase", () => ({
+  createServiceClient: () => ({ from: mockFrom }),
 }));
 
 beforeEach(() => {
