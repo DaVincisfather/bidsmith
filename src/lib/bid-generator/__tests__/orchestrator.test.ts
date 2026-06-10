@@ -7,7 +7,6 @@ vi.mock("../bundles/phases");
 vi.mock("../bundles/quality");
 vi.mock("../bundles/requirement-matrix");
 vi.mock("../bundles/team");
-vi.mock("../bundles/reference");
 vi.mock("@/lib/pptx-template/budget-loader", () => ({
   loadBudgets: vi.fn(),
 }));
@@ -17,7 +16,6 @@ import { buildPhasesBundle } from "../bundles/phases";
 import { buildQualityBundle } from "../bundles/quality";
 import { buildRequirementMatrixBundle } from "../bundles/requirement-matrix";
 import { buildTeamBundle } from "../bundles/team";
-import { buildReferenceBundle } from "../bundles/reference";
 import { loadBudgets } from "@/lib/pptx-template/budget-loader";
 import { generateAllSections } from "../index";
 
@@ -50,7 +48,6 @@ beforeEach(() => {
   vi.mocked(buildQualityBundle).mockReset();
   vi.mocked(buildRequirementMatrixBundle).mockReset();
   vi.mocked(buildTeamBundle).mockReset();
-  vi.mocked(buildReferenceBundle).mockReset();
   vi.mocked(loadBudgets).mockReset();
 
   vi.mocked(loadBudgets).mockResolvedValue({});
@@ -77,10 +74,6 @@ beforeEach(() => {
   });
   vi.mocked(buildTeamBundle).mockResolvedValue({
     sections: [mockSection("team-pricing", "team-pricing")],
-    overflowFlags: [],
-  });
-  vi.mocked(buildReferenceBundle).mockResolvedValue({
-    sections: [mockSection("reference-v2", "reference-v2")],
     overflowFlags: [],
   });
 });
