@@ -1,0 +1,92 @@
+// evals/harness/core/compare-report.ts
+// Rena renderingsfunktioner för jämförelserapporten och blindgranskningsunderlaget.
+import type { WinTally } from "./compare-core";
+
+export interface ComparePair {
+  pairFile: string;
+  sectionType: string;
+  textA: string;
+  textB: string;
+}
+
+export interface BlindPair {
+  id: string;
+  sectionType: string;
+  utkast1: string;
+  utkast2: string;
+  facit: { ordning: "A-först" | "B-först"; pairFile: string };
+}
+
+// mulberry32 — minimal deterministisk PRNG (6 rader). Math.random duger inte:
+// blindgranskningens urval och ordning måste gå att reproducera från seed.
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function pickBlindPairs(pairs: ComparePair[], n: number, seed: number): BlindPair[] {
+  const rand = mulberry32(seed);
+  // Fisher-Yates på en kopia — deterministiskt urval av n par.
+  const shuffled = [...pairs];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, n).map((p, idx) => {
+    const aForst = rand() < 0.5;
+    return {
+      id: `par-${idx + 1}`,
+      sectionType: p.sectionType,
+      utkast1: aForst ? p.textA : p.textB,
+      utkast2: aForst ? p.textB : p.textA,
+      facit: { ordning: aForst ? "A-först" : "B-först", pairFile: p.pairFile },
+    };
+  });
+}
+
+export interface ModelCost {
+  model: string;
+  totalUsd: number;
+  perBid: number;
+}
+
+export function renderReportMd(input: {
+  modelA: string;
+  modelB: string;
+  tally: WinTally;
+  costs: ModelCost[];
+}): string {
+  const lines: string[] = [
+    `# Jämförelse: ${input.modelA} (A) vs ${input.modelB} (B)`,
+    "",
+    "## Vinstandelar per sektionstyp (parvis blind judge, positionsbyte)",
+    "",
+    "| Sektionstyp | A | B | Oavgjort | A-andel exkl. tie | B-andel exkl. tie |",
+    "|---|---|---|---|---|---|",
+  ];
+  for (const [sectionType, t] of Object.entries(input.tally)) {
+    const decided = t.a + t.b;
+    const aShare = decided > 0 ? (t.a / decided).toFixed(2) : "—";
+    const bShare = decided > 0 ? (t.b / decided).toFixed(2) : "—";
+    lines.push(`| ${sectionType} | ${t.a} | ${t.b} | ${t.tie} | ${aShare} | ${bShare} |`);
+  }
+  lines.push("", "## Kostnad per modell", "", "| Modell | Totalt (USD) | Per anbud (USD) |", "|---|---|---|");
+  for (const c of input.costs) {
+    lines.push(`| ${c.model} | ${c.totalUsd} | ${c.perBid} |`);
+  }
+  lines.push(
+    "",
+    "## Beslut",
+    "",
+    "_Fylls i efter Stefans blindgranskning (Task 17). Beslutsregel: byt skrivmodell",
+    "endast vid samstämmig signal från judge-tally OCH mänsklig blindgranskning;",
+    "spretigt utfall = behåll Opus._",
+    "",
+  );
+  return lines.join("\n");
+}
