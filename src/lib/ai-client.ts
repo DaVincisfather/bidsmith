@@ -59,6 +59,9 @@ interface CallClaudeOptions<T> {
   // → prefixet cacheas; den anropsspecifika prompten ligger i block två och
   // invaliderar inte cachen vid overflow-/format-retries.
   cachedContext?: string;
+  // Sätt 0 för deterministiska anrop (eval-judgar — annars flippar gränsfall
+  // mellan körningar). Utelämnad = API-default.
+  temperature?: number;
 }
 
 export async function callClaude<T>({
@@ -72,6 +75,7 @@ export async function callClaude<T>({
   userId,
   bidId,
   cachedContext,
+  temperature,
 }: CallClaudeOptions<T>): Promise<T> {
   let lastError: unknown;
 
@@ -107,6 +111,7 @@ export async function callClaude<T>({
             ]
           : system,
         messages: [{ role: "user", content: userContent }],
+        ...(temperature !== undefined ? { temperature } : {}),
         ...(effort ? { thinking: { type: "adaptive" as const } } : {}),
         ...(Object.keys(outputConfig).length > 0
           ? { output_config: outputConfig }

@@ -58,6 +58,7 @@ ${renderValue(actual)}`;
       maxTokens: 300,
       system,
       userContent,
+      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
       schema: JudgeResponseSchema,
       label: `haiku-equiv-judge(${field})`,
     });
@@ -112,6 +113,7 @@ ${renderValue(actual)}`;
       maxTokens: 300,
       system,
       userContent,
+      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
       schema: RubricResponseSchema,
       label: `haiku-rubric-judge(${field})`,
     });
@@ -174,6 +176,7 @@ ${cvText}`;
       maxTokens: 500,
       system,
       userContent,
+      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
       schema: MhcResponseSchema,
       label: `sonnet-mhc-judge(${field})`,
     });
@@ -234,6 +237,7 @@ ${bidText}`;
       maxTokens: 500,
       system,
       userContent,
+      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
       schema: BidCoverageResponseSchema,
       label: `bid-coverage-judge(${field})`,
     });
@@ -304,6 +308,7 @@ ${sourceMaterial}`;
       maxTokens: 2000,
       system,
       userContent,
+      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
       schema: HallucinationResponseSchema,
       label: `bid-hallucination-judge`,
     });
