@@ -17,7 +17,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
   "requirements": [
     { "category": "Kategori", "description": "Beskrivning", "priority": "must | should | nice-to-have" }
   ],
-  "evaluationCriteria": [ { "name": "...", "weight": 40, "description": "..." } ],
+  "evaluationCriteria": [ { "name": "...", "weight": 40, "description": "..." } ] — weight är procentvikt 0-100, eller null om källan inte anger procentvikter,
   "requiredCompetencies": ["..."],
   "estimatedScope": "...",
   "redFlags": ["..."],
@@ -37,7 +37,10 @@ Var noggrann med att:
   Mappa svenska termer: ska-krav/skall-krav/skall/ska → "must",
   bör-krav/bör → "should", kan-krav/kan/önskemål → "nice-to-have".
   Använd aldrig svenska värden eller andra varianter i fältet.
-- Extrahera utvärderingskriterier med vikter
+- Extrahera utvärderingskriterier. weight = procentvikt ENDAST om källan uttryckligen
+  anger procentvikter. Vid rangordning, prisavdragsmodeller (mervärde i kronor) eller
+  annan icke-procentuell utvärdering: sätt weight till null och beskriv modellen i
+  description. Hitta ALDRIG på vikter som inte står i underlaget.
 - Identifiera oklarheter (redFlags)
 - Plocka diarienummer exakt — utelämna fältet om det saknas
 - Extrahera OSL-referens och sekretess-bilagor om RFP:en behandlar sekretess; annars null respektive tom lista
@@ -49,11 +52,16 @@ export async function analyzeRfp(
 ): Promise<RfpAnalysis> {
   return callClaude({
     model: MODELS.extraction,
-    maxTokens: 4000,
+    // 8000: stora FFU:er (200k+ tecken) ger analyser som trunkerades av
+    // 4000-taket mitt i JSON:en — deterministiskt vid temp 0.
+    maxTokens: 8000,
     system: SYSTEM_PROMPT,
     userContent: `Analysera följande förfrågningsunderlag och returnera en strukturerad JSON-analys:\n\n${rfpText}`,
     schema: RfpAnalysisSchema,
     label: "RFP analysis",
+    // Extraktion ska vara deterministisk: samma FFU → samma kravlista, både för
+    // kunden och för eval-grinden (temp 1.0 tärningskastade segmenteringen).
+    temperature: 0,
     userId,
   });
 }

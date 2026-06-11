@@ -13,6 +13,32 @@ describe("analyzeRfp", () => {
     mockCallClaude.mockReset();
   });
 
+  it("har utrymme för stora underlag — maxTokens minst 8000", async () => {
+    // Sörmland-FFU:n (203k tecken) gav vid temp 0 en analys som trunkerades
+    // av 4000-takets mitt i JSON:en — deterministiskt, varje retry.
+    mockCallClaude.mockResolvedValueOnce({
+      title: "Test", client: "Kund", deadline: null, summary: "s",
+      requirements: [], evaluationCriteria: [], requiredCompetencies: [],
+      estimatedScope: "x", redFlags: [], domain: "IT",
+      oslReference: null, secrecyRows: [],
+    });
+    await analyzeRfp("RFP-text");
+    expect(mockCallClaude.mock.calls[0][0].maxTokens).toBeGreaterThanOrEqual(8000);
+  });
+
+  it("kör med temperature 0 — extraktion ska vara deterministisk", async () => {
+    // Samma FFU ska ge samma kravlista, både för kunden och för eval-grinden.
+    // Vid API-default 1.0 tärningskastade analyzern segmenteringen per körning.
+    mockCallClaude.mockResolvedValueOnce({
+      title: "Test", client: "Kund", deadline: null, summary: "s",
+      requirements: [], evaluationCriteria: [], requiredCompetencies: [],
+      estimatedScope: "x", redFlags: [], domain: "IT",
+      oslReference: null, secrecyRows: [],
+    });
+    await analyzeRfp("RFP-text");
+    expect(mockCallClaude.mock.calls[0][0].temperature).toBe(0);
+  });
+
   it("passes diaryNumber instruction to the LLM in the system prompt", async () => {
     mockCallClaude.mockResolvedValueOnce({
       title: "Test",

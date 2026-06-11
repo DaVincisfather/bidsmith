@@ -31,6 +31,10 @@ consultants:
           category: "methodology"
         - name: "Scrum"
           category: "methodology"
+        - name: "Svenska (modersmål)"
+          category: "domain"
+        - name: "Engelska (flytande)"
+          category: "domain"
       projects:
         - client: "Stockholms stad"
           role: "Lead konsult"
@@ -51,6 +55,7 @@ consultants:
     cv_text: |
       Bertil Larsson, junior utvecklare med 2 års erfarenhet av React och TypeScript.
       Jobbat på startup inom e-handel. Inga konsultuppdrag eller offentlig sektor.
+      Språk: svenska (modersmål).
     parsed_profile:
       name: "Bertil Larsson"
       level: "junior"
@@ -62,6 +67,8 @@ consultants:
         - name: "TypeScript"
           category: "technical"
         - name: "e-handel"
+          category: "domain"
+        - name: "Svenska (modersmål)"
           category: "domain"
       projects:
         - client: "E-handelsstartup AB"
@@ -96,6 +103,10 @@ consultants:
           category: "methodology"
         - name: "privat sektor"
           category: "domain"
+        - name: "Svenska (modersmål)"
+          category: "domain"
+        - name: "Engelska (flytande)"
+          category: "domain"
       projects:
         - client: "Volvo Cars"
           role: "DX-lead"
@@ -107,3 +118,234 @@ consultants:
           years: "2018-2020"
           description: "E-handelsanalys"
           sector: "private"
+
+  - id: david_lindqvist
+    match_profile:
+      intent: "strong-match-verksamhetsanalys"
+      cv_format: "structured-bullets"
+      must_haves_demonstrated: ["verksamhetsanalys_10yr", "public_sector", "fastighetsekonomi"]
+    cv_text: |
+      David Lindqvist — Senior verksamhetsanalytiker
+      14 års erfarenhet av processgenomlysningar och ekonomistyrning i offentlig sektor,
+      med särskild inriktning på kommunal fastighets- och lokalförsörjning.
+
+      Projekt:
+      - Vänersta kommun 2021-2024: Genomlysning av fastighetsförvaltningens processer
+        och utformning av ny internhyresmodell. Ansvarig för nulägesanalys, intervjuserie
+        med 40+ verksamhetsföreträdare och beslutsunderlag till kommunstyrelsen.
+      - Region Bergslagen 2018-2021: Översyn av ekonomistyrningsmodellen för
+        regionservice. Processkartläggning och ny kostnadsfördelningsmodell.
+      - Lindefors kommun 2014-2018: Lokalförsörjningsstrategi och investeringsprocess.
+        Tog fram beslutsordning för lokalbehov från förvaltning till fullmäktige.
+
+      Kompetenser: verksamhetsanalys, processkartläggning, ekonomistyrning,
+      internhyresmodeller, fastighetsekonomi, offentlig sektor, intervjumetodik.
+      Språk: svenska (modersmål), engelska (flytande).
+    parsed_profile:
+      name: "David Lindqvist"
+      level: "senior"
+      yearsExperience: 14
+      summary: "Senior verksamhetsanalytiker med djup erfarenhet av processgenomlysning, ekonomistyrning och lokalförsörjning i kommuner och regioner."
+      competencies:
+        - name: "verksamhetsanalys"
+          category: "domain"
+        - name: "processkartläggning"
+          category: "methodology"
+        - name: "ekonomistyrning"
+          category: "domain"
+        - name: "internhyresmodeller"
+          category: "domain"
+        - name: "fastighetsekonomi"
+          category: "domain"
+        - name: "offentlig sektor"
+          category: "domain"
+        - name: "intervjumetodik"
+          category: "methodology"
+        - name: "Svenska (modersmål)"
+          category: "domain"
+        - name: "Engelska (flytande)"
+          category: "domain"
+      projects:
+        - client: "Vänersta kommun"
+          role: "Ansvarig analytiker"
+          years: "2021-2024"
+          description: "Genomlysning av fastighetsförvaltningens processer och ny internhyresmodell"
+          sector: "public"
+        - client: "Region Bergslagen"
+          role: "Verksamhetsanalytiker"
+          years: "2018-2021"
+          description: "Översyn av ekonomistyrningsmodell för regionservice"
+          sector: "public"
+        - client: "Lindefors kommun"
+          role: "Strategikonsult"
+          years: "2014-2018"
+          description: "Lokalförsörjningsstrategi och investeringsprocess"
+          sector: "public"
+
+  - id: elin_marklund
+    match_profile:
+      intent: "strong-match-healthtech-affarsutveckling"
+      cv_format: "narrative"
+      must_haves_demonstrated: ["affarsutveckling", "life_science", "kommersialisering"]
+    cv_text: |
+      Elin Marklund är senior affärsutvecklare med 11 års erfarenhet av kommersialisering
+      och innovationsstöd inom life science och healthtech. Mellan 2019 och 2024 arbetade
+      hon som affärsrådgivare vid Mellansvenska tekniska högskolans innovationskontor, där
+      hon coachade ett trettiotal forskningsnära healthtech-bolag i affärsmodellering,
+      marknadsvalidering och tidig finansiering. Dessförinnan ledde hon go-to-market-arbetet
+      på medtech-bolaget Cura Diagnostics AB (2017-2019) och var affärscoach på inkubatorn
+      Spira (2015-2017) med fokus på verifieringsmedel och IP-strategi.
+      Språk: svenska (modersmål), engelska (flytande).
+    parsed_profile:
+      name: "Elin Marklund"
+      level: "senior"
+      yearsExperience: 11
+      summary: "Senior affärsutvecklare inom life science/healthtech med lång erfarenhet av kommersialisering och innovationsstöd i forskningsnära miljöer."
+      competencies:
+        - name: "affärsutveckling"
+          category: "domain"
+        - name: "kommersialisering"
+          category: "domain"
+        - name: "life science/healthtech"
+          category: "domain"
+        - name: "affärsmodellering"
+          category: "methodology"
+        - name: "marknadsanalys"
+          category: "methodology"
+        - name: "IP-strategi"
+          category: "domain"
+        - name: "Svenska (modersmål)"
+          category: "domain"
+        - name: "Engelska (flytande)"
+          category: "domain"
+      projects:
+        - client: "Mellansvenska tekniska högskolans innovationskontor"
+          role: "Affärsrådgivare"
+          years: "2019-2024"
+          description: "Affärsrådgivning till forskningsnära healthtech-bolag"
+          sector: "public"
+        - client: "Cura Diagnostics AB"
+          role: "Affärsutvecklingschef"
+          years: "2017-2019"
+          description: "Go-to-market för diagnostikplattform"
+          sector: "private"
+        - client: "Inkubatorn Spira"
+          role: "Affärscoach"
+          years: "2015-2017"
+          description: "Coachning av startups, verifieringsmedel och IP-strategi"
+          sector: "private"
+
+  - id: fredrik_ohman
+    match_profile:
+      intent: "mid-match-ramavtal"
+      cv_format: "structured-bullets"
+      must_haves_demonstrated: ["ramavtal", "public_sector"]
+    cv_text: |
+      Fredrik Öhman — Förändringsledare och projektledare
+      6 års konsulterfarenhet, huvudsakligen korta och medellånga avropsuppdrag
+      mot myndigheter och regioner via ramavtal.
+
+      Projekt:
+      - Myndigheten för samhällsutveckling 2022-2024: Projektledare för
+        verksamhetsstödsuppdrag avropade via ramavtal — processtöd, utredningsbistånd
+        och facilitering av ledningsworkshops.
+      - Region Fjällmark 2021-2022: Förändringsledare vid införandet av nytt
+        ärendehanteringssystem, ansvarig för utbildning och mottagande i verksamheten.
+      - Statens service- och förvaltningsnämnd 2020-2021: Processtöd för administrativa
+        rutiner, kartläggning och förenkling av ärendeflöden.
+
+      Kompetenser: förändringsledning, projektledning, ramavtalsavrop, offentlig
+      förvaltning, workshopfacilitering.
+      Språk: svenska (modersmål), engelska (god).
+    parsed_profile:
+      name: "Fredrik Öhman"
+      level: "intermediate"
+      yearsExperience: 6
+      summary: "Förändringsledare och projektledare med bred erfarenhet av avropsuppdrag mot myndigheter och regioner via ramavtal."
+      competencies:
+        - name: "förändringsledning"
+          category: "methodology"
+        - name: "projektledning"
+          category: "methodology"
+        - name: "ramavtalsavrop"
+          category: "domain"
+        - name: "offentlig förvaltning"
+          category: "domain"
+        - name: "workshopfacilitering"
+          category: "methodology"
+        - name: "Svenska (modersmål)"
+          category: "domain"
+        - name: "Engelska (god)"
+          category: "domain"
+      projects:
+        - client: "Myndigheten för samhällsutveckling"
+          role: "Projektledare"
+          years: "2022-2024"
+          description: "Verksamhetsstödsuppdrag via ramavtalsavrop"
+          sector: "public"
+        - client: "Region Fjällmark"
+          role: "Förändringsledare"
+          years: "2021-2022"
+          description: "Införande av nytt ärendehanteringssystem"
+          sector: "public"
+        - client: "Statens service- och förvaltningsnämnd"
+          role: "Processkonsult"
+          years: "2020-2021"
+          description: "Kartläggning och förenkling av administrativa ärendeflöden"
+          sector: "public"
+
+  - id: gunilla_ekstrom
+    match_profile:
+      intent: "strong-match-utredning"
+      cv_format: "narrative"
+      must_haves_demonstrated: ["utredningsmetodik", "arbetsmiljo", "public_sector"]
+    cv_text: |
+      Gunilla Ekström är senior utredare med 17 års erfarenhet av arbetsmiljö- och
+      HR-utredningar i offentlig sektor. Hon har genomfört ett femtiotal oberoende
+      utredningar av kränkande särbehandling enligt faktaundersökningsmetodik, varav
+      flera i politiskt känsliga miljöer. 2023-2024 ledde hon en oberoende utredning av
+      kränkande särbehandling inom en klinikledning i Region Fjällmark, inklusive
+      strukturerade intervjuer med 25 medarbetare och rättssäker dokumentation.
+      2019-2022 genomförde hon en arbetsmiljökartläggning av en hel förvaltning i
+      Region Bergslagen. Dessförinnan arbetade hon 2012-2019 med HR-utredningar och
+      arbetsrättsligt stöd i Vänersta kommun. Gunilla är väl förtrogen med OSA-föreskrifterna
+      (AFS 2015:4) och diskrimineringslagens utredningsskyldighet.
+      Språk: svenska (modersmål), engelska (flytande).
+    parsed_profile:
+      name: "Gunilla Ekström"
+      level: "expert"
+      yearsExperience: 17
+      summary: "Senior utredare specialiserad på kränkande särbehandling och arbetsmiljöutredningar i regioner och kommuner, med faktaundersökningsmetodik."
+      competencies:
+        - name: "utredningsmetodik/faktaundersökning"
+          category: "methodology"
+        - name: "kränkande särbehandling"
+          category: "domain"
+        - name: "arbetsmiljörätt (OSA, AFS 2015:4)"
+          category: "domain"
+        - name: "intervjumetodik"
+          category: "methodology"
+        - name: "HR och arbetsrätt"
+          category: "domain"
+        - name: "offentlig sektor"
+          category: "domain"
+        - name: "Svenska (modersmål)"
+          category: "domain"
+        - name: "Engelska (flytande)"
+          category: "domain"
+      projects:
+        - client: "Region Fjällmark"
+          role: "Oberoende utredare"
+          years: "2023-2024"
+          description: "Utredning av kränkande särbehandling inom klinikledning"
+          sector: "public"
+        - client: "Region Bergslagen"
+          role: "Utredare"
+          years: "2019-2022"
+          description: "Arbetsmiljökartläggning av förvaltning"
+          sector: "public"
+        - client: "Vänersta kommun"
+          role: "HR-utredare"
+          years: "2012-2019"
+          description: "HR-utredningar och arbetsrättsligt stöd"
+          sector: "public"

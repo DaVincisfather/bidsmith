@@ -80,6 +80,48 @@ describe("extractJson", () => {
   });
 });
 
+describe("callClaude — temperature passthrough", () => {
+  const schema = z.object({ a: z.number() });
+  const baseArgs = {
+    maxTokens: 100,
+    system: "sys",
+    userContent: "user",
+    label: "test",
+    model: "claude-haiku-4-5-20251001",
+    schema,
+  };
+
+  it("skickar temperature till API:t när satt (judgar kräver 0 för determinism)", async () => {
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: '{"a": 1}' }],
+      usage: {},
+    }));
+    await callClaude({ ...baseArgs, temperature: 0 });
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ temperature: 0 })
+    );
+  });
+
+  it("kastar direkt på effort + temperature — API:t avvisar kombinationen med 400", async () => {
+    // Adaptive thinking kräver temperature 1/utelämnad; 400 är inte retrybar
+    // så utan vakt hårdfailar varje anrop efter att ha kostat ett försök.
+    await expect(
+      callClaude({ ...baseArgs, effort: "high", temperature: 0 })
+    ).rejects.toThrow(/effort.*temperature|temperature.*effort/i);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it("utelämnar temperature när inte satt", async () => {
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: '{"a": 1}' }],
+      usage: {},
+    }));
+    await callClaude({ ...baseArgs });
+    const callArg = mockCreate.mock.calls[0][0] as Record<string, unknown>;
+    expect("temperature" in callArg).toBe(false);
+  });
+});
+
 describe("callClaude — validation error formatting", () => {
   const baseArgs = {
     maxTokens: 1000,

@@ -92,3 +92,34 @@ describe("RfpAnalysisSchema — priority coercion in requirements", () => {
     ]);
   });
 });
+
+describe("RfpAnalysisSchema — evaluationCriteria weight", () => {
+  const base = {
+    title: "t",
+    client: "c",
+    deadline: null,
+    summary: "s",
+    requirements: [],
+    requiredCompetencies: [],
+    estimatedScope: "",
+    redFlags: [],
+    domain: "",
+    oslReference: null,
+    secrecyRows: [],
+  };
+
+  it("accepterar weight: null när källan inte anger procentvikt", () => {
+    // Svenska upphandlingar använder ofta rangordning eller prisavdrag i kronor —
+    // ett krav på numerisk vikt tvingar modellen att fabricera siffror.
+    const raw = {
+      ...base,
+      evaluationCriteria: [
+        { name: "Metodbeskrivning", weight: null, description: "Rangordnat kriterium" },
+        { name: "Pris", weight: 50, description: "Viktat kriterium" },
+      ],
+    };
+    const parsed = RfpAnalysisSchema.parse(raw);
+    expect(parsed.evaluationCriteria[0].weight).toBeNull();
+    expect(parsed.evaluationCriteria[1].weight).toBe(50);
+  });
+});

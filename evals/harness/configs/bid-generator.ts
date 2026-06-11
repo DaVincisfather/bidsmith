@@ -36,6 +36,7 @@ interface BidEvalContext {
   fixture: BidGeneratorFixture;
   analyzerFixture: AnalyzerFixture;
   consultants: SyntheticConsultant[];
+  overflowCount?: number;
 }
 
 const POOL_PATH = path.resolve(process.cwd(), "evals/fixtures/consultants/synthetic-pool.yaml");
@@ -52,7 +53,11 @@ async function loadContext(fixture: BidGeneratorFixture): Promise<BidEvalContext
   return { fixture, analyzerFixture, consultants };
 }
 
-export function computeBidGeneratorMetrics(judgments: FieldJudgment[]): Record<string, number> {
+export function computeBidGeneratorMetrics(
+  judgments: FieldJudgment[],
+  overflowCount = 0,
+  hallucinationAllowlist: string[] = [],
+): Record<string, number> {
   const metrics: Record<string, number> = {};
 
   // Structure: 0/1 per judgment + composite pass
@@ -75,13 +80,22 @@ export function computeBidGeneratorMetrics(judgments: FieldJudgment[]): Record<s
     metrics["coverage.recall"] = coverageJudgments.filter((j) => j.match).length / coverageJudgments.length;
   }
 
-  // Hallucination
+  // Hallucination — count och pass måste följa SAMMA allowlist (judgen filtrerar
+  // pass; ofiltrerad count gav pass=1 och count>0 för samma anbud)
   const hallucination = judgments.find((j) => j.field === "hallucination");
   if (hallucination) {
     metrics["hallucination.pass"] = hallucination.match ? 1 : 0;
     const claims = Array.isArray(hallucination.actual) ? hallucination.actual : [];
-    metrics["hallucination.count"] = claims.filter((c: { supported: boolean }) => !c.supported).length;
+    const allowlisted = (claim: string) =>
+      hallucinationAllowlist.some((term) => claim.toLowerCase().includes(term.toLowerCase()));
+    metrics["hallucination.count"] = claims.filter(
+      (c: { supported: boolean; claim: string }) => !c.supported && !allowlisted(c.claim),
+    ).length;
   }
+
+  // Overflow — fas 0-fyndet: harnessen kastade overflowFlags och grinden var blind
+  metrics["overflow.count"] = overflowCount;
+  metrics["overflow.pass"] = overflowCount === 0 ? 1 : 0;
 
   return metrics;
 }
@@ -157,13 +171,15 @@ export const bidGeneratorConfig: EvalConfig<BidGeneratorFixture, Output, BidEval
   runModule: async (fixture) => {
     const context = await loadContext(fixture);
     const ctx = buildEvalBidContext(context.analyzerFixture, context.consultants);
-    // Eval harness only judges sections; overflowFlags are surfaced in the
-    // editor UI, not in offline eval — pass templateName but discard flags here.
-    const { sections } = await generateAllSections(ctx, "anbudsmall-v2");
-    return { output: sections, context };
+    const { sections, overflowFlags } = await generateAllSections(ctx, "anbudsmall-v2");
+    return { output: sections, context: { ...context, overflowCount: overflowFlags.length } };
   },
   judgeOutput: (fixture, actual, context) => judgeBid(fixture, actual, context),
-  // EvalConfig requires (judgments, fixture) — fixture unused for structure-only dimension.
-  computeFixtureMetrics: (judgments, _fixture) => computeBidGeneratorMetrics(judgments),
+  computeFixtureMetrics: (judgments, fixture, context) =>
+    computeBidGeneratorMetrics(
+      judgments,
+      context?.overflowCount ?? 0,
+      fixture.golden.hallucination_allowlist,
+    ),
   computeAggregate: computeBidGeneratorAggregate,
 };

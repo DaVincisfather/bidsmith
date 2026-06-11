@@ -18,7 +18,8 @@ export const AnalyzerGoldenSchema = z.object({
   evaluationCriteria: z.array(
     z.object({
       name: z.string(),
-      weight: z.number(),
+      // Speglar RfpAnalysisSchema: null = källan anger ingen procentvikt
+      weight: z.number().nullable(),
       description: z.string(),
     })
   ),

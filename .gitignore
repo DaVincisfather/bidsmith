@@ -61,3 +61,7 @@ docs/tech-stack.png
 
 # Claude Code local settings
 .claude/
+
+# Nedladdade upphandlingsdokument — committas inte (storlek); extraherad text hamnar i fixture-yaml
+evals/fixtures/source-docs/*
+!evals/fixtures/source-docs/.gitkeep

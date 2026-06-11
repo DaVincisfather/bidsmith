@@ -1,0 +1,24 @@
+id: sormland-verksamhetsstod
+analyzer_fixture: sormland-verksamhetsstod
+consultant_ids:
+  - fredrik_ohman
+  - david_lindqvist
+  - anna_svensson
+golden:
+  mandatory_sections:
+    - cover
+    - understanding-current
+    - understanding-assignment
+    - understanding-vision
+    - phases
+    - quality-assurance
+    - requirement-matrix-v2
+    - team-pricing
+    - reference-v2
+    - confidentiality
+    - certifications
+  requirement_coverage:
+    must_cover: []          # aggregerad coverage.recall används (se bid-generator.ts)
+    should_cover_threshold: 0.8
+  hallucination_allowlist:
+    - "anbudsdatum"         # deterministisk cover-stämpel (bälte+hängslen utöver judge-kalibreringen)

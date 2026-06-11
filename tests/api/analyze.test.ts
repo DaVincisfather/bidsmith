@@ -35,12 +35,15 @@ describe.skipIf(!process.env.ANTHROPIC_API_KEY)("End-to-end: parse + analyze", (
       expect(["must", "should", "nice-to-have"]).toContain(req.priority);
     });
 
-    // Verify weights sum to roughly 100
-    const totalWeight = analysis.evaluationCriteria.reduce(
-      (sum, c) => sum + c.weight,
-      0
-    );
-    expect(totalWeight).toBeGreaterThanOrEqual(90);
-    expect(totalWeight).toBeLessThanOrEqual(110);
+    // Verify weights sum to roughly 100 — only when the source uses percent
+    // weighting (weight is null for rank-order/price-deduction models)
+    const weights = analysis.evaluationCriteria
+      .map((c) => c.weight)
+      .filter((w): w is number => w !== null);
+    if (weights.length === analysis.evaluationCriteria.length && weights.length > 0) {
+      const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+      expect(totalWeight).toBeGreaterThanOrEqual(90);
+      expect(totalWeight).toBeLessThanOrEqual(110);
+    }
   }, 120000);
 });

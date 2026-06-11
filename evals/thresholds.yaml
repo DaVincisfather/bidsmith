@@ -42,3 +42,6 @@ bid-generator:
   hallucination.pass:
     green: 1.00
     yellow: 1.00
+  overflow.pass:
+    green: 1.00
+    yellow: 1.00

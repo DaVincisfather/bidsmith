@@ -66,7 +66,9 @@ export const RfpAnalysisSchema = z.object({
   evaluationCriteria: z.array(
     z.object({
       name: z.string(),
-      weight: z.number(),
+      // null = källan anger ingen procentvikt (rangordning/prisavdrag är vanligt
+      // i svenska upphandlingar) — ett number-krav tvingar modellen att fabricera
+      weight: z.number().nullable(),
       description: z.string(),
     })
   ),

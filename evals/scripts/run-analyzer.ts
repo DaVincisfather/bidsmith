@@ -21,7 +21,11 @@ async function main() {
   // Load fixtures
   const dir = analyzerConfig.fixtureDir;
   const entries = await fs.readdir(dir);
-  const yamlFiles = entries.filter((f) => f.endsWith(".yaml") || f.endsWith(".yml"));
+  // .draft.yaml är ogranskade golden-utkast (draft-analyzer-golden.ts) — får
+  // aldrig laddas som skarpa fixtures: facit vore modellens egen output.
+  const yamlFiles = entries.filter(
+    (f) => (f.endsWith(".yaml") || f.endsWith(".yml")) && !f.endsWith(".draft.yaml"),
+  );
   const fixtures: AnalyzerFixture[] = [];
   for (const file of yamlFiles.sort()) {
     const content = await fs.readFile(path.join(dir, file), "utf-8");
