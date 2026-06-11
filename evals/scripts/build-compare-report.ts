@@ -4,39 +4,28 @@
 import fs from "fs/promises";
 import path from "path";
 import { createServiceClient } from "@/lib/supabase";
-import { renderSectionText, WRITING_SECTION_KEYS, type WinTally } from "../harness/core/compare-core";
-import { pickBlindPairs, renderReportMd, type ComparePair, type ModelCost } from "../harness/core/compare-report";
-import type { BidSection } from "@/lib/types";
+import { type WinTally } from "../harness/core/compare-core";
+import { pickBlindPairs, renderReportMd, type ModelCost } from "../harness/core/compare-report";
+import { readDumps, collectComparePairs, type CompareDump } from "../harness/core/compare-io";
 
-const BLIND_PAIRS = 10;
-const BLIND_SEED = 42;
-
-interface Dump {
-  model: string;
-  fixtureId: string;
-  rep: number;
-  startedAt: string;
-  finishedAt: string;
-  sections: BidSection[];
-}
-
-async function readDumps(model: string): Promise<Map<string, Dump>> {
-  const dir = path.resolve("evals/runs/compare", model);
-  const out = new Map<string, Dump>();
-  for (const f of (await fs.readdir(dir)).filter((x) => x.endsWith(".json"))) {
-    out.set(f, JSON.parse(await fs.readFile(path.join(dir, f), "utf-8")));
-  }
-  return out;
-}
+// Env-styrda av samma skäl som BIDSMITH_COMPARE_REPS: en andra granskningomgång
+// (fler par, ny seed) ska inte kräva kodändring. OBS: ändrad seed efter att
+// blind-review.md fyllts i gör facit oanvändbart — kör om hela genereringen.
+const BLIND_PAIRS = Number(process.env.BIDSMITH_BLIND_PAIRS ?? 10);
+const BLIND_SEED = Number(process.env.BIDSMITH_BLIND_SEED ?? 42);
 
 // Kostnad ur ai_call_logs mellan barnens start-/sluttider, summerat per modell
 // på skrivbundle-anropen (label '% bundle'). Hämtas här — inte i de rena
-// renderingsfunktionerna.
-async function fetchCosts(dumps: Map<string, Dump>, model: string): Promise<ModelCost> {
+// renderingsfunktionerna. Kända begränsningar (acceptabla för en informativ
+// rapportrad): logAiCall är fire-and-forget så sista radernas created_at kan
+// släpa efter finishedAt (60s slack nedan), och fönstret är oattribuerat —
+// parallella anrop med samma modell i fönstret räknas med.
+async function fetchCosts(dumps: Map<string, CompareDump>, model: string): Promise<ModelCost> {
   const times = [...dumps.values()];
   if (times.length === 0) return { model, totalUsd: 0, perBid: 0 };
   const from = times.map((d) => d.startedAt).sort()[0];
-  const to = times.map((d) => d.finishedAt).sort().at(-1)!;
+  const lastFinished = times.map((d) => d.finishedAt).sort().at(-1)!;
+  const to = new Date(new Date(lastFinished).getTime() + 60_000).toISOString();
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("ai_call_logs")
@@ -65,23 +54,9 @@ async function main() {
   const dumpsA = await readDumps(modelA);
   const dumpsB = await readDumps(modelB);
 
-  // Alla rep-parade sektioner som finns hos båda modellerna är blindkandidater.
-  const pairs: ComparePair[] = [];
-  for (const [file, a] of dumpsA) {
-    const b = dumpsB.get(file);
-    if (!b) continue;
-    for (const key of WRITING_SECTION_KEYS) {
-      const secA = a.sections.find((s) => s.key === key);
-      const secB = b.sections.find((s) => s.key === key);
-      if (!secA || !secB) continue;
-      pairs.push({
-        pairFile: file,
-        sectionType: key,
-        textA: renderSectionText(secA),
-        textB: renderSectionText(secB),
-      });
-    }
-  }
+  // Samma par-byggnad som judge-fasen (compare-io) — blindgranskningen måste
+  // bedöma exakt de texter judge-tallyn bygger på.
+  const pairs = collectComparePairs(dumpsA, dumpsB);
 
   const blind = pickBlindPairs(pairs, Math.min(BLIND_PAIRS, pairs.length), BLIND_SEED);
   const costs = [await fetchCosts(dumpsA, modelA), await fetchCosts(dumpsB, modelB)];

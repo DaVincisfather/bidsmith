@@ -48,9 +48,12 @@ ${second}`,
 
 // Två pass med bytta positioner. Pass 1: (A,B). Pass 2: (B,A) — där betyder
 // svaret "B" alltså modell A. Samstämmighet i MODELLTERMER krävs; annars tie.
+// Passen är oberoende anrop — parallellt halverar judge-fasens väggtid.
 export async function judgePairBlind(input: PairInput): Promise<PairVerdict> {
-  const p1 = await judgeOnce(input.textA, input.textB, input.sectionType);
-  const p2 = await judgeOnce(input.textB, input.textA, input.sectionType);
+  const [p1, p2] = await Promise.all([
+    judgeOnce(input.textA, input.textB, input.sectionType),
+    judgeOnce(input.textB, input.textA, input.sectionType),
+  ]);
 
   const inModelTerms = (v: "A" | "B" | "tie", swapped: boolean): "A" | "B" | "tie" =>
     v === "tie" ? "tie" : swapped ? (v === "A" ? "B" : "A") : v;

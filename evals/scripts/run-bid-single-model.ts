@@ -19,11 +19,24 @@ async function main() {
   await fs.mkdir(outDir, { recursive: true });
 
   const dir = bidGeneratorConfig.fixtureDir;
-  const files = (await fs.readdir(dir)).filter((f) => f.endsWith(".yaml") && !f.startsWith("_stub"));
+  // Samma filtrering som run-bid-generator (.yaml + .yml, sorterad) — en fixture
+  // får inte tyst falla ur A/B-körningen för att den har fel ändelse.
+  const files = (await fs.readdir(dir))
+    .filter((f) => (f.endsWith(".yaml") || f.endsWith(".yml")) && !f.startsWith("_stub"))
+    .sort();
 
   for (const file of files) {
     const fixture = await bidGeneratorConfig.loadFixture(path.join(dir, file));
     for (let rep = 1; rep <= REPS; rep++) {
+      const outPath = path.join(outDir, `${fixture.id}-rep${rep}.json`);
+      // Omkörningsbarhet på riktigt: befintliga (betalda) dumpar hoppas över så
+      // ett 529-hål bara kostar de saknade körningarna. Korrupt dump? Radera
+      // filen och kör om — readDumps pekar ut den vid parning.
+      try {
+        await fs.access(outPath);
+        console.log(`${model} ${fixture.id} rep${rep} finns redan — hoppar`);
+        continue;
+      } catch { /* saknas — generera */ }
       const startedAt = new Date().toISOString();
       // runModule = harnessens befintliga väg (laddar kontext + generateAllSections)
       // — jämförelsen kör EXAKT samma kod som eval:bid-generator.
@@ -34,7 +47,6 @@ async function main() {
         overflowCount: context.overflowCount ?? 0,
         sections: output,
       };
-      const outPath = path.join(outDir, `${fixture.id}-rep${rep}.json`);
       await fs.writeFile(outPath, JSON.stringify(dump, null, 1), "utf-8");
       console.log(`${model} ${fixture.id} rep${rep} klar`);
     }

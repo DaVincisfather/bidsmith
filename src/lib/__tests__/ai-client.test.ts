@@ -108,6 +108,26 @@ describe("callClaude — overloaded-resiliens", () => {
     vi.useRealTimers();
   });
 
+  it("formatfel efter en 529 ärver inte den utökade budgeten", async () => {
+    vi.useFakeTimers();
+    const { APIError } = await import("@anthropic-ai/sdk");
+    const overloaded = () => ({
+      finalMessage: () =>
+        Promise.reject(new (APIError as never as { new (s: number, m: string): Error })(529, "Overloaded")),
+    });
+    // 529 på försök 0, sedan svar utan JSON (formatfel) — budgeten för
+    // formatfel är 3, så totalt 3 anrop, inte 5.
+    mockCreate
+      .mockReturnValueOnce(overloaded())
+      .mockReturnValue(streamOf({ content: [{ type: "text", text: "ingen json här" }], usage: {} }));
+
+    const promise = callClaude({ ...baseArgs }).catch((e) => e);
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toBeInstanceOf(Error);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
+  });
+
   it("icke-529-fel behåller tre försök", async () => {
     vi.useFakeTimers();
     const { APIError } = await import("@anthropic-ai/sdk");
