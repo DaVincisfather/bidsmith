@@ -39,6 +39,21 @@ describe("judgeArrayField — buntad output får matcha flera golden", () => {
   });
 });
 
+describe("judgeArrayField — errade judge-anrop får inte bli tysta no-match", () => {
+  it("fallback-posten bär felet när alla par-domar errade (kreditslut gav falska nollor)", async () => {
+    vi.mocked(haikuEquivJudge).mockImplementation(async ({ field, golden, actual }) => ({
+      field, judge: "haiku-equiv", match: false,
+      error: "400 credit balance too low",
+      golden, actual,
+    }));
+    const out: FieldJudgment[] = [];
+    await judgeArrayField(out, "requirements", ["A"], ["A"]);
+    const fallback = out.find((j) => j.field === "requirements[0]");
+    expect(fallback?.match).toBe(false);
+    expect(fallback?.error).toMatch(/credit balance/);
+  });
+});
+
 describe("computeAnalyzerMetrics — precision räknar distinkta matchade outputs", () => {
   it("två golden matchade mot samma output ger recall 2/3 och precision 1/2", () => {
     const judgments: FieldJudgment[] = [

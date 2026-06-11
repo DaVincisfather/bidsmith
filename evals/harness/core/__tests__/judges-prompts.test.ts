@@ -11,4 +11,10 @@ describe("judge-promptar (kalibrering fas 1)", () => {
   it("equiv-judgen tolererar specificerande omformulering", () => {
     expect(EQUIV_SYSTEM).toMatch(/specificerad|mer detaljerad/i);
   });
+
+  it("equiv-judgen tolererar olika detaljurval i prosafält", () => {
+    // Temperatur 0 låste in pedantisk strikthet: två korrekta sammanfattningar
+    // av samma uppdrag dömdes olika för att de valde olika detaljer.
+    expect(EQUIV_SYSTEM).toMatch(/detaljurval|huvudinnehåll/i);
+  });
 });

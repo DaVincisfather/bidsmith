@@ -116,12 +116,16 @@ export async function judgeArrayField(
   for (let i = 0; i < goldenItems.length; i++) {
     let bestMatch: FieldJudgment | null = null;
     let bestMatchIdx = -1;
+    // Errade par-domar (429/529/kreditslut) får inte bli tysta no-match —
+    // kreditsluts-incidenten gav falska nollor som såg ut som modellfel.
+    let lastError: string | undefined;
     for (let j = 0; j < actualItems.length; j++) {
       const judgment = await haikuEquivJudge({
         field: `${field}[${i}]`,
         golden: goldenItems[i],
         actual: actualItems[j],
       });
+      if (judgment.error) lastError = judgment.error;
       if (judgment.match) {
         bestMatch = judgment;
         bestMatchIdx = j;
@@ -138,6 +142,7 @@ export async function judgeArrayField(
         match: false,
         golden: goldenItems[i],
         actual: null,
+        ...(lastError ? { error: lastError } : {}),
       });
     }
   }

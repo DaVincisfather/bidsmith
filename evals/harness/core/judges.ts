@@ -38,6 +38,9 @@ export const EQUIV_SYSTEM = `Du bedömer semantisk ekvivalens mellan två värde
 Match = true om värdena uttrycker samma sak (synonymer, omformulering, ordordning).
 Match = true även när ena värdet är en mer specificerad variant av samma sak
 (t.ex. "Flytande svenska" vs "Flytande svenska i tal och skrift").
+För längre prosafält (sammanfattningar, omfattningsbeskrivningar): match = true när
+båda beskriver samma sak med samma huvudinnehåll — detaljurvalet (vilka siffror eller
+bisatser som tagits med) får skilja utan att fälla matchen.
 Match = false om de har olika betydelse eller scope.`;
 
 export async function haikuEquivJudge(input: JudgeInput): Promise<FieldJudgment> {
