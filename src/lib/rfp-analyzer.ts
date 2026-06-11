@@ -57,6 +57,9 @@ export async function analyzeRfp(
     userContent: `Analysera följande förfrågningsunderlag och returnera en strukturerad JSON-analys:\n\n${rfpText}`,
     schema: RfpAnalysisSchema,
     label: "RFP analysis",
+    // Extraktion ska vara deterministisk: samma FFU → samma kravlista, både för
+    // kunden och för eval-grinden (temp 1.0 tärningskastade segmenteringen).
+    temperature: 0,
     userId,
   });
 }

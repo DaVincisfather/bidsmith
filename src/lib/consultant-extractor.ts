@@ -50,6 +50,8 @@ export async function extractConsultant(
     userContent: `Analysera följande konsult-CV och returnera en strukturerad JSON-profil:\n\n${cvText}`,
     schema: ConsultantExtractionSchema,
     label: "consultant-extraction",
+    // Samma determinism-princip som analyzeRfp: samma CV → samma profil.
+    temperature: 0,
     userId,
   });
 }
