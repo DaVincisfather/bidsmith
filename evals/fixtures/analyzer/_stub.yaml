@@ -9,10 +9,12 @@ rfp_text: |
   Utvärdering: kvalitet 60%, pris 40%.
 
 golden:
-  title: "Digital transformation — Stockholms stad"
+  # title/domain ankrade mot deterministisk extraction (temp 0, 2026-06-11) —
+  # smoke-fixturens golden ÄR modellankrad by design, till skillnad från TED-fixtures.
+  title: "Digital transformation – konsultuppdrag"
   client: "Stockholms stad"
   deadline: "2026-06-15"
-  domain: "IT"
+  domain: "Offentlig sektor / Digital transformation"
   summary: "Stockholms stad söker konsult för 18 månaders digital-transformation-uppdrag."
   requirements:
     - category: "Kompetens"

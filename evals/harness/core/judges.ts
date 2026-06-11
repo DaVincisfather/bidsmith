@@ -36,8 +36,11 @@ function renderValue(v: unknown): string {
 
 export const EQUIV_SYSTEM = `Du bedömer semantisk ekvivalens mellan två värden. Svara med JSON { "match": boolean, "reason": string }.
 Match = true om värdena uttrycker samma sak (synonymer, omformulering, ordordning).
-Match = true även när ena värdet är en mer specificerad variant av samma sak
-(t.ex. "Flytande svenska" vs "Flytande svenska i tal och skrift").
+Riktad regel för kravposter: match = true när Faktiskt innehåller Goldens kärnkrav,
+även om Faktiskt har FLER detaljer, bisatser eller villkor än Golden — extra innehåll
+i Faktiskt är ingen informationsförlust (t.ex. Golden "Flytande svenska" vs Faktiskt
+"Flytande svenska i tal och skrift" = match). Match = false när Faktiskt SAKNAR
+väsentliga villkor eller delar som Golden innehåller — tappade krav får inte maskeras.
 För längre prosafält (sammanfattningar, omfattningsbeskrivningar): match = true när
 båda beskriver samma sak med samma huvudinnehåll — detaljurvalet (vilka siffror eller
 bisatser som tagits med) får skilja utan att fälla matchen.

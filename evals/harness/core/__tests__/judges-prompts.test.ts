@@ -9,7 +9,16 @@ describe("judge-promptar (kalibrering fas 1)", () => {
   });
 
   it("equiv-judgen tolererar specificerande omformulering", () => {
-    expect(EQUIV_SYSTEM).toMatch(/specificerad|mer detaljerad/i);
+    // Superseded av den riktade regeln men kontraktet kvarstår: exemplet
+    // "Flytande svenska" vs "Flytande svenska i tal och skrift" ska matcha.
+    expect(EQUIV_SYSTEM).toMatch(/Flytande svenska i tal och skrift/);
+  });
+
+  it("equiv-judgen är riktad: extra innehåll i Faktiskt ok, tappade villkor fäller", () => {
+    // Skyddet för ska-kraven: output som SAKNAR golden-villkor får aldrig matcha,
+    // men output med FLER bisatser än golden är ingen informationsförlust.
+    expect(EQUIV_SYSTEM).toMatch(/FLER|fler (detaljer|bisatser|villkor)/);
+    expect(EQUIV_SYSTEM).toMatch(/SAKNAR/);
   });
 
   it("equiv-judgen tolererar olika detaljurval i prosafält", () => {

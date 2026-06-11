@@ -8328,8 +8328,10 @@ golden:
         prissättas för aktuellt delområde.
       priority: must
     - category: Kvalificering – ekonomi
-      description: Leverantören ska ha minst 40 poäng enligt Creditsafes ratingskala samt inneha giltig
-        ansvarsförsäkring för person- och sakskada.
+      description: Leverantören ska ha minst 40 poäng enligt Creditsafes ratingskala.
+      priority: must
+    - category: Kvalificering – ekonomi
+      description: Leverantören ska inneha giltig ansvarsförsäkring för person- och sakskada.
       priority: must
     - category: Kvalificering – teknisk kapacitet
       description: Leverantören ska ha dokumenterad kompetens och erfarenhet inom regional utveckling,
