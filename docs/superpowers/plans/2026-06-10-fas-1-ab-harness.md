@@ -23,7 +23,7 @@ körning, Stefans blindgranskning, beslutsrapport, ev. registerändring.
 **Grind för hela fasen:** `npx vitest run` grönt efter varje task. Evals och
 jämförelsekörningar kostar pengar — de körs bara vid de markerade grindarna
 (Task 7, Task 16). Uppskattad totalkostnad för fasen: **$40–80**
-(18 anbudsgenereringar på riktiga underlag + ~90 parvisa judge-anrop + fixture-grindar).
+(24 anbudsgenereringar på riktiga underlag + 60 judge-par à 2 anrop = ~120 judge-anrop + fixture-grindar).
 
 **Stefan-gates (manuella steg, kan inte automatiseras):**
 1. Task 1: ladda ner underlag från upphandlingsplattformarna (kan kräva gratiskonto).
@@ -45,21 +45,22 @@ En commit per avslutat task-steg enligt commitstegen.
 
 ---
 
-## Valda upphandlingar (sökta i TED 2026-06-10, CPV 794xx/72224000, buyer-country=SWE)
+## Valda upphandlingar — NEDLADDADE 2026-06-10 (Stefans urval, ersätter söklistan)
 
-| # | TED-id | Köpare | Uppdrag | Deadline | Roll i fixturesetet |
+| # | Underlag (katalognamn i source-docs) | Köpare | Uppdrag | Deadline | Roll i fixturesetet |
 |---|---|---|---|---|---|
-| 1 | [361188-2026](https://ted.europa.eu/sv/notice/-/detail/361188-2026) | Upphandlingsmyndigheten | Konsulttjänster inom verksamhetsanalys och digital design | öppen | Kärnprofil: verksamhetsanalys |
-| 2 | [361465-2026](https://ted.europa.eu/sv/notice/-/detail/361465-2026) | Arbetsförmedlingen | Organisations- och ledarskapsutveckling | öppen | Klassisk managementkonsulting |
-| 3 | [394206-2026](https://ted.europa.eu/sv/notice/-/detail/394206-2026) | Region Sörmland & Västmanland | Ramavtal verksamhetsstöd och administrativa tjänster | 2026-06-26 | Ramavtal (annan anbudsform) |
-| 4 | [360200-2026](https://ted.europa.eu/sv/notice/-/detail/360200-2026) | Region Örebro län | Utredning av kränkande särbehandling | 2026-08-17 | Utredningsuppdrag, längst deadline |
-| R1 | [362535-2026](https://ted.europa.eu/sv/notice/-/detail/362535-2026) | Formas | Impact evaluation, öppna utlysningar | 2026-06-27 | Reserv (möjligen engelskspråkig) |
-| R2 | [357693-2026](https://ted.europa.eu/sv/notice/-/detail/357693-2026) | Chalmers | Affärsutveckling HealthTech | 2026-06-24 | Reserv |
+| 1 | `eskilstuna-lokalforsorjning` (UE 26.050) | Eskilstuna kommun | Genomlysning av lokalförsörjningsprocessen + ny hyresmodell | öppen (v2 publ. 2026-06-04) | Kärnprofil: verksamhetsanalys/genomlysning |
+| 2 | `357693-healthtech` ([357693-2026](https://ted.europa.eu/sv/notice/-/detail/357693-2026), C 2026-0696) | Chalmers | Affärsutveckling HealthTech | 2026-06-24 | Affärsutveckling (f.d. reserv R2) |
+| 3 | `394206-verksamhetsstod` ([394206-2026](https://ted.europa.eu/sv/notice/-/detail/394206-2026), IN-IN25-0354) | Region Sörmland & Västmanland | Ramavtal verksamhetsstöd och administrativa tjänster | 2026-06-26 | Ramavtal (annan anbudsform) |
+| 4 | `360200-utredning` ([360200-2026](https://ted.europa.eu/sv/notice/-/detail/360200-2026), 25RS8852) | Region Örebro län | Utredning av kränkande särbehandling | 2026-08-17 | Utredningsuppdrag, längst deadline |
 
-Kriterier bakom urvalet: öppen deadline (dokumenten åtkomliga), svensk köpare,
-managementkonsult-kärna (inte bygg/IT/kommunikation), spridning över uppdragstyp
-(analys, ledarskap, ramavtal, utredning). Faller en bort (inloggningskrav, indragen
-upphandling) ersätts den med reserv — 3 fixtures är minimum, 4 är målet.
+Vid nedladdningen ersatte Stefan söklistans Upphandlingsmyndigheten (361188-2026) och
+Arbetsförmedlingen (361465-2026) med Eskilstuna och reserven Chalmers — fullständiga
+FFU:er kunde verifieras för dessa fyra (72k/55k/203k/111k tecken via markitdown;
+Sörmland-ramavtalet är störst och kan behöva trimmas). Notis-PDF:erna ligger bredvid
+huvuddokumenten som kontext. Kriterier bakom urvalet: öppen deadline (dokumenten
+åtkomliga), svensk köpare, managementkonsult-kärna (inte bygg/IT/kommunikation),
+spridning över uppdragstyp (analys, affärsutveckling, ramavtal, utredning).
 
 ---
 
@@ -86,12 +87,11 @@ evals/fixtures/source-docs/*
 !evals/fixtures/source-docs/.gitkeep
 ```
 
-- [ ] **Steg 1.2 (Stefan):** För varje vald upphandling i tabellen: öppna TED-länken →
-  följ länken till upphandlingsplattformen (Mercell/TendSign/Kommers/e-Avrop) → ladda ner
-  **huvuddokumentet** (förfrågningsunderlag/upphandlingsdokument) och **kravbilagan** om
-  separat. Spara som `evals/fixtures/source-docs/<ted-id>-<kortnamn>/`.
-  Hoppa över avtalsmallar, ESPD och administrativa bilagor — de är brus för analysen.
-  Kräver plattformen konto: skapa gratiskonto eller ersätt upphandlingen med reserv.
+- [ ] **Steg 1.2 (Stefan):** REDAN UTFÖRD 2026-06-10 — underlagen ligger i
+  `C:\Users\stefa\Downloads\bidsmith-underlag\` med en katalog per upphandling
+  (katalognamnen i tabellen ovan), huvuddokument + notis-PDF per katalog,
+  innehållsverifierade via markitdown. Återstår: kopiera katalogerna till
+  `evals/fixtures/source-docs/`.
 - [ ] **Steg 1.3:** Verifiera: minst 3 mappar med PDF/DOCX finns. `git status` visar inga
   source-docs (ignorerade). Commit `.gitignore`-ändringen:
 
@@ -114,7 +114,7 @@ genom exakt samma väg som en uppladdad fil i appen.
 // evals/scripts/extract-rfp-text.ts
 // Konverterar nedladdade upphandlingsdokument till text via produktionens
 // dokumentparser. Användning:
-//   npx tsx evals/scripts/extract-rfp-text.ts evals/fixtures/source-docs/361188-verksamhetsanalys
+//   npx tsx evals/scripts/extract-rfp-text.ts evals/fixtures/source-docs/eskilstuna-lokalforsorjning
 // Skriver <mapp>/extracted.txt — klistras sedan in som rfp_text i fixture-yaml.
 import fs from "fs/promises";
 import path from "path";
@@ -298,8 +298,8 @@ describe("overflow-metrik", () => {
 **Filer:**
 - Ändra: `evals/fixtures/consultants/synthetic-pool.yaml` (4 nya profiler + språkkompetens i befintliga)
 - Skapa: `evals/scripts/draft-analyzer-golden.ts`
-- Skapa: `evals/fixtures/analyzer/<id>.yaml` × 4 (t.ex. `umv-verksamhetsanalys.yaml`,
-  `af-ledarskapsutveckling.yaml`, `sormland-verksamhetsstod.yaml`, `orebro-utredning.yaml`)
+- Skapa: `evals/fixtures/analyzer/<id>.yaml` × 4 (`eskilstuna-lokalforsorjning.yaml`,
+  `chalmers-healthtech.yaml`, `sormland-verksamhetsstod.yaml`, `orebro-utredning.yaml`)
 
 - [ ] **Steg 6.1: Nya konsultprofiler.** Generera 4 syntetiska profiler matchade mot
   upphandlingarnas domäner med denna prompt till Claude (granska att namn/bolag är
@@ -309,9 +309,10 @@ describe("overflow-metrik", () => {
 Skapa 4 syntetiska svenska managementkonsultprofiler i samma YAML-format som befintliga
 poster i evals/fixtures/consultants/synthetic-pool.yaml (id, match_profile, cv_text,
 parsed_profile). Profiler: (1) senior verksamhetsanalytiker offentlig sektor med
-tjänstedesign-erfarenhet, (2) expert organisations-/ledarskapsutvecklare med
-ledningsgruppserfarenhet i myndighet, (3) intermediate förändringsledare/projektledare
-ramavtalsvana, (4) senior utredare med arbetsmiljö/HR-utredningar i regioner.
+processgenomlysning och fastighets-/ekonomistyrningserfarenhet i kommun, (2) senior
+affärsutvecklare inom innovation/tech-transfer med life science/healthtech-erfarenhet,
+(3) intermediate förändringsledare/projektledare ramavtalsvana, (4) senior utredare
+med arbetsmiljö/HR-utredningar i regioner.
 Alla: påhittade namn och klienter (svenska myndighetsliknande men fiktiva), 8-20 års
 erfarenhet, språkkompetens som kompetensobjekt (t.ex. "Svenska (modersmål)", category
 "domain"), 2-4 projekt vardera med år/roll/sektor. cv_text och parsed_profile ska vara
@@ -332,7 +333,7 @@ konsistenta med varandra.
 // Kör produktions-analyzern på extracted.txt och skriver ett fixture-UTKAST.
 // Utkastet är INTE golden förrän det granskats mot källdokumentet (Stefan-gate) —
 // annars förankras facit i modellens egen output och evalen mäter ingenting.
-//   npx tsx evals/scripts/draft-analyzer-golden.ts evals/fixtures/source-docs/361188-verksamhetsanalys umv-verksamhetsanalys
+//   npx tsx evals/scripts/draft-analyzer-golden.ts evals/fixtures/source-docs/eskilstuna-lokalforsorjning eskilstuna-lokalforsorjning
 import fs from "fs/promises";
 import path from "path";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
@@ -388,8 +389,8 @@ git commit -m "feat(evals): 4 analyzer-fixtures fran riktiga TED-underlag med gr
   uppdraget plus gärna en svagare, så go/no-go-resonemanget får något att arbeta med):
 
 ```yaml
-id: umv-verksamhetsanalys
-analyzer_fixture: umv-verksamhetsanalys
+id: eskilstuna-lokalforsorjning
+analyzer_fixture: eskilstuna-lokalforsorjning
 consultant_ids:
   - <verksamhetsanalytiker-id>
   - <forandringsledare-id>
@@ -510,6 +511,15 @@ it("BIDSMITH_WRITING_MODEL överstyr writing-rollen (för eval:bid-compare)", as
   vi.unstubAllEnvs();
   vi.resetModules();
 });
+
+it("tom BIDSMITH_WRITING_MODEL faller tillbaka till defaulten (|| — inte ??)", async () => {
+  vi.stubEnv("BIDSMITH_WRITING_MODEL", "");
+  vi.resetModules();
+  const { MODELS: overridden } = await import("@/lib/models");
+  expect(overridden.writing).toBe("claude-opus-4-8");
+  vi.unstubAllEnvs();
+  vi.resetModules();
+});
 ```
 
 - [ ] **Steg 10.2:** Kör → FAIL.
@@ -517,9 +527,14 @@ it("BIDSMITH_WRITING_MODEL överstyr writing-rollen (för eval:bid-compare)", as
 
 ```typescript
   // Kvalitetskritiska skrivbundles: understanding, phases, quality.
-  // Env-overriden finns för eval:bid-compare (barnprocess per modell) —
-  // sätt den ALDRIG i produktion; default är beslutet från A/B-testet.
-  writing: process.env.BIDSMITH_WRITING_MODEL ?? "claude-opus-4-8",
+  // Env-overriden finns för eval:bid-compare (barnprocess per modell).
+  // NODE_ENV-gatad + ||: en kvarglömd/tom env-var i produktion (t.ex. Vercel)
+  // kan inte byta skrivmodell i smyg. Default är beslutet från A/B-testet.
+  // OBS: en override-modell måste ha prisrad i ai-cost.ts (CLAUDE.md-regeln) —
+  // claude-fable-5 täcks redan via writingChallenger.
+  writing:
+    (process.env.NODE_ENV !== "production" && process.env.BIDSMITH_WRITING_MODEL) ||
+    "claude-opus-4-8",
 ```
 
 - [ ] **Steg 10.4:** `npx vitest run` → grönt (befintligt registry-test asserterar
@@ -855,11 +870,31 @@ async function main() {
 
   const dirA = path.resolve("evals/runs/compare", MODEL_A);
   const dumpsA = (await fs.readdir(dirA)).filter((f) => f.endsWith(".json"));
+  const verdictsPath = path.resolve("evals/runs/compare/verdicts.json");
   const verdicts = [];
+  // Inkrementell skrivning per dumpfil — en krasch mitt i (529, ENOENT) kastar
+  // inte redan betalda judge-domar (samma motivering som barnets inkrementella dumpar).
+  const flush = async () =>
+    fs.writeFile(
+      verdictsPath,
+      JSON.stringify(
+        { modelA: MODEL_A, modelB: MODEL_B, verdicts, tally: aggregateVerdicts(verdicts) },
+        null, 1,
+      ),
+      "utf-8",
+    );
   for (const file of dumpsA) {
     const a = JSON.parse(await fs.readFile(path.join(dirA, file), "utf-8"));
     const bPath = path.resolve("evals/runs/compare", MODEL_B, file);
-    const b = JSON.parse(await fs.readFile(bPath, "utf-8"));
+    let b;
+    try {
+      b = JSON.parse(await fs.readFile(bPath, "utf-8"));
+    } catch {
+      // Saknad FIL (inte bara saknad sektion): B:s barn dog mitt i — hoppa,
+      // krascha inte bort judge-fasen. Kör om det barnet och sedan föräldern.
+      console.warn(`Hoppar ${file} — dump saknas hos ${MODEL_B} (kör om det barnet)`);
+      continue;
+    }
     for (const key of WRITING_SECTION_KEYS) {
       const secA = (a.sections as BidSection[]).find((s) => s.key === key);
       const secB = (b.sections as BidSection[]).find((s) => s.key === key);
@@ -875,23 +910,24 @@ async function main() {
       verdicts.push({ ...v, pairFile: file });
       console.log(`${file} ${key}: ${v.winner}`);
     }
+    await flush();
   }
-  const tally = aggregateVerdicts(verdicts);
-  await fs.writeFile(
-    path.resolve("evals/runs/compare/verdicts.json"),
-    JSON.stringify({ modelA: MODEL_A, modelB: MODEL_B, verdicts, tally }, null, 1),
-    "utf-8",
-  );
-  console.log(JSON.stringify(tally, null, 1));
+  await flush(); // tom matris ger ändå en läsbar verdicts.json (torrtestet i 13.3)
+  console.log(JSON.stringify(aggregateVerdicts(verdicts), null, 1));
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
 ```
 
-- [ ] **Steg 13.3:** Lägg till npm-scriptet. Torrtest UTAN pengar: kör föräldern med
-  `BIDSMITH_COMPARE_REPS=0`... reps=0 ger inga dumps — kör istället barnets
-  fixture-uppräkning mot en tom compare-katalog och verifiera att föräldern ger
-  begripligt fel när dumps saknas (inte krasch utan "Hoppar ..."-varningar + tom tally).
+- [ ] **Steg 13.3:** Lägg till npm-scriptet. Torrtest UTAN pengar, två delar:
+  1. Tomma katalogen: `BIDSMITH_COMPARE_REPS=0 npm run eval:bid-compare` — barnen
+     räknar upp fixtures men genererar inget (0 reps → inga API-anrop) och lämnar
+     tomma dumpkataloger. Förväntat: föräldern går klart utan krasch, exit 0,
+     `verdicts.json` skriven med tom verdicts-lista och tom tally.
+  2. Saknad-fil-vägen: lägg en handskriven dummy-dump i A-katalogen (giltig JSON med
+     `sections: []`) utan motsvarighet i B-katalogen, kör föräldern igen (fortfarande
+     reps=0). Förväntat: `Hoppar ... — dump saknas`-varning, exit 0, tom tally.
+     Städa bort dummyn efteråt.
 - [ ] **Steg 13.4:** `npx vitest run` → grönt (runnern är skript, inte testfil — men
   compare-core/pairwise-tester täcker logiken).
 - [ ] **Steg 13.5:** Commit: `git commit -m "feat(evals): eval:bid-compare — barnprocess per modell + parvis domslut"`
@@ -973,7 +1009,7 @@ describe("renderReportMd", () => {
 ### Task 16: Jämförelsekörningen (KOSTNADSGRIND ~$30–60)
 
 - [ ] **Steg 16.1:** Ladda env (`.env.local`) och kör `npm run eval:bid-compare`.
-  4 fixtures × 3 reps × 2 modeller = 24 generationer + ~120 judge-par à 2 anrop.
+  4 fixtures × 3 reps × 2 modeller = 24 generationer + 60 judge-par à 2 anrop (~120 judge-anrop).
   Förväntad väggtid: 1–2 h (sekventiella barn). 529-hål: barnet kan köras om för en
   enskild modell — dumparna är per körning och skrivs inkrementellt.
 - [ ] **Steg 16.2:** Kontrollera datamatrisen komplett: `evals/runs/compare/<modell>/`
