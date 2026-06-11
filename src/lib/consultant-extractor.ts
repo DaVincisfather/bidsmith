@@ -3,7 +3,7 @@ import { MODELS } from "./models";
 import { ConsultantExtractionSchema } from "./ai-schemas";
 import { ConsultantExtraction } from "./types";
 
-const SYSTEM_PROMPT = `Du är expert på att analysera konsult-CV:n och extrahera strukturerad profildata.
+export const SYSTEM_PROMPT = `Du är expert på att analysera konsult-CV:n och extrahera strukturerad profildata.
 Du läser ett CV-dokument och producerar en strukturerad profil i JSON-format.
 
 Svara ALLTID med giltig JSON som matchar detta schema:
@@ -34,6 +34,9 @@ Regler:
 - Kategorisera kompetenser: technical (verktyg, programmering, system), domain (bransch, sektor), methodology (metoder, ramverk), certification (certifieringar, utbildningar utöver examen)
 - Extrahera ALLA uppdrag/referensprojekt som nämns
 - sector: bedöm om kunden är offentlig (kommun, region, myndighet) eller privat
+- Extrahera språkkunskaper som kompetenser med nivå i namnet, t.ex.
+  { "competency": "Svenska (modersmål)", "category": "domain" } — språkkrav är ofta
+  ska-krav i offentliga upphandlingar och får inte tappas bort
 - Om information saknas, gör en rimlig bedömning baserat på context`;
 
 export async function extractConsultant(
