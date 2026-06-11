@@ -13,6 +13,9 @@ type Output = RfpAnalysis;
 export interface AnalyzerFieldCounts {
   goldenCounts: Record<string, number>;
   outputCounts: Record<string, number>;
+  // Distinkta output-poster som matchade ≥1 golden. Skiljer sig från antalet
+  // matchade golden när en buntad output täcker flera golden-poster (1-till-många).
+  outputMatchedCounts?: Record<string, number>;
 }
 
 /**
@@ -41,9 +44,9 @@ export function computeAnalyzerMetrics(
     const goldenMatches = arrJudgments.filter((x) => x.match).length;
     const goldenTotal = counts.goldenCounts[arr] ?? arrJudgments.length;
     const outputTotal = counts.outputCounts[arr] ?? goldenMatches;
-    // precision = output items that had a match. Here we approximate with goldenMatches
-    // because judge is "for each golden, find best output match" (1-to-1).
-    const outputMatches = goldenMatches;
+    // precision = output items that matched ≥1 golden. With 1-to-many pairing
+    // (bundled outputs) this is fewer than goldenMatches.
+    const outputMatches = counts.outputMatchedCounts?.[arr] ?? goldenMatches;
 
     const { recall, precision, f1 } = setMetrics({
       goldenMatches, outputMatches, goldenTotal, outputTotal,
@@ -67,27 +70,31 @@ export function computeAnalyzerAggregate(
   return agg;
 }
 
-async function judgeAnalyzer(
+export async function judgeAnalyzer(
   fixture: AnalyzerFixture,
   actual: Output
 ): Promise<FieldJudgment[]> {
   const judgments: FieldJudgment[] = [];
 
-  // Scalars via exact or haiku-equiv
+  // Scalars: deadline är strukturerad (ISO-datum) och döms exakt; övriga är
+  // fritext där case-känslig exact match fäller legitima varianter
+  // (fas 1-felsökningen: "Region Örebro Län" vs "län").
   judgments.push(await haikuEquivJudge({ field: "title", golden: fixture.golden.title, actual: actual.title }));
-  judgments.push(await exactJudge({ field: "client", golden: fixture.golden.client, actual: actual.client }));
+  judgments.push(await haikuEquivJudge({ field: "client", golden: fixture.golden.client, actual: actual.client }));
   judgments.push(await exactJudge({ field: "deadline", golden: fixture.golden.deadline, actual: actual.deadline }));
-  judgments.push(await exactJudge({ field: "domain", golden: fixture.golden.domain, actual: actual.domain }));
+  judgments.push(await haikuEquivJudge({ field: "domain", golden: fixture.golden.domain, actual: actual.domain }));
   judgments.push(await haikuEquivJudge({ field: "summary", golden: fixture.golden.summary, actual: actual.summary }));
   judgments.push(await haikuEquivJudge({ field: "estimatedScope", golden: fixture.golden.estimatedScope, actual: actual.estimatedScope }));
 
-  // Array fields: per golden item, find best match in actual (greedy 1-to-1)
+  // Array fields: per golden item, find first semantic match in actual.
+  // Weight hålls utanför kriteriesträngen — viktoenighet ska inte fälla
+  // innehållsmatchen (null-vikter gav "(null%)"-skräp i jämförelsen).
   await judgeArrayField(judgments, "requirements",
     fixture.golden.requirements.map((r) => `${r.priority}: ${r.description}`),
     actual.requirements.map((r) => `${r.priority}: ${r.description}`));
   await judgeArrayField(judgments, "evaluationCriteria",
-    fixture.golden.evaluationCriteria.map((e) => `${e.name} (${e.weight}%): ${e.description}`),
-    actual.evaluationCriteria.map((e) => `${e.name} (${e.weight}%): ${e.description}`));
+    fixture.golden.evaluationCriteria.map((e) => `${e.name}: ${e.description}`),
+    actual.evaluationCriteria.map((e) => `${e.name}: ${e.description}`));
   await judgeArrayField(judgments, "requiredCompetencies",
     fixture.golden.requiredCompetencies, actual.requiredCompetencies);
   await judgeArrayField(judgments, "redFlags",
@@ -96,18 +103,20 @@ async function judgeAnalyzer(
   return judgments;
 }
 
-async function judgeArrayField(
+export async function judgeArrayField(
   out: FieldJudgment[],
   field: string,
   goldenItems: unknown[],
   actualItems: unknown[]
 ): Promise<void> {
-  const usedActual = new Set<number>();
+  // 1-till-många: en output får matcha flera golden. Modellen buntar legitimt
+  // ihop krav som golden delar upp (examen+workshops+språk i en post) — 1-till-1
+  // straffade ren segmentering med både recall- och precisionstapp.
+  const matchedActual = new Set<number>();
   for (let i = 0; i < goldenItems.length; i++) {
     let bestMatch: FieldJudgment | null = null;
     let bestMatchIdx = -1;
     for (let j = 0; j < actualItems.length; j++) {
-      if (usedActual.has(j)) continue;
       const judgment = await haikuEquivJudge({
         field: `${field}[${i}]`,
         golden: goldenItems[i],
@@ -120,7 +129,7 @@ async function judgeArrayField(
       }
     }
     if (bestMatch) {
-      usedActual.add(bestMatchIdx);
+      matchedActual.add(bestMatchIdx);
       out.push(bestMatch);
     } else {
       out.push({
@@ -134,7 +143,7 @@ async function judgeArrayField(
   }
   // Record unmatched output items so precision reflects spurious outputs.
   for (let j = 0; j < actualItems.length; j++) {
-    if (usedActual.has(j)) continue;
+    if (matchedActual.has(j)) continue;
     out.push({
       field: `${field}[extra_${j}]`,
       judge: "haiku-equiv",
@@ -158,13 +167,18 @@ export const analyzerConfig: EvalConfig<AnalyzerFixture, Output> = {
     // Reconstruct counts from judgments produced by judgeArrayField:
     //   golden items  → fields `${arr}[N]`     — N is a number
     //   extra outputs → fields `${arr}[extra_N]`
-    const counts: AnalyzerFieldCounts = { goldenCounts: {}, outputCounts: {} };
+    // Matchade outputs räknas distinkt på värde — med 1-till-många-parning kan
+    // flera golden peka på samma buntade output.
+    const counts: AnalyzerFieldCounts = { goldenCounts: {}, outputCounts: {}, outputMatchedCounts: {} };
     for (const arr of ["requirements", "evaluationCriteria", "requiredCompetencies", "redFlags"]) {
       const goldenJudgments = judgments.filter((x) => /^[^\[]+\[\d+\]$/.test(x.field) && x.field.startsWith(`${arr}[`));
       const extraJudgments = judgments.filter((x) => x.field.startsWith(`${arr}[extra_`));
       counts.goldenCounts[arr] = goldenJudgments.length;
-      const matched = goldenJudgments.filter((x) => x.match).length;
-      counts.outputCounts[arr] = matched + extraJudgments.length;
+      const matchedOutputs = new Set(
+        goldenJudgments.filter((x) => x.match).map((x) => JSON.stringify(x.actual)),
+      ).size;
+      counts.outputMatchedCounts![arr] = matchedOutputs;
+      counts.outputCounts[arr] = matchedOutputs + extraJudgments.length;
     }
     return computeAnalyzerMetrics(judgments, counts);
   },
