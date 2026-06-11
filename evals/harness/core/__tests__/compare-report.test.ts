@@ -4,9 +4,9 @@ import { renderReportMd, pickBlindPairs } from "../compare-report";
 describe("pickBlindPairs", () => {
   it("väljer N par deterministiskt givet seed och anonymiserar ordningen", () => {
     const pairs = [
-      { pairFile: "f1-rep1.json", sectionType: "phases", textA: "a1", textB: "b1" },
-      { pairFile: "f1-rep2.json", sectionType: "phases", textA: "a2", textB: "b2" },
-      { pairFile: "f2-rep1.json", sectionType: "quality-assurance", textA: "a3", textB: "b3" },
+      { pairFile: "f1-rep1.json", fixtureId: "f1", sectionType: "phases", textA: "a1", textB: "b1" },
+      { pairFile: "f1-rep2.json", fixtureId: "f1", sectionType: "phases", textA: "a2", textB: "b2" },
+      { pairFile: "f2-rep1.json", fixtureId: "f2", sectionType: "quality-assurance", textA: "a3", textB: "b3" },
     ];
     const r1 = pickBlindPairs(pairs, 2, 42);
     const r2 = pickBlindPairs(pairs, 2, 42);
@@ -14,6 +14,7 @@ describe("pickBlindPairs", () => {
     expect(r1).toHaveLength(2);
     for (const p of r1) {
       expect(["A-först", "B-först"]).toContain(p.facit.ordning);
+      expect(["f1", "f2"]).toContain(p.fixtureId); // FFU:n följer med till granskaren
       expect(p.utkast1).not.toBe("");
       expect(p.utkast2).not.toBe("");
     }

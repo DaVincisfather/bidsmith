@@ -64,16 +64,35 @@ async function main() {
   const reportPath = path.resolve("evals/results-bid-model-comparison.md");
   await fs.writeFile(reportPath, renderReportMd({ modelA, modelB, tally, costs }), "utf-8");
 
+  // FFU-titlar ur analyzer-fixtures — granskaren bedömer utkasten mot
+  // uppdraget, inte i vakuum. fixtureId avslöjar inget om modellordningen.
+  const { parse: parseYaml } = await import("yaml");
+  const ffuTitle = new Map<string, string>();
+  for (const id of new Set(blind.map((p) => p.fixtureId))) {
+    try {
+      const fx = parseYaml(
+        await fs.readFile(path.resolve("evals/fixtures/analyzer", `${id}.yaml`), "utf-8"),
+      );
+      ffuTitle.set(id, `${fx.golden.title} — ${fx.golden.client}`);
+    } catch {
+      ffuTitle.set(id, id);
+    }
+  }
+
   const reviewLines: string[] = [
     "# Blindgranskning — fyll i Vinnare (1/2/oavgjort) per par. Titta INTE i blind-facit.json.",
     "",
-    "| Par | Sektionstyp | Vinnare (1/2/oavgjort) |",
-    "|---|---|---|",
-    ...blind.map((p) => `| ${p.id} | ${p.sectionType} |  |`),
+    "| Par | FFU | Sektionstyp | Vinnare (1/2/oavgjort) |",
+    "|---|---|---|---|",
+    ...blind.map((p) => `| ${p.id} | ${p.fixtureId} | ${p.sectionType} |  |`),
     "",
   ];
   for (const p of blind) {
-    reviewLines.push(`## ${p.id} (${p.sectionType})`, "", "### Utkast 1", "", p.utkast1, "", "### Utkast 2", "", p.utkast2, "");
+    reviewLines.push(
+      `## ${p.id} (${p.sectionType})`, "",
+      `**FFU:** ${ffuTitle.get(p.fixtureId) ?? p.fixtureId}`, "",
+      "### Utkast 1", "", p.utkast1, "", "### Utkast 2", "", p.utkast2, "",
+    );
   }
   await fs.writeFile(path.resolve("evals/runs/compare/blind-review.md"), reviewLines.join("\n"), "utf-8");
   await fs.writeFile(

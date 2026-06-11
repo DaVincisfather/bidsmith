@@ -4,6 +4,9 @@ import type { WinTally } from "./compare-core";
 
 export interface ComparePair {
   pairFile: string;
+  // Vilken upphandling utkasten svarar mot — granskaren bedömer konkretion
+  // mot uppdraget, inte i vakuum. Avslöjar inget om modellordningen.
+  fixtureId: string;
   sectionType: string;
   textA: string;
   textB: string;
@@ -11,6 +14,7 @@ export interface ComparePair {
 
 export interface BlindPair {
   id: string;
+  fixtureId: string;
   sectionType: string;
   utkast1: string;
   utkast2: string;
@@ -41,6 +45,7 @@ export function pickBlindPairs(pairs: ComparePair[], n: number, seed: number): B
     const aForst = rand() < 0.5;
     return {
       id: `par-${idx + 1}`,
+      fixtureId: p.fixtureId,
       sectionType: p.sectionType,
       utkast1: aForst ? p.textA : p.textB,
       utkast2: aForst ? p.textB : p.textA,

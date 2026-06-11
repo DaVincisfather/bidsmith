@@ -57,6 +57,7 @@ export function collectComparePairs(
       }
       pairs.push({
         pairFile: file,
+        fixtureId: a.fixtureId,
         sectionType: key,
         textA: renderSectionText(secA),
         textB: renderSectionText(secB),
