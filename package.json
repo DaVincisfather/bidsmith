@@ -12,7 +12,8 @@
     "test:integration": "node --env-file=.env.local node_modules/vitest/vitest.mjs run tests/",
     "eval:analyzer": "tsx evals/scripts/run-analyzer.ts",
     "eval:matcher": "tsx evals/scripts/run-matcher.ts",
-    "eval:bid-generator": "tsx evals/scripts/run-bid-generator.ts"
+    "eval:bid-generator": "tsx evals/scripts/run-bid-generator.ts",
+    "eval:bid-compare": "tsx evals/scripts/run-bid-model-compare.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
