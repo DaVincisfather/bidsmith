@@ -1,6 +1,6 @@
 id: chalmers-healthtech
 source_url: https://ted.europa.eu/sv/notice/-/detail/357693-2026
-notes: UTKAST — golden ej granskad ännu. Granska varje fält mot källdokumentet.
+notes: Golden fastställd 2026-06-11 — motläst mot källan (review-draft-golden.ts) + Stefans stickprov; fynd åtgärdade, vikter null där källan saknar procentvikter.
 rfp_text: |-
   === upphandlingsdokument-C2026-0696.pdf ===
   Upphandlingsdokument
@@ -1030,20 +1030,21 @@ golden:
       priority: should
   evaluationCriteria:
     - name: Mervärde – konsultens kompetens
-      weight: 70
-      description: Konsultens uppfyllnad av åtta mervärdeskriterierna (avsnitt 3.4.2) bedöms på skala 0–10
-        poäng vardera, max 70 poäng totalt. Poängen omvandlas till kronor (erhållna poäng × 25 kr,
-        max 80 p × 25 kr = 2 000 kr) och dras från anbudspriset i utvärderingsformeln.
+      weight: null
+      description: Konsultens uppfyllnad av åtta mervärdeskriterier (avsnitt 3.4.2) bedöms på skala 0–10
+        poäng vardera. Poängen omvandlas till kronor (erhållna poäng × 25 kr) och dras från
+        anbudspriset. Utvärderingen sker i två steg — anbuden rangordnas på mervärde och de tre
+        högsta bjuds in till muntlig presentation. Källan anger maxpoängen inkonsekvent (se redFlags).
     - name: Pris
-      weight: 30
+      weight: null
       description: Timpris per konsult i SEK exkl. moms. Utvärderingspris = Anbudspris (kr/tim) − Mervärde
-        kompetens (poäng × 25 kr). Lägst utvärderingspris vinner.
+        kompetens (poäng × 25 kr). Lägst utvärderingspris vinner. Ingen procentviktning anges i källan.
   requiredCompetencies:
     - Affärsutveckling inom biomedicinsk teknik (min. 5 år)
     - Entreprenörskap inom biomedicinsk teknik
     - Fundraising och finansiering av life science-verksamheter
     - Ledarskap – VD eller ledningsgrupp (min. 5 år)
-    - Kommunikation på svenska, verbalt och skriftligt
+    - Stor kommunikativ förmåga, verbalt och i skrift
     - Nätverk inom akademi, sjukvård och industri
     - Erfarenhet av samarbete med akademiska forskare
     - "Biomedicin eller bioteknik (meriterande: doktorsexamen)"
@@ -1056,6 +1057,9 @@ golden:
     upp till totalt 4 år. Arbete sker till stor del på plats hos Chalmers i Göteborg, men
     distansarbete tillåts med återkommande möten.
   redFlags:
+    - Källan är internt inkonsekvent om mervärdespoängen — 3.4.2 listar åtta kriterier à 0–10 poäng
+      men anger 'maximalt 70 poäng' (8 × 10 = 80), utvärderingsformeln anger 'max 80' och
+      mervärdesberäkningen 'linjär skala 0–70 poäng, 2 100 SEK'.
     - Utvärderingsformeln tillåter negativt utvärderingspris, vilket kan göra prisjämförelsen
       svårtolkad.
     - Ramavtalsvärdet (4,5 MSEK) är angivet som takvärde, men volymer är inte bindande för köparen –

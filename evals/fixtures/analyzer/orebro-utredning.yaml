@@ -1,6 +1,6 @@
 id: orebro-utredning
 source_url: https://ted.europa.eu/sv/notice/-/detail/360200-2026
-notes: UTKAST — golden ej granskad ännu. Granska varje fält mot källdokumentet.
+notes: Golden fastställd 2026-06-11 — motläst mot källan (review-draft-golden.ts) + Stefans stickprov; fynd åtgärdade, vikter null där källan saknar procentvikter.
 rfp_text: >-
   === upphandlingsdokument-25RS8852.pdf ===
 
@@ -4114,32 +4114,33 @@ golden:
       description: Anbudsgivaren får inte omfattas av EU:s sanktioner mot ryska aktörer, direkt eller indirekt.
       priority: must
     - category: Rådgivning och utbildning
-      description: Leverantören bör kunna erbjuda telefonrådgivning, rådgivning på plats samt utbildningar
+      description: Leverantören ska kunna erbjuda telefonrådgivning, rådgivning på plats samt utbildningar
         (halvdag/heldag) för chefer och HR-organisation hos avtalskunder, inkl. förebyggande
-        åtgärder och lagstiftningsgenomgång.
-      priority: should
+        åtgärder och lagstiftningsgenomgång — tjänsterna ingår i upphandlingsobjektet och
+        prismatrisen.
+      priority: must
     - category: Statistik och uppföljning
       description: Leverantören ska på anmodan lämna statistik om antal förbedömningar, utredningar och
         rådgivningssamtal per avtalskund, samt delta i minst ett uppföljningsmöte per år utan
         tillkommande kostnad.
-      priority: should
+      priority: must
   evaluationCriteria:
     - name: Pris
-      weight: 50
+      weight: null
       description: Offererat pris beräknas genom att angivna priser i prismatrisen multipliceras med
         angivna volymer. Lägst utvärderingspris ger mest poäng. Priset reduceras med
-        kvalitetsavdrag.
+        kvalitetsavdrag i SEK — källan anger inga procentvikter.
     - name: Kvalitet – Pedagogisk förmåga i skriftlig rapport
-      weight: 17
+      weight: null
       description: "Bedömning av utredarens förmåga att presentera den skriftliga rapporten tydligt och
         pedagogiskt. Fyrgradig skala: Mycket bra (500 000 SEK avdrag), Bra (250 000 SEK), Godkänt
         (100 000 SEK), Ej godkänt (0 SEK)."
     - name: Kvalitet – Förmåga att beskriva utredningsresultat
-      weight: 17
+      weight: null
       description: Bedömning av utredarens förmåga att beskriva om kränkande särbehandling ägt rum och vad
         som stödjer slutsatsen. Samma fyrgradig skala med max 500 000 SEK prisavdrag.
     - name: Kvalitet – Koppling till AFS 2023:1 och diskrimineringslagen
-      weight: 16
+      weight: null
       description: Bedömning av om utredaren kopplat utredningen till AFS 2023:1 och/eller
         diskrimineringslagen. Samma fyrgradig skala med max 500 000 SEK prisavdrag.
   requiredCompetencies:

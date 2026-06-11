@@ -1,6 +1,6 @@
 id: eskilstuna-lokalforsorjning
 source_url: UE 26.050, Eskilstuna kommun (TED-notis 3214815; FFU nedladdad 2026-06-10)
-notes: UTKAST — golden ej granskad ännu. Granska varje fält mot källdokumentet.
+notes: Golden fastställd 2026-06-11 — motläst mot källan (review-draft-golden.ts) + Stefans stickprov; fynd åtgärdade, vikter null där källan saknar procentvikter.
 rfp_text: >-
   === upphandlingsdokument-UE26050.pdf ===
 
@@ -2585,24 +2585,24 @@ golden:
       priority: must
   evaluationCriteria:
     - name: Metodbeskrivning
-      weight: 35
+      weight: null
       description: Bedömning av anbudsgivarens beskrivna metod och angreppssätt för uppdragets
-        genomförande. Rangordnat som första kriterium.
+        genomförande. Rangordnat som första kriterium — källan anger ingen procentvikt.
     - name: Kompetens/Erfarenhet
-      weight: 30
+      weight: null
       description: Bedömning av offererade konsulters dokumenterade kompetens och erfarenhet av liknande
-        uppdrag. Rangordnat som andra kriterium.
+        uppdrag. Rangordnat som andra kriterium — källan anger ingen procentvikt.
     - name: Referenser
-      weight: 20
+      weight: null
       description: Bedömning baserad på referenspersoners svar kring levererad kvalitet, problemhantering,
-        kommunikation och helhetsomdöme. Rangordnat som tredje kriterium.
+        kommunikation och helhetsomdöme. Rangordnat som tredje kriterium — källan anger ingen procentvikt.
     - name: Pris
-      weight: 15
+      weight: null
       description: Utvärderingspris är det offererade timpriset i SEK exklusive moms. Rangordnat som
-        fjärde kriterium.
+        fjärde kriterium — källan anger ingen procentvikt.
   requiredCompetencies:
     - Relevant akademisk examen inom ekonomi, fastighet eller offentlig förvaltning
-    - Dokumenterad erfarenhet av lokalförsörjningsprocesser och/eller hyresmodeller
+    - Dokumenterad erfarenhet av liknande uppdrag
     - Erfarenhet av att leda workshops och dialogprocesser
     - Erfarenhet av förändringsarbete
     - Flytande svenska i tal och skrift
@@ -2618,7 +2618,7 @@ golden:
       anges endast som rangordning – detta skapar osäkerhet kring den faktiska viktningen.
     - Kravet på tre referenspersoner anges initialt som 'två (3)' vilket är en uppenbbar
       felskrivning i dokumentet.
-    - Ansvarsbegränsningen är satt till 15% av uppskattad ersättning per skadeårsår, vilket kan vara
+    - Ansvarsbegränsningen är satt till 15% av uppskattad ersättning per ramavtalsår, vilket kan vara
       lågt vid mer komplexa fel.
     - Ingen information om nuvarande hyresmodell finns i upphandlingsdokumentet (hänvisas till
       Bilaga 1 som inte är tillgänglig i detta dokument), vilket försvårar anbudsgivarens möjlighet
