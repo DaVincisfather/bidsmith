@@ -22,5 +22,3 @@ golden:
     should_cover_threshold: 0.8
   hallucination_allowlist:
     - "anbudsdatum"         # deterministisk cover-stämpel (bälte+hängslen utöver judge-kalibreringen)
-    - "omfattning"
-    - "timmar"

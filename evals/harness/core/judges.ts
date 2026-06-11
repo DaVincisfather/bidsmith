@@ -28,6 +28,10 @@ const JudgeResponseSchema = z.object({
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 
+// Deterministiska domar — gränsfall får inte flippa mellan körningar.
+// Gäller ALLA judge-anrop; en judge på API-default 1.0 återinför eval-flakiness.
+export const JUDGE_TEMPERATURE = 0;
+
 function renderValue(v: unknown): string {
   if (v === null || v === undefined) return "(inget värde)";
   if (typeof v === "string") return v;
@@ -42,11 +46,11 @@ Goldens kärnkrav, även om Faktiskt har FLER detaljer, bisatser eller villkor �
 extra innehåll i Faktiskt är ingen informationsförlust (t.ex. Golden "Flytande svenska"
 vs Faktiskt "Flytande svenska i tal och skrift" = match). Match = false när Faktiskt
 SAKNAR väsentliga villkor eller delar som Golden innehåller — tappade krav får inte maskeras.
-Riktade regeln gäller inte prosafält. För prosafält (fält som summary, estimatedScope,
-domain) gäller istället: match = true när båda beskriver samma sak med samma
-huvudinnehåll — detaljurvalet (vilka siffror eller bisatser som tagits med) får skilja
-utan att fälla matchen.
-Match = false om de har olika betydelse eller scope.`;
+Riktade regeln gäller inte prosafält. För prosafält (fält som title, client, summary,
+estimatedScope, domain) gäller istället: match = true när båda beskriver samma sak med
+samma huvudinnehåll — detaljurvalet (vilka siffror eller bisatser som tagits med) får
+skilja utan att fälla matchen.
+I övrigt: match = false när värdena har olika betydelse.`;
 
 export async function haikuEquivJudge(input: JudgeInput): Promise<FieldJudgment> {
   const { golden, actual, field } = input;
@@ -66,7 +70,7 @@ ${renderValue(actual)}`;
       maxTokens: 300,
       system,
       userContent,
-      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
+      temperature: JUDGE_TEMPERATURE,
       schema: JudgeResponseSchema,
       label: `haiku-equiv-judge(${field})`,
     });
@@ -121,7 +125,7 @@ ${renderValue(actual)}`;
       maxTokens: 300,
       system,
       userContent,
-      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
+      temperature: JUDGE_TEMPERATURE,
       schema: RubricResponseSchema,
       label: `haiku-rubric-judge(${field})`,
     });
@@ -184,7 +188,7 @@ ${cvText}`;
       maxTokens: 500,
       system,
       userContent,
-      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
+      temperature: JUDGE_TEMPERATURE,
       schema: MhcResponseSchema,
       label: `sonnet-mhc-judge(${field})`,
     });
@@ -245,7 +249,7 @@ ${bidText}`;
       maxTokens: 500,
       system,
       userContent,
-      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
+      temperature: JUDGE_TEMPERATURE,
       schema: BidCoverageResponseSchema,
       label: `bid-coverage-judge(${field})`,
     });
@@ -316,7 +320,7 @@ ${sourceMaterial}`;
       maxTokens: 2000,
       system,
       userContent,
-      temperature: 0, // deterministiska domar — gränsfall får inte flippa mellan körningar
+      temperature: JUDGE_TEMPERATURE,
       schema: HallucinationResponseSchema,
       label: `bid-hallucination-judge`,
     });

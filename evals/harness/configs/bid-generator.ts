@@ -56,6 +56,7 @@ async function loadContext(fixture: BidGeneratorFixture): Promise<BidEvalContext
 export function computeBidGeneratorMetrics(
   judgments: FieldJudgment[],
   overflowCount = 0,
+  hallucinationAllowlist: string[] = [],
 ): Record<string, number> {
   const metrics: Record<string, number> = {};
 
@@ -79,12 +80,17 @@ export function computeBidGeneratorMetrics(
     metrics["coverage.recall"] = coverageJudgments.filter((j) => j.match).length / coverageJudgments.length;
   }
 
-  // Hallucination
+  // Hallucination — count och pass måste följa SAMMA allowlist (judgen filtrerar
+  // pass; ofiltrerad count gav pass=1 och count>0 för samma anbud)
   const hallucination = judgments.find((j) => j.field === "hallucination");
   if (hallucination) {
     metrics["hallucination.pass"] = hallucination.match ? 1 : 0;
     const claims = Array.isArray(hallucination.actual) ? hallucination.actual : [];
-    metrics["hallucination.count"] = claims.filter((c: { supported: boolean }) => !c.supported).length;
+    const allowlisted = (claim: string) =>
+      hallucinationAllowlist.some((term) => claim.toLowerCase().includes(term.toLowerCase()));
+    metrics["hallucination.count"] = claims.filter(
+      (c: { supported: boolean; claim: string }) => !c.supported && !allowlisted(c.claim),
+    ).length;
   }
 
   // Overflow — fas 0-fyndet: harnessen kastade overflowFlags och grinden var blind
@@ -169,7 +175,11 @@ export const bidGeneratorConfig: EvalConfig<BidGeneratorFixture, Output, BidEval
     return { output: sections, context: { ...context, overflowCount: overflowFlags.length } };
   },
   judgeOutput: (fixture, actual, context) => judgeBid(fixture, actual, context),
-  computeFixtureMetrics: (judgments, _fixture, context) =>
-    computeBidGeneratorMetrics(judgments, context?.overflowCount ?? 0),
+  computeFixtureMetrics: (judgments, fixture, context) =>
+    computeBidGeneratorMetrics(
+      judgments,
+      context?.overflowCount ?? 0,
+      fixture.golden.hallucination_allowlist,
+    ),
   computeAggregate: computeBidGeneratorAggregate,
 };

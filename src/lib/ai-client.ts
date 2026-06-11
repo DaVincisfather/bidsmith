@@ -79,6 +79,14 @@ export async function callClaude<T>({
 }: CallClaudeOptions<T>): Promise<T> {
   let lastError: unknown;
 
+  // API:t avvisar temperature ≠ 1 när adaptive thinking är aktivt (400, ej
+  // retrybar) — fånga konfigurationsfelet här istället för i drift.
+  if (effort && temperature !== undefined) {
+    throw new Error(
+      `callClaude(${label}): effort och temperature kan inte kombineras — adaptive thinking kräver API-default temperature`,
+    );
+  }
+
   // Nödlucka: BIDSMITH_STRUCTURED_OUTPUTS=off återgår till fritext + extractJson
   // om API:t skulle avvisa något sanerat schema i drift. Tas bort i fas 1 om oanvänd.
   const useStructuredOutputs = process.env.BIDSMITH_STRUCTURED_OUTPUTS !== "off";

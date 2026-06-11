@@ -10,6 +10,7 @@ import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
 import { MODELS } from "@/lib/models";
+import { JUDGE_TEMPERATURE } from "../harness/core/judges";
 
 const ReviewSchema = z.object({
   missing_requirements: z.array(z.object({
@@ -51,6 +52,7 @@ async function main() {
   const review = await callClaude({
     model: MODELS.judge,
     maxTokens: 8000,
+    temperature: JUDGE_TEMPERATURE,
     system: SYSTEM,
     userContent: `KÄLLTEXT (förfrågningsunderlag):\n${draft.rfp_text}\n\n---\n\nGOLDEN-UTKAST att motläsa:\n${golden}`,
     schema: ReviewSchema,

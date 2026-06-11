@@ -102,6 +102,15 @@ describe("callClaude — temperature passthrough", () => {
     );
   });
 
+  it("kastar direkt på effort + temperature — API:t avvisar kombinationen med 400", async () => {
+    // Adaptive thinking kräver temperature 1/utelämnad; 400 är inte retrybar
+    // så utan vakt hårdfailar varje anrop efter att ha kostat ett försök.
+    await expect(
+      callClaude({ ...baseArgs, effort: "high", temperature: 0 })
+    ).rejects.toThrow(/effort.*temperature|temperature.*effort/i);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
   it("utelämnar temperature när inte satt", async () => {
     mockCreate.mockReturnValue(streamOf({
       content: [{ type: "text", text: '{"a": 1}' }],

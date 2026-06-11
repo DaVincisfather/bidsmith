@@ -16,7 +16,7 @@ async function main() {
   // notis-*.pdf är TED-notiser (metadata, kontext för människor) — inte en del
   // av förfrågningsunderlaget och inget en användare laddar upp i appen.
   const files = (await fs.readdir(dir)).filter(
-    (f) => /\.(pdf|docx|pptx|xlsx)$/i.test(f) && !f.startsWith("notis-"),
+    (f) => /\.(pdf|docx|pptx|xlsx)$/i.test(f) && !f.toLowerCase().startsWith("notis-"),
   );
   if (files.length === 0) {
     console.error(`Inga dokument i ${dir}`);

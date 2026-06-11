@@ -39,6 +39,20 @@ describe("judgeArrayField — buntad output får matcha flera golden", () => {
   });
 });
 
+describe("judgeArrayField — omatchade outputs prövas före redan matchade", () => {
+  it("bred tidig output stjäl inte matchningen från en specifik senare", async () => {
+    // golden=[A,B], actual=["A och B-bunt", "B"]: utan omatchad-först matchar
+    // båda golden mot bunten och "B" blir falsk extra → precision 0.5.
+    substringEquiv();
+    const out: FieldJudgment[] = [];
+    await judgeArrayField(out, "requirements", ["A", "B"], ["A B bundle", "B"]);
+    const extra = out.filter((j) => j.field.startsWith("requirements[extra_"));
+    expect(extra).toHaveLength(0);
+    const matched = out.filter((j) => /^requirements\[\d+\]$/.test(j.field) && j.match);
+    expect(new Set(matched.map((j) => j.actual)).size).toBe(2);
+  });
+});
+
 describe("judgeArrayField — errade judge-anrop får inte bli tysta no-match", () => {
   it("fallback-posten bär felet när alla par-domar errade (kreditslut gav falska nollor)", async () => {
     vi.mocked(haikuEquivJudge).mockImplementation(async ({ field, golden, actual }) => ({
@@ -105,6 +119,22 @@ describe("judgeAnalyzer — fritextfält döms semantiskt, vikt hålls utanför 
     const exactFields = vi.mocked(exactJudge).mock.calls.map((c) => c[0].field);
     expect(exactFields).not.toContain("client");
     expect(exactFields).not.toContain("domain");
+  });
+
+  it("vikterna döms deterministiskt som multiset — fabricerad vikt mot null-golden fälls", async () => {
+    substringEquiv();
+    vi.mocked(exactJudge).mockImplementation(async ({ field, golden, actual: a }) => ({
+      field, judge: "exact", match: Object.is(golden, a), golden, actual: a,
+    }));
+    const actualFabricated = {
+      ...actual,
+      evaluationCriteria: [{ name: "Pris", weight: 50, description: "Lägst pris vinner" }],
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const judgments = await judgeAnalyzer(fixture as any, actualFabricated as any);
+    const wj = judgments.find((j) => j.field === "evaluationCriteria.weights");
+    expect(wj).toBeDefined();
+    expect(wj!.match).toBe(false); // golden [null] vs output [50]
   });
 
   it("kriteriesträngen innehåller inte vikten — viktoenighet får inte fälla innehållsmatchen", async () => {

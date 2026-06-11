@@ -30,8 +30,9 @@ export function computeAnalyzerMetrics(
 ): Record<string, number> {
   const metrics: Record<string, number> = {};
 
-  // Scalar fields: 0/1 direct
-  for (const scalar of ["title", "client", "deadline", "domain", "summary", "estimatedScope"]) {
+  // Scalar fields: 0/1 direct. evaluationCriteria.weights är informativ
+  // (otröskad) tills baslinje finns — fabricerade vikter ska synas, inte gissas.
+  for (const scalar of ["title", "client", "deadline", "domain", "summary", "estimatedScope", "evaluationCriteria.weights"]) {
     const j = judgments.find((x) => x.field === scalar);
     if (j) metrics[scalar] = j.match ? 1 : 0;
   }
@@ -86,9 +87,22 @@ export async function judgeAnalyzer(
   judgments.push(await haikuEquivJudge({ field: "summary", golden: fixture.golden.summary, actual: actual.summary }));
   judgments.push(await haikuEquivJudge({ field: "estimatedScope", golden: fixture.golden.estimatedScope, actual: actual.estimatedScope }));
 
+  // Vikterna hålls utanför equiv-strängen (viktoenighet ska inte fälla
+  // innehållsmatchen) men döms deterministiskt som multiset — fabricerade
+  // vikter var schemafixens hela motiv och får inte passera osedda.
+  const weightKey = (xs: Array<number | null>) =>
+    JSON.stringify([...xs].sort((a, b) => (a ?? -1) - (b ?? -1)));
+  const goldenWeights = fixture.golden.evaluationCriteria.map((e) => e.weight);
+  const actualWeights = actual.evaluationCriteria.map((e) => e.weight);
+  judgments.push({
+    field: "evaluationCriteria.weights",
+    judge: "exact",
+    match: weightKey(goldenWeights) === weightKey(actualWeights),
+    golden: goldenWeights,
+    actual: actualWeights,
+  });
+
   // Array fields: per golden item, find first semantic match in actual.
-  // Weight hålls utanför kriteriesträngen — viktoenighet ska inte fälla
-  // innehållsmatchen (null-vikter gav "(null%)"-skräp i jämförelsen).
   await judgeArrayField(judgments, "requirements",
     fixture.golden.requirements.map((r) => `${r.priority}: ${r.description}`),
     actual.requirements.map((r) => `${r.priority}: ${r.description}`));
@@ -119,7 +133,14 @@ export async function judgeArrayField(
     // Errade par-domar (429/529/kreditslut) får inte bli tysta no-match —
     // kreditsluts-incidenten gav falska nollor som såg ut som modellfel.
     let lastError: string | undefined;
-    for (let j = 0; j < actualItems.length; j++) {
+    // Omatchade outputs prövas FÖRE redan matchade: annars stjäl en bred tidig
+    // post matchningen från en specifik senare (falskt precisionstapp), och
+    // buntfallet (en output täcker flera golden) bevaras via fallbacket.
+    const scanOrder = [
+      ...actualItems.map((_, j) => j).filter((j) => !matchedActual.has(j)),
+      ...actualItems.map((_, j) => j).filter((j) => matchedActual.has(j)),
+    ];
+    for (const j of scanOrder) {
       const judgment = await haikuEquivJudge({
         field: `${field}[${i}]`,
         golden: goldenItems[i],
