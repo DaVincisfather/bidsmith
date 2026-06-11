@@ -121,7 +121,7 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
                 className="border-b border-rule py-3 flex items-start gap-4"
               >
                 <span className="text-xs font-mono text-ink-mute w-12 shrink-0 pt-1">
-                  {crit.weight}%
+                  {crit.weight !== null ? `${crit.weight}%` : "—"}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-ink">

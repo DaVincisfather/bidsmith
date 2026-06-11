@@ -17,7 +17,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
   "requirements": [
     { "category": "Kategori", "description": "Beskrivning", "priority": "must | should | nice-to-have" }
   ],
-  "evaluationCriteria": [ { "name": "...", "weight": 40, "description": "..." } ],
+  "evaluationCriteria": [ { "name": "...", "weight": 40, "description": "..." } ] — weight är procentvikt 0-100, eller null om källan inte anger procentvikter,
   "requiredCompetencies": ["..."],
   "estimatedScope": "...",
   "redFlags": ["..."],
@@ -37,7 +37,10 @@ Var noggrann med att:
   Mappa svenska termer: ska-krav/skall-krav/skall/ska → "must",
   bör-krav/bör → "should", kan-krav/kan/önskemål → "nice-to-have".
   Använd aldrig svenska värden eller andra varianter i fältet.
-- Extrahera utvärderingskriterier med vikter
+- Extrahera utvärderingskriterier. weight = procentvikt ENDAST om källan uttryckligen
+  anger procentvikter. Vid rangordning, prisavdragsmodeller (mervärde i kronor) eller
+  annan icke-procentuell utvärdering: sätt weight till null och beskriv modellen i
+  description. Hitta ALDRIG på vikter som inte står i underlaget.
 - Identifiera oklarheter (redFlags)
 - Plocka diarienummer exakt — utelämna fältet om det saknas
 - Extrahera OSL-referens och sekretess-bilagor om RFP:en behandlar sekretess; annars null respektive tom lista

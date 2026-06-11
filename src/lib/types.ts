@@ -6,7 +6,7 @@ export interface RfpRequirement {
 
 export interface EvaluationCriterion {
   name: string;
-  weight: number; // percentage, 0-100
+  weight: number | null; // percentage 0-100, or null when the source gives no percent weighting
   description: string;
 }
 
