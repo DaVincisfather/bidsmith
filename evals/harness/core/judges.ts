@@ -34,11 +34,15 @@ function renderValue(v: unknown): string {
   return JSON.stringify(v, null, 2);
 }
 
+export const EQUIV_SYSTEM = `Du bedömer semantisk ekvivalens mellan två värden. Svara med JSON { "match": boolean, "reason": string }.
+Match = true om värdena uttrycker samma sak (synonymer, omformulering, ordordning).
+Match = true även när ena värdet är en mer specificerad variant av samma sak
+(t.ex. "Flytande svenska" vs "Flytande svenska i tal och skrift").
+Match = false om de har olika betydelse eller scope.`;
+
 export async function haikuEquivJudge(input: JudgeInput): Promise<FieldJudgment> {
   const { golden, actual, field } = input;
-  const system = `Du bedömer semantisk ekvivalens mellan två värden. Svara med JSON { "match": boolean, "reason": string }.
-Match = true om värdena uttrycker samma sak (synonymer, omformulering, ordordning).
-Match = false om de har olika betydelse eller scope.`;
+  const system = EQUIV_SYSTEM;
 
   const userContent = `Fält: ${field}
 
@@ -268,20 +272,25 @@ export interface BidHallucinationJudgeInput {
   allowlist: string[];
 }
 
-export async function bidHallucinationJudge(input: BidHallucinationJudgeInput): Promise<FieldJudgment> {
-  const { bidText, sourceMaterial, allowlist } = input;
-  const field = "hallucination";
-
-  const system = `Du extraherar och verifierar faktapåståenden i ett anbudsutkast mot källmaterialet.
+export const HALLUCINATION_SYSTEM = `Du extraherar och verifierar faktapåståenden i ett anbudsutkast mot källmaterialet.
 Svara med JSON { "claims": [{ "claim": string, "supported": boolean, "evidence": string }] }.
 
 Steg:
 1. Extrahera 5-15 specifika faktapåståenden från anbudet — namn, år, projekt-klienter, numeriska värden, certifieringar, roller. Hoppa över allmänna formuleringar.
+   Extrahera INTE: dokument-/anbudsdatum (sätts deterministiskt av systemet, inte av källan)
+   och teamets bemanningsallokeringar — omfattning i procent, timmar, totaler (de SKAPAS i
+   anbudet per design och kan aldrig finnas i källmaterialet).
 2. För varje påstående, kontrollera om det stöds av källmaterialet (RFP + CV:n).
 3. supported = true om källmaterialet bekräftar påståendet (exakt eller via stark inferens). supported = false om källan inte nämner det eller motsäger det.
 4. evidence = citat från källan om supported=true, eller "inte i källa" om supported=false.
 
 Var strikt: en siffra eller ett klientnamn som inte finns i källan = supported=false.`;
+
+export async function bidHallucinationJudge(input: BidHallucinationJudgeInput): Promise<FieldJudgment> {
+  const { bidText, sourceMaterial, allowlist } = input;
+  const field = "hallucination";
+
+  const system = HALLUCINATION_SYSTEM;
 
   const userContent = `Anbudstext:
 ${bidText}
