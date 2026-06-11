@@ -52,7 +52,9 @@ export async function analyzeRfp(
 ): Promise<RfpAnalysis> {
   return callClaude({
     model: MODELS.extraction,
-    maxTokens: 4000,
+    // 8000: stora FFU:er (200k+ tecken) ger analyser som trunkerades av
+    // 4000-taket mitt i JSON:en — deterministiskt vid temp 0.
+    maxTokens: 8000,
     system: SYSTEM_PROMPT,
     userContent: `Analysera följande förfrågningsunderlag och returnera en strukturerad JSON-analys:\n\n${rfpText}`,
     schema: RfpAnalysisSchema,

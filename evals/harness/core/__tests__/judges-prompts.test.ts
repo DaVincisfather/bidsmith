@@ -21,6 +21,13 @@ describe("judge-promptar (kalibrering fas 1)", () => {
     expect(EQUIV_SYSTEM).toMatch(/SAKNAR/);
   });
 
+  it("riktade regeln är scopad till kravlistor — prosafält följer prosaregeln", () => {
+    // Run5-regressionen: utan scoping fällde saknade-villkor-regeln summaries
+    // som legitimt valt bort detaljer.
+    expect(EQUIV_SYSTEM).toMatch(/[Kk]ravlist|listfält|requirements/);
+    expect(EQUIV_SYSTEM).toMatch(/gäller (inte|ej) prosafält|prosafält.*undantag|för prosafält gäller istället/i);
+  });
+
   it("equiv-judgen tolererar olika detaljurval i prosafält", () => {
     // Temperatur 0 låste in pedantisk strikthet: två korrekta sammanfattningar
     // av samma uppdrag dömdes olika för att de valde olika detaljer.
