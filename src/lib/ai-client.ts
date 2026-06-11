@@ -11,6 +11,15 @@ function getClient(): Anthropic {
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
+// 529 Overloaded är kapacitetsbrist hos API:t, inte ett fel i anropet — fas 0
+// tappade phases-bundles 2/3 körningar med 3 försök à 1s/2s. Fler försök och
+// längre backoff (5s/10s/20s/40s) ger tid för kapaciteten att komma tillbaka.
+const OVERLOAD_MAX_RETRIES = 5;
+const OVERLOAD_BASE_DELAY_MS = 5000;
+
+function isOverloaded(error: unknown): boolean {
+  return error instanceof APIError && error.status === 529;
+}
 
 // Thrown when a 200 response can't be turned into a schema-valid object
 // (no JSON found, wrong content block, JSON.parse failure, Zod mismatch).
@@ -98,7 +107,10 @@ export async function callClaude<T>({
       : {}),
   };
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+  // Övre gräns; den verkliga budgeten avgörs per felklass i catch-blocket
+  // (529 → OVERLOAD_MAX_RETRIES, övriga → MAX_RETRIES). Catch:en avslutar
+  // alltid via continue eller throw, så huvudet behöver bara taket.
+  for (let attempt = 0; attempt < OVERLOAD_MAX_RETRIES; attempt++) {
     const startedAt = Date.now();
     try {
       // Streaming is required when the SDK estimates >10 min wall time
@@ -160,10 +172,15 @@ export async function callClaude<T>({
       return parseAndValidate(json, schema, label);
     } catch (error) {
       lastError = error;
-      if (attempt < MAX_RETRIES - 1 && isRetryable(error)) {
+      // Budgeten gäller per felklass: bara 529 får den utökade — ett formatfel
+      // efter en 529 ska inte ärva fem fullpris-omförsök.
+      const maxAttempts = isOverloaded(error) ? OVERLOAD_MAX_RETRIES : MAX_RETRIES;
+      if (attempt < maxAttempts - 1 && isRetryable(error)) {
         // Transport errors (429/5xx) get exponential backoff; format errors
         // are model drift with no server to back off from — re-prompt at once.
-        if (!(error instanceof ResponseFormatError)) {
+        if (isOverloaded(error)) {
+          await sleep(OVERLOAD_BASE_DELAY_MS * Math.pow(2, attempt));
+        } else if (!(error instanceof ResponseFormatError)) {
           await sleep(BASE_DELAY_MS * Math.pow(2, attempt));
         }
         continue;

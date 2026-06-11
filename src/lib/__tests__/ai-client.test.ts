@@ -80,6 +80,71 @@ describe("extractJson", () => {
   });
 });
 
+describe("callClaude — overloaded-resiliens", () => {
+  const schema = z.object({ a: z.number() });
+  const baseArgs = {
+    maxTokens: 100, system: "sys", userContent: "user",
+    label: "test", model: "claude-sonnet-4-6", schema,
+  };
+
+  it("ger 529 fem försök istället för tre", async () => {
+    vi.useFakeTimers();
+    const { APIError } = await import("@anthropic-ai/sdk");
+    const overloaded = () => ({
+      finalMessage: () =>
+        Promise.reject(new (APIError as never as { new (s: number, m: string): Error })(529, "Overloaded")),
+    });
+    mockCreate
+      .mockReturnValueOnce(overloaded())
+      .mockReturnValueOnce(overloaded())
+      .mockReturnValueOnce(overloaded())
+      .mockReturnValueOnce(overloaded())
+      .mockReturnValueOnce(streamOf({ content: [{ type: "text", text: '{"a": 1}' }], usage: {} }));
+
+    const promise = callClaude({ ...baseArgs });
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toEqual({ a: 1 });
+    expect(mockCreate).toHaveBeenCalledTimes(5);
+    vi.useRealTimers();
+  });
+
+  it("formatfel efter en 529 ärver inte den utökade budgeten", async () => {
+    vi.useFakeTimers();
+    const { APIError } = await import("@anthropic-ai/sdk");
+    const overloaded = () => ({
+      finalMessage: () =>
+        Promise.reject(new (APIError as never as { new (s: number, m: string): Error })(529, "Overloaded")),
+    });
+    // 529 på försök 0, sedan svar utan JSON (formatfel) — budgeten för
+    // formatfel är 3, så totalt 3 anrop, inte 5.
+    mockCreate
+      .mockReturnValueOnce(overloaded())
+      .mockReturnValue(streamOf({ content: [{ type: "text", text: "ingen json här" }], usage: {} }));
+
+    const promise = callClaude({ ...baseArgs }).catch((e) => e);
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toBeInstanceOf(Error);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
+  });
+
+  it("icke-529-fel behåller tre försök", async () => {
+    vi.useFakeTimers();
+    const { APIError } = await import("@anthropic-ai/sdk");
+    const rateLimited = () => ({
+      finalMessage: () =>
+        Promise.reject(new (APIError as never as { new (s: number, m: string): Error })(429, "rate limited")),
+    });
+    mockCreate.mockReturnValue(rateLimited());
+
+    const promise = callClaude({ ...baseArgs }).catch((e) => e);
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toBeInstanceOf(Error);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
+  });
+});
+
 describe("callClaude — temperature passthrough", () => {
   const schema = z.object({ a: z.number() });
   const baseArgs = {

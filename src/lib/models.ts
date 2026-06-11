@@ -17,7 +17,14 @@ export const MODELS = {
   // TED-radar, scoring av upphandlingsnotiser.
   radar: "claude-haiku-4-5-20251001",
   // Kvalitetskritiska skrivbundles: understanding, phases, quality.
-  writing: "claude-opus-4-8",
+  // Env-overriden finns för eval:bid-compare (barnprocess per modell).
+  // NODE_ENV-gatad + ||: en kvarglömd/tom env-var i produktion (t.ex. Vercel)
+  // kan inte byta skrivmodell i smyg. Default är beslutet från A/B-testet.
+  // OBS: en override-modell måste ha prisrad i ai-cost.ts (CLAUDE.md-regeln) —
+  // claude-fable-5 täcks redan via writingChallenger.
+  writing:
+    (process.env.NODE_ENV !== "production" && process.env.BIDSMITH_WRITING_MODEL) ||
+    "claude-opus-4-8",
   // Övriga skrivbundles: team, requirement-matrix. (reference är deterministisk
   // tom mall sedan PR #12 — ingen modell.)
   writingSupport: "claude-sonnet-4-6",
