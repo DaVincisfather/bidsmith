@@ -36,6 +36,7 @@ interface BidEvalContext {
   fixture: BidGeneratorFixture;
   analyzerFixture: AnalyzerFixture;
   consultants: SyntheticConsultant[];
+  overflowCount?: number;
 }
 
 const POOL_PATH = path.resolve(process.cwd(), "evals/fixtures/consultants/synthetic-pool.yaml");
@@ -52,7 +53,10 @@ async function loadContext(fixture: BidGeneratorFixture): Promise<BidEvalContext
   return { fixture, analyzerFixture, consultants };
 }
 
-export function computeBidGeneratorMetrics(judgments: FieldJudgment[]): Record<string, number> {
+export function computeBidGeneratorMetrics(
+  judgments: FieldJudgment[],
+  overflowCount = 0,
+): Record<string, number> {
   const metrics: Record<string, number> = {};
 
   // Structure: 0/1 per judgment + composite pass
@@ -82,6 +86,10 @@ export function computeBidGeneratorMetrics(judgments: FieldJudgment[]): Record<s
     const claims = Array.isArray(hallucination.actual) ? hallucination.actual : [];
     metrics["hallucination.count"] = claims.filter((c: { supported: boolean }) => !c.supported).length;
   }
+
+  // Overflow — fas 0-fyndet: harnessen kastade overflowFlags och grinden var blind
+  metrics["overflow.count"] = overflowCount;
+  metrics["overflow.pass"] = overflowCount === 0 ? 1 : 0;
 
   return metrics;
 }
@@ -157,13 +165,11 @@ export const bidGeneratorConfig: EvalConfig<BidGeneratorFixture, Output, BidEval
   runModule: async (fixture) => {
     const context = await loadContext(fixture);
     const ctx = buildEvalBidContext(context.analyzerFixture, context.consultants);
-    // Eval harness only judges sections; overflowFlags are surfaced in the
-    // editor UI, not in offline eval — pass templateName but discard flags here.
-    const { sections } = await generateAllSections(ctx, "anbudsmall-v2");
-    return { output: sections, context };
+    const { sections, overflowFlags } = await generateAllSections(ctx, "anbudsmall-v2");
+    return { output: sections, context: { ...context, overflowCount: overflowFlags.length } };
   },
   judgeOutput: (fixture, actual, context) => judgeBid(fixture, actual, context),
-  // EvalConfig requires (judgments, fixture) — fixture unused for structure-only dimension.
-  computeFixtureMetrics: (judgments, _fixture) => computeBidGeneratorMetrics(judgments),
+  computeFixtureMetrics: (judgments, _fixture, context) =>
+    computeBidGeneratorMetrics(judgments, context?.overflowCount ?? 0),
   computeAggregate: computeBidGeneratorAggregate,
 };

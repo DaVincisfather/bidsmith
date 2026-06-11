@@ -36,6 +36,6 @@ export interface EvalConfig<Fixture, Output, Context = undefined> {
   loadFixture: (path: string) => Promise<Fixture>;
   runModule: (fixture: Fixture) => Promise<{ output: Output; context: Context }>;
   judgeOutput: (fixture: Fixture, actual: Output, context: Context) => Promise<FieldJudgment[]>;
-  computeFixtureMetrics: (judgments: FieldJudgment[], fixture: Fixture) => Record<string, number>;
+  computeFixtureMetrics: (judgments: FieldJudgment[], fixture: Fixture, context?: Context) => Record<string, number>;
   computeAggregate: (fixtureMetrics: Array<Record<string, number>>) => Record<string, number>;
 }

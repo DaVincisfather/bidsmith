@@ -10,7 +10,7 @@ export async function runEval<F extends { id: string }, O, C>(
     try {
       const { output, context } = await config.runModule(fixture);
       const judgments = await config.judgeOutput(fixture, output, context);
-      const metrics = config.computeFixtureMetrics(judgments, fixture);
+      const metrics = config.computeFixtureMetrics(judgments, fixture, context);
       fixtureResults.push({
         fixtureId: fixture.id,
         actual: output,
