@@ -24,6 +24,34 @@ describe("MODELS registry", () => {
     expect(MODELS.writingChallenger).toBe("claude-fable-5");
   });
 
+  it("BIDSMITH_WRITING_MODEL överstyr writing-rollen (för eval:bid-compare)", async () => {
+    vi.stubEnv("BIDSMITH_WRITING_MODEL", "claude-fable-5");
+    vi.resetModules();
+    const { MODELS: overridden } = await import("@/lib/models");
+    expect(overridden.writing).toBe("claude-fable-5");
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("tom BIDSMITH_WRITING_MODEL faller tillbaka till defaulten (|| — inte ??)", async () => {
+    vi.stubEnv("BIDSMITH_WRITING_MODEL", "");
+    vi.resetModules();
+    const { MODELS: overridden } = await import("@/lib/models");
+    expect(overridden.writing).toBe("claude-opus-4-8");
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("overriden är NODE_ENV-gatad — kvarglömd env-var i produktion byter inte skrivmodell", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("BIDSMITH_WRITING_MODEL", "claude-fable-5");
+    vi.resetModules();
+    const { MODELS: overridden } = await import("@/lib/models");
+    expect(overridden.writing).toBe("claude-opus-4-8");
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
   it("varje modell i registryt har en egen prisrad (ingen fallback)", () => {
     // getModelPricing loggar varning + faller tillbaka på Sonnet-pris för okända
     // modeller — registryt får aldrig peka på en modell utan prisrad.
