@@ -54,6 +54,50 @@ export function pickBlindPairs(pairs: ComparePair[], n: number, seed: number): B
   });
 }
 
+// Parsar Stefans ifyllda blind-review.md. Rader på formen:
+// | par-3 | <ffu> | phases | 2 |
+export function parseBlindReviewMarks(md: string): Array<{ id: string; mark: "1" | "2" | "oavgjort" }> {
+  const marks: Array<{ id: string; mark: "1" | "2" | "oavgjort" }> = [];
+  for (const line of md.split("\n")) {
+    const m = line.match(/^\|\s*(par-\d+)\s*\|.*\|\s*(1|2|oavgjort)\s*\|\s*$/);
+    if (m) marks.push({ id: m[1], mark: m[2] as "1" | "2" | "oavgjort" });
+  }
+  return marks;
+}
+
+export interface BlindScore {
+  a: number;
+  b: number;
+  tie: number;
+  unscored: number;
+}
+
+// Översätter utkastval (1/2) till modelltermer (A/B) via facit-ordningen —
+// "A-först" betyder utkast 1 = modell A.
+export function scoreBlindReview(
+  marks: Array<{ id: string; mark: "1" | "2" | "oavgjort" }>,
+  facit: Array<{ id: string; facit: { ordning: "A-först" | "B-först"; pairFile: string } }>,
+): BlindScore {
+  const byId = new Map(marks.map((m) => [m.id, m.mark]));
+  const score: BlindScore = { a: 0, b: 0, tie: 0, unscored: 0 };
+  for (const f of facit) {
+    const mark = byId.get(f.id);
+    if (!mark) {
+      score.unscored++;
+      continue;
+    }
+    if (mark === "oavgjort") {
+      score.tie++;
+      continue;
+    }
+    const valdeForsta = mark === "1";
+    const aForst = f.facit.ordning === "A-först";
+    if (valdeForsta === aForst) score.a++;
+    else score.b++;
+  }
+  return score;
+}
+
 export interface ModelCost {
   model: string;
   totalUsd: number;
