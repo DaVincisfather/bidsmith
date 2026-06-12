@@ -151,17 +151,18 @@ function readGeometry(sp: Element): ShapeText["geometry"] {
   const off = xfrms[0].getElementsByTagNameNS(A_NS, "off")[0];
   const ext = xfrms[0].getElementsByTagNameNS(A_NS, "ext")[0];
   if (!off || !ext) return null;
-  return {
-    x: Number(off.getAttribute("x")),
-    y: Number(off.getAttribute("y")),
-    cx: Number(ext.getAttribute("cx")),
-    cy: Number(ext.getAttribute("cy")),
-  };
+  const x = off.getAttribute("x");
+  const y = off.getAttribute("y");
+  const cx = ext.getAttribute("cx");
+  const cy = ext.getAttribute("cy");
+  if (x === null || y === null || cx === null || cy === null) return null;
+  return { x: Number(x), y: Number(y), cx: Number(cx), cy: Number(cy) };
 }
 
 function readFontSizePt(txBody: Element): number | null {
   // sz anges i hundradels punkter (1800 = 18 pt). Första explicita vinner:
   // rPr på en run, annars defRPr på paragrafnivå.
+  // First run wins; on mixed-size shapes this is the first run, which under-budgets safely.
   for (const tag of ["rPr", "defRPr"]) {
     const nodes = txBody.getElementsByTagNameNS(A_NS, tag);
     for (let i = 0; i < nodes.length; i++) {
