@@ -913,6 +913,8 @@ git commit -m "feat(fas2): slide type identification via placeholder signatures"
 | `checkpoints[*]` | 80 | `{Avstämning 1 — tidpunkt och innehåll}` | slide 11 |
 | `certs[*].description` | 80 | `{Beskrivning}` | slide 17 |
 
+(Hybridmodellen 2026-06-12: samtliga normAutofit-boxar tar sitt redaktionella tak rakt av — divideByCap/geometri gäller endast icke-norm-boxar, syntetiskt testade.)
+
 **Kalibreringsgrind:** alla 8 beräknade budgetar inom ±10 % av facit, med GLOBALA
 konstanter (`CHAR_WIDTH_FACTOR`, `FILL_FACTOR`). Tillåtet att justera de två konstanterna
 och `maxLines` per TOKEN-spec (fältsemantik, gäller alla mallar). FÖRBJUDET: per-fält-

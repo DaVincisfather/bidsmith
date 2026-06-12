@@ -4,6 +4,7 @@ import path from "path";
 import JSZip from "jszip";
 import { DOMParser } from "@xmldom/xmldom";
 import { readPptxSlides, countImages, type SlideShapes } from "../read-pptx";
+import { buildMiniPptx, slideWithShape } from "./mini-pptx";
 
 const TEMPLATE = path.resolve("templates", "anbudsmall-v2.pptx");
 
@@ -90,44 +91,6 @@ describe("countImages (syntetisk slide-XML)", () => {
     expect(countImages(doc)).toEqual({ placed: 2, placeholders: 1 });
   });
 });
-
-// Bygger en minimal in-memory pptx med exakt de tre entries läsaren rör:
-// presentation.xml (sldIdLst + r:id), dess rels (r:id → slide-target) och
-// själva sliden. Täcker även zip-plumbingen (loadAsync/readEntry).
-async function buildMiniPptx(
-  slideXml: string,
-  presentationXmlOverride?: string,
-): Promise<Buffer> {
-  const presentationXml =
-    presentationXmlOverride ??
-    `<?xml version="1.0"?>
-<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
-                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst>
-</p:presentation>`;
-  const relsXml = `<?xml version="1.0"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1"
-    Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
-    Target="slides/slide1.xml"/>
-</Relationships>`;
-  const zip = new JSZip();
-  zip.file("ppt/presentation.xml", presentationXml);
-  zip.file("ppt/_rels/presentation.xml.rels", relsXml);
-  zip.file("ppt/slides/slide1.xml", slideXml);
-  return zip.generateAsync({ type: "nodebuffer" });
-}
-
-// Bygger en slide med en enda <p:sp> kring godtyckligt spPr/txBody-innehåll.
-function slideWithShape(inner: string): string {
-  return `<?xml version="1.0"?>
-<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
-       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
-  <p:cSld><p:spTree>
-    <p:sp>${inner}</p:sp>
-  </p:spTree></p:cSld>
-</p:sld>`;
-}
 
 describe("readPptxSlides (syntetisk mini-pptx)", () => {
   it("ger geometry=null när xfrm:s <a:off> saknar x-attribut (ingen tyst nollyta)", async () => {
