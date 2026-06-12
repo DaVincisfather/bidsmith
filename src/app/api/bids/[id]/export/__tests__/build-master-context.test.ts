@@ -18,7 +18,7 @@ const baseAnalysis: RfpAnalysis = {
 };
 
 describe("buildMasterContext", () => {
-  it("populates all fields from analysis", () => {
+  it("populates all fields from analysis, companyName blank by default", () => {
     const ctx = buildMasterContext({
       analysis: { ...baseAnalysis, diaryNumber: "VGR-2026-0042" },
       now: new Date("2026-04-19T10:00:00Z"),
@@ -31,6 +31,16 @@ describe("buildMasterContext", () => {
       diaryNumber: "VGR-2026-0042",
       bidDate: "2026-04-19",
     });
+  });
+
+  it("threads companyName into MasterContext (footer {Bolagsnamn} + cover)", () => {
+    const ctx = buildMasterContext({
+      analysis: baseAnalysis,
+      now: new Date("2026-04-19T10:00:00Z"),
+      companyName: "Testbolaget AB",
+    });
+
+    expect(ctx.companyName).toBe("Testbolaget AB");
   });
 
   it("falls back to empty diaryNumber when analysis has none", () => {

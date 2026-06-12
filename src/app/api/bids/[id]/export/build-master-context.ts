@@ -4,14 +4,16 @@ import type { MasterContext } from "@/lib/pptx-template/types";
 interface BuildMasterContextInput {
   analysis: RfpAnalysis;
   now: Date;
+  /** Avsändarens företagsnamn ur aktiv org-profil. Tomt när ingen profil finns
+   *  → footer {Bolagsnamn} + cover blir blanka, som tidigare. */
+  companyName?: string;
 }
 
 export function buildMasterContext(
   input: BuildMasterContextInput,
 ): MasterContext {
   return {
-    // companyName comes from workspace_settings in the future; blank for now.
-    companyName: "",
+    companyName: input.companyName ?? "",
     clientName: input.analysis.client,
     bidName: input.analysis.title,
     // diaryNumber is optional on RfpAnalysis — default to empty string when absent

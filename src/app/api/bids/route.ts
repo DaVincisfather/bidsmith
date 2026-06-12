@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 import { runBidGeneration } from "@/lib/bid-generator/run-bid-generation";
 import { loadActiveTemplate } from "@/lib/pptx-template/active-template";
+import { loadActiveProfile } from "@/lib/org-profile";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
 import { parseBody } from "@/lib/api-helpers";
@@ -52,7 +53,12 @@ export async function POST(request: NextRequest) {
   // Resolve the active template up front so the bid records which template it
   // was generated against (export/editor must reuse the same — budgets were
   // computed for it). Falls back to the bundled anbudsmall-v2 v1 if unseeded.
-  const template = await loadActiveTemplate();
+  // The active org profile gives every bundle the org's voice (injected first
+  // in the cached system block); null when no profile exists → today's behavior.
+  const [template, profile] = await Promise.all([
+    loadActiveTemplate(),
+    loadActiveProfile(),
+  ]);
 
   // Create bid record
   const { data: bid, error: bidError } = await supabase
@@ -79,6 +85,7 @@ export async function POST(request: NextRequest) {
     goNoGoResult: goNoGoResult ?? EMPTY_GO_NO_GO,
     userId,
     bidId: bid.id,
+    profile,
   };
 
   // Generation runs after the response is sent (Vercel: waitUntil). The

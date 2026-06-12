@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 import { renderTemplate } from "@/lib/pptx-template/loader";
 import { loadTemplateForBid } from "@/lib/pptx-template/active-template";
+import { loadActiveProfile } from "@/lib/org-profile";
 import { BidSection, RfpAnalysis } from "@/lib/types";
 import { buildMasterContext } from "./build-master-context";
 
@@ -58,9 +59,13 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   }
 
   const sections = bid.sections as BidSection[];
+  // Avsändarens företagsnamn ur aktiv org-profil → footer {Bolagsnamn} + cover.
+  // null/ingen profil → blankt, oförändrat exportbeteende.
+  const profile = await loadActiveProfile();
   const master = buildMasterContext({
     analysis: analysisRow.analysis as RfpAnalysis,
     now: new Date(),
+    companyName: profile?.companyName,
   });
 
   // Render against the template the bid was generated with (same budgets);
