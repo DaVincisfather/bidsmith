@@ -58,7 +58,7 @@ const SIGNATURES: SlideSignature[] = [
     requires: [`{Referens 1 ${EM} kundnamn}`],
     cloneFrom: "references",
     // {Referens N — kundnamn} finns på slides 14–15 och ingen annanstans → familjemarkör.
-    family: (t) => hasMatch(t, /^\{Referens \d+ — kundnamn\}$/),
+    family: (t) => hasMatch(t, new RegExp(`^\\{Referens \\d+ ${EM} kundnamn\\}$`)),
   },
   { type: "confidentiality", requires: ["{OSL kap X §Y}"] },
   { type: "certifications", requires: ["{Certifikatnummer}", "{Giltighetstid}"] },
@@ -102,6 +102,7 @@ export function identifySlides(slides: SlideShapes[]): IdentifiedSlides {
         continue;
       }
       firstMatch.set(sig, slide.source);
+      const imgs = imageShapesOf(slide);
       included.push({
         source: slide.source,
         type: sig.type,
@@ -109,7 +110,7 @@ export function identifySlides(slides: SlideShapes[]): IdentifiedSlides {
         ...(sig.cloneFrom ? { cloneFrom: sig.cloneFrom } : {}),
         ...(sig.itemCaps ? { itemCaps: sig.itemCaps } : {}),
         placeholders: slide.tokens,
-        ...(imageShapesOf(slide) ? { imageShapes: imageShapesOf(slide) } : {}),
+        ...(imgs ? { imageShapes: imgs } : {}),
       });
       continue;
     }
