@@ -888,6 +888,14 @@ git commit -m "feat(fas2): slide type identification via placeholder signatures"
 
 ### Task 4: Budgetberäkning ur geometri + fontmetrik (KALIBRERINGSGRIND)
 
+> **REVIDERAD 2026-06-12 (Stefan-beslut efter kalibrerings-stopp):** ren geometri kan inte
+> reproducera facit — enradiga normAutofit-boxar (namn/period/avstämningar) har REDAKTIONELLA
+> budgetar (PowerPoint krymper texten; geometrin är inte bindande). Modellen är nu hybrid:
+> varje budget-token bär ett redaktionellt tak (fältsemantik, alla mallar) och geometrin kan
+> bara SÄNKA budgeten — `budget = normAutofit ? tak : min(tak, geometrisk kapacitet)`.
+> Läsaren utökades med `ShapeText.autofit` ur `<a:bodyPr>`. Kalibreringsgrinden (±10 % på
+> alla 8 fält) och förbudet mot per-fält-fudgefaktorer kvarstår oförändrade.
+
 **Filer:**
 - Skapa: `src/lib/pptx-template/introspect/compute-budgets.ts`
 - Test: `src/lib/pptx-template/introspect/__tests__/compute-budgets.test.ts`
