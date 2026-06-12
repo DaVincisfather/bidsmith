@@ -9,7 +9,12 @@ vi.mock("@/lib/bid-generator", () => ({
 }));
 
 import { generateAllSections } from "@/lib/bid-generator";
+import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import { runBidGeneration } from "../run-bid-generation";
+
+// generateAllSections is mocked, so runBidGeneration never reads the manifest —
+// a stub that satisfies the { manifest } shape is enough.
+const template = { manifest: {} as unknown as TemplateManifest };
 
 const baseAnalysis: RfpAnalysis = {
   title: "t", client: "c", deadline: null, summary: "s",
@@ -64,7 +69,7 @@ describe("runBidGeneration", () => {
       failedBundles: [],
     });
 
-    await runBidGeneration(client, "bid-1", baseCtx, "anbudsmall-v2");
+    await runBidGeneration(client, "bid-1", baseCtx, template);
 
     const final = updates[updates.length - 1];
     expect(final.status).toBe("draft");
@@ -79,7 +84,7 @@ describe("runBidGeneration", () => {
       return { sections: [mockSection("cover")], overflowFlags: [], failedBundles: [] };
     });
 
-    await runBidGeneration(client, "bid-1", baseCtx, "anbudsmall-v2");
+    await runBidGeneration(client, "bid-1", baseCtx, template);
 
     // First update is the incremental save (sections only), then the final one.
     expect(updates).toHaveLength(2);
@@ -96,7 +101,7 @@ describe("runBidGeneration", () => {
       failedBundles: failed,
     });
 
-    await runBidGeneration(client, "bid-1", baseCtx, "anbudsmall-v2");
+    await runBidGeneration(client, "bid-1", baseCtx, template);
 
     const final = updates[updates.length - 1];
     expect(final.status).toBe("draft");
@@ -114,7 +119,7 @@ describe("runBidGeneration", () => {
       failedBundles: failed,
     });
 
-    await runBidGeneration(client, "bid-1", baseCtx, "anbudsmall-v2");
+    await runBidGeneration(client, "bid-1", baseCtx, template);
 
     const final = updates[updates.length - 1];
     expect(final.status).toBe("failed");
@@ -124,13 +129,13 @@ describe("runBidGeneration", () => {
 
   it("marks the bid failed when generation throws (infra failure)", async () => {
     const { client, updates } = createSupabaseStub();
-    vi.mocked(generateAllSections).mockRejectedValue(new Error("loadBudgets exploded"));
+    vi.mocked(generateAllSections).mockRejectedValue(new Error("generation exploded"));
 
-    await runBidGeneration(client, "bid-1", baseCtx, "anbudsmall-v2");
+    await runBidGeneration(client, "bid-1", baseCtx, template);
 
     const final = updates[updates.length - 1];
     expect(final.status).toBe("failed");
-    expect(final.generation_error).toBe("loadBudgets exploded");
+    expect(final.generation_error).toBe("generation exploded");
     expect(final.failed_bundles).toEqual([]);
   });
 });

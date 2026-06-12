@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateAllSections, BID_BUNDLE_COUNT } from "@/lib/bid-generator";
 import type { BidContext, FailedBundle } from "@/lib/bid-generator";
+import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import type { BidSection } from "@/lib/types";
 import {
   judgeBidStructure,
@@ -19,7 +20,7 @@ export async function runBidGeneration(
   supabase: SupabaseClient,
   bidId: string,
   ctx: BidContext,
-  templateName: string,
+  template: { manifest: TemplateManifest },
 ): Promise<void> {
   let sections: BidSection[];
   let overflowFlags: Awaited<ReturnType<typeof generateAllSections>>["overflowFlags"];
@@ -27,7 +28,7 @@ export async function runBidGeneration(
   try {
     ({ sections, overflowFlags, failedBundles } = await generateAllSections(
       ctx,
-      templateName,
+      template.manifest,
       async (section: BidSection) => {
         const { data: currentBid } = await supabase
           .from("bids")

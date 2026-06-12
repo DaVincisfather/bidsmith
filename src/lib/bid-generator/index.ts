@@ -1,6 +1,6 @@
 import type { BidSection } from "@/lib/types";
-import { loadBudgets } from "@/lib/pptx-template/budget-loader";
-import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
+import type { BudgetPlan, OverflowFlag } from "@/lib/pptx-template/budget-types";
+import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import { buildCoverSection } from "./deterministic/cover";
 import { buildCertificationsSection } from "./deterministic/certifications";
 import { buildConfidentialitySection } from "./deterministic/confidentiality";
@@ -49,9 +49,10 @@ export interface GenerateAllSectionsResult {
  * Runs 5 AI bundles in parallel + 4 deterministic generators to produce the
  * full set of BidSections for a v2 template.
  *
- * Loads field budgets for templateName from template_configs, shares a single
- * RetryBudget across all bundles (so a single bundle blowing up retries doesn't
- * starve the rest), and aggregates per-bundle overflowFlags into one array.
+ * Field budgets + per-field slide numbers come from the template manifest
+ * (BudgetPlan), shares a single RetryBudget across all bundles (so a single
+ * bundle blowing up retries doesn't starve the rest), and aggregates per-bundle
+ * overflowFlags into one array.
  *
  * Bundles run under allSettled, not Promise.all: one bundle failing must not
  * throw away the (expensive Opus) output of the five that succeeded. Rejections
@@ -62,10 +63,10 @@ export interface GenerateAllSectionsResult {
  */
 export async function generateAllSections(
   ctx: BidContext,
-  templateName: string,
+  manifest: TemplateManifest,
   onSectionComplete?: (section: BidSection) => void | Promise<void>,
 ): Promise<GenerateAllSectionsResult> {
-  const budgets = await loadBudgets(templateName);
+  const plan: BudgetPlan = { budgets: manifest.budgets, fieldSlides: manifest.fieldSlides };
   const retryBudget: RetryBudget = { remaining: GLOBAL_RETRY_CAP };
 
   // Ingen cache-prewarm här, trots att bundlarna delar formatContext(ctx):
@@ -82,11 +83,11 @@ export async function generateAllSections(
   const reference = buildReferenceSection();
 
   const settled = await Promise.allSettled([
-    buildUnderstandingBundle(ctx, budgets, retryBudget),
-    buildPhasesBundle(ctx, budgets, retryBudget),
-    buildQualityBundle(ctx, budgets, retryBudget),
-    buildRequirementMatrixBundle(ctx, budgets, retryBudget),
-    buildTeamBundle(ctx, budgets, retryBudget),
+    buildUnderstandingBundle(ctx, plan, retryBudget),
+    buildPhasesBundle(ctx, plan, retryBudget),
+    buildQualityBundle(ctx, plan, retryBudget),
+    buildRequirementMatrixBundle(ctx, plan, retryBudget),
+    buildTeamBundle(ctx, plan, retryBudget),
   ]);
 
   const bundleResults: { sections: BidSection[]; overflowFlags: OverflowFlag[] }[] = [];

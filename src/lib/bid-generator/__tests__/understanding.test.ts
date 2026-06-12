@@ -38,7 +38,7 @@ describe("buildUnderstandingBundle", () => {
       vision: { utmaningar: ["U1"], värden: ["V1"] },
     });
 
-    const { sections, overflowFlags } = await buildUnderstandingBundle(baseCtx, {}, { remaining: 5 });
+    const { sections, overflowFlags } = await buildUnderstandingBundle(baseCtx, { budgets: {}, fieldSlides: {} }, { remaining: 5 });
     expect(sections).toHaveLength(3);
     expect(sections[0].key).toBe("understanding-current");
     expect(sections[1].key).toBe("understanding-assignment");
@@ -51,7 +51,7 @@ describe("buildUnderstandingBundle", () => {
 
   it("propagates validation errors (no silent fallback)", async () => {
     vi.mocked(callClaude).mockRejectedValue(new Error("Invalid response"));
-    await expect(buildUnderstandingBundle(baseCtx, {}, { remaining: 5 })).rejects.toThrow("Invalid response");
+    await expect(buildUnderstandingBundle(baseCtx, { budgets: {}, fieldSlides: {} }, { remaining: 5 })).rejects.toThrow("Invalid response");
   });
 });
 

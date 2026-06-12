@@ -67,7 +67,7 @@ describe("buildTeamBundle", () => {
       ],
     });
 
-    const { sections, overflowFlags } = await buildTeamBundle(baseCtx, {}, { remaining: 5 });
+    const { sections, overflowFlags } = await buildTeamBundle(baseCtx, { budgets: {}, fieldSlides: {} }, { remaining: 5 });
     const [s] = sections;
     expect(s.key).toBe("team-pricing");
     if (!s.content) throw new Error("content missing");
@@ -86,7 +86,7 @@ describe("buildTeamBundle", () => {
         { name: "Bo", role: "Arch", omfattningPct: 100, timmar: 480 },
       ],
     });
-    const { sections } = await buildTeamBundle(baseCtx, {}, { remaining: 5 });
+    const { sections } = await buildTeamBundle(baseCtx, { budgets: {}, fieldSlides: {} }, { remaining: 5 });
     const [s] = sections;
     if (!s.content) throw new Error("content missing");
     if (s.content.format !== "team-pricing") throw new Error();

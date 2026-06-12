@@ -4,6 +4,7 @@ import { createServiceClient, fetchConsultantsByIds, EMPTY_GO_NO_GO } from "@/li
 import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 import { runBidGeneration } from "@/lib/bid-generator/run-bid-generation";
+import { bundledTemplate } from "@/lib/pptx-template/registry";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
 import { parseBody } from "@/lib/api-helpers";
@@ -76,8 +77,9 @@ export async function POST(request: NextRequest) {
 
   // Generation runs after the response is sent (Vercel: waitUntil). The
   // client polls GET /api/bids/[id] until status leaves 'generating'.
-  // templateName is hardcoded for now — picker is a separate PR.
-  after(() => runBidGeneration(supabase, bid.id, ctx, "anbudsmall-v2"));
+  // Template is the bundled manifest for now — Task 12 widens to the active
+  // template once bids.template_id is set.
+  after(() => runBidGeneration(supabase, bid.id, ctx, bundledTemplate()));
 
   return NextResponse.json({ id: bid.id, status: "generating" }, { status: 202 });
 }

@@ -19,6 +19,7 @@ interface BidEditorProps {
   initialStructureEval: StructureEvalSummary | null;
   styleGuide: StyleGuide;
   budgets: FieldBudgets;
+  fieldSlides: Record<string, number>;
   initialOverflowFlags: OverflowFlag[];
   initialFailedBundles: FailedBundle[];
   initialGenerationError: string | null;
@@ -31,6 +32,7 @@ export function BidEditor({
   initialStructureEval,
   styleGuide,
   budgets,
+  fieldSlides,
   initialOverflowFlags,
   initialFailedBundles,
   initialGenerationError,
@@ -57,7 +59,7 @@ export function BidEditor({
       const allFlags: OverflowFlag[] = [];
       for (const section of updated) {
         if (!section.content) continue;
-        const { overflows } = verifyFieldBudgets(section.content, budgets);
+        const { overflows } = verifyFieldBudgets(section.content, { budgets, fieldSlides });
         for (const o of overflows) {
           // Dedup if multiple sections share a fieldPath (e.g. duplicate phases sections)
           const key = `${o.slide}-${o.fieldPath}`;
@@ -68,7 +70,7 @@ export function BidEditor({
       }
       return allFlags;
     },
-    [budgets],
+    [budgets, fieldSlides],
   );
 
   // Poll while generating

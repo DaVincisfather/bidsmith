@@ -2,7 +2,7 @@ import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
 import { MODELS } from "@/lib/models";
 import type { BidSection } from "@/lib/types";
-import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
+import type { BudgetPlan, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { formatContext, type BidContext } from "../context";
 import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
 import { renderBudgetTable } from "../render-budget-table";
@@ -65,10 +65,10 @@ Leverera så många poster som bäst representerar RFP:en inom de gränserna.`;
 
 export async function buildUnderstandingBundle(
   ctx: BidContext,
-  budgets: FieldBudgets,
+  plan: BudgetPlan,
   retryBudget: RetryBudget,
 ): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
-  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(budgets, UNDERSTANDING_BUDGET_KEYS);
+  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(plan.budgets, UNDERSTANDING_BUDGET_KEYS);
 
   const { output: parsed, overflows } = await withBudgetRetry({
     basePrompt,
@@ -85,7 +85,7 @@ export async function buildUnderstandingBundle(
         userId: ctx.userId,
         bidId: ctx.bidId,
       }),
-    budgets,
+    plan,
     retryBudget,
   });
 

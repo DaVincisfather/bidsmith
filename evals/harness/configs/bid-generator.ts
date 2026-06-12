@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs/promises";
 import { generateAllSections } from "@/lib/bid-generator";
+import { loadBundledManifest } from "@/lib/pptx-template/registry";
 import type { BidSection } from "@/lib/types";
 import {
   AnalyzerFixtureSchema,
@@ -171,7 +172,7 @@ export const bidGeneratorConfig: EvalConfig<BidGeneratorFixture, Output, BidEval
   runModule: async (fixture) => {
     const context = await loadContext(fixture);
     const ctx = buildEvalBidContext(context.analyzerFixture, context.consultants);
-    const { sections, overflowFlags } = await generateAllSections(ctx, "anbudsmall-v2");
+    const { sections, overflowFlags } = await generateAllSections(ctx, loadBundledManifest("anbudsmall-v2"));
     return { output: sections, context: { ...context, overflowCount: overflowFlags.length } };
   },
   judgeOutput: (fixture, actual, context) => judgeBid(fixture, actual, context),

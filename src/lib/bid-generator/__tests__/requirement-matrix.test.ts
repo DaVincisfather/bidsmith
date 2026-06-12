@@ -74,7 +74,7 @@ describe("buildRequirementMatrixBundle", () => {
       ],
     });
 
-    const { sections, overflowFlags } = await buildRequirementMatrixBundle(baseCtx, {}, { remaining: 5 });
+    const { sections, overflowFlags } = await buildRequirementMatrixBundle(baseCtx, { budgets: {}, fieldSlides: {} }, { remaining: 5 });
     const [s] = sections;
     expect(s.key).toBe("requirement-matrix-v2");
     if (!s.content) throw new Error("content missing");

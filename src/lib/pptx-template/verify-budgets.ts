@@ -1,23 +1,21 @@
-import type { FieldBudgets, OverflowFlag } from "./budget-types";
+import type { BudgetPlan, OverflowFlag } from "./budget-types";
 
 /**
- * Field metadata: maps budget-key path to slide-index + human label template.
- * Update when adding new templates or budget paths.
+ * Field labels: maps budget-key path to a human label template. Labels are
+ * field-model semantics (template-independent), so they stay in code — the
+ * manifest only carries which slide a field lands on (BudgetPlan.fieldSlides).
  *
  * Label-template uses {N} for 1-indexed phase number, {N+1} for 1-indexed array index.
  */
-type FieldMetadata = { slide: number; labelTemplate: string };
-
-// slide values are 1-indexed deck pagination (matches printed deck + Pre-export checklist UI).
-const FIELD_METADATA: Record<string, FieldMetadata> = {
-  "phases[*].name": { slide: 6, labelTemplate: "Fas {N} — Namn" },
-  "phases[*].period": { slide: 6, labelTemplate: "Fas {N} — Period" },
-  "phases[*].objective": { slide: 7, labelTemplate: "Fas {N} — Mål" },
-  "phases[*].activities[*]": { slide: 7, labelTemplate: "Fas {N} — Aktivitet {N+1}" },
-  "phases[*].deliverables[*]": { slide: 7, labelTemplate: "Fas {N} — Leverabel {N+1}" },
-  "phases[*].decisions[*]": { slide: 7, labelTemplate: "Fas {N} — Beslut {N+1}" },
-  "checkpoints[*]": { slide: 11, labelTemplate: "Avstämningspunkt {N+1}" },
-  "certs[*].description": { slide: 18, labelTemplate: "Cert {N+1} — Beskrivning" },
+const FIELD_LABELS: Record<string, string> = {
+  "phases[*].name": "Fas {N} — Namn",
+  "phases[*].period": "Fas {N} — Period",
+  "phases[*].objective": "Fas {N} — Mål",
+  "phases[*].activities[*]": "Fas {N} — Aktivitet {N+1}",
+  "phases[*].deliverables[*]": "Fas {N} — Leverabel {N+1}",
+  "phases[*].decisions[*]": "Fas {N} — Beslut {N+1}",
+  "checkpoints[*]": "Avstämningspunkt {N+1}",
+  "certs[*].description": "Cert {N+1} — Beskrivning",
 };
 
 type ResolvedLeaf = { resolvedPath: string; value: unknown; indices: number[] };
@@ -83,30 +81,35 @@ function buildLabel(template: string, indices: number[]): string {
 
 export function verifyFieldBudgets(
   data: unknown,
-  budgets: FieldBudgets,
+  plan: BudgetPlan,
 ): { pass: boolean; overflows: OverflowFlag[] } {
   const overflows: OverflowFlag[] = [];
 
-  for (const [path, budget] of Object.entries(budgets)) {
-    const meta = FIELD_METADATA[path];
-    if (!meta) {
-      // Catches config drift: a budget key was added to template_configs without
-      // a matching FIELD_METADATA entry. Without the warning the field would be
-      // silently un-verified.
+  for (const [path, budget] of Object.entries(plan.budgets)) {
+    // 1-indexed deck slide comes from the manifest now. A budget without a
+    // fieldSlides entry is still verified (manifests must always be verified) —
+    // it falls back to slide 0 with a drift-warning naming the path, mirroring
+    // the old FIELD_METADATA-drift philosophy.
+    const slide = plan.fieldSlides[path];
+    if (slide === undefined) {
       console.warn(
-        `[verify-budgets] budget key '${path}' has no FIELD_METADATA entry — skipping. Add to FIELD_METADATA or remove from template_configs.`,
+        `[verify-budgets] budget key '${path}' har ingen fieldSlides-post i manifestet — verifierar med slide 0. Lägg till fieldSlides[${path}] i manifestet.`,
       );
-      continue;
     }
+    const resolvedSlide = slide ?? 0;
+
+    // Unknown field (budget from a manifest without a label entry) is still
+    // verified, with the raw path as label.
+    const labelTemplate = FIELD_LABELS[path] ?? path;
 
     const leaves = resolveLeaves(data, path);
     for (const leaf of leaves) {
       if (typeof leaf.value !== "string") continue;
       if (leaf.value.length > budget) {
         overflows.push({
-          slide: meta.slide,
+          slide: resolvedSlide,
           fieldPath: leaf.resolvedPath,
-          fieldLabel: buildLabel(meta.labelTemplate, leaf.indices),
+          fieldLabel: buildLabel(labelTemplate, leaf.indices),
           length: leaf.value.length,
           budget,
         });

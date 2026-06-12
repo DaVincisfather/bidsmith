@@ -7,17 +7,21 @@ vi.mock("../bundles/phases");
 vi.mock("../bundles/quality");
 vi.mock("../bundles/requirement-matrix");
 vi.mock("../bundles/team");
-vi.mock("@/lib/pptx-template/budget-loader", () => ({
-  loadBudgets: vi.fn(),
-}));
 
 import { buildUnderstandingBundle } from "../bundles/understanding";
 import { buildPhasesBundle } from "../bundles/phases";
 import { buildQualityBundle } from "../bundles/quality";
 import { buildRequirementMatrixBundle } from "../bundles/requirement-matrix";
 import { buildTeamBundle } from "../bundles/team";
-import { loadBudgets } from "@/lib/pptx-template/budget-loader";
+import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import { generateAllSections } from "../index";
+
+// Minimal manifest stub — generateAllSections only reads budgets + fieldSlides
+// from it; the bundles are mocked so their slide/budget contents are irrelevant.
+const manifest = {
+  budgets: {},
+  fieldSlides: {},
+} as unknown as TemplateManifest;
 
 const baseAnalysis: RfpAnalysis = {
   title: "t", client: "c", deadline: null, summary: "s",
@@ -48,9 +52,6 @@ beforeEach(() => {
   vi.mocked(buildQualityBundle).mockReset();
   vi.mocked(buildRequirementMatrixBundle).mockReset();
   vi.mocked(buildTeamBundle).mockReset();
-  vi.mocked(loadBudgets).mockReset();
-
-  vi.mocked(loadBudgets).mockResolvedValue({});
 
   vi.mocked(buildUnderstandingBundle).mockResolvedValue({
     sections: [
@@ -80,7 +81,7 @@ beforeEach(() => {
 
 describe("generateAllSections", () => {
   it("returns 11 sections across all bundles + deterministic", async () => {
-    const { sections, overflowFlags } = await generateAllSections(baseCtx, "anbudsmall-v2");
+    const { sections, overflowFlags } = await generateAllSections(baseCtx, manifest);
     const keys = sections.map((s) => s.key);
     expect(keys).toContain("cover");
     expect(keys).toContain("understanding-current");
@@ -97,11 +98,6 @@ describe("generateAllSections", () => {
     expect(overflowFlags).toEqual([]);
   });
 
-  it("loads budgets for the named template", async () => {
-    await generateAllSections(baseCtx, "anbudsmall-v2");
-    expect(loadBudgets).toHaveBeenCalledWith("anbudsmall-v2");
-  });
-
   it("aggregates overflowFlags across bundles", async () => {
     vi.mocked(buildPhasesBundle).mockResolvedValue({
       sections: [mockSection("phases", "phases")],
@@ -116,7 +112,7 @@ describe("generateAllSections", () => {
       ],
     });
 
-    const { overflowFlags } = await generateAllSections(baseCtx, "anbudsmall-v2");
+    const { overflowFlags } = await generateAllSections(baseCtx, manifest);
     expect(overflowFlags).toHaveLength(2);
     expect(overflowFlags.map((o) => o.fieldPath).sort()).toEqual(
       ["checkpoints[0]", "phases[0].name"].sort(),
@@ -125,14 +121,14 @@ describe("generateAllSections", () => {
 
   it("invokes onSectionComplete once per section", async () => {
     const spy = vi.fn();
-    await generateAllSections(baseCtx, "anbudsmall-v2", spy);
+    await generateAllSections(baseCtx, manifest, spy);
     expect(spy).toHaveBeenCalledTimes(11);
   });
 
   it("captures a failed bundle in failedBundles without discarding the rest", async () => {
     vi.mocked(buildPhasesBundle).mockRejectedValue(new Error("boom"));
 
-    const { sections, failedBundles } = await generateAllSections(baseCtx, "anbudsmall-v2");
+    const { sections, failedBundles } = await generateAllSections(baseCtx, manifest);
 
     // The failure is reported, not thrown...
     expect(failedBundles).toEqual([{ bundle: "phases", error: "boom" }]);
