@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import JSZip from "jszip";
 import { renderTemplate } from "../loader";
+import { bundledTemplate } from "../registry";
 import type { BidContext } from "@/lib/bid-generator";
 import type { RfpAnalysis } from "@/lib/types";
 import { GOLDEN_MASTER } from "./fixtures/golden-sections";
@@ -79,7 +80,7 @@ describe("bid generator → renderer e2e", () => {
     const { generateAllSections } = await import("@/lib/bid-generator");
     const { sections } = await generateAllSections(ctx, "anbudsmall-v2");
 
-    const buf = await renderTemplate("anbudsmall-v2", sections, GOLDEN_MASTER);
+    const buf = await renderTemplate(bundledTemplate(), sections, GOLDEN_MASTER);
 
     const zip = await JSZip.loadAsync(buf);
 

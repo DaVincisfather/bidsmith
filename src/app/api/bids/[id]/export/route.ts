@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 import { renderTemplate } from "@/lib/pptx-template/loader";
+import { bundledTemplate } from "@/lib/pptx-template/registry";
 import { BidSection, RfpAnalysis } from "@/lib/types";
 import { buildMasterContext } from "./build-master-context";
 
@@ -67,7 +68,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   // must not mark the bid as exported.
   let buffer: Buffer;
   try {
-    buffer = await renderTemplate("anbudsmall-v2", sections, master);
+    buffer = await renderTemplate(bundledTemplate(), sections, master);
   } catch (err) {
     console.error(`PPTX render failed for bid ${id}:`, err);
     return NextResponse.json(

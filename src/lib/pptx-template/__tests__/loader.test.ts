@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { renderTemplate, applicatorFor } from "../loader";
+import { bundledTemplate } from "../registry";
 import type { BidSection } from "../../types";
 
 const minimalSections: BidSection[] = [
@@ -34,7 +35,7 @@ async function getAllSlideXml(zip: JSZip): Promise<string[]> {
 
 describe("renderTemplate — cover only", () => {
   it("replaces cover placeholders on the cover slide", async () => {
-    const buf = await renderTemplate("anbudsmall-v2", minimalSections, {
+    const buf = await renderTemplate(bundledTemplate(), minimalSections, {
       companyName: "TestCo AB",
       clientName: "TestKund",
       diaryNumber: "TST-2026-0001",

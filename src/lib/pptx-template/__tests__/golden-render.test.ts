@@ -5,14 +5,15 @@ import path from "path";
 import JSZip from "jszip";
 import { DOMParser, type Element } from "@xmldom/xmldom";
 import { renderTemplate } from "../loader";
+import { bundledTemplate } from "../registry";
 import { GOLDEN_SECTIONS, GOLDEN_MASTER } from "./fixtures/golden-sections";
+import { resolveActiveSlides } from "./fixtures/active-slides";
 
 const GOLDEN_PATH = path.resolve(
   "src/lib/pptx-template/__tests__/golden/anbudsmall-v2.golden.json",
 );
 const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
 const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
-const R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 
 interface SlideSnapshot {
   /** Alla <a:t>-texter i dokumentordning */
@@ -26,7 +27,7 @@ interface SlideSnapshot {
 }
 
 async function snapshotRender(): Promise<SlideSnapshot[]> {
-  const buffer = await renderTemplate("anbudsmall-v2", GOLDEN_SECTIONS, GOLDEN_MASTER);
+  const buffer = await renderTemplate(bundledTemplate(), GOLDEN_SECTIONS, GOLDEN_MASTER);
   const zip = await JSZip.loadAsync(buffer);
   const parser = new DOMParser();
 
@@ -62,45 +63,6 @@ async function snapshotRender(): Promise<SlideSnapshot[]> {
     });
   }
   return snapshots;
-}
-
-/**
- * Löser de aktiva slidernas filvägar i presentationsordning via
- * presentation.xml <p:sldIdLst> → r:id → presentation.xml.rels.
- *
- * OBS: pptx-automizer döper de tillagda sliddernas relations-id till "rIdNN-created"
- * (suffix ingår i både sldId och rels), så vi matchar hela attributvärdet — inte
- * bara "rId\d+". getAttributeNS för r:id ger värdet rakt av.
- */
-async function resolveActiveSlides(zip: JSZip, parser: DOMParser): Promise<string[]> {
-  const pres = parser.parseFromString(
-    await zip.file("ppt/presentation.xml")!.async("string"),
-    "application/xml",
-  );
-  const rels = parser.parseFromString(
-    await zip.file("ppt/_rels/presentation.xml.rels")!.async("string"),
-    "application/xml",
-  );
-
-  const ridToTarget = new Map<string, string>();
-  const relNodes = rels.getElementsByTagName("Relationship");
-  for (let i = 0; i < relNodes.length; i++) {
-    const rel = relNodes[i];
-    const id = rel.getAttribute("Id");
-    const target = rel.getAttribute("Target");
-    if (id && target && /^slides\/slide\d+\.xml$/.test(target)) {
-      ridToTarget.set(id, `ppt/${target}`);
-    }
-  }
-
-  const sldIds = pres.getElementsByTagNameNS(P_NS, "sldId");
-  const paths: string[] = [];
-  for (let i = 0; i < sldIds.length; i++) {
-    const rId = sldIds[i].getAttributeNS(R_NS, "id");
-    const target = rId ? ridToTarget.get(rId) : undefined;
-    if (target) paths.push(target);
-  }
-  return paths;
 }
 
 describe("golden render — anbudsmall-v2 bitparitet", () => {

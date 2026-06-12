@@ -7,9 +7,10 @@ import {
 } from "./_footer";
 
 /**
- * Prose applicator — handles slides 3, 4, 5.
+ * Prose applicator — handles the three understanding slides.
  *
- * Dispatches on ctx.sourceSlide to pick the right placeholder map.
+ * Dispatches on ctx.variant (kunden-idag/uppdraget/vision) to pick the right
+ * placeholder map.
  * If the corresponding BidSection is missing from ctx.sections, placeholders
  * are left unreplaced (visible in output as a data-missing signal).
  *
@@ -33,15 +34,19 @@ export function proseApplicator(ctx: ApplicatorContext) {
 }
 
 function buildProseMap(ctx: ApplicatorContext): Record<string, string> {
-  switch (ctx.sourceSlide) {
-    case 3:
+  switch (ctx.variant) {
+    case "kunden-idag":
       return buildSlide3Map(ctx);
-    case 4:
+    case "uppdraget":
       return buildSlide4Map(ctx);
-    case 5:
+    case "vision":
       return buildSlide5Map(ctx);
     default:
-      return {};
+      // Manifest utan variant på prose är ett konfigurationsfel — fail loud
+      // (identify-slides sätter alltid variant).
+      throw new Error(
+        `prose-slide (source ${ctx.sourceSlide}) saknar variant i manifestet`,
+      );
   }
 }
 

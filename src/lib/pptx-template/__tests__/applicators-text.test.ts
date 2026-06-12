@@ -10,6 +10,7 @@
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { renderTemplate } from "../loader";
+import { bundledTemplate } from "../registry";
 import type { BidSection } from "../../types";
 import type { MasterContext } from "../types";
 
@@ -30,7 +31,7 @@ async function getAllSlideXml(zip: JSZip): Promise<string[]> {
 
 /** Render the full template with all sections provided */
 async function renderAll(sections: BidSection[]): Promise<string[]> {
-  const buf = await renderTemplate("anbudsmall-v2", sections, master);
+  const buf = await renderTemplate(bundledTemplate(), sections, master);
   const zip = await JSZip.loadAsync(buf);
   return getAllSlideXml(zip);
 }

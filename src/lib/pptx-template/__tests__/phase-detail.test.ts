@@ -11,6 +11,7 @@
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { renderTemplate } from "../loader";
+import { bundledTemplate } from "../registry";
 import type { BidSection } from "../../types";
 import type { MasterContext } from "../types";
 
@@ -122,7 +123,7 @@ function makePhasesSections(): BidSection[] {
 }
 
 async function renderPhases(): Promise<string[]> {
-  const buf = await renderTemplate("anbudsmall-v2", makePhasesSections(), master);
+  const buf = await renderTemplate(bundledTemplate(), makePhasesSections(), master);
   const zip = await JSZip.loadAsync(buf);
   return getAllSlideXml(zip);
 }
@@ -360,7 +361,7 @@ describe("phase-detail applicator — badge replacement scope", () => {
       },
     ];
 
-    const buf = await renderTemplate("anbudsmall-v2", sections, master);
+    const buf = await renderTemplate(bundledTemplate(), sections, master);
     const zip = await JSZip.loadAsync(buf);
     const slides = await getAllSlideXml(zip);
 
@@ -449,7 +450,7 @@ describe("phase-detail applicator — goal box", () => {
       },
     ];
 
-    const buf = await renderTemplate("anbudsmall-v2", sections, master);
+    const buf = await renderTemplate(bundledTemplate(), sections, master);
     const zip = await JSZip.loadAsync(buf);
     const slides = await getAllSlideXml(zip);
 
@@ -520,7 +521,7 @@ describe("phase-detail applicator — risks box", () => {
       },
     ];
 
-    const buf = await renderTemplate("anbudsmall-v2", sections, master);
+    const buf = await renderTemplate(bundledTemplate(), sections, master);
     const zip = await JSZip.loadAsync(buf);
     const slides = await getAllSlideXml(zip);
 
@@ -578,7 +579,7 @@ describe("phase-detail applicator — risks box", () => {
       },
     ];
 
-    const buf = await renderTemplate("anbudsmall-v2", sections, master);
+    const buf = await renderTemplate(bundledTemplate(), sections, master);
     const zip = await JSZip.loadAsync(buf);
     const slides = await getAllSlideXml(zip);
 

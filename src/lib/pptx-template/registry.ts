@@ -1,41 +1,17 @@
+// registry.ts — DEPRECATED: konfigurationen bor i templates-tabellen (migration 004).
+// Kvar endast som läsare av det bundlade manifestet för tester och offline-skript.
+import { readFileSync } from "fs";
 import path from "path";
-import type { TemplateConfig } from "./types";
+import { TemplateManifestSchema, type TemplateManifest } from "./manifest-types";
 
-const TEMPLATES_DIR = path.resolve("templates");
-
-const ANBUDSMALL_V2: TemplateConfig = {
-  id: "anbudsmall-v2",
-  templateFile: path.join(TEMPLATES_DIR, "anbudsmall-v2.pptx"),
-  slides: [
-    { source: 1,  type: "cover" },
-    { source: 2,  type: "toc" },
-    { source: 3,  type: "prose" },
-    { source: 4,  type: "prose" },
-    { source: 5,  type: "prose" },
-    { source: 6,  type: "phases-overview", itemCaps: { phases: 4 } },
-    { source: 7,  type: "phase-detail", cloneFrom: "phases",
-      itemCaps: { activities: 4, deliverables: 3, decisions: 3 } },
-    // Slides 8-10 are illustrative copies in the mockup — not rendered
-    { source: 11, type: "quality-assurance" },
-    { source: 12, type: "team-pricing" },
-    { source: 13, type: "requirement-matrix" },
-    { source: 14, type: "reference", cloneFrom: "references" },
-    // Slide 15 is illustrative copy — not rendered
-    { source: 16, type: "confidentiality" },
-    { source: 17, type: "certifications" },
-  ],
-};
-
-const REGISTRY: Record<string, TemplateConfig> = {
-  "anbudsmall-v2": ANBUDSMALL_V2,
-};
-
-export function getTemplate(id: string): TemplateConfig {
-  const cfg = REGISTRY[id];
-  if (!cfg) throw new Error(`unknown template id: ${id}`);
-  return cfg;
+export function loadBundledManifest(name = "anbudsmall-v2"): TemplateManifest {
+  const file = path.resolve("templates", `${name}.manifest.json`);
+  return TemplateManifestSchema.parse(JSON.parse(readFileSync(file, "utf8")));
 }
 
-export function listTemplates(): TemplateConfig[] {
-  return Object.values(REGISTRY);
+export function bundledTemplate(name = "anbudsmall-v2") {
+  return {
+    manifest: loadBundledManifest(name),
+    templateFile: path.resolve("templates", `${name}.pptx`),
+  };
 }

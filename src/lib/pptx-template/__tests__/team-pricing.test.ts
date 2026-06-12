@@ -11,6 +11,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import JSZip from "jszip";
 import { renderTemplate } from "../loader";
+import { bundledTemplate } from "../registry";
 import type { BidSection } from "../../types";
 import type { MasterContext } from "../types";
 
@@ -35,7 +36,7 @@ async function getAllSlideXml(zip: JSZip): Promise<string[]> {
  * "{Konsult 1" (the long-form row 1 placeholder).
  */
 async function getTeamPricingXml(sections: BidSection[]): Promise<string> {
-  const buf = await renderTemplate("anbudsmall-v2", sections, master);
+  const buf = await renderTemplate(bundledTemplate(), sections, master);
   const zip = await JSZip.loadAsync(buf);
   const allXmls = await getAllSlideXml(zip);
 
