@@ -104,6 +104,15 @@ Följande avvikelser är belagda i koden och gäller:
 - Mall-versionshantering är append-only (`unique(name, version)`); ingen UI för
   versionshistorik.
 
+**Kända gränser med correctness-etikett (fas 2A-slutreview 2026-06-12) — fixas när
+verklighetstest med riktiga mallar visar att de biter, se masterplanens
+§Kandidater efter fas 2:**
+- Slot-antal är halvhårt: itemCaps i signaturtabellen + slot-tokens i applicatorerna
+  ({Konsult 1..5}, 4 faser). Mall med fler slots kräver kodändring idag.
+- Tokens i äkta PowerPoint-tabeller (`<a:tbl>` i graphicFrame) är osynliga för
+  identifieringen — läsaren går endast `<p:sp>`. Rendering ersätter dem ändå, men
+  sliden felklassas/exkluderas.
+
 ---
 
 ## Mallmanifestet (kontraktet)
@@ -130,8 +139,13 @@ interface ManifestSlide {
 
 Introspektionen FÖRESLÅR manifestet; det committade/sparade manifestet är auktoritativt
 (CLI:t skriver JSON som kan handjusteras före commit; UI:t visar preview före aktivering).
-För anbudsmall-v2 pinnas `fieldSlides` till FIELD_METADATAs nuvarande värden
-(6, 7, 11, 18) för beteendeparitet — introspektionens beräknade värden är förslag.
+
+> **REVIDERAD efter rutin-review PR #24:** ingen handpinning behövs — manifestet är
+> 100 % reproducerbart från CLI:t (deep-equal-test vaktar). FIELD_METADATAs
+> `certs[*].description: 18` på main var stale (2 referenskloner ⇒ deck-position 17,
+> vilket matchar genereringens `REFERENCE_PLACEHOLDER_COUNT = 2`); manifestet bär
+> korrekta 17 och ersätter FIELD_METADATA i Task 11 — den raden rättas alltså via
+> manifestet, inte separat.
 
 ---
 
@@ -888,6 +902,14 @@ git commit -m "feat(fas2): slide type identification via placeholder signatures"
 
 ### Task 4: Budgetberäkning ur geometri + fontmetrik (KALIBRERINGSGRIND)
 
+> **REVIDERAD 2026-06-12 (Stefan-beslut efter kalibrerings-stopp):** ren geometri kan inte
+> reproducera facit — enradiga normAutofit-boxar (namn/period/avstämningar) har REDAKTIONELLA
+> budgetar (PowerPoint krymper texten; geometrin är inte bindande). Modellen är nu hybrid:
+> varje budget-token bär ett redaktionellt tak (fältsemantik, alla mallar) och geometrin kan
+> bara SÄNKA budgeten — `budget = normAutofit ? tak : min(tak, geometrisk kapacitet)`.
+> Läsaren utökades med `ShapeText.autofit` ur `<a:bodyPr>`. Kalibreringsgrinden (±10 % på
+> alla 8 fält) och förbudet mot per-fält-fudgefaktorer kvarstår oförändrade.
+
 **Filer:**
 - Skapa: `src/lib/pptx-template/introspect/compute-budgets.ts`
 - Test: `src/lib/pptx-template/introspect/__tests__/compute-budgets.test.ts`
@@ -904,6 +926,8 @@ git commit -m "feat(fas2): slide type identification via placeholder signatures"
 | `phases[*].decisions[*]` | 100 | `{Beslut}` | slide 7, delat på cap 3 |
 | `checkpoints[*]` | 80 | `{Avstämning 1 — tidpunkt och innehåll}` | slide 11 |
 | `certs[*].description` | 80 | `{Beskrivning}` | slide 17 |
+
+(Hybridmodellen 2026-06-12: samtliga normAutofit-boxar tar sitt redaktionella tak rakt av — divideByCap/geometri gäller endast icke-norm-boxar, syntetiskt testade.)
 
 **Kalibreringsgrind:** alla 8 beräknade budgetar inom ±10 % av facit, med GLOBALA
 konstanter (`CHAR_WIDTH_FACTOR`, `FILL_FACTOR`). Tillåtet att justera de två konstanterna
@@ -1270,39 +1294,18 @@ Lägg npm-script i `package.json` under `"scripts"`:
 npm run template:introspect templates/anbudsmall-v2.pptx
 ```
 
-Öppna `templates/anbudsmall-v2.manifest.json` och **handpinna två saker** innan commit:
-1. `budgets` → ersätt de beräknade värdena med facit-värdena (40/10/120/120/100/100/80/80).
-   Manifestet är data; för anbudsmall-v2 gäller de handsatta. Beräkningen var kalibreringen.
-2. `fieldSlides` → pinna till FIELD_METADATAs nuvarande värden för beteendeparitet:
-   `phases[*].name`: 6, `phases[*].period`: 6, `phases[*].objective`: 7,
-   `phases[*].activities[*]`: 7, `phases[*].deliverables[*]`: 7,
-   `phases[*].decisions[*]`: 7, `checkpoints[*]`: 11, `certs[*].description`: 18.
+> **UTFALL (rutin-review PR #24):** ingen handpinning blev nödvändig — hybridmodellens
+> beräknade budgetar ÄR facit (8/8 på 100 %) och fieldSlides beräknas korrekt
+> (`certs[*].description` = 17; FIELD_METADATAs 18 på main var stale). Manifestet
+> committas exakt som CLI:t skriver det, och ett deep-equal-test (steg 5) vaktar
+> reproducerbarheten.
 
 - [ ] **Steg 5: Lägg till parity-test som låser det committade manifestet**
 
-Lägg till i `introspect.test.ts`:
-
-```typescript
-import { verifyFieldBudgets } from "../../verify-budgets";
-
-it("committat manifest är schemagiltigt och bär facit-budgetarna", async () => {
-  const committed = JSON.parse(
-    await readFile(path.resolve("templates", "anbudsmall-v2.manifest.json"), "utf8"),
-  );
-  const parsed = TemplateManifestSchema.parse(committed);
-  expect(parsed.budgets).toEqual({
-    "phases[*].name": 40,
-    "phases[*].period": 10,
-    "phases[*].objective": 120,
-    "phases[*].activities[*]": 120,
-    "phases[*].deliverables[*]": 100,
-    "phases[*].decisions[*]": 100,
-    "checkpoints[*]": 80,
-    "certs[*].description": 80,
-  });
-  expect(parsed.fieldSlides["certs[*].description"]).toBe(18);
-});
-```
+Två tester i `introspect.test.ts`: (1) det committade manifestet bär facit-budgetarna
+(exakt åtta värden 40/10/120/120/100/100/80/80) och `fieldSlides["certs[*].description"]
+=== 17`; (2) färsk introspektion **deep-equals** det committade manifestet — en blind
+omkörning av CLI:t kan aldrig tyst ändra det kanoniska manifestet utan att testet skriker.
 
 Kör: `npx vitest run src/lib/pptx-template/introspect/` — Förväntat: PASS (alla).
 
