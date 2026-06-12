@@ -51,7 +51,7 @@ streck-variant är det vanligaste felet (se §7):
 | `–` | U+2013 | en-streck (kort) | Gantt-spann, t.ex. `{M1–M2}`, `{M2–M5}` |
 | `§` | U+00A7 | paragraftecken | `{OSL kap X §Y}` |
 | `”` | U+201D | höger citattecken | `{Referens 1 — kort kontextrad, t.ex. ”…”}` |
-| `Å Ä Ö å ä ö` | — | svenska tecken | `{Mål}`, `{Värför …}`, `{Höger}`, `{Vänster}` m.fl. |
+| `Å Ä Ö å ä ö` | — | svenska tecken | `{Mål}`, `{Varför …}`, `{Höger}`, `{Vänster}` m.fl. |
 
 Tumregel: separatorn mellan en etikett och ett begrepp (`Fas 1 — namn`) är **em-streck**;
 ett intervall mellan två punkter (`M1–M2`) är **en-streck**.
@@ -188,7 +188,7 @@ Den kanoniska referens-sliden klonas en gång per referensuppdrag.
 | **`{OSL kap X §Y}`** | signatur (§ = U+00A7) |
 | `{Slide/Bilaga 1–4}` | fylls (radreferenser) |
 | `{Uppgift som omfattas av sekretess}` | fylls (rad 1, unik) |
-| `{Värför — skadan som uppstår vid utlämnande}` | fylls (rad 1, em-streck) |
+| `{Varför — skadan som uppstår vid utlämnande}` | fylls (rad 1, em-streck) |
 | `{Uppgift som omfattas}` | fylls (rad 2–4, upprepad) |
 | `{Motivering}` | fylls (rad 2–4, upprepad) |
 | `{Bolagsnamn}`, `{Diarienummer}` | footer |
