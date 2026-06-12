@@ -21,6 +21,9 @@ export interface ShapeText {
   fontSizePt: number | null;
   /** Radavstånd i procent ur <a:lnSpc><a:spcPct>; null = mallens default */
   lineSpacingPct: number | null;
+  /** Autofit ur <a:bodyPr>: "norm" (texten krymps — geometrin är inte bindande),
+   *  "spAuto" (boxen växer), "none" (explicit noAutofit) eller null (ej angiven). */
+  autofit: "norm" | "spAuto" | "none" | null;
 }
 
 export interface SlideShapes {
@@ -136,6 +139,7 @@ function extractShapes(
       geometry: readGeometry(sp),
       fontSizePt: readFontSizePt(txBody) ?? defaultFontSizePt,
       lineSpacingPct: readLineSpacingPct(txBody),
+      autofit: readAutofit(txBody),
     });
   }
   return shapes;
@@ -193,4 +197,18 @@ function readLineSpacingPct(txBody: Element): number | null {
   if (!pct) return null;
   // spcPct val är i tusendels procent (140000 = 140 %)
   return Number(pct.getAttribute("val")) / 1000;
+}
+
+function readAutofit(txBody: Element): ShapeText["autofit"] {
+  // <a:bodyPr> bär exakt ett autofit-barn (normAutofit | spAutoFit | noAutofit)
+  // eller inget alls. Vi läser txBodyns egna bodyPr (första) — taggens närvaro,
+  // inte attribut, avgör läget. normAutofit => texten krymps till boxen, så
+  // geometrin är inte bindande för budgeten (hybridmodellen låter taket gälla rakt av).
+  const bodyPrs = txBody.getElementsByTagNameNS(A_NS, "bodyPr");
+  if (bodyPrs.length === 0) return null;
+  const bodyPr = bodyPrs[0];
+  if (bodyPr.getElementsByTagNameNS(A_NS, "normAutofit").length > 0) return "norm";
+  if (bodyPr.getElementsByTagNameNS(A_NS, "spAutoFit").length > 0) return "spAuto";
+  if (bodyPr.getElementsByTagNameNS(A_NS, "noAutofit").length > 0) return "none";
+  return null;
 }

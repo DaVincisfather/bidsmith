@@ -52,6 +52,21 @@ describe("readPptxSlides (anbudsmall-v2.pptx)", () => {
     expect(shape!.fontSizePt).toBeLessThan(100);
   });
 
+  it("läser autofit ur <a:bodyPr>: {Mål}-rutan saknar autofit (null), s6/s11-boxar är normAutofit", () => {
+    // {Mål}-rutan (objective) har ingen <a:*Autofit> → null. Då är geometrin
+    // bindande och hybridmodellen kalibrerar budgeten geometriskt.
+    const mal = slides[6].shapes.find((sh) => sh.tokens.includes("{Mål}"));
+    expect(mal!.autofit).toBeNull();
+    // De enradiga rutorna på overview (slide 6) och avstämningar (slide 11) har
+    // normAutofit — PowerPoint krymper texten, geometrin är inte bindande.
+    const namn = slides[5].shapes.find((sh) => sh.tokens.includes("{Fas 1 — namn}"));
+    expect(namn!.autofit).toBe("norm");
+    const avstamning = slides[10].shapes.find((sh) =>
+      sh.tokens.includes("{Avstämning 1 — tidpunkt och innehåll}"),
+    );
+    expect(avstamning!.autofit).toBe("norm");
+  });
+
   it("designmallen har inga bildytor (verifierat 2026-06-12 — den är vektor/text)", () => {
     for (const s of slides) {
       expect(s.images).toEqual({ placed: 0, placeholders: 0 });
@@ -138,6 +153,23 @@ describe("readPptxSlides (syntetisk mini-pptx)", () => {
       <p:txBody><a:p><a:r><a:t>{Mål}</a:t></a:r></a:p></p:txBody>`);
     const slides = await readPptxSlides(await buildMiniPptx(slide, presentationXml));
     expect(slides[0].shapes[0].fontSizePt).toBe(20);
+  });
+
+  it("läser autofit='norm' ur <a:normAutofit> och null när <a:bodyPr> saknar autofit-barn", async () => {
+    const withNorm = slideWithShape(`
+      <p:txBody>
+        <a:bodyPr><a:normAutofit fontScale="90000"/></a:bodyPr>
+        <a:p><a:r><a:t>{Mål}</a:t></a:r></a:p>
+      </p:txBody>`);
+    const withoutAutofit = slideWithShape(`
+      <p:txBody>
+        <a:bodyPr/>
+        <a:p><a:r><a:t>{Mål}</a:t></a:r></a:p>
+      </p:txBody>`);
+    const a = await readPptxSlides(await buildMiniPptx(withNorm));
+    const b = await readPptxSlides(await buildMiniPptx(withoutAutofit));
+    expect(a[0].shapes[0].autofit).toBe("norm");
+    expect(b[0].shapes[0].autofit).toBeNull();
   });
 
   it("kastar svenskt fel när presentation.xml saknas", async () => {
