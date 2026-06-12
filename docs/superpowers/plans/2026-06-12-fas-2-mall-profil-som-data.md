@@ -104,6 +104,15 @@ Följande avvikelser är belagda i koden och gäller:
 - Mall-versionshantering är append-only (`unique(name, version)`); ingen UI för
   versionshistorik.
 
+**Kända gränser med correctness-etikett (fas 2A-slutreview 2026-06-12) — fixas när
+verklighetstest med riktiga mallar visar att de biter, se masterplanens
+§Kandidater efter fas 2:**
+- Slot-antal är halvhårt: itemCaps i signaturtabellen + slot-tokens i applicatorerna
+  ({Konsult 1..5}, 4 faser). Mall med fler slots kräver kodändring idag.
+- Tokens i äkta PowerPoint-tabeller (`<a:tbl>` i graphicFrame) är osynliga för
+  identifieringen — läsaren går endast `<p:sp>`. Rendering ersätter dem ändå, men
+  sliden felklassas/exkluderas.
+
 ---
 
 ## Mallmanifestet (kontraktet)

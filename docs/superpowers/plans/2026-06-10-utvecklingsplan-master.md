@@ -187,6 +187,28 @@ Uppgifter:
 **Framgångskriterier fas 2:** Demo: skapa "Testbolaget AB" med annan PPTX + profil →
 generera anbud → korrekt mall, färger, ton; Ekan-flödet oförändrat (golden-test grönt).
 
+### Kandidater efter fas 2 — onboarding-processen som produkt (Stefan 2026-06-12)
+
+> Vision: "ge oss er mall och era gamla anbud → färdig generator i er kostym och er röst."
+> Beslutas EFTER verklighetstest: kör `npm run template:introspect` på riktiga Ekan-mallar
+> dag ett när de kommer (read-only, $0) — utfallet avgör vilken kandidat som byggs först
+> och om den går före eller efter fas 3.
+
+1. **Mall-importören** — AI-assisterad tokenisering av en OTOKENISERAD bolagsmall.
+   Introspektionsläsaren (fas 2A) läser slide-XML + geometri; AI föreslår mappning
+   textbox → semantiskt fält; tokens skrivs in i en kopia av PPTX:en (samma
+   XML-manipulation som applicatorerna); människan bekräftar i manifest-previewn.
+   Tar bort konventionströskeln: "kopiera vår skelettmall" → "utgå från er mall som den är".
+2. **Härledd profil** — ladda upp 2–3 tidigare anbud → AI extraherar och förifyller
+   org-profilens tonalitet/boilerplate (påbyggnad på fas 2C:s profilformulär).
+   Billigaste steget mot "skriver som bolaget"; fas 5:s retrieval är fortsättningen.
+
+Kända gränser ur fas 2A-slutreviewen som prioriteras efter samma verklighetstest
+(correctness-etikett, ej polish): slot-antal är halvhårt (itemCaps i signaturtabellen +
+slot-tokens i applicatorerna — fix: introspektionen räknar slot-tokens); tokens i äkta
+PowerPoint-tabeller (`<a:tbl>`) är osynliga för identifieringen (läsaren går endast
+`<p:sp>` — fix: läs även graphicFrame-text). Båda fixbara utan arkitekturändring.
+
 ---
 
 ## Fas 3 — Pipeline som kö-jobb
