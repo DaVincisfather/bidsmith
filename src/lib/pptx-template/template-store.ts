@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, rename, writeFile } from "fs/promises";
 import { existsSync } from "fs";
 import os from "os";
 import path from "path";
@@ -139,6 +139,11 @@ async function downloadToTmp(row: TemplateRow): Promise<string> {
     );
   }
   await mkdir(dir, { recursive: true });
-  await writeFile(file, Buffer.from(await data.arrayBuffer()));
+  // Skriv till tempnamn + rename så existsSync-kortslutningen ovan aldrig kan
+  // träffa en halvskriven fil (krasch mitt i writeFile ger annars permanent
+  // trasig cache — rename inom samma katalog är atomiskt).
+  const partial = `${file}.${process.pid}.partial`;
+  await writeFile(partial, Buffer.from(await data.arrayBuffer()));
+  await rename(partial, file);
   return file;
 }

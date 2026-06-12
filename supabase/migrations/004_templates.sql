@@ -31,7 +31,7 @@ insert into templates (name, version, storage_path, manifest) values (
   1,
   null,
   $manifest$
-  {
+{
   "manifestVersion": 1,
   "name": "anbudsmall-v2",
   "slides": [
@@ -222,7 +222,7 @@ insert into templates (name, version, storage_path, manifest) values (
       "cloneFrom": "references",
       "placeholders": [
         "{Referens 1 — kundnamn}",
-        "{Referens 1 — kort kontextrad, t.ex. "Digitalisering av ärendehantering"}",
+        "{Referens 1 — kort kontextrad, t.ex. ”Digitalisering av ärendehantering”}",
         "{Vänster}",
         "{Höger}",
         "{Bolagsnamn}",
