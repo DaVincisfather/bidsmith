@@ -41,6 +41,7 @@ export const ManifestSlideSchema = z
   })
   .refine((s) => s.variant === undefined || s.type === "prose", {
     message: "variant är endast giltig för type 'prose'",
+    path: ["variant"],
   });
 
 export const TemplateManifestSchema = z.object({
