@@ -22,6 +22,8 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.100.1",
+    "@xmldom/xmldom": "^0.9.10",
+    "jszip": "^3.10.1",
     "markitdown-js": "^0.0.14",
     "next": "16.2.1",
     "pptx-automizer": "^0.8.1",
