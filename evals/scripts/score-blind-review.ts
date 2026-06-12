@@ -10,9 +10,12 @@ async function main() {
   const facit = JSON.parse(
     await fs.readFile(path.resolve("evals/runs/compare/blind-facit.json"), "utf-8"),
   );
-  const marks = parseBlindReviewMarks(md);
+  const { marks, invalid } = parseBlindReviewMarks(md);
+  for (const i of invalid) {
+    console.warn(`VARNING: ${i.id} har ogiltig markering "${i.raw}" — räknas som obedömd. Giltigt: 1, 2, oavgjort.`);
+  }
   const score = scoreBlindReview(marks, facit);
-  console.log(JSON.stringify({ marks: marks.length, ...score }, null, 1));
+  console.log(JSON.stringify({ marks: marks.length, ogiltiga: invalid.length, ...score }, null, 1));
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

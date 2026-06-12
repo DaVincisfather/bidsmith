@@ -54,15 +54,32 @@ export function pickBlindPairs(pairs: ComparePair[], n: number, seed: number): B
   });
 }
 
-// Parsar Stefans ifyllda blind-review.md. Rader på formen:
+// Parsar den ifyllda blind-review.md. Rader på formen:
 // | par-3 | <ffu> | phases | 2 |
-export function parseBlindReviewMarks(md: string): Array<{ id: string; mark: "1" | "2" | "oavgjort" }> {
-  const marks: Array<{ id: string; mark: "1" | "2" | "oavgjort" }> = [];
+// Vinnarcellen måste vara EXAKT 1/2/oavgjort (case-okänsligt) — en utsmyckad
+// markering ("2 (knapp)", "12") blir en VARNING, aldrig en tyst röst eller
+// tyst unscored: rättningen avgör ett modellbeslut.
+export interface ParsedBlindReview {
+  marks: Array<{ id: string; mark: "1" | "2" | "oavgjort" }>;
+  invalid: Array<{ id: string; raw: string }>;
+}
+
+export function parseBlindReviewMarks(md: string): ParsedBlindReview {
+  const marks: ParsedBlindReview["marks"] = [];
+  const invalid: ParsedBlindReview["invalid"] = [];
   for (const line of md.split("\n")) {
-    const m = line.match(/^\|\s*(par-\d+)\s*\|.*\|\s*(1|2|oavgjort)\s*\|\s*$/);
-    if (m) marks.push({ id: m[1], mark: m[2] as "1" | "2" | "oavgjort" });
+    // [^|]* per cell — `.*` kunde sluka pipes och läsa fel cell som vinnare.
+    const row = line.match(/^\|\s*(par-\d+)\s*\|[^|]*\|[^|]*\|([^|]*)\|\s*$/);
+    if (!row) continue;
+    const cell = row[2].trim();
+    if (cell === "") continue;
+    if (/^(1|2|oavgjort)$/i.test(cell)) {
+      marks.push({ id: row[1], mark: cell.toLowerCase() as "1" | "2" | "oavgjort" });
+    } else {
+      invalid.push({ id: row[1], raw: cell });
+    }
   }
-  return marks;
+  return { marks, invalid };
 }
 
 export interface BlindScore {
@@ -78,6 +95,15 @@ export function scoreBlindReview(
   marks: Array<{ id: string; mark: "1" | "2" | "oavgjort" }>,
   facit: Array<{ id: string; facit: { ordning: "A-först" | "B-först"; pairFile: string } }>,
 ): BlindScore {
+  // Dubbletter och föräldralösa id:n är redigeringsfel som måste upp till ytan —
+  // tyst sista-raden-vinner kan vända ett modellbeslut.
+  const seen = new Set<string>();
+  const facitIds = new Set(facit.map((f) => f.id));
+  for (const m of marks) {
+    if (seen.has(m.id)) throw new Error(`Dubblettmarkering för ${m.id} — rätta tabellen`);
+    seen.add(m.id);
+    if (!facitIds.has(m.id)) throw new Error(`Markering för ${m.id} saknar motsvarighet i facit`);
+  }
   const byId = new Map(marks.map((m) => [m.id, m.mark]));
   const score: BlindScore = { a: 0, b: 0, tie: 0, unscored: 0 };
   for (const f of facit) {

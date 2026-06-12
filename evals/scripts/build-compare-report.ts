@@ -44,6 +44,24 @@ async function fetchCosts(dumps: Map<string, CompareDump>, model: string): Promi
 }
 
 async function main() {
+  // Skrivskydd: efter att granskaren fyllt i blind-review.md (och beslutet
+  // handredigerats in i rapporten) får en omkörning inte nollställa dem.
+  if (process.env.BIDSMITH_FORCE_REBUILD !== "1") {
+    try {
+      const existing = await fs.readFile(path.resolve("evals/runs/compare/blind-review.md"), "utf-8");
+      const { parseBlindReviewMarks } = await import("../harness/core/compare-report");
+      if (parseBlindReviewMarks(existing).marks.length > 0) {
+        console.error(
+          "blind-review.md innehåller ifyllda markeringar — omkörning skulle radera dem " +
+          "(och återställa beslutsrapporten till mall). Sätt BIDSMITH_FORCE_REBUILD=1 för att tvinga.",
+        );
+        process.exit(1);
+      }
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+    }
+  }
+
   const verdictsPath = path.resolve("evals/runs/compare/verdicts.json");
   const { modelA, modelB, tally } = JSON.parse(await fs.readFile(verdictsPath, "utf-8")) as {
     modelA: string;
