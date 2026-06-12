@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import { renderTemplate } from "../loader";
 import type { BidContext } from "@/lib/bid-generator";
 import type { RfpAnalysis } from "@/lib/types";
+import { GOLDEN_MASTER } from "./fixtures/golden-sections";
 
 vi.mock("@/lib/ai-client", () => ({ callClaude: vi.fn() }));
 vi.mock("@/lib/pptx-template/budget-loader", () => ({
@@ -78,13 +79,7 @@ describe("bid generator → renderer e2e", () => {
     const { generateAllSections } = await import("@/lib/bid-generator");
     const { sections } = await generateAllSections(ctx, "anbudsmall-v2");
 
-    const buf = await renderTemplate("anbudsmall-v2", sections, {
-      companyName: "TestCo",
-      clientName: "E2E-Kund",
-      diaryNumber: "D-001",
-      bidName: "E2E-anbud",
-      bidDate: "2026-04-20",
-    });
+    const buf = await renderTemplate("anbudsmall-v2", sections, GOLDEN_MASTER);
 
     const zip = await JSZip.loadAsync(buf);
 
