@@ -148,6 +148,12 @@ beslut dokumenterat och genomfört; `eval:bid-compare` körbart som regressionsv
 
 ## Fas 2 — Mall & profil som data
 
+> **STATUS 2026-06-12: PÅGÅR.** Detaljplan: [2026-06-12-fas-2-mall-profil-som-data.md](2026-06-12-fas-2-mall-profil-som-data.md).
+> Avvikelser från denna masterplan (single-workspace istf org-RLS, två migrationer,
+> prose-varianter, hybrid budgetmodell — redaktionella tak klampade av geometri) är
+> dokumenterade och motiverade i detaljplanens §Designbeslut och Task 4-revisionen.
+> PR A (introspektionsmotor) implementerad.
+
 **Mål:** Ett nytt konsultbolag laddar upp sin anbuds-PPTX och fyller i sin profil — och får
 anbud i sin egen mall utan kodändring. Idag ligger budgets/registry som kod i
 `src/lib/pptx-template/`.
