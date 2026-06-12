@@ -4,6 +4,7 @@ import { createServiceClient, fetchConsultantsByIds, EMPTY_GO_NO_GO } from "@/li
 import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 import { runBidGeneration } from "@/lib/bid-generator/run-bid-generation";
+import { loadActiveTemplate } from "@/lib/pptx-template/active-template";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
 import { parseBody } from "@/lib/api-helpers";
@@ -48,6 +49,11 @@ export async function POST(request: NextRequest) {
   const goNoGoResult = (assessmentResult.data?.result as GoNoGoResult) ?? null;
   const allScoredConsultants = (matchResult.data?.[0]?.team_proposal as ScoredConsultant[]) ?? [];
 
+  // Resolve the active template up front so the bid records which template it
+  // was generated against (export/editor must reuse the same — budgets were
+  // computed for it). Falls back to the bundled anbudsmall-v2 v1 if unseeded.
+  const template = await loadActiveTemplate();
+
   // Create bid record
   const { data: bid, error: bidError } = await supabase
     .from("bids")
@@ -56,6 +62,7 @@ export async function POST(request: NextRequest) {
       assessment_id: assessmentId || null,
       created_by: userId,
       team_consultant_ids: teamConsultantIds,
+      template_id: template.id,
       status: "generating",
     })
     .select()
@@ -76,8 +83,7 @@ export async function POST(request: NextRequest) {
 
   // Generation runs after the response is sent (Vercel: waitUntil). The
   // client polls GET /api/bids/[id] until status leaves 'generating'.
-  // templateName is hardcoded for now — picker is a separate PR.
-  after(() => runBidGeneration(supabase, bid.id, ctx, "anbudsmall-v2"));
+  after(() => runBidGeneration(supabase, bid.id, ctx, template));
 
   return NextResponse.json({ id: bid.id, status: "generating" }, { status: 202 });
 }

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
 import { MODELS } from "@/lib/models";
 import type { BidSection } from "@/lib/types";
-import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
+import type { BudgetPlan, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { formatContext, type BidContext } from "../context";
 import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
 import { renderBudgetTable } from "../render-budget-table";
@@ -44,10 +44,10 @@ OBS: timpris sätts av bolaget efter generering — inkludera INTE timpris eller
 
 export async function buildTeamBundle(
   ctx: BidContext,
-  budgets: FieldBudgets,
+  plan: BudgetPlan,
   retryBudget: RetryBudget,
 ): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
-  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(budgets, TEAM_BUDGET_KEYS);
+  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(plan.budgets, TEAM_BUDGET_KEYS);
 
   const { output: parsed, overflows } = await withBudgetRetry({
     basePrompt,
@@ -63,7 +63,7 @@ export async function buildTeamBundle(
         userId: ctx.userId,
         bidId: ctx.bidId,
       }),
-    budgets,
+    plan,
     retryBudget,
   });
 

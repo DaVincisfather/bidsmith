@@ -2,8 +2,9 @@ import Automizer from "pptx-automizer";
 import type { ISlide } from "pptx-automizer/dist/interfaces/islide";
 import path from "path";
 import type { BidSection } from "../types";
-import { getTemplate } from "./registry";
-import type { ApplicatorContext, MasterContext, SlideConfig } from "./types";
+import type { LoadedTemplate } from "./template-store";
+import type { ManifestSlide } from "./manifest-types";
+import type { ApplicatorContext, MasterContext } from "./types";
 import { coverApplicator } from "./applicators/cover";
 import { tocApplicator } from "./applicators/toc";
 import { proseApplicator } from "./applicators/prose";
@@ -17,13 +18,12 @@ import { confidentialityApplicator } from "./applicators/confidentiality";
 import { certificationsApplicator } from "./applicators/certifications";
 
 export async function renderTemplate(
-  templateId: string,
+  tpl: Pick<LoadedTemplate, "manifest" | "templateFile">,
   sections: BidSection[],
   master: MasterContext,
 ): Promise<Buffer> {
-  const cfg = getTemplate(templateId);
-  const templateDir = path.dirname(cfg.templateFile);
-  const templateFile = path.basename(cfg.templateFile);
+  const templateDir = path.dirname(tpl.templateFile);
+  const templateFile = path.basename(tpl.templateFile);
 
   const automizer = new Automizer({
     templateDir,
@@ -34,9 +34,9 @@ export async function renderTemplate(
   const pres = automizer.loadRoot(templateFile).load(templateFile, "main");
 
   let outIdx = 0;
-  const totalSlides = countOutputSlides(cfg, sections);
+  const totalSlides = countOutputSlides(tpl.manifest, sections);
 
-  for (const slideCfg of cfg.slides) {
+  for (const slideCfg of tpl.manifest.slides) {
     if (slideCfg.cloneFrom) {
       // Clone this slide once per item in the data array.
       const items = getCloneItems(sections, slideCfg.cloneFrom);
@@ -49,6 +49,7 @@ export async function renderTemplate(
           totalSlides,
           cloneIndex: i,
           sourceSlide: slideCfg.source,
+          ...(slideCfg.variant ? { variant: slideCfg.variant } : {}),
         });
         pres.addSlide("main", slideCfg.source, cb);
       }
@@ -60,6 +61,7 @@ export async function renderTemplate(
         slideNum: outIdx,
         totalSlides,
         sourceSlide: slideCfg.source,
+        ...(slideCfg.variant ? { variant: slideCfg.variant } : {}),
       });
       pres.addSlide("main", slideCfg.source, cb);
     }
@@ -69,15 +71,18 @@ export async function renderTemplate(
   return streamToBuffer(stream);
 }
 
-/** Maps a SlideConfig type to its applicator callback. */
+/** Maps a ManifestSlide type to its applicator callback. */
 export function applicatorFor(
-  slideCfg: SlideConfig,
+  slideCfg: ManifestSlide,
   ctx: ApplicatorContext,
 ): (slide: ISlide) => void {
   switch (slideCfg.type) {
     case "cover":
       return coverApplicator(ctx);
     case "toc":
+      return tocApplicator(ctx);
+    case "static":
+      // Passthrough — endast footer; bilder och statiskt innehåll lämnas orörda.
       return tocApplicator(ctx);
     case "prose":
       return proseApplicator(ctx);
@@ -103,11 +108,11 @@ export function applicatorFor(
 }
 
 function countOutputSlides(
-  cfg: ReturnType<typeof getTemplate>,
+  manifest: Pick<LoadedTemplate["manifest"], "slides">,
   sections: BidSection[],
 ): number {
   let n = 0;
-  for (const s of cfg.slides) {
+  for (const s of manifest.slides) {
     if (s.cloneFrom) n += getCloneItems(sections, s.cloneFrom).length;
     else n += 1;
   }

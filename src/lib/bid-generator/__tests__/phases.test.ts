@@ -61,7 +61,7 @@ describe("buildPhasesBundle", () => {
       ],
     });
 
-    const { sections, overflowFlags } = await buildPhasesBundle(baseCtx, {}, { remaining: 5 });
+    const { sections, overflowFlags } = await buildPhasesBundle(baseCtx, { budgets: {}, fieldSlides: {} }, { remaining: 5 });
     expect(sections).toHaveLength(1);
     expect(sections[0].key).toBe("phases");
     if (!sections[0].content) throw new Error("content missing");

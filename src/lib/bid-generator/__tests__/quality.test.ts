@@ -37,7 +37,7 @@ describe("buildQualityBundle", () => {
       escalation: { process: "Veckovis", reporting: "Månadsrapport" },
       checkpoints: ["CP1", "CP2"],
     });
-    const { sections, overflowFlags } = await buildQualityBundle(baseCtx, {}, { remaining: 5 });
+    const { sections, overflowFlags } = await buildQualityBundle(baseCtx, { budgets: {}, fieldSlides: {} }, { remaining: 5 });
     const [s] = sections;
     expect(s.key).toBe("quality-assurance");
     if (!s.content) throw new Error("content missing");

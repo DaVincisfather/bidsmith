@@ -1,0 +1,307 @@
+-- 004_templates.sql — mallar som data (fas 2, PR B)
+-- Appliceras manuellt via Supabase SQL Editor.
+
+create table templates (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  version int not null default 1,
+  -- null = bundlad mall som läses från repo-disk (templates/<name>.pptx);
+  -- annars sökväg i storage-bucketen bid-templates (skapas i migration 005)
+  storage_path text,
+  manifest jsonb not null,
+  created_at timestamptz not null default now(),
+  unique (name, version)
+);
+
+alter table templates enable row level security;
+create policy templates_authenticated on templates
+  for all to authenticated using (true) with check (true);
+
+alter table workspace_settings
+  add column active_template_id uuid references templates(id);
+
+-- Vilken mall bidet genererades mot — export/editor måste använda samma
+-- (budgetarna beräknades för den). null = legacy-bid → anbudsmall-v2 v1.
+alter table bids
+  add column template_id uuid references templates(id);
+
+-- Seeda den bundlade designmallen ur templates/anbudsmall-v2.manifest.json (PR A).
+insert into templates (name, version, storage_path, manifest) values (
+  'anbudsmall-v2',
+  1,
+  null,
+  $manifest$
+{
+  "manifestVersion": 1,
+  "name": "anbudsmall-v2",
+  "slides": [
+    {
+      "source": 1,
+      "type": "cover",
+      "placeholders": [
+        "{Bolagsnamn}",
+        "{Anbudsdatum}",
+        "{Kundnamn}",
+        "{Upphandlingens namn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 2,
+      "type": "toc",
+      "placeholders": [
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 3,
+      "type": "prose",
+      "variant": "kunden-idag",
+      "placeholders": [
+        "{Nuläge}",
+        "{Smärtpunkter}",
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 4,
+      "type": "prose",
+      "variant": "uppdraget",
+      "placeholders": [
+        "{Stycken}",
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 5,
+      "type": "prose",
+      "variant": "vision",
+      "placeholders": [
+        "{Utmaningar}",
+        "{Värden}",
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 6,
+      "type": "phases-overview",
+      "itemCaps": {
+        "phases": 4
+      },
+      "placeholders": [
+        "{Fas 1 — namn}",
+        "{Fas 1 — kort beskrivning. Detaljer på nästa slide.}",
+        "{Fas 2 — namn}",
+        "{Fas 2 — beskrivning}",
+        "{Fas 3 — namn}",
+        "{Fas 3 — beskrivning}",
+        "{Fas 4 — namn}",
+        "{Fas 4 — beskrivning}",
+        "{M1–M2}",
+        "{Fas 1}",
+        "{M2–M5}",
+        "{Fas 2}",
+        "{M5–M9}",
+        "{Fas 3}",
+        "{M9–M12}",
+        "{Fas 4}",
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 7,
+      "type": "phase-detail",
+      "cloneFrom": "phases",
+      "itemCaps": {
+        "activities": 4,
+        "deliverables": 3,
+        "decisions": 3
+      },
+      "placeholders": [
+        "{Fas 1 — namn}",
+        "{M1–M2}",
+        "{Antal veckor}",
+        "{Aktiviteter}",
+        "{Leveranser}",
+        "{Beslut}",
+        "{Bolagsnamn}",
+        "{Diarienummer}",
+        "{Mål}",
+        "{Risker}"
+      ]
+    },
+    {
+      "source": 11,
+      "type": "quality-assurance",
+      "placeholders": [
+        "{QA-process}",
+        "{Kvalitetsledare}",
+        "{Eskalering}",
+        "{Avstämning 1 — tidpunkt och innehåll}",
+        "{Avstämning 2}",
+        "{Avstämning 3}",
+        "{Avstämning 4}",
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 12,
+      "type": "team-pricing",
+      "placeholders": [
+        "{Konsult 1 — namn}",
+        "{Roll 1}",
+        "{Omfattning 1 %}",
+        "{Timpris 1}",
+        "{Timmar 1}",
+        "{Total 1}",
+        "{Konsult 2 — namn}",
+        "{Roll 2}",
+        "{Omfattning 2 %}",
+        "{Timpris 2}",
+        "{Timmar 2}",
+        "{Total 2}",
+        "{Konsult 3 — namn}",
+        "{Roll 3}",
+        "{Omfattning 3 %}",
+        "{Timpris 3}",
+        "{Timmar 3}",
+        "{Total 3}",
+        "{Konsult 4 — namn}",
+        "{Roll 4}",
+        "{Omfattning 4 %}",
+        "{Timpris 4}",
+        "{Timmar 4}",
+        "{Total 4}",
+        "{Konsult 5 — namn}",
+        "{Roll 5}",
+        "{Omfattning 5 %}",
+        "{Timpris 5}",
+        "{Timmar 5}",
+        "{Total 5}",
+        "{Summa timmar}",
+        "{Anbudspris totalt}",
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 13,
+      "type": "requirement-matrix",
+      "placeholders": [
+        "{Ska-krav 1 — formulering enligt upphandlingsunderlag}",
+        "{Hur krav 1 uppfylls — konkret beskrivning}",
+        "{CV/ref 1}",
+        "{Ska-krav 2}",
+        "{Hur krav 2 uppfylls}",
+        "{CV/ref 2}",
+        "{Ska-krav 3}",
+        "{Hur krav 3 uppfylls}",
+        "{CV/ref 3}",
+        "{Ska-krav 4}",
+        "{Hur krav 4 uppfylls}",
+        "{CV/ref 4}",
+        "{Ska-krav 5}",
+        "{Hur krav 5 uppfylls}",
+        "{CV/ref 5}",
+        "{Ska-krav 6}",
+        "{Hur krav 6 uppfylls}",
+        "{CV/ref 6}",
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 14,
+      "type": "reference",
+      "cloneFrom": "references",
+      "placeholders": [
+        "{Referens 1 — kundnamn}",
+        "{Referens 1 — kort kontextrad, t.ex. ”Digitalisering av ärendehantering”}",
+        "{Vänster}",
+        "{Höger}",
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 16,
+      "type": "confidentiality",
+      "placeholders": [
+        "{Bolagsnamn}",
+        "{OSL kap X §Y}",
+        "{Slide/Bilaga 1}",
+        "{Uppgift som omfattas av sekretess}",
+        "{Varför — skadan som uppstår vid utlämnande}",
+        "{Slide/Bilaga 2}",
+        "{Uppgift som omfattas}",
+        "{Motivering}",
+        "{Slide/Bilaga 3}",
+        "{Slide/Bilaga 4}",
+        "{Diarienummer}"
+      ]
+    },
+    {
+      "source": 17,
+      "type": "certifications",
+      "placeholders": [
+        "{Certifikatnummer}",
+        "{Giltighetstid}",
+        "{Övrig relevant certifiering}",
+        "{Beskrivning}",
+        "{Bolagsnamn}",
+        "{Diarienummer}"
+      ]
+    }
+  ],
+  "budgets": {
+    "phases[*].name": 40,
+    "phases[*].period": 10,
+    "phases[*].activities[*]": 120,
+    "phases[*].deliverables[*]": 100,
+    "phases[*].decisions[*]": 100,
+    "phases[*].objective": 120,
+    "checkpoints[*]": 80,
+    "certs[*].description": 80
+  },
+  "fieldSlides": {
+    "phases[*].name": 6,
+    "phases[*].period": 6,
+    "phases[*].activities[*]": 7,
+    "phases[*].deliverables[*]": 7,
+    "phases[*].decisions[*]": 7,
+    "phases[*].objective": 7,
+    "checkpoints[*]": 11,
+    "certs[*].description": 17
+  },
+  "excludedSlides": [
+    {
+      "source": 8,
+      "reason": "duplikat av slide 7 — illustrativ kopia"
+    },
+    {
+      "source": 9,
+      "reason": "duplikat av slide 7 — illustrativ kopia"
+    },
+    {
+      "source": 10,
+      "reason": "duplikat av slide 7 — illustrativ kopia"
+    },
+    {
+      "source": 15,
+      "reason": "duplikat av slide 14 — illustrativ kopia"
+    }
+  ]
+}
+  $manifest$::jsonb
+);
+
+update workspace_settings
+  set active_template_id = (
+    select id from templates where name = 'anbudsmall-v2' and version = 1
+  );

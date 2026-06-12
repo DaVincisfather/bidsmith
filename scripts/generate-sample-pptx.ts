@@ -5,6 +5,7 @@
 import fs from "fs";
 import path from "path";
 import { renderTemplate } from "../src/lib/pptx-template/loader";
+import { bundledTemplate } from "../src/lib/pptx-template/registry";
 import type { MasterContext } from "../src/lib/pptx-template/types";
 import type { BidSection } from "../src/lib/types";
 
@@ -522,7 +523,7 @@ const sections: BidSection[] = [
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const buffer = await renderTemplate("anbudsmall-v2", sections, masterCtx);
+  const buffer = await renderTemplate(bundledTemplate(), sections, masterCtx);
   const outDir = path.join(process.cwd(), "tmp");
   fs.mkdirSync(outDir, { recursive: true });
   const outPath = path.join(outDir, "sample-bid.pptx");

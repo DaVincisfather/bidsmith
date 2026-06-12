@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 import { renderTemplate } from "@/lib/pptx-template/loader";
+import { loadTemplateForBid } from "@/lib/pptx-template/active-template";
 import { BidSection, RfpAnalysis } from "@/lib/types";
 import { buildMasterContext } from "./build-master-context";
 
@@ -62,12 +63,16 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     now: new Date(),
   });
 
+  // Render against the template the bid was generated with (same budgets);
+  // legacy bids (template_id null) fall back to bundled anbudsmall-v2 v1.
+  const template = await loadTemplateForBid((bid.template_id as string | null) ?? null);
+
   // PPTX rendering touches template files + section data of varying shape —
   // a rendering bug must surface as a clean 500, not an unhandled crash, and
   // must not mark the bid as exported.
   let buffer: Buffer;
   try {
-    buffer = await renderTemplate("anbudsmall-v2", sections, master);
+    buffer = await renderTemplate(template, sections, master);
   } catch (err) {
     console.error(`PPTX render failed for bid ${id}:`, err);
     return NextResponse.json(

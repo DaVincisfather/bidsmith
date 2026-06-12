@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { BidEditor } from "@/components/bid-editor/BidEditor";
 import { BidSection, StyleGuide } from "@/lib/types";
 import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
-import { loadBudgets } from "@/lib/pptx-template/budget-loader";
+import { loadTemplateForBid } from "@/lib/pptx-template/active-template";
 import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
 import type { FailedBundle } from "@/lib/bundle-labels";
 import { notFound } from "next/navigation";
@@ -51,8 +51,10 @@ export default async function BidEditorPage({ params }: PageProps) {
   const styleGuide: StyleGuide =
     (workspace?.style_guide as StyleGuide) ?? DEFAULT_STYLE_GUIDE;
 
-  // Hardcoded template for now — picker comes in a separate PR.
-  const budgets = await loadBudgets("anbudsmall-v2");
+  // Budgets/fieldSlides come from the bid's own template so the editor's
+  // overflow hints match what generation/export used; legacy bids fall back
+  // to bundled anbudsmall-v2 v1.
+  const template = await loadTemplateForBid((bid.template_id as string | null) ?? null);
 
   return (
     <BidEditor
@@ -61,7 +63,8 @@ export default async function BidEditorPage({ params }: PageProps) {
       initialStatus={bid.status}
       initialStructureEval={(bid.structure_eval as StructureEvalSummary | null) ?? null}
       styleGuide={styleGuide}
-      budgets={budgets}
+      budgets={template.manifest.budgets}
+      fieldSlides={template.manifest.fieldSlides}
       initialOverflowFlags={(bid.overflow_flags as OverflowFlag[]) ?? []}
       initialFailedBundles={(bid.failed_bundles as FailedBundle[]) ?? []}
       initialGenerationError={(bid.generation_error as string | null) ?? null}

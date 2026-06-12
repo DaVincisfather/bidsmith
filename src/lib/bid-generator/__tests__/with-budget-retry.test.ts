@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { withBudgetRetry } from "../with-budget-retry";
+import type { BudgetPlan } from "@/lib/pptx-template/budget-types";
 
-const budgets = { "phases[*].objective": 120 };
+const plan: BudgetPlan = {
+  budgets: { "phases[*].objective": 120 },
+  fieldSlides: { "phases[*].objective": 7 },
+};
 
 describe("withBudgetRetry", () => {
   it("returns output unchanged on first-try pass", async () => {
@@ -10,7 +14,7 @@ describe("withBudgetRetry", () => {
     const { output, overflows } = await withBudgetRetry({
       basePrompt: "P",
       callLLM,
-      budgets,
+      plan,
       retryBudget,
     });
     expect(callLLM).toHaveBeenCalledTimes(1);
@@ -29,7 +33,7 @@ describe("withBudgetRetry", () => {
     const { output, overflows } = await withBudgetRetry({
       basePrompt: "P",
       callLLM,
-      budgets,
+      plan,
       retryBudget,
     });
     expect(callLLM).toHaveBeenCalledTimes(2);
@@ -48,7 +52,7 @@ describe("withBudgetRetry", () => {
     const { output, overflows } = await withBudgetRetry({
       basePrompt: "P",
       callLLM,
-      budgets,
+      plan,
       retryBudget,
     });
     expect(callLLM).toHaveBeenCalledTimes(2);
@@ -65,7 +69,7 @@ describe("withBudgetRetry", () => {
     const { overflows } = await withBudgetRetry({
       basePrompt: "P",
       callLLM,
-      budgets,
+      plan,
       retryBudget,
     });
     expect(callLLM).toHaveBeenCalledTimes(1);
