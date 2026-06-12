@@ -11,6 +11,11 @@ async function main() {
     console.error("Användning: npx tsx scripts/introspect-template.ts <mall.pptx> [namn]");
     process.exit(1);
   }
+  // Utan .pptx-suffix blir replace() nedan en no-op och JSON skrivs ÖVER inputfilen.
+  if (!/\.pptx$/i.test(pptxPath)) {
+    console.error("Förväntar en .pptx-fil");
+    process.exit(1);
+  }
   const name = nameArg ?? path.basename(pptxPath, ".pptx");
   const { manifest, warnings } = await introspectTemplate(await readFile(pptxPath), name);
 

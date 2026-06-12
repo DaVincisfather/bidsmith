@@ -90,6 +90,20 @@ describe("countImages (syntetisk slide-XML)", () => {
     const doc = new DOMParser().parseFromString(xml, "application/xml");
     expect(countImages(doc)).toEqual({ placed: 2, placeholders: 1 });
   });
+
+  it("ifylld bildplaceholder (<p:pic> med inre ph type='pic') räknas bara som placed", () => {
+    const xml = `<?xml version="1.0"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld><p:spTree>
+    <p:pic><p:nvPicPr><p:cNvPr id="5" name="Ifylld placeholder"/>
+      <p:nvPr><p:ph type="pic" idx="1"/></p:nvPr></p:nvPicPr></p:pic>
+    <p:sp><p:nvSpPr><p:nvPr><p:ph type="pic" idx="2"/></p:nvPr></p:nvSpPr></p:sp>
+  </p:spTree></p:cSld>
+</p:sld>`;
+    const doc = new DOMParser().parseFromString(xml, "application/xml");
+    expect(countImages(doc)).toEqual({ placed: 1, placeholders: 1 });
+  });
 });
 
 describe("readPptxSlides (syntetisk mini-pptx)", () => {

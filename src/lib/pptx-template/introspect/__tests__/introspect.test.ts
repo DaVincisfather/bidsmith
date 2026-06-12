@@ -35,6 +35,22 @@ describe("introspectTemplate", () => {
       "checkpoints[*]": 80,
       "certs[*].description": 80,
     });
-    expect(parsed.fieldSlides["certs[*].description"]).toBe(18);
+    // 17 = certs deck-position med 2 referenskloner (matchar genereringen,
+    // REFERENCE_PLACEHOLDER_COUNT = 2). FIELD_METADATA:s 18 på main är stale
+    // (rutin-review PR #24) och ersätts av manifestet i fas 2B Task 11.
+    expect(parsed.fieldSlides["certs[*].description"]).toBe(17);
+  });
+
+  it("färsk introspektion deep-equals det committade manifestet (ingen tyst drift)", async () => {
+    const { manifest } = await introspectTemplate(
+      await readFile(TEMPLATE),
+      "anbudsmall-v2",
+    );
+    const committed = TemplateManifestSchema.parse(
+      JSON.parse(
+        await readFile(path.resolve("templates", "anbudsmall-v2.manifest.json"), "utf8"),
+      ),
+    );
+    expect(manifest).toEqual(committed);
   });
 });

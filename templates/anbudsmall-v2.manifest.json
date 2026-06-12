@@ -244,7 +244,7 @@
     "phases[*].decisions[*]": 7,
     "phases[*].objective": 7,
     "checkpoints[*]": 11,
-    "certs[*].description": 18
+    "certs[*].description": 17
   },
   "excludedSlides": [
     {

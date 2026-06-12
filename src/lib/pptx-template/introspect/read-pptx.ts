@@ -91,6 +91,10 @@ export async function readPptxSlides(buffer: Buffer): Promise<SlideShapes[]> {
  * Räknar bildytor: placerade bilder (<p:pic>, även nästlade i grupper —
  * getElementsByTagNameNS är rekursiv) och tomma bildplaceholders
  * (<p:sp> vars <p:nvSpPr><p:nvPr><p:ph type="pic">).
+ *
+ * En bild som infogats VIA en bildplaceholder serialiseras som <p:pic> med
+ * <p:ph type="pic"> inuti sig — den räknas enbart som placed, inte som tom
+ * placeholder (annars dubbelräknas ifyllda placeholders i preview-siffrorna).
  */
 export function countImages(
   doc: ReturnType<DOMParser["parseFromString"]>,
@@ -99,9 +103,25 @@ export function countImages(
   let placeholders = 0;
   const phNodes = doc.getElementsByTagNameNS(P_NS, "ph");
   for (let i = 0; i < phNodes.length; i++) {
-    if (phNodes[i].getAttribute("type") === "pic") placeholders++;
+    if (phNodes[i].getAttribute("type") !== "pic") continue;
+    if (!hasPicAncestor(phNodes[i])) placeholders++;
   }
   return { placed, placeholders };
+}
+
+function hasPicAncestor(node: Element): boolean {
+  let parent = node.parentNode;
+  while (parent) {
+    if (
+      parent.nodeType === 1 &&
+      (parent as Element).localName === "pic" &&
+      (parent as Element).namespaceURI === P_NS
+    ) {
+      return true;
+    }
+    parent = parent.parentNode;
+  }
+  return false;
 }
 
 async function readEntry(zip: JSZip, name: string): Promise<string> {
