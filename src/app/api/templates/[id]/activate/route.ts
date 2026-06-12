@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
+import { requireUser, parseUuidParam } from "@/lib/api-helpers";
+
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+export async function POST(_request: NextRequest, { params }: RouteContext) {
+  const authed = await createClient();
+  const auth = await requireUser(authed);
+  if (!auth.ok) return auth.response;
+
+  const { id: rawId } = await params;
+  const idResult = parseUuidParam(rawId, "template id");
+  if (!idResult.ok) return idResult.response;
+  const id = idResult.data;
+
+  const supabase = createServiceClient();
+
+  // Verifiera att mallen finns innan vi pekar workspace_settings på den —
+  // active_template_id har en FK men ett 404 är ett tydligare svar än ett
+  // rått constraint-fel.
+  const { data: tpl } = await supabase
+    .from("templates")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!tpl) {
+    return NextResponse.json({ error: "Template not found" }, { status: 404 });
+  }
+
+  // UPSERT: workspace_settings är en enradstabell vars rad KAN SAKNAS (färsk
+  // install). En blank .update() träffar då noll rader och gör tyst ingenting —
+  // läs ut ev. befintlig rad och välj update/insert därefter.
+  const { data: existing } = await supabase
+    .from("workspace_settings")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("workspace_settings")
+      .update({ active_template_id: id })
+      .eq("id", existing.id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  } else {
+    const { error } = await supabase
+      .from("workspace_settings")
+      .insert({ active_template_id: id });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // clearTemplateCache() behövs inte — aktivering byter pekare, inte mallens
+  // innehåll; cachen är keyad på id och förblir korrekt.
+  return NextResponse.json({ activated: id });
+}
