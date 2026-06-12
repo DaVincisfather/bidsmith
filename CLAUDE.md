@@ -18,9 +18,13 @@ AI-agent som tar offertförfrågan + konsultprofiler och producerar anbudsutkast
   gonogo/radar/writing/writingSupport/writingChallenger/judge), aldrig hårdkodade modellsträngar.
   Modellbyte = enradsändring där + eval-körning. Varje modell måste ha prisrad i `ai-cost.ts`
   (testat i `models.test.ts`).
-- **Skrivbundles:** Opus 4.8 (`MODELS.writing`) — kvalitetskritiskt; A/B mot Fable 5
-  (`MODELS.writingChallenger`) avgörs i fas 1
-- **Extraction/matchning/go-no-go:** Sonnet; **prefilter/radar:** Haiku
+- **Skrivbundles:** Opus 4.8 (`MODELS.writing`) — FAS 1-BESLUT 2026-06-12: behållen efter
+  A/B mot Fable 5 (mänsklig blindgranskning Opus 7–1; LLM-judgen sa Fable 50–1 = belagd
+  stilbias, se `evals/results-bid-model-comparison.md`)
+- **LLM-judge-tally får ingen beslutsvikt** utan validering mot blindfacit-paren
+  (kalibreringsdata från fas 1 — 8 människomärkta par)
+- **Extraction (Sonnet) körs med temperature 0** sedan fas 1 — samma underlag ska ge
+  samma kravlista; **matchning/go-no-go:** Sonnet; **prefilter/radar:** Haiku
 - **Princip:** Varje steg får föregående stegs komprimerade output, inte rådokumenten
 
 ## Arbetsregler
