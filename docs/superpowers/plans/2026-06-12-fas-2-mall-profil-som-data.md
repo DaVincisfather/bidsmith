@@ -12,12 +12,12 @@ uppladdad PPTX). Bolagets röst (tonalitet, boilerplate, företagsnamn) flyttar 
 
 **Arkitektur:** Tre PR:ar. **PR A** bygger introspektionsmotorn: läs PPTX-XML (JSZip +
 @xmldom/xmldom), identifiera slide-typer via placeholder-signaturer, beräkna teckenbudgetar
-ur shape-geometri + fontmetrik (kalibrerad mot Ekan-mallens handsatta budgetar, ±10 %-grind),
+ur shape-geometri + fontmetrik (kalibrerad mot designmallens handsatta budgetar, ±10 %-grind),
 emittera versionerat manifest. Ren lib + CLI — inga produktytor rörs. **PR B** gör
-genereringen manifest-driven: golden-snapshot av dagens Ekan-rendering tas FÖRST, sedan
+genereringen manifest-driven: golden-snapshot av dagens rendering tas FÖRST, sedan
 migration (`templates`-tabell + `bids.template_id`), template-store (DB + Storage med
 disk-fallback för bundlad mall), och parametrisering av loader/korrektor/call-sites.
-Golden-testet bevisar att Ekan-flödet är bitidentiskt. **PR C** är profilen + ytan:
+Golden-testet bevisar att dagens flöde är bitidentiskt. **PR C** är profilen + ytan:
 migration (`org_profiles` + storage-bucket), profilblock i cachade systemkontexten,
 API-routes och `/installningar`-UI, evals-grind och Testbolaget-demon.
 
@@ -63,7 +63,7 @@ Följande avvikelser är belagda i koden och gäller:
    `{Placeholder}`-tokens. En uppladdad mall måste följa anbudsmall-v2:s
    token-konvention (dokumenteras i `docs/template-authoring.md`, Task 6). Vitlabel =
    eget visuellt DNA (färger, fonter, logotyp, geometri) på samma semantiska skelett.
-   Ekan-specifika geometri-features (timeline-highlight i `phase-detail.ts`,
+   Designmall-specifika geometri-features (timeline-highlight i `phase-detail.ts`,
    footer-breddning i `_footer.ts`) är redan koordinat-gated och no-op:ar tyst på
    främmande mallar — dokumenteras som valbara förhöjningar.
 4. **Prose-dispatch på variant istället för källslide.** `prose.ts` switchar idag på
@@ -78,11 +78,26 @@ Följande avvikelser är belagda i koden och gäller:
 7. **"Standardsektioner" i profilen utgår (YAGNI):** mallens manifest avgör vilka
    sektioner som finns. Profilen = identitet + röst: `company_name`, `logo_path`,
    `colors`, `tonality`, `boilerplate`.
+8. **Bilder känns igen och lämnas orörda (Stefans tillägg 2026-06-12).** Verkliga
+   bolagsmallar har bilder och bildplaceholders (bildbank-arbetsflöde). Kontraktet:
+   genereringen rör ALDRIG bildinnehåll — placerade bilder (`<p:pic>`) följer med
+   exporten oförändrade, tomma bildplaceholders (`<p:ph type="pic">`) överlever så
+   konsulterna kan fylla dem från bildbanken efter export. Introspektionen RÄKNAR
+   bildytor per slide (`imageShapes` i manifestet) så previewn kan visa dem, och
+   token-fria slides MED bilder får ny slide-typ `static` (renderas passthrough med
+   endast footer — annars hade bolagets bildavdelare tyst försvunnit ur anbudet).
+   Bevarandet låses med test mot en bildfixture. Bildbank-INJEKTION (automatisk
+   bildsättning) är medvetet utanför fas 2.
+9. **Terminologi:** `templates/anbudsmall-v2.pptx` är den Claude-genererade
+   designmallen (mockupen) som dagens deployment kör — INTE Ekans riktiga
+   varumärkesmall. Ekans riktiga mall blir första verkliga användaren av
+   upload-flödet. OBS publikt repo: riktiga kundmallar (inkl. Ekans) committas
+   ALDRIG till git — de laddas upp till Supabase Storage via UI:t.
 
 **Kända begränsningar — medvetet utanför fas 2 (etikett: polish, ej correctness):**
 - Bid-editorns cover-förhandsvisning använder statisk PNG
   (`src/components/bid-editor/renderers/CoverRenderer.tsx` →
-  `/templates/anbudsmall-v2-cover.png`) — visar Ekan-design oavsett aktiv mall.
+  `/templates/anbudsmall-v2-cover.png`) — visar designmallens cover oavsett aktiv mall.
   Exporten blir korrekt; editor-bakgrunden är kosmetik.
 - `deterministic/certifications.ts` har hårdkodade cert-data (TODO i filen pekar redan
   mot framtida profilfält).
@@ -104,17 +119,18 @@ interface TemplateManifest {
 }
 interface ManifestSlide {
   source: number;                     // 1-baserat slide-index i mallens PPTX
-  type: SlideType;                    // befintlig union i types.ts
+  type: SlideType;                    // befintlig union i types.ts + ny typ "static"
   variant?: "kunden-idag" | "uppdraget" | "vision"; // endast prose
   cloneFrom?: "phases" | "references";
   itemCaps?: Record<string, number>;
   placeholders: string[];             // tokens introspektionen fann (för UI-preview)
+  imageShapes?: { placed: number; placeholders: number }; // bilder — lämnas orörda
 }
 ```
 
 Introspektionen FÖRESLÅR manifestet; det committade/sparade manifestet är auktoritativt
 (CLI:t skriver JSON som kan handjusteras före commit; UI:t visar preview före aktivering).
-För Ekan-mallen pinnas `fieldSlides` till FIELD_METADATAs nuvarande värden
+För anbudsmall-v2 pinnas `fieldSlides` till FIELD_METADATAs nuvarande värden
 (6, 7, 11, 18) för beteendeparitet — introspektionens beräknade värden är förslag.
 
 ---
@@ -122,11 +138,11 @@ För Ekan-mallen pinnas `fieldSlides` till FIELD_METADATAs nuvarande värden
 ## Branchstrategi
 
 - **PR A** — Task 0–6 på `fas-2a-introspektion`: introspektionsmotor + manifest + kalibrering
-  + CLI + committat Ekan-manifest + authoring-guide. Inga produktytor, ingen migration,
+  + CLI + committat anbudsmall-v2-manifest + authoring-guide. Inga produktytor, ingen migration,
   $0 AI-kostnad.
 - **PR B** — Task 7–12 på `fas-2b-manifest-drift`, från `main` EFTER att PR A mergats:
   golden-snapshot → migration 004 → template-store → parametrisering. Grindas av
-  golden-testet (Ekan bitidentisk före/efter).
+  golden-testet (dagens rendering bitidentisk före/efter).
 - **PR C** — Task 13–18 på `fas-2c-profil-ui`, från `main` EFTER att PR B mergats:
   migration 005 → profil i prompt → API + UI → evals-grind → Testbolaget-demo.
 
@@ -201,6 +217,7 @@ const validManifest = {
       placeholders: ["{Mål}", "{Aktiviteter}"],
     },
     { source: 3, type: "prose", variant: "kunden-idag", placeholders: ["{Nuläge}"] },
+    { source: 9, type: "static", placeholders: [], imageShapes: { placed: 2, placeholders: 1 } },
   ],
   budgets: { "phases[*].objective": 120 },
   fieldSlides: { "phases[*].objective": 7 },
@@ -262,6 +279,9 @@ export const SLIDE_TYPES = [
   "reference",
   "confidentiality",
   "certifications",
+  // Ny i fas 2: token-fri slide med bilder — renderas passthrough (endast footer).
+  // Läggs till i types.ts SlideType-unionen i Task 10.
+  "static",
 ] as const;
 
 export const PROSE_VARIANTS = ["kunden-idag", "uppdraget", "vision"] as const;
@@ -275,6 +295,12 @@ export const ManifestSlideSchema = z
     cloneFrom: z.enum(["phases", "references"]).optional(),
     itemCaps: z.record(z.string(), z.number().int().positive()).optional(),
     placeholders: z.array(z.string()),
+    imageShapes: z
+      .object({
+        placed: z.number().int().nonnegative(),
+        placeholders: z.number().int().nonnegative(),
+      })
+      .optional(),
   })
   .refine((s) => s.variant === undefined || s.type === "prose", {
     message: "variant är endast giltig för type 'prose'",
@@ -325,7 +351,8 @@ mönster som `smoke.test.ts`).
 import { describe, it, expect, beforeAll } from "vitest";
 import { readFile } from "fs/promises";
 import path from "path";
-import { readPptxSlides, type SlideShapes } from "../read-pptx";
+import { DOMParser } from "@xmldom/xmldom";
+import { readPptxSlides, countImages, type SlideShapes } from "../read-pptx";
 
 const TEMPLATE = path.resolve("templates", "anbudsmall-v2.pptx");
 
@@ -373,6 +400,29 @@ describe("readPptxSlides (anbudsmall-v2.pptx)", () => {
     expect(shape!.fontSizePt).toBeGreaterThan(4);
     expect(shape!.fontSizePt).toBeLessThan(100);
   });
+
+  it("designmallen har inga bildytor (verifierat 2026-06-12 — den är vektor/text)", () => {
+    for (const s of slides) {
+      expect(s.images).toEqual({ placed: 0, placeholders: 0 });
+    }
+  });
+});
+
+describe("countImages (syntetisk slide-XML)", () => {
+  it("räknar <p:pic> och <p:ph type='pic'> men inte text-placeholders", () => {
+    const xml = `<?xml version="1.0"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld><p:spTree>
+    <p:pic><p:nvPicPr><p:cNvPr id="5" name="Bild 1"/></p:nvPicPr></p:pic>
+    <p:pic><p:nvPicPr><p:cNvPr id="6" name="Bild 2"/></p:nvPicPr></p:pic>
+    <p:sp><p:nvSpPr><p:nvPr><p:ph type="pic" idx="1"/></p:nvPr></p:nvSpPr></p:sp>
+    <p:sp><p:nvSpPr><p:nvPr><p:ph type="body" idx="2"/></p:nvPr></p:nvSpPr></p:sp>
+  </p:spTree></p:cSld>
+</p:sld>`;
+    const doc = new DOMParser().parseFromString(xml, "application/xml");
+    expect(countImages(doc)).toEqual({ placed: 2, placeholders: 1 });
+  });
 });
 ```
 
@@ -411,6 +461,9 @@ export interface SlideShapes {
   shapes: ShapeText[];
   /** Union av shape-tokens på sliden */
   tokens: string[];
+  /** Bildytor — placerade <p:pic> resp. tomma <p:ph type="pic">. Lämnas orörda
+   *  av hela pipelinen; räknas för manifest/preview. */
+  images: { placed: number; placeholders: number };
 }
 
 const TOKEN_RE = /\{[^{}]+\}/g;
@@ -451,9 +504,27 @@ export async function readPptxSlides(buffer: Buffer): Promise<SlideShapes[]> {
       source: i + 1,
       shapes,
       tokens: [...new Set(shapes.flatMap((s) => s.tokens))],
+      images: countImages(doc),
     });
   }
   return result;
+}
+
+/**
+ * Räknar bildytor: placerade bilder (<p:pic>, även nästlade i grupper —
+ * getElementsByTagNameNS är rekursiv) och tomma bildplaceholders
+ * (<p:sp> vars <p:nvSpPr><p:nvPr><p:ph type="pic">).
+ */
+export function countImages(
+  doc: ReturnType<DOMParser["parseFromString"]>,
+): { placed: number; placeholders: number } {
+  const placed = doc.getElementsByTagNameNS(P_NS, "pic").length;
+  let placeholders = 0;
+  const phNodes = doc.getElementsByTagNameNS(P_NS, "ph");
+  for (let i = 0; i < phNodes.length; i++) {
+    if (phNodes[i].getAttribute("type") === "pic") placeholders++;
+  }
+  return { placed, placeholders };
 }
 
 async function readEntry(zip: JSZip, name: string): Promise<string> {
@@ -626,12 +697,19 @@ Signaturtabellen är härledd ur applicatorernas placeholder-maps (verifierad mo
 1. En slide matchar en signatur när ALLA `requires`-tokens finns bland slidens tokens.
 2. Matchar flera signaturer → kasta fel (fail-loud; signaturerna ska vara disjunkta).
 3. Andra+ träffen på samma signatur → exkluderas som `duplikat av slide N — illustrativ kopia`
-   (Ekans mockup-slides 8–10 är kopior av 7, 15 av 14).
-4. Ingen träff + inga content-tokens (bara footer: `{Bolagsnamn}`/`{Diarienummer}` eller
-   tomt) → typ `toc` om det är första sådana sliden, annars exkludera
-   (`statisk slide utan kända placeholders`).
-5. Ingen träff men HAR okända content-tokens → exkludera med listan av tokens i reason
+   (designmallens slides 8–10 är kopior av 7, 15 av 14).
+4. Ingen träff + inga content-tokens MEN bildytor (`images.placed + images.placeholders > 0`)
+   → typ `static`: renderas passthrough med endast footer. Bolagets bildavdelare/
+   "om oss"-collage ska följa med i anbudet, inte tyst försvinna. Bilderna lämnas
+   orörda (designbeslut 8).
+5. Ingen träff + inga content-tokens + inga bilder (bara footer:
+   `{Bolagsnamn}`/`{Diarienummer}` eller tomt) → typ `toc` om det är första sådana
+   sliden, annars exkludera (`statisk slide utan kända placeholders`).
+6. Ingen träff men HAR okända content-tokens → exkludera med listan av tokens i reason
    (syns i UI-previewn så mallförfattaren ser vad som inte känns igen).
+
+Alla inkluderade slides får `imageShapes` satt när sliden har bildytor —
+previewn visar det, och authoring-guiden förklarar kontraktet.
 
 ```typescript
 // src/lib/pptx-template/introspect/identify-slides.ts
@@ -726,12 +804,23 @@ export function identifySlides(slides: SlideShapes[]): IdentifiedSlides {
         ...(sig.cloneFrom ? { cloneFrom: sig.cloneFrom } : {}),
         ...(sig.itemCaps ? { itemCaps: sig.itemCaps } : {}),
         placeholders: slide.tokens,
+        ...(imageShapesOf(slide) ? { imageShapes: imageShapesOf(slide) } : {}),
       });
       continue;
     }
 
     const contentTokens = slide.tokens.filter((t) => !FOOTER_TOKENS.has(t));
-    if (contentTokens.length === 0 && !tocAssigned) {
+    const hasImages = slide.images.placed + slide.images.placeholders > 0;
+    if (contentTokens.length === 0 && hasImages) {
+      // Token-fri bildslide (avdelare, collage) — renderas passthrough,
+      // bilderna orörda. Se designbeslut 8.
+      included.push({
+        source: slide.source,
+        type: "static",
+        placeholders: slide.tokens,
+        imageShapes: slide.images,
+      });
+    } else if (contentTokens.length === 0 && !tocAssigned) {
       tocAssigned = true;
       included.push({ source: slide.source, type: "toc", placeholders: slide.tokens });
     } else if (contentTokens.length === 0) {
@@ -749,6 +838,35 @@ export function identifySlides(slides: SlideShapes[]): IdentifiedSlides {
 
   return { included, excluded };
 }
+
+function imageShapesOf(slide: SlideShapes) {
+  return slide.images.placed + slide.images.placeholders > 0 ? slide.images : undefined;
+}
+```
+
+Lägg också till ett syntetiskt test i `identify-slides.test.ts` (designmallen saknar
+bilder, så static-regeln måste testas med konstruerad input):
+
+```typescript
+it("token-fri slide MED bilder blir static, inte exkluderad", () => {
+  const synthetic: SlideShapes[] = [
+    { source: 1, shapes: [], tokens: ["{Upphandlingens namn}", "{Kundnamn}", "{Anbudsdatum}"],
+      images: { placed: 0, placeholders: 0 } },
+    { source: 2, shapes: [], tokens: [],
+      images: { placed: 0, placeholders: 0 } },           // → toc (första token-fria utan bild)
+    { source: 3, shapes: [], tokens: ["{Bolagsnamn}"],
+      images: { placed: 2, placeholders: 1 } },           // → static (bildavdelare)
+    { source: 4, shapes: [], tokens: [],
+      images: { placed: 0, placeholders: 0 } },           // → exkluderad
+  ];
+  const { included, excluded } = identifySlides(synthetic);
+  expect(included.find((s) => s.source === 3)).toEqual({
+    source: 3, type: "static", placeholders: ["{Bolagsnamn}"],
+    imageShapes: { placed: 2, placeholders: 1 },
+  });
+  expect(included.find((s) => s.source === 2)!.type).toBe("toc");
+  expect(excluded.map((e) => e.source)).toEqual([4]);
+});
 ```
 
 - [ ] **Steg 4: Kör testet — ska passera**
@@ -774,7 +892,7 @@ git commit -m "feat(fas2): slide type identification via placeholder signatures"
 - Skapa: `src/lib/pptx-template/introspect/compute-budgets.ts`
 - Test: `src/lib/pptx-template/introspect/__tests__/compute-budgets.test.ts`
 
-**Facit (handsatta Ekan-budgetar ur migration 001, `template_configs`):**
+**Facit (designmallens handsatta budgetar ur migration 001, `template_configs`):**
 
 | Fältsökväg | Budget | Token | Box |
 |---|---|---|---|
@@ -807,8 +925,9 @@ import { computeBudgets } from "../compute-budgets";
 
 const TEMPLATE = path.resolve("templates", "anbudsmall-v2.pptx");
 
-// Handsatta budgetar ur migration 001 (template_configs) — kalibreringsfacit.
-const EKAN_BUDGETS: Record<string, number> = {
+// Handsatta budgetar ur migration 001 (template_configs) — kalibreringsfacit
+// för designmallen anbudsmall-v2.
+const FACIT_BUDGETS: Record<string, number> = {
   "phases[*].name": 40,
   "phases[*].period": 10,
   "phases[*].objective": 120,
@@ -819,7 +938,7 @@ const EKAN_BUDGETS: Record<string, number> = {
   "certs[*].description": 80,
 };
 
-describe("computeBudgets — kalibrering mot Ekan-mallen (±10 %)", () => {
+describe("computeBudgets — kalibrering mot anbudsmall-v2 (±10 %)", () => {
   let slides: SlideShapes[];
   beforeAll(async () => {
     slides = await readPptxSlides(await readFile(TEMPLATE));
@@ -828,7 +947,7 @@ describe("computeBudgets — kalibrering mot Ekan-mallen (±10 %)", () => {
   it("reproducerar alla 8 handsatta budgetar inom ±10 %", () => {
     const { budgets } = computeBudgets(slides, identifySlides(slides).included);
     const report: string[] = [];
-    for (const [field, expected] of Object.entries(EKAN_BUDGETS)) {
+    for (const [field, expected] of Object.entries(FACIT_BUDGETS)) {
       const actual = budgets[field];
       const ratio = actual / expected;
       report.push(`${field}: facit ${expected}, beräknad ${actual} (${(ratio * 100).toFixed(0)} %)`);
@@ -865,7 +984,7 @@ const EM = "—";
 const EN = "–";
 const EMU_PER_PT = 12700;
 
-// KALIBRERINGSKONSTANTER — globala, trimmade så Ekan-mallen reproducerar sina
+// KALIBRERINGSKONSTANTER — globala, trimmade så anbudsmall-v2 reproducerar sina
 // handsatta budgetar inom ±10 % (compute-budgets.test.ts pinnar dem).
 // Per-fält/per-mall-overrides är förbjudna — då förutsäger formeln inget.
 const CHAR_WIDTH_FACTOR = 0.5;   // snitteckenbredd ≈ 0,5 × fontstorlek (sans-serif)
@@ -1013,12 +1132,12 @@ Committa INTE en grön kalibrering som bygger på per-fält-undantag.
 
 ```bash
 git add src/lib/pptx-template/introspect/compute-budgets.ts src/lib/pptx-template/introspect/__tests__/compute-budgets.test.ts
-git commit -m "feat(fas2): character budgets from shape geometry + font metrics, calibrated vs Ekan"
+git commit -m "feat(fas2): character budgets from shape geometry + font metrics, calibrated vs anbudsmall-v2"
 ```
 
 ---
 
-### Task 5: `introspectTemplate()` + CLI + committat Ekan-manifest
+### Task 5: `introspectTemplate()` + CLI + committat anbudsmall-v2-manifest
 
 **Filer:**
 - Skapa: `src/lib/pptx-template/introspect/index.ts`
@@ -1121,6 +1240,15 @@ async function main() {
   for (const e of manifest.excludedSlides) console.log(`  - slide ${e.source}: ${e.reason}`);
   console.log("Budgetar:");
   for (const [field, b] of Object.entries(manifest.budgets)) console.log(`  ${field}: ${b}`);
+  const withImages = manifest.slides.filter((s) => s.imageShapes);
+  if (withImages.length > 0) {
+    console.log("Bildytor (lämnas orörda av genereringen):");
+    for (const s of withImages) {
+      console.log(
+        `  slide ${s.source}: ${s.imageShapes!.placed} placerade, ${s.imageShapes!.placeholders} tomma placeholders`,
+      );
+    }
+  }
   for (const w of warnings) console.warn(`VARNING: ${w}`);
 }
 
@@ -1136,7 +1264,7 @@ Lägg npm-script i `package.json` under `"scripts"`:
 "template:introspect": "tsx scripts/introspect-template.ts"
 ```
 
-- [ ] **Steg 4: Kör testet — PASS.** Sedan generera + pinna Ekan-manifestet:
+- [ ] **Steg 4: Kör testet — PASS.** Sedan generera + pinna anbudsmall-v2-manifestet:
 
 ```bash
 npm run template:introspect templates/anbudsmall-v2.pptx
@@ -1144,7 +1272,7 @@ npm run template:introspect templates/anbudsmall-v2.pptx
 
 Öppna `templates/anbudsmall-v2.manifest.json` och **handpinna två saker** innan commit:
 1. `budgets` → ersätt de beräknade värdena med facit-värdena (40/10/120/120/100/100/80/80).
-   Manifestet är data; för Ekan gäller de handsatta. Beräkningen var kalibreringen.
+   Manifestet är data; för anbudsmall-v2 gäller de handsatta. Beräkningen var kalibreringen.
 2. `fieldSlides` → pinna till FIELD_METADATAs nuvarande värden för beteendeparitet:
    `phases[*].name`: 6, `phases[*].period`: 6, `phases[*].objective`: 7,
    `phases[*].activities[*]`: 7, `phases[*].deliverables[*]`: 7,
@@ -1205,13 +1333,19 @@ Innehåll (skriv ut fullständigt, på svenska):
    textrutan direkt på sliden, ärv inte från layouten); en slide per semantisk typ
    (dubletter exkluderas som illustrativa); statiska slides utan tokens renderas inte
    (utom första = innehållsförteckning).
-3. **Valbara Ekan-specifika förhöjningar** som no-op:ar på andra mallar:
+3. **Valbara designmall-specifika förhöjningar** som no-op:ar på andra mallar:
    timeline-highlight på phase-detail (koordinatgated i `phase-detail.ts`),
    footer-breddning (`_footer.ts`). Främmande mallar får statisk tidslinje — inget fel.
-4. **Arbetsflöde:** kopiera `templates/anbudsmall-v2.pptx` → styla om (färger, fonter,
-   logotyp, bakgrunder) → behåll tokens → ladda upp via `/installningar` → granska
-   manifest-preview (hittade fält, beräknade budgetar) → aktivera.
-5. **Felsökning:** "okända placeholders" i preview = token stavad fel (em-dash — vs
+4. **Bilder:** placerade bilder följer med exporten exakt som de ligger i mallen;
+   tomma bildplaceholders (`Infoga > Platshållare för bild` i layouten) överlever
+   export och fylls från bildbanken efteråt. Generatorn rör ALDRIG bilder — den
+   varken byter, beskär eller tar bort dem. Token-fria slides med bilder (avdelare,
+   collage) renderas som de är (typ `static` i previewn). Automatisk
+   bildbank-injektion finns inte (framtida fas).
+5. **Arbetsflöde:** kopiera `templates/anbudsmall-v2.pptx` → styla om (färger, fonter,
+   logotyp, bakgrunder, bilder) → behåll tokens → ladda upp via `/installningar` → granska
+   manifest-preview (hittade fält, beräknade budgetar, bildytor) → aktivera.
+6. **Felsökning:** "okända placeholders" i preview = token stavad fel (em-dash — vs
    bindestreck - är vanligaste felet); saknad budget = boxen ärver geometri från layouten.
 
 - [ ] **Steg 2: Uppdatera masterplanen**
@@ -1235,7 +1369,7 @@ git commit -m "docs(fas2): template authoring guide + masterplan status"
 git push -u bidsmith fas-2a-introspektion
 gh pr create --repo DaVincisfather/bidsmith --base main \
   --title "Fas 2A: PPTX-introspektion — manifest, signaturer, kalibrerade budgetar" \
-  --body "Se docs/superpowers/plans/2026-06-12-fas-2-mall-profil-som-data.md §PR A. Ren lib + CLI, inga produktytor. Kalibrering: 8/8 Ekan-budgetar inom ±10 %."
+  --body "Se docs/superpowers/plans/2026-06-12-fas-2-mall-profil-som-data.md §PR A. Ren lib + CLI, inga produktytor. Kalibrering: 8/8 handsatta budgetar inom ±10 %."
 ```
 
 Förväntat: alla tester gröna, tsc tyst, PR skapad.
@@ -1248,15 +1382,16 @@ Förväntat: alla tester gröna, tsc tyst, PR skapad.
 > `git -C ~/projects/bidsmith-main worktree add ~/projects/bidsmith-fas2b -b fas-2b-manifest-drift bidsmith/main`
 > (efter `git fetch`), kopiera `.env.local`, `npm install`, `npx vitest run` grönt.
 
-### Task 7: Golden-snapshot av Ekan-renderingen — FÖRE all refaktorering
+### Task 7: Golden-snapshot av dagens rendering — FÖRE all refaktorering
 
 **Filer:**
 - Skapa: `src/lib/pptx-template/__tests__/fixtures/golden-sections.ts`
 - Skapa: `src/lib/pptx-template/__tests__/golden-render.test.ts`
 - Skapa: `src/lib/pptx-template/__tests__/golden/anbudsmall-v2.golden.json` (genererad)
 
-Golden-testet är fasens viktigaste grind: Ekan-mallen ska rendera BITIDENTISKT
-(texter + geometri per slide) före och efter manifest-refaktorn.
+Golden-testet är fasens viktigaste grind: designmallen (dagens produktionsflöde)
+ska rendera BITIDENTISKT (texter + geometri + bildantal per slide) före och efter
+manifest-refaktorn.
 
 - [ ] **Steg 1: Bryt ut sections-fixturen**
 
@@ -1287,6 +1422,7 @@ const GOLDEN_PATH = path.resolve(
   "src/lib/pptx-template/__tests__/golden/anbudsmall-v2.golden.json",
 );
 const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
+const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
 
 interface SlideSnapshot {
   /** Alla <a:t>-texter i dokumentordning */
@@ -1294,6 +1430,9 @@ interface SlideSnapshot {
   /** Alla <a:off>/<a:ext>-attribut i dokumentordning — fångar geometri-mutationer
    *  (timeline-highlight, footer-breddning) */
   xfrm: { x: string; y: string; cx: string; cy: string }[];
+  /** Antal <p:pic> — pinnar att rendering varken tappar eller skapar bilder
+   *  (designmallen: 0 överallt; kontraktet gäller alla mallar) */
+  pics: number;
 }
 
 async function snapshotRender(): Promise<SlideSnapshot[]> {
@@ -1323,7 +1462,11 @@ async function snapshotRender(): Promise<SlideSnapshot[]> {
         cy: ext?.getAttribute("cy") ?? "",
       });
     }
-    snapshots.push({ texts, xfrm });
+    snapshots.push({
+      texts,
+      xfrm,
+      pics: doc.getElementsByTagNameNS(P_NS, "pic").length,
+    });
   }
   return snapshots;
 }
@@ -1406,7 +1549,7 @@ alter table workspace_settings
 alter table bids
   add column template_id uuid references templates(id);
 
--- Seeda den bundlade Ekan-mallen ur templates/anbudsmall-v2.manifest.json (PR A).
+-- Seeda den bundlade designmallen ur templates/anbudsmall-v2.manifest.json (PR A).
 -- VIKTIGT: klistra in HELA manifest-filens innehåll som jsonb-literal nedan.
 insert into templates (name, version, storage_path, manifest) values (
   'anbudsmall-v2',
@@ -1755,10 +1898,13 @@ export async function renderTemplate(
 }
 ```
 
-`applicatorFor(slideCfg: ManifestSlide, ctx)` — switchen är oförändrad (samma typer).
+`applicatorFor(slideCfg: ManifestSlide, ctx)` — switchen får EN ny case:
+`case "static": return tocApplicator(ctx);` (passthrough = endast footer, exakt vad
+toc-applicatorn redan gör — bilder och statiskt innehåll lämnas orörda).
 `countOutputSlides`/`getCloneItems` oförändrade (läser `manifest.slides` istället).
-I `types.ts`: lägg till `variant?: "kunden-idag" | "uppdraget" | "vision";` i
-`ApplicatorContext` (importera `ProseVariant` från `manifest-types.ts`).
+I `types.ts`: lägg till `"static"` i `SlideType`-unionen och
+`variant?: "kunden-idag" | "uppdraget" | "vision";` i `ApplicatorContext`
+(importera `ProseVariant` från `manifest-types.ts`).
 
 - [ ] **Steg 2: Prose-dispatch på variant**
 
@@ -1831,11 +1977,168 @@ snapshoten (som genererades med registry-vägen). Det är beviset att manifest-v
 bitidentisk. Om golden failar: diffen i testutskriften pekar på exakt slide + text/xfrm —
 felsök refaktorn, regenerera ALDRIG golden i denna task.
 
-- [ ] **Steg 5: Commit**
+- [ ] **Steg 5: Bildbevarande-test (designmallen saknar bilder — fixture krävs)**
+
+Generera en bildfixture en gång med ett script som injicerar en placerad bild +
+en tom bildplaceholder i en kopia av designmallen:
+
+```typescript
+// scripts/make-image-fixture.ts
+// Engångs-generator: npx tsx scripts/make-image-fixture.ts
+// Skapar src/lib/pptx-template/__tests__/fixtures/bildmall.pptx ur
+// templates/anbudsmall-v2.pptx genom att på slide 1 injicera:
+//  - en <p:pic> som refererar en inbäddad 1x1-PNG (ny rel + media + content-type)
+//  - en <p:sp> med <p:ph type="pic"/> (tom bildplaceholder)
+import { readFile, writeFile, mkdir } from "fs/promises";
+import path from "path";
+import JSZip from "jszip";
+
+// Minimal giltig 1x1 röd PNG (base64) — ingen extern asset behövs.
+const PNG_1X1 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+const PIC_XML = `
+<p:pic xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:nvPicPr>
+    <p:cNvPr id="900" name="FixtureBild"/>
+    <p:cNvPicPr/><p:nvPr/>
+  </p:nvPicPr>
+  <p:blipFill><a:blip r:embed="rIdFixtureImg"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
+  <p:spPr>
+    <a:xfrm><a:off x="100000" y="100000"/><a:ext cx="914400" cy="914400"/></a:xfrm>
+    <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+  </p:spPr>
+</p:pic>`;
+
+const PH_PIC_XML = `
+<p:sp xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+      xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:nvSpPr>
+    <p:cNvPr id="901" name="FixtureBildPlaceholder"/>
+    <p:cNvSpPr/><p:nvPr><p:ph type="pic" idx="99"/></p:nvPr>
+  </p:nvSpPr>
+  <p:spPr>
+    <a:xfrm><a:off x="1200000" y="100000"/><a:ext cx="914400" cy="914400"/></a:xfrm>
+  </p:spPr>
+</p:sp>`;
+
+async function main() {
+  const zip = await JSZip.loadAsync(
+    await readFile(path.resolve("templates", "anbudsmall-v2.pptx")),
+  );
+
+  // 1) Media
+  zip.file("ppt/media/fixture-img.png", Buffer.from(PNG_1X1, "base64"));
+
+  // 2) Content-type för png (om inte redan deklarerad)
+  const ctPath = "[Content_Types].xml";
+  let ct = await zip.file(ctPath)!.async("string");
+  if (!ct.includes('Extension="png"')) {
+    ct = ct.replace(
+      "</Types>",
+      '<Default Extension="png" ContentType="image/png"/></Types>',
+    );
+    zip.file(ctPath, ct);
+  }
+
+  // 3) Rel på slide 1
+  const relPath = "ppt/slides/_rels/slide1.xml.rels";
+  let rels = await zip.file(relPath)!.async("string");
+  rels = rels.replace(
+    "</Relationships>",
+    '<Relationship Id="rIdFixtureImg" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/fixture-img.png"/></Relationships>',
+  );
+  zip.file(relPath, rels);
+
+  // 4) Pic + tom placeholder sist i slide 1:s spTree
+  const slidePath = "ppt/slides/slide1.xml";
+  let slide = await zip.file(slidePath)!.async("string");
+  slide = slide.replace("</p:spTree>", `${PIC_XML}${PH_PIC_XML}</p:spTree>`);
+  zip.file(slidePath, slide);
+
+  const outDir = path.resolve("src/lib/pptx-template/__tests__/fixtures");
+  await mkdir(outDir, { recursive: true });
+  await writeFile(
+    path.join(outDir, "bildmall.pptx"),
+    await zip.generateAsync({ type: "nodebuffer" }),
+  );
+  console.log("Skrev fixtures/bildmall.pptx");
+}
+
+main().catch((err) => { console.error(err); process.exit(1); });
+```
+
+Kör `npx tsx scripts/make-image-fixture.ts`, öppna `bildmall.pptx` i PowerPoint en
+gång och verifiera att den inte är korrupt (röd kvadrat + tom bildyta på slide 1).
+Committa fixturen + scriptet. Skriv sedan bevarandetestet:
+
+```typescript
+// src/lib/pptx-template/__tests__/image-preservation.test.ts
+import { describe, it, expect } from "vitest";
+import { readFile } from "fs/promises";
+import path from "path";
+import JSZip from "jszip";
+import { DOMParser } from "@xmldom/xmldom";
+import { renderTemplate } from "../loader";
+import { introspectTemplate } from "../introspect";
+import { GOLDEN_SECTIONS, GOLDEN_MASTER } from "./fixtures/golden-sections";
+
+const FIXTURE = path.resolve(
+  "src/lib/pptx-template/__tests__/fixtures/bildmall.pptx",
+);
+const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
+
+describe("bildbevarande — kontraktet att generering aldrig rör bilder", () => {
+  it("placerad bild, tom bildplaceholder och mediabytes överlever rendering", async () => {
+    const buffer = await readFile(FIXTURE);
+    const { manifest } = await introspectTemplate(buffer, "bildmall");
+
+    // Introspektionen ser bildytorna på cover-sliden
+    const cover = manifest.slides.find((s) => s.type === "cover");
+    expect(cover?.imageShapes).toEqual({ placed: 1, placeholders: 1 });
+
+    const out = await renderTemplate(
+      { manifest, templateFile: FIXTURE },
+      GOLDEN_SECTIONS,
+      GOLDEN_MASTER,
+    );
+
+    const zip = await JSZip.loadAsync(out);
+    const slide1 = await zip.file("ppt/slides/slide1.xml")!.async("string");
+    const doc = new DOMParser().parseFromString(slide1, "application/xml");
+
+    // <p:pic> kvar med sin relation
+    expect(doc.getElementsByTagNameNS(P_NS, "pic")).toHaveLength(1);
+    expect(slide1).toContain('r:embed=');
+    // Tomma bildplaceholdern kvar (konsulten fyller från bildbanken efter export)
+    const phs = doc.getElementsByTagNameNS(P_NS, "ph");
+    const picPhs = Array.from({ length: phs.length }, (_, i) => phs[i])
+      .filter((ph) => ph.getAttribute("type") === "pic");
+    expect(picPhs).toHaveLength(1);
+    // Mediabytes byte-identiska med fixturens
+    const srcZip = await JSZip.loadAsync(buffer);
+    const srcImg = await srcZip.file("ppt/media/fixture-img.png")!.async("nodebuffer");
+    const outImg = await zip.file("ppt/media/fixture-img.png")!.async("nodebuffer");
+    expect(outImg.equals(srcImg)).toBe(true);
+  });
+});
+```
+
+Kör: `npx vitest run src/lib/pptx-template/__tests__/image-preservation.test.ts`
+Förväntat: PASS. Om pptx-automizer tappar bilden eller relationen vid slide-kopiering
+är detta ett äkta fynd — STOPP och utred (kontraktet i designbeslut 8 är då brutet
+och måste lösas innan uppladdade mallar med bilder kan stödjas).
+
+OBS: fixturen genereras i PR B (behöver `renderTemplate`-refaktorn), men
+`introspectTemplate`-delen av testet motionerar även PR A-koden.
+
+- [ ] **Steg 6: Commit**
 
 ```bash
-git add -A src/lib/pptx-template/
-git commit -m "refactor(fas2): manifest-driven rendering — registry retired, prose dispatches on variant (golden-verified)"
+git add -A src/lib/pptx-template/ scripts/make-image-fixture.ts
+git commit -m "refactor(fas2): manifest-driven rendering — registry retired, prose dispatches on variant, image preservation pinned (golden-verified)"
 ```
 
 ---
@@ -2045,7 +2348,7 @@ git commit -m "feat(fas2): active template flows through bid create/generate/exp
 git push -u bidsmith fas-2b-manifest-drift
 gh pr create --repo DaVincisfather/bidsmith --base main \
   --title "Fas 2B: Manifest-driven generering — templates-tabell, template-store, golden-verifierad paritet" \
-  --body "Se detaljplanen §PR B. Golden-snapshot tagen FÖRE refaktorn (Task 7) och grön EFTER (Task 10). Migration 004 applicerad. Ekan-flödet bitidentiskt."
+  --body "Se detaljplanen §PR B. Golden-snapshot tagen FÖRE refaktorn (Task 7) och grön EFTER (Task 10). Migration 004 applicerad. Dagens flöde bitidentiskt, bildbevarande pinnat."
 ```
 
 ---
@@ -2400,6 +2703,8 @@ med data som props.
 - Upload: `<input type="file" accept=".pptx">` → `POST /api/templates` (FormData) →
   rendera previewn ur svaret INNAN aktivering:
   - per slide: `source`, `type`(+`variant`), antal placeholders
+  - bildytor per slide ur `imageShapes` med notisen "bilder lämnas orörda —
+    tomma bildytor fylls från er bildbank efter export"
   - exkluderade slides med `reason`
   - budgettabell (`fieldPath` → tecken)
   - `warnings` i varningsfärg
@@ -2458,17 +2763,24 @@ kostnad ur `ai_call_logs`).
 
 - [ ] **Steg 1 (Stefan): Skapa Testbolaget-mallen.** Kopiera
 `templates/anbudsmall-v2.pptx` → PowerPoint → byt färgtema/fonter/logotyp (INTE
-tokens) → spara som `testbolaget.pptx`. (Påminnelse: lokala Office substituerar
+tokens) → lägg gärna in en bild + en tom bildplaceholder (testar designbeslut 8
+på riktigt) → spara som `testbolaget.pptx`. (Påminnelse: lokala Office substituerar
 Aptos → Calibri — välj fonter som finns lokalt.)
+
+Alternativ med högre bevisvärde: kör demon med **Ekans riktiga anbudsmall** (den har
+bildbank-placeholders). Den laddas i så fall ENDAST upp via UI:t till Supabase
+Storage — committas aldrig till det publika repot.
 
 - [ ] **Steg 2: Kör demon end-to-end:**
 1. `/installningar` → ladda upp `testbolaget.pptx` → preview: 13 slides, 8 budgetar
-   (siffrorna AVVIKER från Ekans om geometrin ändrats — det är featuren) → aktivera
+   (siffrorna AVVIKER från designmallens om geometrin ändrats — det är featuren) → aktivera
 2. skapa profil "Testbolaget AB" (egen tonalitet, t.ex. mer formell) → aktivera
 3. generera anbud på en befintlig analys → exportera → öppna i PowerPoint:
    Testbolagets design, `{Bolagsnamn}` = "Testbolaget AB", tonen följer profilen
-4. växla tillbaka till anbudsmall-v2 + Ekan-profilen → generera → Ekan-flödet
-   oförändrat + `npx vitest run` grönt (golden-testet är beviset)
+4. om Testbolaget-mallen har bilder: verifiera i exporten att de är kvar orörda
+   och att tomma bildytor går att fylla i PowerPoint
+5. växla tillbaka till anbudsmall-v2 + ordinarie profilen → generera → dagens
+   flöde oförändrat + `npx vitest run` grönt (golden-testet är beviset)
 
 - [ ] **Steg 3: PR + masterplan-status**
 
@@ -2489,11 +2801,12 @@ gh pr create --repo DaVincisfather/bidsmith --base main \
 | Masterplanens kriterium | Täcks av |
 |---|---|
 | Mallintrospektion: placeholders, geometri, fontstorlekar → manifest | Task 2, 3, 5 |
-| Teckenbudget ur geometri+fontmetrik, kalibrerad ±10 % mot Ekan | Task 4 (grind) |
+| Teckenbudget ur geometri+fontmetrik, kalibrerad ±10 % mot designmallens budgetar | Task 4 (grind) |
 | DB & Storage: templates + org_profiles, migration enligt konvention | Task 8, 13 |
 | Generering mot manifest, trelagerskorrektorn parametriserad oförändrad | Task 10, 11 |
-| Golden-test: Ekan identisk före/efter | Task 7 (snapshot) + 10 (grind) |
+| Golden-test: dagens mall identisk före/efter | Task 7 (snapshot) + 10 (grind) |
+| Bilder känns igen (manifest/preview) och lämnas orörda (Stefans tillägg) | Task 2, 3 (`static`), 10 steg 5, 16 |
 | Profilpaket i systempromptens stabila del (cache-medvetet) | Task 14 |
 | UI: uppladdning, manifest-preview, profilformulär | Task 15, 16 |
-| Demo Testbolaget AB + Ekan-flödet oförändrat | Task 18 |
+| Demo Testbolaget AB + dagens flöde oförändrat | Task 18 |
 | Evals gröna före merge | Task 17 |
