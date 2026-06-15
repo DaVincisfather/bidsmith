@@ -17,7 +17,7 @@ import { bidCoverageJudge, bidHallucinationJudge } from "../core/judges";
 import { mapWithConcurrency } from "../core/concurrency";
 import { meanMetric } from "../core/metrics";
 import type { EvalConfig, FieldJudgment } from "../core/types";
-import { buildEvalBidContext } from "./bid-generator-context";
+import { buildEvalBidContext, EVAL_ORG_PROFILE } from "./bid-generator-context";
 
 type Output = BidSection[];
 
@@ -171,7 +171,9 @@ export const bidGeneratorConfig: EvalConfig<BidGeneratorFixture, Output, BidEval
   },
   runModule: async (fixture) => {
     const context = await loadContext(fixture);
-    const ctx = buildEvalBidContext(context.analyzerFixture, context.consultants);
+    // Profil insprutad så grinden motionerar profil-kodvägen i formatContext
+    // (fas 2C). Tonalitet-only — se EVAL_ORG_PROFILE för varför ingen boilerplate.
+    const ctx = buildEvalBidContext(context.analyzerFixture, context.consultants, EVAL_ORG_PROFILE);
     const { sections, overflowFlags } = await generateAllSections(ctx, loadBundledManifest("anbudsmall-v2"));
     return { output: sections, context: { ...context, overflowCount: overflowFlags.length } };
   },
