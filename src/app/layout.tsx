@@ -45,6 +45,7 @@ export default function RootLayout({
               <Link href="/" className="hover:text-ink">Analysera RFP</Link>
               <Link href="/arbetsyta" className="hover:text-ink">Arbetsyta</Link>
               <Link href="/radar" className="hover:text-ink">Radar</Link>
+              <Link href="/installningar" className="hover:text-ink">Inställningar</Link>
             </div>
           </div>
         </nav>

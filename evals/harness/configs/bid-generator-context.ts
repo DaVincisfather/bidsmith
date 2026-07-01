@@ -5,6 +5,7 @@ import type {
   ScoredConsultant,
 } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
+import type { OrgProfile } from "@/lib/org-profile";
 import type { AnalyzerFixture, SyntheticConsultant } from "../core/fixtures";
 
 const NOW = "2026-04-28T00:00:00.000Z";
@@ -84,13 +85,27 @@ function stubGoNoGo(analysis: RfpAnalysis, scored: ScoredConsultant[]): GoNoGoRe
   };
 }
 
+// Syntetisk avsändarprofil för eval-grinden — motionerar profil-kodvägen
+// (formatContext prependar profileBlock + tonalitetsinstruktion). MEDVETET
+// utan boilerplate: boilerplate inför fakta som hallucination-judgen (ser bara
+// RFP+CV som källa) skulle flagga som påhittade. Tonalitet styr röst, inte fakta.
+export const EVAL_ORG_PROFILE: OrgProfile = {
+  id: "eval-profile",
+  companyName: "Evalbolaget AB",
+  logoPath: null,
+  colors: null,
+  tonality: "Rak och konkret svenska, inga superlativ eller floskler.",
+  boilerplate: null,
+};
+
 export function buildEvalBidContext(
   analyzerFixture: AnalyzerFixture,
   consultants: SyntheticConsultant[],
+  profile?: OrgProfile | null,
 ): BidContext {
   const analysis = analyzerGoldenToRfpAnalysis(analyzerFixture.golden);
   const teamConsultants = consultants.map(toConsultant);
   const scoredConsultants = stubScores(teamConsultants);
   const goNoGoResult = stubGoNoGo(analysis, scoredConsultants);
-  return { analysis, teamConsultants, scoredConsultants, goNoGoResult };
+  return { analysis, teamConsultants, scoredConsultants, goNoGoResult, profile };
 }

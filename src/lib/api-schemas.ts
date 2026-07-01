@@ -81,3 +81,16 @@ export const GoNoGoDecisionPatchSchema = z.object({
 export const OpportunityStatusPatchSchema = z.object({
   status: z.enum(["dismissed", "analyzing"]),
 });
+
+// --- Org profile: POST /api/profiles, PATCH /api/profiles/[id] ---
+//
+// company_name etc. är snake_case i DB — routern mappar. logo_path sätts inte
+// via detta API (utanför scope för fas 2). PATCH använder .partial() så ett
+// delfält kan uppdateras isolerat.
+
+export const ProfileBodySchema = z.object({
+  companyName: z.string().min(1).max(200),
+  tonality: z.string().max(2000).nullable().optional(),
+  boilerplate: z.string().max(4000).nullable().optional(),
+  colors: z.record(z.string(), z.string()).nullable().optional(),
+});

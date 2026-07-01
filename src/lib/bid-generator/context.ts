@@ -4,6 +4,7 @@ import type {
   ScoredConsultant,
   GoNoGoResult,
 } from "@/lib/types";
+import type { OrgProfile } from "@/lib/org-profile";
 
 export interface BidContext {
   analysis: RfpAnalysis;
@@ -14,6 +15,8 @@ export interface BidContext {
   // The bid row these bundles generate content for — threaded into
   // ai_call_logs.bid_id so cost per bid is queryable.
   bidId?: string | null;
+  /** Avsändarprofil — injiceras FÖRST i cachade systemblocket (stabil per org) */
+  profile?: OrgProfile | null;
 }
 
 export function formatContext(ctx: BidContext): string {
@@ -40,7 +43,18 @@ export function formatContext(ctx: BidContext): string {
     })
     .join("\n\n");
 
-  return `## Förfrågningsunderlag (RFP)
+  // Profilblocket bor först i cachedContext (det stabila systemblocket). Per
+  // fas 0-resultatet delar bundles med olika output-scheman aldrig cache ändå,
+  // men overflow-/format-retries INOM en bundle träffar cachen eftersom profilen
+  // är konstant under genereringen.
+  const profileBlock = ctx.profile
+    ? `## Avsändarprofil
+- Företag: ${ctx.profile.companyName}
+${ctx.profile.tonality ? `- Tonalitet (följ denna i all text): ${ctx.profile.tonality}\n` : ""}${ctx.profile.boilerplate ? `- Om bolaget (väv in där det är relevant, hitta inte på utöver detta): ${ctx.profile.boilerplate}\n` : ""}
+`
+    : "";
+
+  return `${profileBlock}## Förfrågningsunderlag (RFP)
 ${JSON.stringify(ctx.analysis, null, 2)}
 
 ## Team

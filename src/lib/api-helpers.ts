@@ -1,9 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getUserId, NotAuthenticatedError } from "@/lib/org";
 
 export type ParseResult<T> =
   | { ok: true; data: T }
   | { ok: false; response: NextResponse };
+
+/**
+ * Resolves the authenticated user id, returning a 401 response instead of
+ * throwing when no session exists.
+ *
+ * Why: middleware redirects unauthenticated *page* navigations to /login, but
+ * API routes still need a JSON 401 (the fas-2 settings UI fetches these from
+ * the client). Existing routes let getUserId throw and rely on middleware;
+ * this helper makes the 401 explicit and unit-testable. Mirrors the
+ * ParseResult discriminated union — caller does `if (!auth.ok) return auth.response`.
+ */
+export async function requireUser(
+  supabase: SupabaseClient
+): Promise<ParseResult<string>> {
+  try {
+    const userId = await getUserId(supabase);
+    return { ok: true, data: userId };
+  } catch (err) {
+    if (err instanceof NotAuthenticatedError) {
+      return {
+        ok: false,
+        response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      };
+    }
+    throw err;
+  }
+}
 
 /**
  * Parses and validates a JSON request body against a Zod schema.
