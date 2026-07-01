@@ -29,7 +29,7 @@ describe("introspectTemplate", () => {
       "phases[*].name": 40,
       "phases[*].period": 10,
       "phases[*].objective": 120,
-      "phases[*].activities[*]": 120,
+      "phases[*].activities[*]": 115,
       "phases[*].deliverables[*]": 100,
       "phases[*].decisions[*]": 100,
       "checkpoints[*]": 80,

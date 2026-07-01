@@ -132,9 +132,13 @@ export function computeBudgets(
 
 /**
  * Budget för en enskild token-förekomst enligt hybridmodellen.
- * normAutofit => taket gäller rakt av (geometrin inte bindande).
- * Annars => min(tak, geometrisk kapacitet). Returnerar null om geometrin
- * saknas på den geometriska vägen (loggar varning) — då bidrar inte förekomsten.
+ * normAutofit + ENRADIG box => taket gäller rakt av: texten krymps horisontellt
+ *   på en rad och ryms (namn/period/korta etiketter).
+ * normAutofit + FLERRADIG box => geometrin binder som på ej-norm-vägen. Krympning
+ *   av redan radbruten prosa har ett golv (PowerPoint slutar krympa), så en liten
+ *   flerradig box spiller — taket ensamt ljuger då.
+ * Ej norm (boxen bryter/klipper) => min(tak, geometrisk kapacitet).
+ * Returnerar null om geometrin saknas på den geometriska vägen (loggar varning).
  */
 function budgetForOccurrence(
   shape: ShapeText,
@@ -144,8 +148,11 @@ function budgetForOccurrence(
   warnings: string[],
 ): number | null {
   if (shape.autofit === "norm") {
-    // Texten krymps till boxen — geometrin säger inget om teckenkapaciteten.
-    return spec.editorialCap;
+    // Utan geometri kan flerradighet inte avgöras — taket gäller (oförändrat).
+    if (!shape.geometry) return spec.editorialCap;
+    // Enradig box krymper säkert; flerradig prosa binder geometriskt.
+    if (geometricLineCount(shape, spec.maxLines) <= 1) return spec.editorialCap;
+    return clampedGeometricBudget(shape, spec, slideCfg);
   }
 
   if (!shape.geometry) {
@@ -155,20 +162,34 @@ function budgetForOccurrence(
     return null;
   }
 
+  return clampedGeometricBudget(shape, spec, slideCfg);
+}
+
+/** min(tak, geometrisk kapacitet) med divideByCap och ROUND_TO-avrundning. */
+function clampedGeometricBudget(
+  shape: ShapeText,
+  spec: BudgetTokenSpec,
+  slideCfg: ManifestSlide,
+): number {
   const divisor = spec.divideByCap ? (slideCfg.itemCaps?.[spec.divideByCap] ?? 1) : 1;
   const capacity = boxCapacity(shape, spec.maxLines) / divisor;
   const geometric = Math.max(ROUND_TO, Math.round(capacity / ROUND_TO) * ROUND_TO);
   return Math.min(spec.editorialCap, geometric);
 }
 
-function boxCapacity(shape: ShapeText, maxLines?: number): number {
+/** Antal geometriska rader boxen rymmer, kapat av maxLines (fältsemantik). */
+function geometricLineCount(shape: ShapeText, maxLines?: number): number {
   const fontPt = shape.fontSizePt ?? DEFAULT_FONT_PT;
   const lineSpacingPct = shape.lineSpacingPct ?? DEFAULT_LINE_SPACING_PCT;
   const lineHeightEmu = fontPt * EMU_PER_PT * (lineSpacingPct / 100);
-  const charWidthEmu = fontPt * EMU_PER_PT * CHAR_WIDTH_FACTOR;
-
   const geometricLines = Math.max(1, Math.floor(shape.geometry!.cy / lineHeightEmu));
-  const lines = maxLines !== undefined ? Math.min(maxLines, geometricLines) : geometricLines;
+  return maxLines !== undefined ? Math.min(maxLines, geometricLines) : geometricLines;
+}
+
+function boxCapacity(shape: ShapeText, maxLines?: number): number {
+  const fontPt = shape.fontSizePt ?? DEFAULT_FONT_PT;
+  const charWidthEmu = fontPt * EMU_PER_PT * CHAR_WIDTH_FACTOR;
+  const lines = geometricLineCount(shape, maxLines);
   const charsPerLine = Math.floor(shape.geometry!.cx / charWidthEmu);
 
   return lines * charsPerLine * FILL_FACTOR;
