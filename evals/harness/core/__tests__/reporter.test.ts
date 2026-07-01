@@ -62,6 +62,31 @@ describe("formatConsoleReport", () => {
     // 0.60 < 0.70 yellow → FAIL
     expect(out).toMatch(/FAIL.*0\.60/);
   });
+
+  it("labels an informational metric INFO, never FAIL, regardless of value", () => {
+    const infoRun: EvalRun = {
+      module: "bid-generator",
+      timestamp: "2026-07-01T00:00:00.000Z",
+      fixtures: [
+        { fixtureId: "chalmers", judgments: [], metrics: { "coverage.recall": 0.15, "structure.pass": 1.0 } },
+      ],
+      aggregate: { "coverage.recall.mean": 0.15, "structure.pass.mean": 1.0 },
+    };
+    const infoThresholds = {
+      analyzer: {},
+      matcher: {},
+      "bid-generator": {
+        "coverage.recall": { green: 0.90, yellow: 0.75, informational: true },
+        "structure.pass": { green: 1.0, yellow: 1.0 },
+      },
+    };
+    const out = formatConsoleReport(infoRun, infoThresholds);
+    // low coverage is reported as INFO, not a FAIL that re-triggers the gate panic
+    expect(out).toMatch(/INFO.*coverage\.recall.*0\.15/);
+    expect(out).not.toMatch(/FAIL.*coverage\.recall/);
+    // structure stays a real gate
+    expect(out).toMatch(/PASS.*structure\.pass/);
+  });
 });
 
 describe("writeJsonReport", () => {

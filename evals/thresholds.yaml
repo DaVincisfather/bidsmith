@@ -36,9 +36,15 @@ bid-generator:
   structure.empty_fields:
     green: 1.00
     yellow: 1.00
+  # Beslut A (2026-07-01): coverage.recall mot godtyckliga RFP-krav är en
+  # fixture-/scope-bunden informationssignal, inte en giltig merge-grind. 14
+  # missade Chalmers-krav var en ärlig mätning (konsulter matchar inte RFP:n +
+  # intygsdokument som generatorn strukturellt inte kan skriva), inte judge-fel.
+  # Grinden = structure.pass + overflow.pass. Se notes/2026-07-01-*.
   coverage.recall:
     green: 0.90
     yellow: 0.75
+    informational: true
   hallucination.pass:
     green: 1.00
     yellow: 1.00

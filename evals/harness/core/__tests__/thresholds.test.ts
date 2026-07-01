@@ -30,4 +30,20 @@ describe("categorize", () => {
   it("returns 'unknown' when no threshold defined", () => {
     expect(categorize(0.5, undefined)).toBe("unknown");
   });
+
+  it("returns 'info' for an informational metric regardless of value", () => {
+    const info = { green: 0.90, yellow: 0.75, informational: true };
+    expect(categorize(0.12, info)).toBe("info");
+    expect(categorize(0.95, info)).toBe("info");
+  });
+});
+
+describe("loadThresholds — informational metrics", () => {
+  it("parses coverage.recall as informational (decision A: coverage is a signal, not a gate)", async () => {
+    const t = await loadThresholds(path.resolve(__dirname, "../../../thresholds.yaml"));
+    expect(t["bid-generator"]["coverage.recall"].informational).toBe(true);
+    // structure/overflow stay hard gates
+    expect(t["bid-generator"]["structure.pass"].informational).toBeUndefined();
+    expect(t["bid-generator"]["overflow.pass"].informational).toBeUndefined();
+  });
 });

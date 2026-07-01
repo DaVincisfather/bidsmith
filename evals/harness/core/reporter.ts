@@ -3,11 +3,12 @@ import path from "path";
 import type { EvalRun } from "./types";
 import { categorize, type Thresholds } from "./thresholds";
 
-function statusLabel(category: "green" | "yellow" | "red" | "unknown"): string {
+function statusLabel(category: "green" | "yellow" | "red" | "info" | "unknown"): string {
   switch (category) {
     case "green": return "PASS";
     case "yellow": return "WARN";
     case "red": return "FAIL";
+    case "info": return "INFO";
     case "unknown": return "—";
   }
 }
