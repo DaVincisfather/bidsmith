@@ -7,8 +7,9 @@ export const dynamic = "force-dynamic";
 
 export default async function ArbetsytaPage() {
   const supabase = createServiceClient();
-  const [{ count }, stats] = await Promise.all([
+  const [{ count }, { count: analysisCount }, stats] = await Promise.all([
     supabase.from("consultants").select("id", { count: "exact", head: true }),
+    supabase.from("analyses").select("id", { count: "exact", head: true }),
     getWorkspaceStats("all"),
   ]);
 
@@ -31,6 +32,15 @@ export default async function ArbetsytaPage() {
             <h2 className="text-lg font-display font-normal">Statistik</h2>
             <p className="mt-1 text-sm text-ink-mute">
               {formatUsd(stats.totalCostUsd)} · {stats.bidsSubmitted} anbud
+            </p>
+          </Link>
+          <Link
+            href="/arbetsyta/analyser"
+            className="block rounded-lg border border-rule p-6 hover:border-accent"
+          >
+            <h2 className="text-lg font-display font-normal">Analyser</h2>
+            <p className="mt-1 text-sm text-ink-mute">
+              {analysisCount ?? 0} analyserade RFP:er
             </p>
           </Link>
         </div>
