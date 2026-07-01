@@ -32,6 +32,8 @@ export function ProfileSection({
     setCompanyName("");
     setTonality("");
     setBoilerplate("");
+    // Avbryt/reset ska inte lämna kvar en gammal felbanner över det tomma formuläret.
+    setError(null);
   }
 
   function startEdit(p: ProfileRow) {
@@ -79,6 +81,9 @@ export function ProfileSection({
   }
 
   async function handleActivate(id: string) {
+    // En aktivering i taget: activatingId delas mellan raderna, så utan denna
+    // guard kan ett klick på rad B åter-aktivera rad A:s knapp och dubbel-submitta.
+    if (activatingId !== null) return;
     setActivatingId(id);
     setError(null);
     try {

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 import { renderTemplate } from "@/lib/pptx-template/loader";
 import { loadTemplateForBid } from "@/lib/pptx-template/active-template";
-import { loadActiveProfile } from "@/lib/org-profile";
+import { loadProfileForBid } from "@/lib/org-profile";
 import { BidSection, RfpAnalysis } from "@/lib/types";
 import { buildMasterContext } from "./build-master-context";
 
@@ -59,9 +59,10 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   }
 
   const sections = bid.sections as BidSection[];
-  // Avsändarens företagsnamn ur aktiv org-profil → footer {Bolagsnamn} + cover.
-  // null/ingen profil → blankt, oförändrat exportbeteende.
-  const profile = await loadActiveProfile();
+  // Företagsnamn ur den profil anbudet GENERERADES med (pinnad via bids.profile_id),
+  // inte den nu-aktiva — annars kan omslag/sidfot visa ett annat bolag än brödtexten.
+  // null (legacy-bid / ingen profil) → blankt, oförändrat exportbeteende.
+  const profile = await loadProfileForBid((bid.profile_id as string | null) ?? null);
   const master = buildMasterContext({
     analysis: analysisRow.analysis as RfpAnalysis,
     now: new Date(),

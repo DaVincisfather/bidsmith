@@ -23,7 +23,7 @@ vi.mock("@/lib/supabase", () => ({
   }),
 }));
 
-import { loadActiveProfile } from "../org-profile";
+import { loadActiveProfile, loadProfileForBid } from "../org-profile";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -90,5 +90,36 @@ describe("loadActiveProfile", () => {
     const profile = await loadActiveProfile();
 
     expect(profile).toBeNull();
+  });
+});
+
+describe("loadProfileForBid", () => {
+  it("profileId null (legacy-bid / ingen profil pinnad) → null utan DB-läsning", async () => {
+    const profile = await loadProfileForBid(null);
+
+    expect(profile).toBeNull();
+    expect(profileSingle).not.toHaveBeenCalled();
+    // får INTE gå via workspace_settings (nu-aktiv) — det var buggen vi fixar
+    expect(wsMaybeSingle).not.toHaveBeenCalled();
+  });
+
+  it("pinnad profileId → laddar just den profilen (inte den nu-aktiva)", async () => {
+    profileSingle.mockResolvedValue({
+      data: {
+        id: "pinned",
+        company_name: "Anbudsbolaget vid genereringen",
+        logo_path: null,
+        colors: null,
+        tonality: "Rak.",
+        boilerplate: null,
+      },
+      error: null,
+    });
+
+    const profile = await loadProfileForBid("pinned");
+
+    expect(profile?.id).toBe("pinned");
+    expect(profile?.companyName).toBe("Anbudsbolaget vid genereringen");
+    expect(wsMaybeSingle).not.toHaveBeenCalled();
   });
 });

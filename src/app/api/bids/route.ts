@@ -69,6 +69,9 @@ export async function POST(request: NextRequest) {
       created_by: userId,
       team_consultant_ids: teamConsultantIds,
       template_id: template.id,
+      // Pinna profilen anbudet skrivs med (som template_id) — export måste
+      // återanvända samma, annars kan bolagsnamn/röst divergera om profilen ändras.
+      profile_id: profile?.id ?? null,
       status: "generating",
     })
     .select()

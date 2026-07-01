@@ -55,6 +55,10 @@ export function TemplateSection({ templates, activeTemplateId }: TemplateSection
       }
       const data: UploadResponse = await response.json();
       setPreview(data);
+      // Upload:en har redan skrivit en ny mall-version i DB:n. Utan refresh syns
+      // den inte i listan förrän aktivering — lämnar man previewen blir versionen
+      // en osynlig föräldralös rad. Refresha så den dyker upp direkt.
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Något gick fel");
     } finally {
@@ -63,6 +67,8 @@ export function TemplateSection({ templates, activeTemplateId }: TemplateSection
   }
 
   async function handleActivate(id: string) {
+    // En aktivering i taget (activatingId delas mellan raderna).
+    if (activatingId !== null) return;
     setActivatingId(id);
     setError(null);
     try {

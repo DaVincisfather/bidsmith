@@ -53,7 +53,14 @@ export default async function InstallningarPage() {
     .select("id, company_name, tonality, boilerplate")
     .order("created_at", { ascending: false });
 
-  const migration005Missing = Boolean(profilesError);
+  // Visa migrationshjälpen BARA när tabellen faktiskt saknas (42P01 undefined_table
+  // / PostgREST PGRST205 saknar tabellen i schema-cachen). Ett annat fel (RLS,
+  // transient DB) ska inte maskeras som "kör migration 005" — då döljs den riktiga
+  // orsaken. Övriga fel → tom lista (ingen falsk migrationshint).
+  const migration005Missing =
+    profilesError?.code === "42P01" ||
+    profilesError?.code === "PGRST205" ||
+    /does not exist|schema cache/i.test(profilesError?.message ?? "");
 
   return (
     <main className="min-h-screen bg-paper">
