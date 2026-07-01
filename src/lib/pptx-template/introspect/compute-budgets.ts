@@ -14,9 +14,11 @@ import type { FieldBudgets } from "../budget-types";
 //      mallar — exakt som etikett-mallarna är en konvention. Det är den
 //      semantiska maxlängden för fältet (t.ex. ett fas-namn ryms i ~40 tecken).
 //   2. Geometri kan bara SÄNKA budgeten, aldrig höja den:
-//        budget = normAutofit ? tak : min(tak, geometrisk kapacitet)
-//      - normAutofit (texten krymps) => geometrin är inte bindande, taket gäller
-//        rakt av.
+//        budget = enradig-normAutofit ? tak : min(tak, geometrisk kapacitet)
+//      - normAutofit + ENRADIG box (geometrisk radräkning ≤ 1, resp. maxLines):
+//        texten krymps horisontellt på en rad och ryms => taket gäller rakt av.
+//      - normAutofit + FLERRADIG box: krympningen av redan radbruten prosa har
+//        ett golv och spiller => geometrin binder som på ej-norm-vägen.
 //      - ej normAutofit (boxen bryter/klipper text) => geometrin är bindande och
 //        kan klippa taket nedåt via den geometriska kapacitetsformeln nedan.
 //
@@ -44,7 +46,8 @@ interface BudgetTokenSpec {
    *  varje budgetbärande token måste ha ett tak (jfr etikett-konventionen). */
   editorialCap: number;
   /** Dela boxkapaciteten med slidens itemCaps[key] (en-box-kolumner med flera items).
-   *  Påverkar bara den geometriska sidan; på normAutofit-vägen gäller taket rakt av. */
+   *  Påverkar bara den geometriska sidan (ej-norm samt FLERRADIG normAutofit); på den
+   *  enradiga normAutofit-vägen gäller taket rakt av och delningen tillämpas inte. */
   divideByCap?: string;
   /** Maxrader oavsett boxhöjd — fältsemantik (t.ex. namn/period är enradiga).
    *  Påverkar bara den geometriska kapaciteten. */

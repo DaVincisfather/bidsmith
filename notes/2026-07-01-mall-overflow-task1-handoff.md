@@ -45,6 +45,16 @@ Verifiering: **hela sviten grön (553 passed, 5 skipped)**, `tsc --noEmit` ren.
 1. **Godkänn ansatsen** (den enda riktiga grinden för Part A): är "geometrisk
    radräkning ≤ 1 ⇒ tak, annars binda" rätt modell? Är `activities` 120→115 OK
    (liten åtstramning, inom tolerans)? Om ja → merga Part A (eller vänta in Part B).
+   Två modell-nyanser reviewn lyfte (medvetna approximationer, ej buggar — din syn):
+   - **Konservativ approximation:** flerradiga norm-boxar klamras med NOMINELL font
+     (den geometriska formeln, kalibrerad på ej-norm-boxar). Faktisk normAutofit
+     krymper fonten → verklig kapacitet är HÖGRE. Vi under­skattar alltså → varnar
+     TIDIGARE (säker riktning), aldrig för sent. Ingen omkalibrering för norm-läget.
+   - **Gränsvärdes-diskontinuitet:** `floor(cy/radhöjd)` gör att en box precis vid en
+     radhöjds-multipel hoppar mellan enradig (tak) och flerradig (klamrad). 1 EMU kan
+     flippa budgeten. Inneboende i radräkning; ingen bundlad box ligger nära en gräns.
+     Om det stör: mjuka modellen (t.ex. modellera krympningsgolvet) — men det är en
+     förfining, inte ett fel. Reviewn hittade INGA korrekthetsbuggar i övrigt.
 
 2. **Part B — editorialCap-VÄRDEN (produktbeslut).** Kravmatris & team är PPTX-
    TABELLER (autohöjd-rader) → mallboxens höjd är meningslös där, så geometrisk
