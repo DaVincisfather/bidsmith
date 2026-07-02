@@ -3,7 +3,18 @@
 Branch: `feat/mall-overflow-honesty` (från `main` @ `b4addd0`), worktree `~/projects/bidsmith-overflow`.
 Plan-källa: `notes/2026-07-01-smoke-test-findings.md` (root cause) + minne `project_bidsmith_fas2.md`.
 
-## Status: Task 1 **Part A KLAR & verifierad**. Part B + grindar väntar Stefan.
+## UPPDATERING 2026-07-02: Task 1 **KOMPLETT** (Part A + B + migration). Väntar merge.
+
+Stefan godkände ansatsen + Part B-taken (req/hur 160, ref 70, roll 60). Part B byggd
+(TDD): `editorialOnly`-flagga för kravmatris/team (PPTX-tabeller), 4 nya budgetar +
+labels. Manifest omgenererat (8→12 budgetar). **Migration 007** skriven (reseed av DB-
+manifestet, hela manifestet, idempotent) — **ej applicerad, Stefan kör den manuellt**.
+Hela sviten grön (555), tsc ren. Commits `b248f5b` (Part B) + `0b162ca` (migration) på
+branchen. Återstår: Stefan applicerar migration 007 + mergar PR #28; sen Task 2/3.
+
+Nedan = originalnoten från kvällen (Part A). Grind 2 & 3 nu åtgärdade.
+
+## Status (kväll 2026-07-01): Task 1 **Part A KLAR & verifierad**. Part B + grindar väntar Stefan.
 
 Stefan gick och sov mitt i körningen med instruktion: jobba vidare, spara grindar
 till imorgon, merga inte kärnlogik utan hans review. Därför är Part A committad +
