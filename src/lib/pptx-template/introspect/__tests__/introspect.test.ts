@@ -16,7 +16,7 @@ describe("introspectTemplate", () => {
     expect(manifest.slides).toHaveLength(13);
     expect(manifest.excludedSlides.map((e) => e.source).sort((a, b) => a - b))
       .toEqual([8, 9, 10, 15]);
-    expect(Object.keys(manifest.budgets)).toHaveLength(8);
+    expect(Object.keys(manifest.budgets)).toHaveLength(12);
     expect(warnings).toEqual([]);
   });
 
@@ -34,6 +34,11 @@ describe("introspectTemplate", () => {
       "phases[*].decisions[*]": 100,
       "checkpoints[*]": 80,
       "certs[*].description": 80,
+      // Tabellfält (editorialOnly): kravmatris (slide 13) + team (slide 12).
+      "members[*].role": 60,
+      "rows[*].requirement": 160,
+      "rows[*].hurUppfylls": 160,
+      "rows[*].referens": 70,
     });
     // 17 = certs deck-position med 2 referenskloner (matchar genereringen,
     // REFERENCE_PLACEHOLDER_COUNT = 2). FIELD_METADATA:s 18 på main är stale

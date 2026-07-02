@@ -234,6 +234,10 @@
     "phases[*].decisions[*]": 100,
     "phases[*].objective": 120,
     "checkpoints[*]": 80,
+    "members[*].role": 60,
+    "rows[*].requirement": 160,
+    "rows[*].hurUppfylls": 160,
+    "rows[*].referens": 70,
     "certs[*].description": 80
   },
   "fieldSlides": {
@@ -244,6 +248,10 @@
     "phases[*].decisions[*]": 7,
     "phases[*].objective": 7,
     "checkpoints[*]": 11,
+    "members[*].role": 12,
+    "rows[*].requirement": 13,
+    "rows[*].hurUppfylls": 13,
+    "rows[*].referens": 13,
     "certs[*].description": 17
   },
   "excludedSlides": [

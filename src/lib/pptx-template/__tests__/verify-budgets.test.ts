@@ -96,6 +96,33 @@ describe("verifyFieldBudgets", () => {
     warn.mockRestore();
   });
 
+  it("labels tabellfält (kravmatris rows + team members)", () => {
+    const data = {
+      rows: [{ requirement: "x".repeat(200), hurUppfylls: "x".repeat(200), referens: "x".repeat(90) }],
+      members: [{ role: "x".repeat(70) }],
+    };
+    const { overflows } = verifyFieldBudgets(data, {
+      budgets: {
+        "rows[*].requirement": 160,
+        "rows[*].hurUppfylls": 160,
+        "rows[*].referens": 70,
+        "members[*].role": 60,
+      },
+      fieldSlides: {
+        "rows[*].requirement": 13,
+        "rows[*].hurUppfylls": 13,
+        "rows[*].referens": 13,
+        "members[*].role": 12,
+      },
+    });
+    expect(overflows.map((o) => o.fieldLabel)).toEqual([
+      "Ska-krav 1",
+      "Ska-krav 1 — Uppfyllnad",
+      "Ska-krav 1 — Referens",
+      "Team — Roll 1",
+    ]);
+  });
+
   it("works for top-level array wildcard (checkpoints[*])", () => {
     const data = { checkpoints: ["kort", "x".repeat(100)] };
     const { overflows } = verifyFieldBudgets(data, {

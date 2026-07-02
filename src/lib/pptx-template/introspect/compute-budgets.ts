@@ -45,6 +45,10 @@ interface BudgetTokenSpec {
    *  kan bara sänka budgeten under detta tak, aldrig höja den. Obligatoriskt:
    *  varje budgetbärande token måste ha ett tak (jfr etikett-konventionen). */
   editorialCap: number;
+  /** PPTX-tabellfält (kravmatris/team): raderna autohöjer, så mallboxens höjd säger
+   *  inget om kapaciteten. Sätt true => geometrin konsulteras aldrig, taket gäller
+   *  alltid (rakt redaktionellt). Uteslutande med divideByCap/maxLines (ignoreras). */
+  editorialOnly?: boolean;
   /** Dela boxkapaciteten med slidens itemCaps[key] (en-box-kolumner med flera items).
    *  Påverkar bara den geometriska sidan (ej-norm samt FLERRADIG normAutofit); på den
    *  enradiga normAutofit-vägen gäller taket rakt av och delningen tillämpas inte. */
@@ -81,7 +85,51 @@ const BUDGET_TOKENS: Record<string, BudgetTokenSpec> = {
     editorialCap: 80,
   },
   "{Beskrivning}": { fieldPath: "certs[*].description", editorialCap: 80 },
+  // Tabellfält (kravmatris slide 13, team slide 12): PPTX-tabeller med autohöjd —
+  // editorialOnly, geometrin konsulteras aldrig. Varje fälts alla token-varianter
+  // (rad 1 långform + rad 2–N kortform) delar tak + fieldPath.
+  ...tableField("rows[*].requirement", 160, [
+    `{Ska-krav 1 ${EM} formulering enligt upphandlingsunderlag}`,
+    "{Ska-krav 2}",
+    "{Ska-krav 3}",
+    "{Ska-krav 4}",
+    "{Ska-krav 5}",
+    "{Ska-krav 6}",
+  ]),
+  ...tableField("rows[*].hurUppfylls", 160, [
+    `{Hur krav 1 uppfylls ${EM} konkret beskrivning}`,
+    "{Hur krav 2 uppfylls}",
+    "{Hur krav 3 uppfylls}",
+    "{Hur krav 4 uppfylls}",
+    "{Hur krav 5 uppfylls}",
+    "{Hur krav 6 uppfylls}",
+  ]),
+  ...tableField("rows[*].referens", 70, [
+    "{CV/ref 1}",
+    "{CV/ref 2}",
+    "{CV/ref 3}",
+    "{CV/ref 4}",
+    "{CV/ref 5}",
+    "{CV/ref 6}",
+  ]),
+  ...tableField("members[*].role", 60, [
+    "{Roll 1}",
+    "{Roll 2}",
+    "{Roll 3}",
+    "{Roll 4}",
+    "{Roll 5}",
+  ]),
 };
+
+/** Bygger editorialOnly-specar för ett tabellfälts alla token-varianter. */
+function tableField(
+  fieldPath: string,
+  editorialCap: number,
+  tokens: string[],
+): Record<string, BudgetTokenSpec> {
+  const spec: BudgetTokenSpec = { fieldPath, editorialCap, editorialOnly: true };
+  return Object.fromEntries(tokens.map((t) => [t, spec]));
+}
 
 /** Nominellt klonantal när deck-positioner beräknas (references saknar itemCap). */
 const NOMINAL_REFERENCE_CLONES = 2;
@@ -150,6 +198,9 @@ function budgetForOccurrence(
   token: string,
   warnings: string[],
 ): number | null {
+  // Tabellfält: autohöjd-rader gör mallgeometrin meningslös — taket gäller alltid.
+  if (spec.editorialOnly) return spec.editorialCap;
+
   if (shape.autofit === "norm") {
     // Utan geometri kan flerradighet inte avgöras — taket gäller (oförändrat).
     if (!shape.geometry) return spec.editorialCap;

@@ -182,4 +182,18 @@ describe("computeBudgets — syntetiska geometriska grenar", () => {
     expect(budgets["phases[*].objective"]).toBe(50);
     expect(fieldSlides["phases[*].objective"]).toBe(1);
   });
+
+  it("(g) editorialOnly-token ignorerar geometrin — taket gäller även liten flerradig box", async () => {
+    // Kravmatris/team är PPTX-tabeller (autohöjd-rader) → mallboxens höjd säger
+    // inget om verklig kapacitet. Sådana fält är editorialOnly: taket gäller alltid.
+    // {CV/ref 1} (rows[*].referens, tak 70): en liten FLERRADIG norm-box som annars
+    // skulle klamras lågt geometriskt ska ändå ge taket 70.
+    const buf = await buildMiniPptx(normBox("{CV/ref 1}", 2286000, 600000));
+    const slides = await readPptxSlides(buf);
+    const manifest: ManifestSlide[] = [
+      { source: 1, type: "requirement-matrix", placeholders: ["{CV/ref 1}"] },
+    ];
+    const { budgets } = computeBudgets(slides, manifest);
+    expect(budgets["rows[*].referens"]).toBe(70);
+  });
 });
