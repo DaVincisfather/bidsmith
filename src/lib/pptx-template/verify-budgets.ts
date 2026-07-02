@@ -16,6 +16,10 @@ const FIELD_LABELS: Record<string, string> = {
   "phases[*].decisions[*]": "Fas {N} — Beslut {N+1}",
   "checkpoints[*]": "Avstämningspunkt {N+1}",
   "certs[*].description": "Cert {N+1} — Beskrivning",
+  "rows[*].requirement": "Ska-krav {N+1}",
+  "rows[*].hurUppfylls": "Ska-krav {N+1} — Uppfyllnad",
+  "rows[*].referens": "Ska-krav {N+1} — Referens",
+  "members[*].role": "Team — Roll {N+1}",
 };
 
 type ResolvedLeaf = { resolvedPath: string; value: unknown; indices: number[] };

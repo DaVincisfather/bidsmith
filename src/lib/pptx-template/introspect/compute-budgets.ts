@@ -14,9 +14,11 @@ import type { FieldBudgets } from "../budget-types";
 //      mallar — exakt som etikett-mallarna är en konvention. Det är den
 //      semantiska maxlängden för fältet (t.ex. ett fas-namn ryms i ~40 tecken).
 //   2. Geometri kan bara SÄNKA budgeten, aldrig höja den:
-//        budget = normAutofit ? tak : min(tak, geometrisk kapacitet)
-//      - normAutofit (texten krymps) => geometrin är inte bindande, taket gäller
-//        rakt av.
+//        budget = enradig-normAutofit ? tak : min(tak, geometrisk kapacitet)
+//      - normAutofit + ENRADIG box (geometrisk radräkning ≤ 1, resp. maxLines):
+//        texten krymps horisontellt på en rad och ryms => taket gäller rakt av.
+//      - normAutofit + FLERRADIG box: krympningen av redan radbruten prosa har
+//        ett golv och spiller => geometrin binder som på ej-norm-vägen.
 //      - ej normAutofit (boxen bryter/klipper text) => geometrin är bindande och
 //        kan klippa taket nedåt via den geometriska kapacitetsformeln nedan.
 //
@@ -43,8 +45,13 @@ interface BudgetTokenSpec {
    *  kan bara sänka budgeten under detta tak, aldrig höja den. Obligatoriskt:
    *  varje budgetbärande token måste ha ett tak (jfr etikett-konventionen). */
   editorialCap: number;
+  /** PPTX-tabellfält (kravmatris/team): raderna autohöjer, så mallboxens höjd säger
+   *  inget om kapaciteten. Sätt true => geometrin konsulteras aldrig, taket gäller
+   *  alltid (rakt redaktionellt). Uteslutande med divideByCap/maxLines (ignoreras). */
+  editorialOnly?: boolean;
   /** Dela boxkapaciteten med slidens itemCaps[key] (en-box-kolumner med flera items).
-   *  Påverkar bara den geometriska sidan; på normAutofit-vägen gäller taket rakt av. */
+   *  Påverkar bara den geometriska sidan (ej-norm samt FLERRADIG normAutofit); på den
+   *  enradiga normAutofit-vägen gäller taket rakt av och delningen tillämpas inte. */
   divideByCap?: string;
   /** Maxrader oavsett boxhöjd — fältsemantik (t.ex. namn/period är enradiga).
    *  Påverkar bara den geometriska kapaciteten. */
@@ -78,7 +85,51 @@ const BUDGET_TOKENS: Record<string, BudgetTokenSpec> = {
     editorialCap: 80,
   },
   "{Beskrivning}": { fieldPath: "certs[*].description", editorialCap: 80 },
+  // Tabellfält (kravmatris slide 13, team slide 12): PPTX-tabeller med autohöjd —
+  // editorialOnly, geometrin konsulteras aldrig. Varje fälts alla token-varianter
+  // (rad 1 långform + rad 2–N kortform) delar tak + fieldPath.
+  ...tableField("rows[*].requirement", 160, [
+    `{Ska-krav 1 ${EM} formulering enligt upphandlingsunderlag}`,
+    "{Ska-krav 2}",
+    "{Ska-krav 3}",
+    "{Ska-krav 4}",
+    "{Ska-krav 5}",
+    "{Ska-krav 6}",
+  ]),
+  ...tableField("rows[*].hurUppfylls", 160, [
+    `{Hur krav 1 uppfylls ${EM} konkret beskrivning}`,
+    "{Hur krav 2 uppfylls}",
+    "{Hur krav 3 uppfylls}",
+    "{Hur krav 4 uppfylls}",
+    "{Hur krav 5 uppfylls}",
+    "{Hur krav 6 uppfylls}",
+  ]),
+  ...tableField("rows[*].referens", 70, [
+    "{CV/ref 1}",
+    "{CV/ref 2}",
+    "{CV/ref 3}",
+    "{CV/ref 4}",
+    "{CV/ref 5}",
+    "{CV/ref 6}",
+  ]),
+  ...tableField("members[*].role", 60, [
+    "{Roll 1}",
+    "{Roll 2}",
+    "{Roll 3}",
+    "{Roll 4}",
+    "{Roll 5}",
+  ]),
 };
+
+/** Bygger editorialOnly-specar för ett tabellfälts alla token-varianter. */
+function tableField(
+  fieldPath: string,
+  editorialCap: number,
+  tokens: string[],
+): Record<string, BudgetTokenSpec> {
+  const spec: BudgetTokenSpec = { fieldPath, editorialCap, editorialOnly: true };
+  return Object.fromEntries(tokens.map((t) => [t, spec]));
+}
 
 /** Nominellt klonantal när deck-positioner beräknas (references saknar itemCap). */
 const NOMINAL_REFERENCE_CLONES = 2;
@@ -132,9 +183,13 @@ export function computeBudgets(
 
 /**
  * Budget för en enskild token-förekomst enligt hybridmodellen.
- * normAutofit => taket gäller rakt av (geometrin inte bindande).
- * Annars => min(tak, geometrisk kapacitet). Returnerar null om geometrin
- * saknas på den geometriska vägen (loggar varning) — då bidrar inte förekomsten.
+ * normAutofit + ENRADIG box => taket gäller rakt av: texten krymps horisontellt
+ *   på en rad och ryms (namn/period/korta etiketter).
+ * normAutofit + FLERRADIG box => geometrin binder som på ej-norm-vägen. Krympning
+ *   av redan radbruten prosa har ett golv (PowerPoint slutar krympa), så en liten
+ *   flerradig box spiller — taket ensamt ljuger då.
+ * Ej norm (boxen bryter/klipper) => min(tak, geometrisk kapacitet).
+ * Returnerar null om geometrin saknas på den geometriska vägen (loggar varning).
  */
 function budgetForOccurrence(
   shape: ShapeText,
@@ -143,9 +198,15 @@ function budgetForOccurrence(
   token: string,
   warnings: string[],
 ): number | null {
+  // Tabellfält: autohöjd-rader gör mallgeometrin meningslös — taket gäller alltid.
+  if (spec.editorialOnly) return spec.editorialCap;
+
   if (shape.autofit === "norm") {
-    // Texten krymps till boxen — geometrin säger inget om teckenkapaciteten.
-    return spec.editorialCap;
+    // Utan geometri kan flerradighet inte avgöras — taket gäller (oförändrat).
+    if (!shape.geometry) return spec.editorialCap;
+    // Enradig box krymper säkert; flerradig prosa binder geometriskt.
+    if (geometricLineCount(shape, spec.maxLines) <= 1) return spec.editorialCap;
+    return clampedGeometricBudget(shape, spec, slideCfg);
   }
 
   if (!shape.geometry) {
@@ -155,20 +216,34 @@ function budgetForOccurrence(
     return null;
   }
 
+  return clampedGeometricBudget(shape, spec, slideCfg);
+}
+
+/** min(tak, geometrisk kapacitet) med divideByCap och ROUND_TO-avrundning. */
+function clampedGeometricBudget(
+  shape: ShapeText,
+  spec: BudgetTokenSpec,
+  slideCfg: ManifestSlide,
+): number {
   const divisor = spec.divideByCap ? (slideCfg.itemCaps?.[spec.divideByCap] ?? 1) : 1;
   const capacity = boxCapacity(shape, spec.maxLines) / divisor;
   const geometric = Math.max(ROUND_TO, Math.round(capacity / ROUND_TO) * ROUND_TO);
   return Math.min(spec.editorialCap, geometric);
 }
 
-function boxCapacity(shape: ShapeText, maxLines?: number): number {
+/** Antal geometriska rader boxen rymmer, kapat av maxLines (fältsemantik). */
+function geometricLineCount(shape: ShapeText, maxLines?: number): number {
   const fontPt = shape.fontSizePt ?? DEFAULT_FONT_PT;
   const lineSpacingPct = shape.lineSpacingPct ?? DEFAULT_LINE_SPACING_PCT;
   const lineHeightEmu = fontPt * EMU_PER_PT * (lineSpacingPct / 100);
-  const charWidthEmu = fontPt * EMU_PER_PT * CHAR_WIDTH_FACTOR;
-
   const geometricLines = Math.max(1, Math.floor(shape.geometry!.cy / lineHeightEmu));
-  const lines = maxLines !== undefined ? Math.min(maxLines, geometricLines) : geometricLines;
+  return maxLines !== undefined ? Math.min(maxLines, geometricLines) : geometricLines;
+}
+
+function boxCapacity(shape: ShapeText, maxLines?: number): number {
+  const fontPt = shape.fontSizePt ?? DEFAULT_FONT_PT;
+  const charWidthEmu = fontPt * EMU_PER_PT * CHAR_WIDTH_FACTOR;
+  const lines = geometricLineCount(shape, maxLines);
   const charsPerLine = Math.floor(shape.geometry!.cx / charWidthEmu);
 
   return lines * charsPerLine * FILL_FACTOR;

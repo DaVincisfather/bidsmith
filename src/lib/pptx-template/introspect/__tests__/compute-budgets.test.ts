@@ -111,6 +111,59 @@ describe("computeBudgets — syntetiska geometriska grenar", () => {
     expect(budgets["phases[*].activities[*]"]).toBe(55);
   });
 
+  // normAutofit-boxar: enradiga fält (namn/period, korta etiketter) krymper
+  // horisontellt och ryms → taket gäller rakt av. FLERRADIG prosa i normAutofit
+  // har ett krympningsgolv och spiller → geometrin binder precis som på ej-norm-
+  // vägen. En norm-box byggs som nonNormBox men med explicit <a:normAutofit/>.
+  function normBox(token: string, cx: number, cy: number): string {
+    return slideWithShape(`
+      <p:spPr><a:xfrm>
+        <a:off x="0" y="0"/>
+        <a:ext cx="${cx}" cy="${cy}"/>
+      </a:xfrm></p:spPr>
+      <p:txBody>
+        <a:bodyPr><a:normAutofit/></a:bodyPr>
+        <a:p><a:r><a:rPr sz="1800"/><a:t>${token}</a:t></a:r></a:p>
+      </p:txBody>`);
+  }
+
+  it("(d) klamrar FLERRADIG normAutofit-box till geometrin under editorialCap", async () => {
+    // cx=4572000 → charsPerLine = floor(4572000 / 114300) = 40
+    // cy=600000  → geometricLines = floor(600000 / 274320) = 2  (flerradig!)
+    // capacity = 2 * 40 * 0.9 = 72 → round(72/5)*5 = 70 → min(120, 70) = 70
+    const buf = await buildMiniPptx(normBox("{Mål}", 4572000, 600000));
+    const slides = await readPptxSlides(buf);
+    const manifest: ManifestSlide[] = [
+      { source: 1, type: "phase-detail", placeholders: ["{Mål}"] },
+    ];
+    const { budgets } = computeBudgets(slides, manifest);
+    expect(budgets["phases[*].objective"]).toBe(70);
+  });
+
+  it("(e) ENRADIG normAutofit-box behåller editorialCap (krymper säkert)", async () => {
+    // cy=300000 → geometricLines = floor(300000 / 274320) = 1 (enradig)
+    // Enradig norm-box → taket gäller rakt av, geometrin binder inte.
+    const buf = await buildMiniPptx(normBox("{Mål}", 2286000, 300000));
+    const slides = await readPptxSlides(buf);
+    const manifest: ManifestSlide[] = [
+      { source: 1, type: "phase-detail", placeholders: ["{Mål}"] },
+    ];
+    const { budgets } = computeBudgets(slides, manifest);
+    expect(budgets["phases[*].objective"]).toBe(120);
+  });
+
+  it("(f) maxLines:1 håller normAutofit-box enradig även när boxen är hög", async () => {
+    // cy=900000 → geometricLines = 3, men maxLines:1 (namn/period) → 1 rad →
+    // taket gäller. Skyddar namn/period mot flerradig geometrisk klamring.
+    const buf = await buildMiniPptx(normBox("{Fas 1 — namn}", 4572000, 900000));
+    const slides = await readPptxSlides(buf);
+    const manifest: ManifestSlide[] = [
+      { source: 1, type: "phases-overview", placeholders: ["{Fas 1 — namn}"] },
+    ];
+    const { budgets } = computeBudgets(slides, manifest);
+    expect(budgets["phases[*].name"]).toBe(40);
+  });
+
   it("(c) tar min över förekomster; fieldSlides = första förekomstens deck-position", async () => {
     // Slide 1: stor icke-norm box → geometric 215, klippt av editorialCap till 120.
     //   cx=9144000 (80 ch), cy=900000 (3 rader): 3*80*0.9 = 216 → 215 → min(120,215)=120
@@ -128,5 +181,19 @@ describe("computeBudgets — syntetiska geometriska grenar", () => {
     const { budgets, fieldSlides } = computeBudgets(slides, manifest);
     expect(budgets["phases[*].objective"]).toBe(50);
     expect(fieldSlides["phases[*].objective"]).toBe(1);
+  });
+
+  it("(g) editorialOnly-token ignorerar geometrin — taket gäller även liten flerradig box", async () => {
+    // Kravmatris/team är PPTX-tabeller (autohöjd-rader) → mallboxens höjd säger
+    // inget om verklig kapacitet. Sådana fält är editorialOnly: taket gäller alltid.
+    // {CV/ref 1} (rows[*].referens, tak 70): en liten FLERRADIG norm-box som annars
+    // skulle klamras lågt geometriskt ska ändå ge taket 70.
+    const buf = await buildMiniPptx(normBox("{CV/ref 1}", 2286000, 600000));
+    const slides = await readPptxSlides(buf);
+    const manifest: ManifestSlide[] = [
+      { source: 1, type: "requirement-matrix", placeholders: ["{CV/ref 1}"] },
+    ];
+    const { budgets } = computeBudgets(slides, manifest);
+    expect(budgets["rows[*].referens"]).toBe(70);
   });
 });
