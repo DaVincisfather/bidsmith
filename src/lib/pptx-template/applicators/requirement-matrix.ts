@@ -59,14 +59,18 @@ function buildRequirementMatrixMaps(ctx: ApplicatorContext): {
   const sec = ctx.sections.find(
     (s) => s.content?.format === "requirement-matrix-v2",
   );
-  if (!sec || sec.content?.format !== "requirement-matrix-v2") {
-    return { contentMap: {}, numberMap: {} };
-  }
+  // Missing section → empty rows, so the loop below blanks every slot (numbers
+  // included) rather than leaving the raw {placeholders} on the guaranteed
+  // min-1 page.
+  const rows =
+    sec && sec.content?.format === "requirement-matrix-v2"
+      ? sec.content.rows
+      : [];
 
   const cloneIndex = ctx.cloneIndex ?? 0;
   const base = cloneIndex * MATRIX_ROWS_PER_SLIDE;
   // This page's window of rows; may be shorter than 6 on the final page.
-  const window = sec.content.rows.slice(base, base + MATRIX_ROWS_PER_SLIDE);
+  const window = rows.slice(base, base + MATRIX_ROWS_PER_SLIDE);
 
   const contentMap: Record<string, string> = {};
   const numberMap: Record<string, string> = {};

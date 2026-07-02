@@ -92,12 +92,19 @@ export async function buildRequirementMatrixBundle(
 
   // One row per qualification requirement, each carrying a per-consultant
   // coverage array — so output scales with both requirement count and team
-  // size. The old fixed 4000 truncated large matrices (a 20-req, 5-person team
-  // needs ~7k). Clamped so cost stays bounded; callClaude streams (no ceiling).
+  // size. The old fixed 4000 truncated large matrices. The ceiling must stay
+  // ABOVE the estimate for a realistic large matrix (≤60 rows, per the schema
+  // cap), otherwise a max_tokens truncation yields unparseable JSON that the
+  // retry path re-truncates identically and finally drops the whole Kravmatris
+  // section. 40k comfortably covers 60 rows even for a large team; it costs
+  // nothing extra (billed on actual output) since callClaude streams (no
+  // wall-time ceiling) and the model supports 128k output. 1.3× absorbs
+  // row-splitting and Swedish JSON-escaping.
   const teamSize = Math.max(1, ctx.teamConsultants.length);
+  const rowEstimate = Math.max(1, kvalKrav.length);
   const maxTokens = Math.min(
-    16000,
-    Math.max(4000, 1000 + kvalKrav.length * (140 + teamSize * 40)),
+    40000,
+    Math.max(4000, Math.round((1500 + rowEstimate * (160 + teamSize * 45)) * 1.3)),
   );
 
   const { output: parsed, overflows } = await withBudgetRetry({

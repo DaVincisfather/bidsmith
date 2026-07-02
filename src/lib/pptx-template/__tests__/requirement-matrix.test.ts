@@ -175,6 +175,24 @@ describe("requirement-matrix applicator — pagination", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Missing section — the guaranteed page renders blank, not raw placeholders
+// ---------------------------------------------------------------------------
+
+describe("requirement-matrix applicator — missing section", () => {
+  it("renders one blank matrix page with no raw placeholders or numbers", async () => {
+    // No requirement-matrix-v2 section at all — the slide is still guaranteed
+    // (min 1 page), so it must blank cleanly rather than leak template markup.
+    const xml = await getSingleMatrixPage(makeMinimalSections());
+
+    expect(xml).not.toContain("{Ska-krav");
+    expect(xml).not.toContain("{Hur krav");
+    expect(xml).not.toContain("{CV/ref");
+    expect(hasRowNumber(xml, "01")).toBe(false);
+    expect(hasRowNumber(xml, "06")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Footer applied with correct counter
 // ---------------------------------------------------------------------------
 
