@@ -96,20 +96,22 @@ const OFFSCREEN_CM = 40;
 
 type RowStatus = "JA" | "NEJ" | "DELVIS";
 
-// Conventional compliance colours (white text on the pill). Amber/red are dark
-// enough to keep the white label readable.
+// Softened compliance colours — muted hues plus fill transparency so the pills
+// read calmer than pure green/amber/red while the white label stays legible.
 const STATUS_COLOR: Record<RowStatus, string> = {
-  JA: "2E7D32", // green
-  DELVIS: "B45309", // amber
-  NEJ: "C62828", // red
+  JA: "4C8C5E", // muted green
+  DELVIS: "C08A45", // muted amber
+  NEJ: "C46A6A", // muted red
 };
+const STATUS_ALPHA = "82000"; // 82% opacity
 // The template's UPPFYLLT pill (roundRect bg + separate text box). Each label
-// gets a pill + text-box width wide enough to keep it on one line (a too-narrow
-// box wraps and the second line is clipped by the pill height).
+// gets a width wide enough to keep it on one line (a too-narrow box wraps and
+// the second line is clipped by the pill height). Pills are centred in the
+// UPPFYLLT column and the label is centred in the pill.
 const PILL_X_CM = 21.48;
 const PILL_TEXT_X_CM = 21.8;
+const PILL_COLUMN_CENTER_CM = 23.28;
 const PILL_W_CM: Record<RowStatus, number> = { JA: 1.21, NEJ: 1.45, DELVIS: 2.35 };
-const PILL_TEXT_W_CM: Record<RowStatus, number> = { JA: 0.79, NEJ: 1.15, DELVIS: 2.0 };
 
 /**
  * Row-level UPPFYLLT status rolled up from the per-consultant coverage: met by
@@ -122,12 +124,14 @@ export function rowStatus(coverage: { status: RowStatus }[]): RowStatus {
 }
 
 /**
- * Colours each row's UPPFYLLT pill by its status (green/amber/red) and widens
- * the pill + text box for the longer "DELVIS" label. Runs on the original
- * (pre-restack) geometry, identifying the pill (roundRect) and its text box by
- * column x + row band. Unused rows are skipped (restack hides them).
+ * Colours each row's UPPFYLLT pill by its status (muted green/amber/red +
+ * transparency), sizes it to its label, and centres both the pill in the
+ * column and the label in the pill. Runs on the original (pre-restack)
+ * geometry, identifying the pill (roundRect) and its text box by column x + row
+ * band. Unused rows are skipped (restack hides them).
  */
 function styleStatusPills(doc: XMLDocument, statusValues: string[]): void {
+  const emu = (cm: number) => String(Math.round(cm * EMU_PER_CM));
   for (const sp of Array.from(doc.getElementsByTagNameNS(P_NS, "sp"))) {
     const off = sp.getElementsByTagNameNS(A_NS, "off")[0];
     if (!off) continue;
@@ -140,20 +144,37 @@ function styleStatusPills(doc: XMLDocument, statusValues: string[]): void {
     const status = statusValues[row] as RowStatus | "";
     if (!status) continue;
 
+    const width = PILL_W_CM[status];
+    const leftCm = PILL_COLUMN_CENTER_CM - width / 2;
     const ext = (off.parentNode as Element | null)?.getElementsByTagNameNS(A_NS, "ext")[0];
     const prst = sp
       .getElementsByTagNameNS(A_NS, "prstGeom")[0]
       ?.getAttribute("prst");
 
     if (prst === "roundRect" && Math.abs(xCm - PILL_X_CM) < 0.2) {
+      // Pill background: recolour (with transparency), size, centre in column.
       for (const clr of Array.from(sp.getElementsByTagNameNS(A_NS, "srgbClr"))) {
-        if (clr.getAttribute("val") === "000000") {
-          clr.setAttribute("val", STATUS_COLOR[status]);
-        }
+        if (clr.getAttribute("val") !== "000000") continue;
+        clr.setAttribute("val", STATUS_COLOR[status]);
+        const alpha =
+          clr.getElementsByTagNameNS(A_NS, "alpha")[0] ??
+          clr.appendChild(doc.createElementNS(A_NS, "a:alpha"));
+        (alpha as Element).setAttribute("val", STATUS_ALPHA);
       }
-      ext?.setAttribute("cx", String(Math.round(PILL_W_CM[status] * EMU_PER_CM)));
+      ext?.setAttribute("cx", emu(width));
+      off.setAttribute("x", emu(leftCm));
     } else if (Math.abs(xCm - PILL_TEXT_X_CM) < 0.2) {
-      ext?.setAttribute("cx", String(Math.round(PILL_TEXT_W_CM[status] * EMU_PER_CM)));
+      // Label box: match the pill and centre the text within it.
+      ext?.setAttribute("cx", emu(width));
+      off.setAttribute("x", emu(leftCm));
+      const para = sp.getElementsByTagNameNS(A_NS, "p")[0];
+      if (para) {
+        const pPr =
+          para.getElementsByTagNameNS(A_NS, "pPr")[0] ??
+          para.insertBefore(doc.createElementNS(A_NS, "a:pPr"), para.firstChild);
+        (pPr as Element).setAttribute("algn", "ctr");
+      }
+      sp.getElementsByTagNameNS(A_NS, "bodyPr")[0]?.setAttribute("anchor", "ctr");
     }
   }
 }
