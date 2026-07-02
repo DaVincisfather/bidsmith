@@ -94,10 +94,16 @@ export async function upsertConsultant(
     raw_cv_text: rawText,
   };
 
+  // Matcha på namn case-insensitivt. Escapa LIKE-metatecken (%/_/\) så ett namn som
+  // råkar innehålla dem inte matchar fel rad. limit(1) + äldsta först → maybeSingle
+  // kastar inte om det redan finns dubbletter (legacy-data) utan uppdaterar en av dem.
+  const likePattern = extraction.name.trim().replace(/[\\%_]/g, "\\$&");
   const { data: existing, error: lookupError } = await supabase
     .from("consultants")
     .select("id")
-    .ilike("name", extraction.name)
+    .ilike("name", likePattern)
+    .order("created_at", { ascending: true })
+    .limit(1)
     .maybeSingle();
   if (lookupError) throw new Error(lookupError.message);
 

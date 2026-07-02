@@ -24,8 +24,12 @@ function makeStub(existing: { id: string } | null) {
     from(table: string) {
       return {
         select: () => ({
-          // consultants-uppslag på namn
-          ilike: () => ({ maybeSingle: async () => ({ data: existing, error: null }) }),
+          // consultants-uppslag på namn: .ilike().order().limit().maybeSingle()
+          ilike: () => ({
+            order: () => ({
+              limit: () => ({ maybeSingle: async () => ({ data: existing, error: null }) }),
+            }),
+          }),
         }),
         update: () => ({ eq: () => okThenable(`${table}.update`) }),
         delete: () => ({ eq: () => okThenable(`${table}.delete`) }),
