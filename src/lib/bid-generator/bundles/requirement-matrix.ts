@@ -28,7 +28,10 @@ export const RequirementMatrixBundleSchema = z.object({
       }),
     )
     .min(1)
-    .max(6),
+    // No longer capped at the old 6-slot template limit — the matrix paginates
+    // across cloned slides (6 rows each). The upper bound is only a runaway
+    // guard: a real qualification-requirement set won't exceed this.
+    .max(60),
 });
 
 const REQUIREMENT_MATRIX_BUDGET_KEYS: string[] = [];
@@ -41,7 +44,8 @@ För varje ska-/bör-krav i RFP:en:
 3. Fyll i "coverage" — en per-konsult-bedömning: status JA/NEJ/DELVIS + kort evidence (1 mening).
    ALLA konsulter i teamet ska finnas med i coverage-arrayen för varje rad (minst 1).
 
-Fokusera på must- och should-krav. 1-6 rader per matris (template slot cap).
+Skapa EN rad per kvalifikationskrav i listan nedan (prioritera must- och should-krav).
+Matrisen pagineras automatiskt över flera slides — begränsa INTE antalet rader.
 
 Kravmatrisen får ALDRIG innehålla leverabler (det uppdraget ska producera, t.ex.
 rapporter/analyser) — de hör till genomförandeplanen, inte hit. Använd ENDAST
@@ -86,12 +90,29 @@ export async function buildRequirementMatrixBundle(
   const basePrompt =
     SYSTEM_PROMPT + kravBlock + renderBudgetTable(plan.budgets, REQUIREMENT_MATRIX_BUDGET_KEYS);
 
+  // One row per qualification requirement, each carrying a per-consultant
+  // coverage array — so output scales with both requirement count and team
+  // size. The old fixed 4000 truncated large matrices. The ceiling must stay
+  // ABOVE the estimate for a realistic large matrix (≤60 rows, per the schema
+  // cap), otherwise a max_tokens truncation yields unparseable JSON that the
+  // retry path re-truncates identically and finally drops the whole Kravmatris
+  // section. 40k comfortably covers 60 rows even for a large team; it costs
+  // nothing extra (billed on actual output) since callClaude streams (no
+  // wall-time ceiling) and the model supports 128k output. 1.3× absorbs
+  // row-splitting and Swedish JSON-escaping.
+  const teamSize = Math.max(1, ctx.teamConsultants.length);
+  const rowEstimate = Math.max(1, kvalKrav.length);
+  const maxTokens = Math.min(
+    40000,
+    Math.max(4000, Math.round((1500 + rowEstimate * (160 + teamSize * 45)) * 1.3)),
+  );
+
   const { output: parsed, overflows } = await withBudgetRetry({
     basePrompt,
     callLLM: (p) =>
       callClaude({
         model: MODELS.writingSupport,
-        maxTokens: 4000,
+        maxTokens,
         system: p,
         cachedContext: formatContext(ctx),
         userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",

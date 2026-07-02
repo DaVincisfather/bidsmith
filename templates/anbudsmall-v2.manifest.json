@@ -160,6 +160,7 @@
     {
       "source": 13,
       "type": "requirement-matrix",
+      "cloneFrom": "requirement-matrix",
       "placeholders": [
         "{Ska-krav 1 — formulering enligt upphandlingsunderlag}",
         "{Hur krav 1 uppfylls — konkret beskrivning}",

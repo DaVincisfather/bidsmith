@@ -74,6 +74,27 @@ function expandMultiline(node: Element, value: string): string {
  *
  * Exported here (moved from cover.ts) so all applicators share one copy.
  */
+/**
+ * Replaces text nodes whose FULL content exactly equals a map key (unlike
+ * replaceAllTextNodes, which does substring `includes` and would corrupt any
+ * content containing the key as a substring — e.g. remapping "01"→"07" would
+ * turn "ISO 9001" into "ISO 9007"). Use for short literal tokens like the
+ * static requirement-matrix row numbers. No multiline expansion.
+ */
+export function replaceExactTextNodes(
+  map: Record<string, string>,
+): (document: XMLDocument) => void {
+  return (document: XMLDocument) => {
+    const tNodes = Array.from(document.getElementsByTagNameNS(A_NS, "t"));
+    for (const node of tNodes) {
+      const text = node.textContent ?? "";
+      if (Object.prototype.hasOwnProperty.call(map, text)) {
+        node.textContent = map[text];
+      }
+    }
+  };
+}
+
 export function replaceAllTextNodes(
   map: Record<string, string>,
 ): (document: XMLDocument) => void {

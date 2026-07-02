@@ -52,6 +52,7 @@ const SIGNATURES: SlideSignature[] = [
   {
     type: "requirement-matrix",
     requires: [`{Ska-krav 1 ${EM} formulering enligt upphandlingsunderlag}`],
+    cloneFrom: "requirement-matrix",
   },
   {
     type: "reference",
