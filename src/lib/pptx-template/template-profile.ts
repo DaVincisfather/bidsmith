@@ -65,6 +65,10 @@ export type SlotProfile = z.infer<typeof SlotProfileSchema>;
 export const SlideProfileSchema = z.object({
   /** Slide index in the source pptx (1-based). */
   source: z.number().int().positive(),
+  /** The slide's primary capability. Set for whole-slide/auto capabilities that
+   *  have no fillable content slots (e.g. toc, a static passthrough); content
+   *  slides carry the capability per slot instead (a slide may mix capabilities). */
+  capability: z.enum(CAPABILITY_IDS).optional(),
   slots: z.array(SlotProfileSchema),
   /** Set when the slide is repeated once per item of a capability's data
    *  (e.g. one slide per phase / per reference / per matrix page). */
