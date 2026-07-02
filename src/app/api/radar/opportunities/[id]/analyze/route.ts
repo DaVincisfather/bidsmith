@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseUuidParam } from "@/lib/api-helpers";
+import { fetchTedXml } from "@/lib/safe-fetch";
 import { getUserId } from "@/lib/org";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 
@@ -31,10 +32,12 @@ export async function POST(
   // 2. Determine input text — prefer summary, fallback to fetching full notice XML
   let inputText = opp.summary;
   if (!inputText || inputText.length < 200) {
-    // raw_xml stores the XML URL from TED, not content — fetch it on demand
-    if (opp.raw_xml && opp.raw_xml.startsWith("http")) {
+    // raw_xml stores the XML URL from TED, not content — fetch it on demand.
+    // fetchTedXml enforces the TED host allowlist (SSRF guard) and rejects a
+    // non-TED URL before any network call.
+    if (opp.raw_xml) {
       try {
-        const tedRes = await fetch(opp.raw_xml, { signal: AbortSignal.timeout(10000) });
+        const tedRes = await fetchTedXml(opp.raw_xml);
         if (tedRes.ok) {
           const xml = await tedRes.text();
           const stripped = xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
