@@ -11,7 +11,9 @@
 -- Skriver HELA manifestet (matchar templates/anbudsmall-v2.manifest.json exakt) sa
 -- ingen tyst drift mellan disk och DB. Idempotent: kan koeras om utan bieffekt.
 -- Applicera manuellt via Supabase SQL Editor (redigera aldrig en applicerad migration).
-update templates set manifest = $manifest$
+-- replace(..., chr(13), '') strippar ev. CR (Windows CRLF) sa JSONB-casten inte
+-- faller pa "Character with value 0x0d must be escaped" oavsett radslut vid inklistring.
+update templates set manifest = replace($manifest$
 {
   "manifestVersion": 1,
   "name": "anbudsmall-v2",
@@ -287,5 +289,5 @@ update templates set manifest = $manifest$
     }
   ]
 }
-$manifest$::jsonb
+$manifest$, chr(13), '')::jsonb
 where name = 'anbudsmall-v2' and version = 1;
