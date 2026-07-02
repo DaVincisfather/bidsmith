@@ -31,7 +31,44 @@ import {
 export const MATRIX_ROWS_PER_SLIDE = 6;
 
 const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
+const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
 const EMU_PER_CM = 360000;
+
+// Left edge (cm) of the three body-text columns (SKA-KRAV, HUR, REFERENS).
+const CONTENT_COL_X = [7.26, 25.93, 39.26];
+// All body text is pinned to one size so per-box normAutofit shrink can't leave
+// cells at different sizes. 15 pt = the template's smallest body size.
+const BODY_FONT_SZ = "1500";
+
+/**
+ * Pins every body-text cell (the three content columns) to a single font size
+ * and disables autofit, so long and short rows render at the same size instead
+ * of each box shrinking its text by a different amount. Runs on the original
+ * (pre-restack) geometry, identifying cells by column x + row band.
+ */
+function normalizeMatrixContentFont(doc: XMLDocument): void {
+  const sps = Array.from(doc.getElementsByTagNameNS(P_NS, "sp"));
+  for (const sp of sps) {
+    const off = sp.getElementsByTagNameNS(A_NS, "off")[0];
+    if (!off) continue;
+    const xCm = Number(off.getAttribute("x")) / EMU_PER_CM;
+    const yCm = Number(off.getAttribute("y")) / EMU_PER_CM;
+    if (yCm < BAND_EDGES[0] || yCm >= BAND_EDGES[6]) continue;
+    if (!CONTENT_COL_X.some((cx) => Math.abs(xCm - cx) < 0.5)) continue;
+
+    for (const el of Array.from(sp.getElementsByTagName("*"))) {
+      if (el.getAttribute("sz")) el.setAttribute("sz", BODY_FONT_SZ);
+    }
+    const bodyPr = sp.getElementsByTagNameNS(A_NS, "bodyPr")[0];
+    if (bodyPr) {
+      for (const tag of ["normAutofit", "spAutoFit", "noAutofit"]) {
+        const el = bodyPr.getElementsByTagNameNS(A_NS, tag)[0];
+        if (el) bodyPr.removeChild(el);
+      }
+      bodyPr.appendChild(doc.createElementNS(A_NS, "a:noAutofit"));
+    }
+  }
+}
 
 // Slide-13 geometry (cm), measured from the template. The 6 rows are packed at
 // ~1.81 cm pitch into y=9.47–20.6, leaving ~5.7 cm of empty band down to the
@@ -181,6 +218,8 @@ export function requirementMatrixApplicator(ctx: ApplicatorContext) {
       replaceParagraphTextNodes(contentMap)(doc);
       // Node-level for all remaining single-run placeholders (incl. table cells)
       replaceAllTextNodes(contentMap)(doc);
+      // Pin all body text to one size (before restack, while y is original).
+      normalizeMatrixContentFont(doc);
       // Spread the rows with content-aware heights so multi-line text doesn't overlap.
       restackMatrixRows(doc, rowLines);
       // Footer last
