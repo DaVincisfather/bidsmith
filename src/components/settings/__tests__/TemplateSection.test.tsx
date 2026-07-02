@@ -83,11 +83,78 @@ describe("TemplateSection", () => {
       screen.getByText(/Bilder lämnas orörda/)
     ).toBeInTheDocument();
     expect(screen.getByText(/duplikat av slide 7/)).toBeInTheDocument();
-    expect(screen.getByText("phases[*].name")).toBeInTheDocument();
+    // Budgetar visas nu med läsbar etikett, inte rå fältväg.
+    expect(screen.getByText("Fas – Namn")).toBeInTheDocument();
+    expect(screen.queryByText("phases[*].name")).not.toBeInTheDocument();
     expect(screen.getByText(/sliden saknar diarienummer/)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Aktivera den här mallen/ })
     ).toBeInTheDocument();
+  });
+
+  it("varnar för trånga fält men tillåter aktivering (varna + tillåt)", async () => {
+    // objective: tak 120, budget 60 < 0.9*120 => trångt. name 40 = tak => ej trångt.
+    const tightManifest: TemplateManifest = {
+      ...manifest,
+      budgets: { "phases[*].name": 40, "phases[*].objective": 60 },
+      fieldSlides: { "phases[*].name": 6, "phases[*].objective": 7 },
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: "44444444-4444-4444-4444-444444444444",
+        name: "trång-mall",
+        version: 1,
+        manifest: tightManifest,
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TemplateSection templates={templates} activeTemplateId={null} />);
+    const input = document.getElementById("template-upload") as HTMLInputElement;
+    const file = new File(["x"], "trång-mall.pptx", {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(screen.getByText(/Förhandsgranskning: trång-mall/)).toBeInTheDocument()
+    );
+    // Varning finns och namnger det trånga fältet med budget + normalt tak.
+    expect(screen.getByText(/tvingar kortare text/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Fas – Mål — mallen rymmer 60 tecken \(normalt 120\)/)
+    ).toBeInTheDocument();
+    // Aktivering är fortfarande tillåten (ingen hård blockering).
+    expect(
+      screen.getByRole("button", { name: /Aktivera den här mallen/ })
+    ).not.toBeDisabled();
+  });
+
+  it("visar ingen trång-varning när alla fält ryms", async () => {
+    // Bara name 40/40 => inget fält trångt.
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: "55555555-5555-5555-5555-555555555555",
+        name: "rymlig-mall",
+        version: 1,
+        manifest,
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TemplateSection templates={templates} activeTemplateId={null} />);
+    const input = document.getElementById("template-upload") as HTMLInputElement;
+    const file = new File(["x"], "rymlig-mall.pptx", {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(screen.getByText(/Förhandsgranskning: rymlig-mall/)).toBeInTheDocument()
+    );
+    expect(screen.queryByText(/tvingar kortare text/i)).not.toBeInTheDocument();
   });
 
   afterEach(() => {
