@@ -13,7 +13,7 @@
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { renderTemplate } from "../loader";
-import { paginateMatrixRows } from "../applicators/requirement-matrix";
+import { paginateMatrixRows, rowStatus } from "../applicators/requirement-matrix";
 import { bundledTemplate } from "../registry";
 import type { BidSection } from "../../types";
 import type { MasterContext } from "../types";
@@ -217,6 +217,24 @@ describe("paginateMatrixRows", () => {
 
   it("returns a single (empty) page for no rows", () => {
     expect(paginateMatrixRows([])).toEqual([0]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Row status roll-up from per-consultant coverage
+// ---------------------------------------------------------------------------
+
+describe("rowStatus", () => {
+  it("is JA when anyone fully meets the requirement", () => {
+    expect(rowStatus([{ status: "NEJ" }, { status: "JA" }, { status: "DELVIS" }])).toBe("JA");
+  });
+
+  it("is DELVIS when nobody fully meets but someone partially does", () => {
+    expect(rowStatus([{ status: "NEJ" }, { status: "DELVIS" }])).toBe("DELVIS");
+  });
+
+  it("is NEJ when nobody meets it", () => {
+    expect(rowStatus([{ status: "NEJ" }, { status: "NEJ" }])).toBe("NEJ");
   });
 });
 
