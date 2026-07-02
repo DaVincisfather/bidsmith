@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { parseUuidParam } from "@/lib/api-helpers";
 import { getUserId } from "@/lib/org";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 
@@ -7,7 +8,10 @@ export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const idResult = parseUuidParam(rawId, "opportunity id");
+  if (!idResult.ok) return idResult.response;
+  const id = idResult.data;
   const supabase = await createClient();
   // Route is auth-gated by middleware; attribute the analysis cost to the
   // triggering user so it isn't bucketed as "Okänd" in workspace stats.

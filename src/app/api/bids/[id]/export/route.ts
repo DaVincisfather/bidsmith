@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
+import { parseUuidParam } from "@/lib/api-helpers";
 import { getUserId } from "@/lib/org";
 import { renderTemplate } from "@/lib/pptx-template/loader";
 import { loadTemplateForBid } from "@/lib/pptx-template/active-template";
@@ -13,7 +14,10 @@ interface RouteContext {
 }
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const idResult = parseUuidParam(rawId, "bid id");
+  if (!idResult.ok) return idResult.response;
+  const id = idResult.data;
   // Middleware guarantees authentication; no org scoping in single-workspace model.
   const authed = await createClient();
   await getUserId(authed);
