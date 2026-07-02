@@ -13,6 +13,7 @@
 import { describe, it, expect } from "vitest";
 import JSZip from "jszip";
 import { renderTemplate } from "../loader";
+import { paginateMatrixRows } from "../applicators/requirement-matrix";
 import { bundledTemplate } from "../registry";
 import type { BidSection } from "../../types";
 import type { MasterContext } from "../types";
@@ -189,6 +190,33 @@ describe("requirement-matrix applicator — missing section", () => {
     expect(xml).not.toContain("{CV/ref");
     expect(hasRowNumber(xml, "01")).toBe(false);
     expect(hasRowNumber(xml, "06")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Content-aware pagination
+// ---------------------------------------------------------------------------
+
+describe("paginateMatrixRows", () => {
+  const short = { requirement: "kort", hurUppfylls: "kort", referens: "kort" };
+  // A ~100-char requirement wraps to 3 lines in the SKA-KRAV column.
+  const long = { requirement: "x".repeat(100), hurUppfylls: "kort", referens: "kort" };
+
+  it("packs short rows up to the 6-slot physical cap per page", () => {
+    expect(paginateMatrixRows(Array(6).fill(short))).toEqual([6]);
+    expect(paginateMatrixRows(Array(7).fill(short))).toEqual([6, 1]);
+    expect(paginateMatrixRows(Array(14).fill(short))).toEqual([6, 6, 2]);
+  });
+
+  it("puts fewer tall rows per page so they don't overflow the slide", () => {
+    // Six 3-line rows can't all fit the vertical band → spill to a new page.
+    const pages = paginateMatrixRows(Array(6).fill(long));
+    expect(pages.reduce((a, b) => a + b, 0)).toBe(6);
+    expect(Math.max(...pages)).toBeLessThan(6);
+  });
+
+  it("returns a single (empty) page for no rows", () => {
+    expect(paginateMatrixRows([])).toEqual([0]);
   });
 });
 
