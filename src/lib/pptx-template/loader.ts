@@ -14,7 +14,7 @@ import { phasesOverviewApplicator } from "./applicators/phases-overview";
 import { teamPricingApplicator } from "./applicators/team-pricing";
 import {
   requirementMatrixApplicator,
-  MATRIX_ROWS_PER_SLIDE,
+  paginateMatrixRows,
 } from "./applicators/requirement-matrix";
 import { referenceApplicator } from "./applicators/reference";
 import { confidentialityApplicator } from "./applicators/confidentiality";
@@ -139,20 +139,20 @@ function getCloneItems(
     }
   }
   if (key === "requirement-matrix") {
-    // One clone per page of MATRIX_ROWS_PER_SLIDE rows. Always at least one
+    // One clone per content-aware page (paginateMatrixRows — the same call the
+    // applicator windows on, so counts stay in lockstep). Always at least one
     // page so the matrix slide never disappears when data is missing/empty
-    // (unlike phases/references, the matrix slide is not optional). The
-    // applicator reads the rows itself and windows on cloneIndex, so the
-    // page items only need the right length — their contents are unused.
+    // (unlike phases/references, the matrix slide is not optional). The page
+    // items only need the right length — their contents are unused.
     const sec = sections.find(
       (s) => s.content?.format === "requirement-matrix-v2",
     );
-    const rowCount =
+    const rows =
       sec && sec.content?.format === "requirement-matrix-v2"
-        ? sec.content.rows.length
-        : 0;
-    const pages = Math.max(1, Math.ceil(rowCount / MATRIX_ROWS_PER_SLIDE));
-    return Array.from({ length: pages });
+        ? sec.content.rows
+        : [];
+    const pages = rows.length > 0 ? paginateMatrixRows(rows).length : 1;
+    return Array.from({ length: Math.max(1, pages) });
   }
   return [];
 }
