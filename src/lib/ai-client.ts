@@ -16,6 +16,11 @@ const BASE_DELAY_MS = 1000;
 // längre backoff (5s/10s/20s/40s) ger tid för kapaciteten att komma tillbaka.
 const OVERLOAD_MAX_RETRIES = 5;
 const OVERLOAD_BASE_DELAY_MS = 5000;
+// Format-error retries re-run at full price. Cap the cumulative OUTPUT tokens a
+// single callClaude may burn on them, so a bundle that keeps returning malformed
+// JSON can't triple the cost of an expensive (Opus effort=max) call. Transport
+// retries (429/5xx) consume no output tokens and are NOT gated by this.
+const RETRY_OUTPUT_BUDGET_MULTIPLE = 2.5;
 
 function isOverloaded(error: unknown): boolean {
   return error instanceof APIError && error.status === 529;
@@ -87,6 +92,8 @@ export async function callClaude<T>({
   temperature,
 }: CallClaudeOptions<T>): Promise<T> {
   let lastError: unknown;
+  // Output tokens burned across (format-error) retries, for the cost cap below.
+  let retryOutputTokens = 0;
 
   // API:t avvisar temperature ≠ 1 när adaptive thinking är aktivt (400, ej
   // retrybar) — fånga konfigurationsfelet här istället för i drift.
@@ -156,6 +163,7 @@ export async function callClaude<T>({
         cacheCreationTokens: u.cache_creation_input_tokens ?? 0,
         latencyMs: Date.now() - startedAt,
       });
+      retryOutputTokens += u.output_tokens ?? 0;
 
       // With adaptive thinking the first block is "thinking"; the text
       // block follows. Find the first text block rather than indexing.
@@ -175,7 +183,13 @@ export async function callClaude<T>({
       // Budgeten gäller per felklass: bara 529 får den utökade — ett formatfel
       // efter en 529 ska inte ärva fem fullpris-omförsök.
       const maxAttempts = isOverloaded(error) ? OVERLOAD_MAX_RETRIES : MAX_RETRIES;
-      if (attempt < maxAttempts - 1 && isRetryable(error)) {
+      // Format-error retries cost a full generation each — stop re-prompting once
+      // they've burned the per-request output budget. Transport errors consumed
+      // no tokens, so they're never gated here.
+      const withinCostCap =
+        !(error instanceof ResponseFormatError) ||
+        retryOutputTokens < maxTokens * RETRY_OUTPUT_BUDGET_MULTIPLE;
+      if (attempt < maxAttempts - 1 && isRetryable(error) && withinCostCap) {
         // Transport errors (429/5xx) get exponential backoff; format errors
         // are model drift with no server to back off from — re-prompt at once.
         if (isOverloaded(error)) {

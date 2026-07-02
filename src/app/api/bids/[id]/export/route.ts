@@ -49,6 +49,17 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     );
   }
 
+  // A 'draft' with failed bundles is a partial bid: the sections those bundles
+  // would have filled are missing, so their slides export with raw {placeholder}
+  // tokens visible. Refuse rather than hand out a broken deck.
+  const failedBundles = (bid.failed_bundles as unknown[] | null) ?? [];
+  if (failedBundles.length > 0) {
+    return NextResponse.json(
+      { error: "Bid has failed sections. Re-run generation before exporting." },
+      { status: 409 },
+    );
+  }
+
   const { data: analysisRow, error: analysisError } = await supabase
     .from("analyses")
     .select("analysis")
