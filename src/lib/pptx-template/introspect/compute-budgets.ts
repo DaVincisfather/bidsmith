@@ -1,6 +1,6 @@
 import type { SlideShapes, ShapeText } from "./read-pptx";
 import type { ManifestSlide } from "../manifest-types";
-import type { FieldBudgets } from "../budget-types";
+import { EDITORIAL_CAPS, type FieldBudgets } from "../budget-types";
 
 // HYBRIDMODELL (Stefan-beslut 2026-06-12, efter kalibrerings-stopp).
 //
@@ -60,35 +60,21 @@ interface BudgetTokenSpec {
 
 // Tokens vars innehåll är AI-skrivet och längdbudgeterat. Övriga tokens
 // (kundnamn, datum, konsultrader) fylls deterministiskt och behöver ingen budget.
-// editorialCap = fältets semantiska maxlängd (konvention, alla mallar).
+// editorialCap = fältets semantiska maxlängd — hämtas ur EDITORIAL_CAPS
+// (budget-types.ts), enda sanningskällan som delas med klient-UI:t.
 const BUDGET_TOKENS: Record<string, BudgetTokenSpec> = {
-  [`{Fas 1 ${EM} namn}`]: { fieldPath: "phases[*].name", editorialCap: 40, maxLines: 1 },
-  [`{M1${EN}M2}`]: { fieldPath: "phases[*].period", editorialCap: 10, maxLines: 1 },
-  "{Mål}": { fieldPath: "phases[*].objective", editorialCap: 120 },
-  "{Aktiviteter}": {
-    fieldPath: "phases[*].activities[*]",
-    editorialCap: 120,
-    divideByCap: "activities",
-  },
-  "{Leveranser}": {
-    fieldPath: "phases[*].deliverables[*]",
-    editorialCap: 100,
-    divideByCap: "deliverables",
-  },
-  "{Beslut}": {
-    fieldPath: "phases[*].decisions[*]",
-    editorialCap: 100,
-    divideByCap: "decisions",
-  },
-  [`{Avstämning 1 ${EM} tidpunkt och innehåll}`]: {
-    fieldPath: "checkpoints[*]",
-    editorialCap: 80,
-  },
-  "{Beskrivning}": { fieldPath: "certs[*].description", editorialCap: 80 },
+  [`{Fas 1 ${EM} namn}`]: fieldSpec("phases[*].name", { maxLines: 1 }),
+  [`{M1${EN}M2}`]: fieldSpec("phases[*].period", { maxLines: 1 }),
+  "{Mål}": fieldSpec("phases[*].objective"),
+  "{Aktiviteter}": fieldSpec("phases[*].activities[*]", { divideByCap: "activities" }),
+  "{Leveranser}": fieldSpec("phases[*].deliverables[*]", { divideByCap: "deliverables" }),
+  "{Beslut}": fieldSpec("phases[*].decisions[*]", { divideByCap: "decisions" }),
+  [`{Avstämning 1 ${EM} tidpunkt och innehåll}`]: fieldSpec("checkpoints[*]"),
+  "{Beskrivning}": fieldSpec("certs[*].description"),
   // Tabellfält (kravmatris slide 13, team slide 12): PPTX-tabeller med autohöjd —
   // editorialOnly, geometrin konsulteras aldrig. Varje fälts alla token-varianter
   // (rad 1 långform + rad 2–N kortform) delar tak + fieldPath.
-  ...tableField("rows[*].requirement", 160, [
+  ...tableField("rows[*].requirement", [
     `{Ska-krav 1 ${EM} formulering enligt upphandlingsunderlag}`,
     "{Ska-krav 2}",
     "{Ska-krav 3}",
@@ -96,7 +82,7 @@ const BUDGET_TOKENS: Record<string, BudgetTokenSpec> = {
     "{Ska-krav 5}",
     "{Ska-krav 6}",
   ]),
-  ...tableField("rows[*].hurUppfylls", 160, [
+  ...tableField("rows[*].hurUppfylls", [
     `{Hur krav 1 uppfylls ${EM} konkret beskrivning}`,
     "{Hur krav 2 uppfylls}",
     "{Hur krav 3 uppfylls}",
@@ -104,7 +90,7 @@ const BUDGET_TOKENS: Record<string, BudgetTokenSpec> = {
     "{Hur krav 5 uppfylls}",
     "{Hur krav 6 uppfylls}",
   ]),
-  ...tableField("rows[*].referens", 70, [
+  ...tableField("rows[*].referens", [
     "{CV/ref 1}",
     "{CV/ref 2}",
     "{CV/ref 3}",
@@ -112,7 +98,7 @@ const BUDGET_TOKENS: Record<string, BudgetTokenSpec> = {
     "{CV/ref 5}",
     "{CV/ref 6}",
   ]),
-  ...tableField("members[*].role", 60, [
+  ...tableField("members[*].role", [
     "{Roll 1}",
     "{Roll 2}",
     "{Roll 3}",
@@ -121,13 +107,33 @@ const BUDGET_TOKENS: Record<string, BudgetTokenSpec> = {
   ]),
 };
 
+/** Slår upp fältets redaktionella tak i EDITORIAL_CAPS; kastar om det saknas. */
+function capFor(fieldPath: string): number {
+  const cap = EDITORIAL_CAPS[fieldPath];
+  if (cap === undefined) {
+    throw new Error(`EDITORIAL_CAPS saknar tak för budgetfältet ${fieldPath}`);
+  }
+  return cap;
+}
+
+/** Textbox-spec: tak ur EDITORIAL_CAPS + valfria geometri-flaggor. */
+function fieldSpec(
+  fieldPath: string,
+  extra?: Pick<BudgetTokenSpec, "maxLines" | "divideByCap">,
+): BudgetTokenSpec {
+  return { fieldPath, editorialCap: capFor(fieldPath), ...extra };
+}
+
 /** Bygger editorialOnly-specar för ett tabellfälts alla token-varianter. */
 function tableField(
   fieldPath: string,
-  editorialCap: number,
   tokens: string[],
 ): Record<string, BudgetTokenSpec> {
-  const spec: BudgetTokenSpec = { fieldPath, editorialCap, editorialOnly: true };
+  const spec: BudgetTokenSpec = {
+    fieldPath,
+    editorialCap: capFor(fieldPath),
+    editorialOnly: true,
+  };
   return Object.fromEntries(tokens.map((t) => [t, spec]));
 }
 
