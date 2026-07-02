@@ -31,7 +31,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const result = await shortenField({ text, budget, fieldLabel }, ({ system, userContent }) =>
       callClaude({
         model: MODELS.writingSupport,
-        maxTokens: 1024,
+        maxTokens: 2048,
         system,
         userContent,
         schema: ShortenedTextSchema,

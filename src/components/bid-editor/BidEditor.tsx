@@ -10,7 +10,7 @@ import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./renderers";
 import { StructureEvalBadge } from "./StructureEvalBadge";
 import { OverflowChecklist } from "./OverflowChecklist";
-import { getFieldValue, setFieldValue } from "@/lib/bid-editor/field-path";
+import { getFieldValue, setFieldValue, findOverflowSection } from "@/lib/bid-editor/field-path";
 import { ForgeLoader } from "../ForgeLoader";
 
 interface BidEditorProps {
@@ -51,6 +51,14 @@ export function BidEditor({
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  // Senaste sections — läses av async onShorten så en samtidig redigering under
+  // LLM-anropet inte skrivs över (stale-closure). Håller sig synkad via effekten nedan.
+  const sectionsRef = useRef<BidSection[]>(initialSections);
+  useEffect(() => {
+    sectionsRef.current = sections;
+  }, [sections]);
+  // Hindrar dubbel-fire i samma tick (guard-state uppdateras först vid nästa render).
+  const shorteningRef = useRef(false);
 
   // Walk all sections, run each section's content through verifyFieldBudgets.
   // Each section has its own data shape (phases / quality / etc.); verifyFieldBudgets
@@ -123,7 +131,9 @@ export function BidEditor({
   }
 
   function handleSectionChange(key: string, updated: BidSection) {
-    const next = sections.map((s) => (s.key === key ? updated : s));
+    // sectionsRef (inte closure-`sections`) så async-appliceringar bygger på senaste läget.
+    const next = sectionsRef.current.map((s) => (s.key === key ? updated : s));
+    sectionsRef.current = next;
     setSections(next);
     const newFlags = recomputeOverflowFlags(next);
     setOverflowFlags(newFlags);
@@ -147,13 +157,14 @@ export function BidEditor({
 
   // Skriv om ett flaggat fält ≤ tak via /shorten och applicera i rätt sektion.
   async function onShorten(flag: OverflowFlag) {
-    if (shorteningKey) return; // en i taget
-    const section = sections.find(
-      (s) => s.content && typeof getFieldValue(s.content, flag.fieldPath) === "string",
-    );
-    if (!section) return;
-    const text = getFieldValue(section.content, flag.fieldPath) as string;
+    if (shorteningRef.current) return; // en i taget (ref => tål dubbel-fire i samma tick)
+    // Matcha sektionen som FAKTISKT är över budget (samma val som recomputeOverflowFlags
+    // gör vid dedup), inte bara första sektion som råkar ha ett värde på vägen.
+    const target = findOverflowSection(sectionsRef.current, flag.fieldPath, flag.budget);
+    if (!target) return;
+    const text = getFieldValue(target.content, flag.fieldPath) as string;
 
+    shorteningRef.current = true;
     setShorteningKey(`${flag.slide}-${flag.fieldPath}`);
     setError(null);
     try {
@@ -162,17 +173,19 @@ export function BidEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, budget: flag.budget, fieldLabel: flag.fieldLabel }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Kortningen misslyckades");
-      }
-      const { text: shortened } = await res.json();
-      // setFieldValue byter bara ut ett textblad — strukturen (och därmed typen) bevaras.
-      const newContent = setFieldValue(section.content, flag.fieldPath, shortened) as typeof section.content;
-      handleSectionChange(section.key, { ...section, content: newContent });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "Kortningen misslyckades");
+      if (!data || typeof data.text !== "string") throw new Error("Kortningen misslyckades");
+      // Applicera mot SENASTE sektionsläget (kan ha ändrats under LLM-anropet) så en
+      // samtidig redigering i samma sektion inte skrivs över; byt bara ut detta fält.
+      const latest = sectionsRef.current.find((s) => s.key === target.key);
+      if (!latest?.content) return;
+      const newContent = setFieldValue(latest.content, flag.fieldPath, data.text) as typeof latest.content;
+      handleSectionChange(target.key, { ...latest, content: newContent });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kortningen misslyckades");
     } finally {
+      shorteningRef.current = false;
       setShorteningKey(null);
     }
   }

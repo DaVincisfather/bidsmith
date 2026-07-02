@@ -31,6 +31,22 @@ export function getFieldValue(content: unknown, path: string): unknown {
 }
 
 /**
+ * Sektionen vars content har `fieldPath` OCH vars värde är över `budget`. Matchar
+ * valet som overflow-flaggornas dedup gör (första över-budget-sektionen), inte bara
+ * första sektion som råkar ha ett strängvärde på vägen.
+ */
+export function findOverflowSection<T extends { content?: unknown }>(
+  sections: T[],
+  fieldPath: string,
+  budget: number,
+): T | undefined {
+  return sections.find((s) => {
+    const v = s.content !== undefined ? getFieldValue(s.content, fieldPath) : undefined;
+    return typeof v === "string" && v.length > budget;
+  });
+}
+
+/**
  * Returnerar en ny struktur med `value` satt vid path; klonar bara noderna längs
  * vägen (React-immutabilitet), övrigt delas. Saknad väg → returnerar content oförändrat.
  */

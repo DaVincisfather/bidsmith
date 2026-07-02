@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getFieldValue, setFieldValue } from "../field-path";
+import { getFieldValue, setFieldValue, findOverflowSection } from "../field-path";
 
 describe("getFieldValue", () => {
   it("läser nästlat objekt-i-array (phases[0].objective)", () => {
@@ -46,5 +46,23 @@ describe("setFieldValue", () => {
     const content = { phases: [] as unknown[] };
     const next = setFieldValue(content, "phases[0].objective", "ny");
     expect(next).toEqual(content);
+  });
+});
+
+describe("findOverflowSection", () => {
+  it("väljer sektionen som är ÖVER budget, inte bara första med värde på vägen", () => {
+    // Delad fieldPath över sektioner: A ryms (kort), B är över. Overflow-flaggan hör
+    // till B — helpern måste välja B, inte A (annars kortas fel/redan-ok fält).
+    const sections = [
+      { key: "a", content: { rows: [{ requirement: "kort" }] } },
+      { key: "b", content: { rows: [{ requirement: "x".repeat(200) }] } },
+    ];
+    const hit = findOverflowSection(sections, "rows[0].requirement", 160);
+    expect(hit?.key).toBe("b");
+  });
+
+  it("returnerar undefined när ingen sektion är över budget", () => {
+    const sections = [{ key: "a", content: { rows: [{ requirement: "kort" }] } }];
+    expect(findOverflowSection(sections, "rows[0].requirement", 160)).toBeUndefined();
   });
 });
