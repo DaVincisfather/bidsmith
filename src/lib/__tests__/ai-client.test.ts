@@ -145,6 +145,36 @@ describe("callClaude — overloaded-resiliens", () => {
   });
 });
 
+describe("callClaude — retry-kostnadstak", () => {
+  const schema = z.object({ a: z.number() });
+  const baseArgs = {
+    maxTokens: 100, system: "sys", userContent: "user",
+    label: "test", model: "claude-sonnet-4-6", schema,
+  };
+
+  it("stoppar formatfel-retries när output-budgeten (maxTokens×2.5) är slut", async () => {
+    // Varje formatfel-svar bränner 200 output-tokens; taket är 100×2.5 = 250,
+    // så andra försöket (400) passerar taket → inget tredje försök.
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: "ingen json" }],
+      usage: { output_tokens: 200 },
+    }));
+    const err = await callClaude({ ...baseArgs }).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it("billiga formatfel behåller hela retry-budgeten (3 försök)", async () => {
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: "ingen json" }],
+      usage: { output_tokens: 10 },
+    }));
+    const err = await callClaude({ ...baseArgs }).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+  });
+});
+
 describe("callClaude — temperature passthrough", () => {
   const schema = z.object({ a: z.number() });
   const baseArgs = {
