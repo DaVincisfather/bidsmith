@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseDocument } from "@/lib/document-parser";
 import { extractConsultant } from "@/lib/consultant-extractor";
-import { createServiceClient } from "@/lib/supabase";
+import { createServiceClient, upsertConsultant } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 
@@ -35,54 +35,13 @@ export async function POST(request: NextRequest) {
         // Extract structured profile with Sonnet — pass userId for AI cost attribution
         const extraction = await extractConsultant(rawText, userId);
 
-        // Insert consultant
-        const { data: consultant, error: consultantError } = await supabase
-          .from("consultants")
-          .insert({
-            name: extraction.name,
-            level: extraction.level,
-            years_experience: extraction.yearsExperience,
-            summary: extraction.summary,
-            raw_cv_text: rawText,
-          })
-          .select()
-          .single();
-
-        if (consultantError) throw new Error(consultantError.message);
-
-        // Insert competencies
-        if (extraction.competencies.length > 0) {
-          const { error: compError } = await supabase
-            .from("consultant_competencies")
-            .insert(
-              extraction.competencies.map((c) => ({
-                consultant_id: consultant.id,
-                competency: c.competency,
-                category: c.category,
-              }))
-            );
-          if (compError) throw new Error(compError.message);
-        }
-
-        // Insert references
-        if (extraction.references.length > 0) {
-          const { error: refError } = await supabase
-            .from("consultant_references")
-            .insert(
-              extraction.references.map((r) => ({
-                consultant_id: consultant.id,
-                title: r.title,
-                description: r.description,
-                year: r.year,
-                sector: r.sector,
-              }))
-            );
-          if (refError) throw new Error(refError.message);
-        }
+        // Upserta på namn: samma konsult som redan finns uppdateras (CV skrivs om)
+        // i stället för att bli en dubblett.
+        const { consultantId } = await upsertConsultant(supabase, extraction, rawText);
 
         results.push({
           fileName: file.name,
-          consultantId: consultant.id,
+          consultantId,
           error: null,
         });
       } catch (err) {
