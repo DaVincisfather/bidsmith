@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseDocument } from "@/lib/document-parser";
+import {
+  parseDocument,
+  validateDocument,
+  sanitizeFilename,
+} from "@/lib/document-parser";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
@@ -18,10 +22,25 @@ export async function POST(request: NextRequest) {
     const userId = await getUserId(authed);
     const supabase = createServiceClient();
 
-    // Upload file to Supabase Storage. Path prefix = user_id for storage
-    // organisation; bucket RLS policies scope reads/writes per user.
-    const filePath = `${userId}/${Date.now()}-${file.name}`;
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Validate size + type BEFORE writing to Storage — an oversized or
+    // unsupported file must not leave an orphan object behind, and this
+    // surfaces as a 400 rather than a 500 from parseDocument later.
+    try {
+      validateDocument(buffer, file.name);
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Invalid file" },
+        { status: 400 }
+      );
+    }
+
+    // Upload file to Supabase Storage. Path prefix = user_id for storage
+    // organisation; bucket RLS policies scope reads/writes per user. The
+    // filename is sanitised so an attacker-supplied name can't inject path
+    // separators into the storage key (original name is stored on the row).
+    const filePath = `${userId}/${Date.now()}-${sanitizeFilename(file.name)}`;
 
     const { error: uploadError } = await supabase.storage
       .from("rfp-documents")
