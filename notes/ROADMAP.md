@@ -4,7 +4,7 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-02 — main @ `ae00b02`_
+_Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
 
 ---
 
@@ -18,14 +18,14 @@ _Senast uppdaterad: 2026-07-02 — main @ `ae00b02`_
 Design-doc: `notes/2026-07-02-template-upload-architecture.md` (A+C-combo, B inkrementellt).
 Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profil.
 - [x] Slice 1 — mall-profil-schema + migration 008 (#42, merged)
-- [x] Slice 2 — `manifestToProfile`: manifest → capability-klassificering (#44, i review)
+- [x] Slice 2 — `manifestToProfile`: manifest → capability-klassificering (#44, merged)
 - [ ] Slice 3 — profil-driven renderare, golden-paritet
 - [ ] Slice 4 — `generic-prose`-bundle + prose/field-format (täcker främmande sektioner)
 - [ ] Slice 5 — onboarding-UI (introspektion + intervju + redigerbar profil)
 - [ ] Slice 6 — B inkrementellt: bullets, sedan godtyckliga table-rows
 
 ## Öppna PR:er (väntar review)
-- **#44** — slice 2 (manifest → profil)
+_Inga just nu._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
 - Statisk TOC-sidnumrering desyncar (hårdkodad; matris-paginering + tomma referenser förskjuter riktiga nummer)
@@ -46,7 +46,7 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 - #34 API-härdning · #35 matcher-tester · #36 SSRF + upload-säkerhet · #37 OOM-guard
 - #38–40 kravmatris (paginering / innehållsmedveten layout / JA-NEJ-DELVIS-status)
 - #41 städpack (export-guard + ai-client kostnadstak + RFP-injektions-delimiters)
-- #42 mall-profil-schema · #43 bid-editor-nav · #44 manifest→profil
+- #42 mall-profil-schema · #43 bid-editor-nav · #44 manifest→profil · #45 denna ROADMAP
 
 ## Arbetsnoter / gotchas
 - **PPTX visuell iteration:** rendera via `renderTemplate` → exportera slides→PNG via PowerPoint
