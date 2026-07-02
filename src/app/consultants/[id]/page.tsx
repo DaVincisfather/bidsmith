@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { ConsultantProfile } from "@/components/consultant-profile";
+import { CONSULTANT_API_SELECT } from "@/lib/constants";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -11,13 +12,11 @@ export default async function ConsultantPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
+  // PII: rå CV-text (raw_cv_text) får inte serialiseras till klientkomponenten
+  // ConsultantProfile — använd den explicita API-selecten utan den kolumnen.
   const { data, error } = await supabase
     .from("consultants")
-    .select(`
-      *,
-      consultant_competencies (id, competency, category),
-      consultant_references (id, title, description, year, sector)
-    `)
+    .select(CONSULTANT_API_SELECT)
     .eq("id", id)
     .single();
 
