@@ -7,6 +7,7 @@ import {
 import { GoNoGoResultSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
 import { MODELS } from "./models";
+import { qualificationRequirements } from "./requirement-kind";
 
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
 Du får en RFP-analys, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
@@ -107,6 +108,14 @@ export async function evaluateGoNoGo(
   const teamText = formatTeamForPrompt(teamConsultants, allScoredConsultants);
   const poolText = formatPoolForPrompt(allScoredConsultants, teamIds);
 
+  // Go/No-Go gatar hårt på ouppfyllda must-KRAV. Leverabler (kind=deliverable) är
+  // uppdragets output, inte kvalifikationskrav — de får aldrig räknas som ska-krav
+  // (annars kan en oproducerad leverans tvinga winProbability = 0). Filtrera bort dem.
+  const analysisForGonogo: RfpAnalysis = {
+    ...analysis,
+    requirements: qualificationRequirements(analysis.requirements),
+  };
+
   const result = await callClaude({
     model: MODELS.gonogo,
     maxTokens: 4000,
@@ -114,7 +123,7 @@ export async function evaluateGoNoGo(
     userContent: `Bedöm detta teams chanser att vinna följande upphandling.
 
 ## RFP-analys
-${JSON.stringify(analysis, null, 2)}
+${JSON.stringify(analysisForGonogo, null, 2)}
 
 ## Låst team
 ${teamText}

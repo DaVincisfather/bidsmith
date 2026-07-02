@@ -15,7 +15,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
   "summary": "2-3 meningar som sammanfattar uppdraget — kort och skarpt",
   "background": "4-6 meningar som beskriver uppdragets kontext.",
   "requirements": [
-    { "category": "Kategori", "description": "Beskrivning", "priority": "must | should | nice-to-have" }
+    { "category": "Kategori", "description": "Beskrivning", "priority": "must | should | nice-to-have", "kind": "qualification | deliverable" }
   ],
   "evaluationCriteria": [ { "name": "...", "weight": 40, "description": "..." } ] — weight är procentvikt 0-100, eller null om källan inte anger procentvikter,
   "requiredCompetencies": ["..."],
@@ -37,6 +37,15 @@ Var noggrann med att:
   Mappa svenska termer: ska-krav/skall-krav/skall/ska → "must",
   bör-krav/bör → "should", kan-krav/kan/önskemål → "nice-to-have".
   Använd aldrig svenska värden eller andra varianter i fältet.
+- kind klassar VARJE post:
+  - "qualification" = krav PÅ anbudsgivaren som bedöms/måste uppfyllas för att kvalificera
+    (kompetens, certifieringar, erfarenhet, uteslutningsgrunder, obligatoriska villkor,
+    inlämningsformalia). priority (ska/bör/kan) gäller dessa.
+  - "deliverable" = det uppdraget ska PRODUCERA/leverera som resultat (rapporter, analyser,
+    workshops, underlag). En "leverans" är en output, inte ett krav på anbudsgivaren.
+  Ta INTE med leverabler bland ska/bör-kraven som om de vore kvalifikationskrav — sätt
+  kind:"deliverable". Vid tveksamhet: frågar RFP:en "har/kan anbudsgivaren X?" → qualification;
+  "uppdraget ska ta fram/leverera X" → deliverable.
 - Extrahera utvärderingskriterier. weight = procentvikt ENDAST om källan uttryckligen
   anger procentvikter. Vid rangordning, prisavdragsmodeller (mervärde i kronor) eller
   annan icke-procentuell utvärdering: sätt weight till null och beskriv modellen i

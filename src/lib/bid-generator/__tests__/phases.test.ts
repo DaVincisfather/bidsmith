@@ -71,6 +71,27 @@ describe("buildPhasesBundle", () => {
     expect(sections[0].content.phases[0].decisions).toEqual(["Go/no-go till fas 2"]);
     expect(overflowFlags).toEqual([]);
   });
+
+  it("matar in RFP-leverabler i fas-prompten (genomförandeplanen)", async () => {
+    const phase = {
+      name: "Fas 1", objective: "o", activities: ["a"], deliverables: ["d"],
+      duration: "4 v", period: "M1-M2", decisions: ["b"], shortDescription: "k",
+    };
+    vi.mocked(callClaude).mockResolvedValue({ phases: [phase, phase, phase] });
+    const ctx: BidContext = {
+      ...baseCtx,
+      analysis: {
+        ...baseAnalysis,
+        requirements: [
+          { category: "Kompetens", description: "KVAL_bara", priority: "must", kind: "qualification" },
+          { category: "Leverans", description: "LEVERANS_UNIK_output", priority: "must", kind: "deliverable" },
+        ],
+      },
+    };
+    await buildPhasesBundle(ctx, { budgets: {}, fieldSlides: {} }, { remaining: 5 });
+    const system = vi.mocked(callClaude).mock.calls[0][0].system as string;
+    expect(system).toContain("LEVERANS_UNIK_output");
+  });
 });
 
 describe("PhasesV2Schema", () => {

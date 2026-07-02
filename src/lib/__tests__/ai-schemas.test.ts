@@ -1,5 +1,37 @@
 import { describe, it, expect } from "vitest";
-import { PrioritySchema, RfpAnalysisSchema } from "@/lib/ai-schemas";
+import { PrioritySchema, RfpAnalysisSchema, RfpRequirementSchema } from "@/lib/ai-schemas";
+
+describe("RfpRequirementSchema — kind (qualification vs deliverable)", () => {
+  it("defaultar kind till qualification när fältet saknas (bakåtkompatibelt)", () => {
+    const r = RfpRequirementSchema.parse({
+      category: "Konsultkvalifikationer",
+      description: "Minst 5 års erfarenhet",
+      priority: "must",
+    });
+    expect(r.kind).toBe("qualification");
+  });
+
+  it("bevarar kind=deliverable", () => {
+    const r = RfpRequirementSchema.parse({
+      category: "Leverans",
+      description: "Skriftlig slutrapport",
+      priority: "must",
+      kind: "deliverable",
+    });
+    expect(r.kind).toBe("deliverable");
+  });
+
+  it("avvisar okänt kind-värde", () => {
+    expect(() =>
+      RfpRequirementSchema.parse({
+        category: "x",
+        description: "y",
+        priority: "must",
+        kind: "annat",
+      }),
+    ).toThrow();
+  });
+});
 
 describe("PrioritySchema — canonical values", () => {
   it.each(["must", "should", "nice-to-have"] as const)(

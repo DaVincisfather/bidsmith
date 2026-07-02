@@ -6,6 +6,7 @@ import type { BudgetPlan, OverflowFlag } from "@/lib/pptx-template/budget-types"
 import { formatContext, type BidContext } from "../context";
 import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
 import { renderBudgetTable } from "../render-budget-table";
+import { qualificationRequirements } from "@/lib/requirement-kind";
 
 export const RequirementMatrixBundleSchema = z.object({
   rows: z
@@ -42,6 +43,10 @@ För varje ska-/bör-krav i RFP:en:
 
 Fokusera på must- och should-krav. 1-6 rader per matris (template slot cap).
 
+Kravmatrisen får ALDRIG innehålla leverabler (det uppdraget ska producera, t.ex.
+rapporter/analyser) — de hör till genomförandeplanen, inte hit. Använd ENDAST
+kvalifikationskraven som listas nedan.
+
 Skriv kort och konkret. Inga floskler, ingen markdown.
 
 KÄLLMATERIAL-TROHET (HÅRD REGEL):
@@ -70,7 +75,16 @@ export async function buildRequirementMatrixBundle(
   plan: BudgetPlan,
   retryBudget: RetryBudget,
 ): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
-  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(plan.budgets, REQUIREMENT_MATRIX_BUDGET_KEYS);
+  // Explicit kvalifikationskrav-lista (leverabler filtreras bort) så matrisen aldrig
+  // bygger rader på leverabler även om de finns i den delade RFP-kontexten.
+  const kvalKrav = qualificationRequirements(ctx.analysis.requirements);
+  const kravBlock = kvalKrav.length
+    ? `\n\n## Kvalifikationskrav att täcka (ENDAST dessa)\n${kvalKrav
+        .map((r) => `- [${r.priority}] ${r.description}`)
+        .join("\n")}`
+    : "";
+  const basePrompt =
+    SYSTEM_PROMPT + kravBlock + renderBudgetTable(plan.budgets, REQUIREMENT_MATRIX_BUDGET_KEYS);
 
   const { output: parsed, overflows } = await withBudgetRetry({
     basePrompt,

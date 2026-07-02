@@ -87,6 +87,33 @@ describe("evaluateGoNoGo post-processing", () => {
     expect(result.winProbability).toBe(0);
   });
 
+  it("utesluter leverabler (kind=deliverable) ur go/no-go-underlaget", async () => {
+    mockResponse({
+      mustRequirements: [],
+      winProbability: 60,
+      winProbabilityReasoning: "",
+      strengths: [],
+      gaps: [],
+      improvements: [],
+      recommendation: "go",
+      reasoning: "—",
+    });
+    const withDeliverable: RfpAnalysis = {
+      ...analysis,
+      requirements: [
+        { category: "Kompetens", description: "KVAL_UNIK", priority: "must", kind: "qualification" },
+        { category: "Leverans", description: "LEVERANS_UNIK", priority: "must", kind: "deliverable" },
+      ],
+    };
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    await evaluateGoNoGo(withDeliverable, team, scored);
+    // Underlaget till modellen ska bära kvalifikationskravet men inte leverabeln.
+    // (mockStream nollställs inte per test → använd senaste anropet.)
+    const sent = JSON.stringify(mockStream.mock.calls.at(-1)![0]);
+    expect(sent).toContain("KVAL_UNIK");
+    expect(sent).not.toContain("LEVERANS_UNIK");
+  });
+
   it("leaves winProbability untouched when all must-requirements are met", async () => {
     mockResponse({
       mustRequirements: [
