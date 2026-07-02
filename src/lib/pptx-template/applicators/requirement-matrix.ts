@@ -4,6 +4,7 @@ import {
   applyFooter,
   replaceAllTextNodes,
   replaceExactTextNodes,
+  replaceNthOccurrence,
   replaceParagraphTextNodes,
 } from "./_footer";
 
@@ -33,11 +34,16 @@ export function requirementMatrixApplicator(ctx: ApplicatorContext) {
   const footer = applyFooter(ctx);
 
   return (slide: ISlide) => {
-    const { contentMap, numberMap } = buildRequirementMatrixMaps(ctx);
+    const { contentMap, numberMap, jaValues } = buildRequirementMatrixMaps(ctx);
     slide.modify((doc: XMLDocument) => {
       // Row numbers first, exact-match, while content cells still hold their
       // {placeholder} text (so the digit remap can't hit real content).
       replaceExactTextNodes(numberMap)(doc);
+      // The "UPPFYLLT" column is a static "JA" per row — identical text, so it
+      // needs occurrence-based (not value-based) blanking for unused slots.
+      // Run it before the content pass so no filled requirement text with a
+      // "JA" substring is matched.
+      replaceNthOccurrence("JA", jaValues)(doc);
       // Paragraph-level first — catches any split-run placeholders
       replaceParagraphTextNodes(contentMap)(doc);
       // Node-level for all remaining single-run placeholders (incl. table cells)
@@ -55,6 +61,9 @@ function pad2(n: number): string {
 function buildRequirementMatrixMaps(ctx: ApplicatorContext): {
   contentMap: Record<string, string>;
   numberMap: Record<string, string>;
+  /** Per-slot "UPPFYLLT" values in row order — "JA" for a filled slot, "" to
+   *  blank the static cell on an unused row. */
+  jaValues: string[];
 } {
   const sec = ctx.sections.find(
     (s) => s.content?.format === "requirement-matrix-v2",
@@ -74,6 +83,7 @@ function buildRequirementMatrixMaps(ctx: ApplicatorContext): {
 
   const contentMap: Record<string, string> = {};
   const numberMap: Record<string, string> = {};
+  const jaValues: string[] = [];
 
   for (let i = 1; i <= MATRIX_ROWS_PER_SLIDE; i++) {
     const row = window[i - 1]; // undefined if this page has fewer rows
@@ -81,6 +91,8 @@ function buildRequirementMatrixMaps(ctx: ApplicatorContext): {
     // Continuous NR column: page 2 slot 1 → "07". Blank an unused slot so the
     // final page shows empty rows without a stray number.
     numberMap[pad2(i)] = row ? pad2(base + i) : "";
+    // Static "JA" cell — keep on a filled row, blank on an unused one.
+    jaValues.push(row ? "JA" : "");
 
     if (i === 1) {
       // Row 1: long-form placeholder keys
@@ -100,5 +112,5 @@ function buildRequirementMatrixMaps(ctx: ApplicatorContext): {
     }
   }
 
-  return { contentMap, numberMap };
+  return { contentMap, numberMap, jaValues };
 }
