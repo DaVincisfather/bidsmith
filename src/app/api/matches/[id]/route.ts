@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, mapConsultantRow } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
+import { parseUuidParam } from "@/lib/api-helpers";
 import { CONSULTANT_SELECT } from "@/lib/constants";
 import { matchConsultants } from "@/lib/consultant-matcher";
 import { RfpAnalysis } from "@/lib/types";
@@ -11,7 +12,10 @@ interface RouteContext {
 }
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {
-  const { id: analysisId } = await params;
+  const { id: rawId } = await params;
+  const idResult = parseUuidParam(rawId, "analysis id");
+  if (!idResult.ok) return idResult.response;
+  const analysisId = idResult.data;
   // Middleware guarantees authentication; no org scoping needed — all users
   // share one consultant bank in the single-workspace model.
   const authed = await createClient();
