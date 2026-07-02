@@ -174,3 +174,9 @@ export const OpportunityScoreSchema = z.object({
   relevanceScore: z.number().min(0).max(100),
   reasoning: z.string(),
 });
+
+// --- Auto-korta fält: POST /api/bids/[id]/shorten ---
+
+export const ShortenedTextSchema = z.object({
+  text: z.string().min(1),
+});

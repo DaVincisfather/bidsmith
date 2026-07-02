@@ -35,4 +35,40 @@ describe("OverflowChecklist", () => {
     fireEvent.click(screen.getByText(/Fas 1 — Mål/));
     expect(onJump).toHaveBeenCalledWith(flag);
   });
+
+  const flag: OverflowFlag = {
+    slide: 7,
+    fieldPath: "phases[0].objective",
+    fieldLabel: "Fas 1 — Mål",
+    length: 145,
+    budget: 120,
+  };
+
+  it("renderar en 'Korta ner åt mig'-knapp per flagga och anropar onShorten", () => {
+    const onShorten = vi.fn();
+    render(
+      <OverflowChecklist flags={[flag]} onJumpToField={() => {}} onShorten={onShorten} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Korta ner åt mig/i }));
+    expect(onShorten).toHaveBeenCalledWith(flag);
+  });
+
+  it("visar arbetsläge och avaktiverar knappen för fältet som kortas", () => {
+    render(
+      <OverflowChecklist
+        flags={[flag]}
+        onJumpToField={() => {}}
+        onShorten={() => {}}
+        shorteningKey="7-phases[0].objective"
+      />,
+    );
+    expect(screen.getByRole("button", { name: /Kortar/i })).toBeDisabled();
+  });
+
+  it("visar ingen korta-knapp när onShorten saknas (bakåtkompatibelt)", () => {
+    render(<OverflowChecklist flags={[flag]} onJumpToField={() => {}} />);
+    expect(
+      screen.queryByRole("button", { name: /Korta ner/i }),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -63,6 +63,18 @@ export const ConsultantUpdateSchema = z.object({
   references: ConsultantExtractionSchema.shape.references.optional(),
 });
 
+// --- Bid: POST /api/bids/[id]/shorten ---
+//
+// Kortar om ett enskilt flaggat fälts text till ≤ budget via skrivmodellen.
+
+export const ShortenRequestSchema = z.object({
+  // Övre gräns: ett enskilt fält är aldrig enormt; skyddar mot att ett absurt
+  // långt innehåll trunkerar LLM-svaret mot maxTokens-taket (→ förvirrande 500).
+  text: z.string().min(1).max(8000),
+  budget: z.number().int().positive(),
+  fieldLabel: z.string().min(1),
+});
+
 // --- Go/No-Go: POST /api/go-no-go ---
 
 export const GoNoGoCreateSchema = z.object({
