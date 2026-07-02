@@ -10,6 +10,7 @@ import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./renderers";
 import { StructureEvalBadge } from "./StructureEvalBadge";
 import { OverflowChecklist } from "./OverflowChecklist";
+import { getFieldValue, setFieldValue } from "@/lib/bid-editor/field-path";
 import { ForgeLoader } from "../ForgeLoader";
 
 interface BidEditorProps {
@@ -44,6 +45,7 @@ export function BidEditor({
   const [failedBundles, setFailedBundles] = useState<FailedBundle[]>(initialFailedBundles);
   const [generationError, setGenerationError] = useState<string | null>(initialGenerationError);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
+  const [shorteningKey, setShorteningKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +143,38 @@ export function BidEditor({
     const newFlags = recomputeOverflowFlags(next);
     setOverflowFlags(newFlags);
     debouncedSave(next, newFlags);
+  }
+
+  // Skriv om ett flaggat fält ≤ tak via /shorten och applicera i rätt sektion.
+  async function onShorten(flag: OverflowFlag) {
+    if (shorteningKey) return; // en i taget
+    const section = sections.find(
+      (s) => s.content && typeof getFieldValue(s.content, flag.fieldPath) === "string",
+    );
+    if (!section) return;
+    const text = getFieldValue(section.content, flag.fieldPath) as string;
+
+    setShorteningKey(`${flag.slide}-${flag.fieldPath}`);
+    setError(null);
+    try {
+      const res = await fetch(`/api/bids/${bidId}/shorten`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, budget: flag.budget, fieldLabel: flag.fieldLabel }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Kortningen misslyckades");
+      }
+      const { text: shortened } = await res.json();
+      // setFieldValue byter bara ut ett textblad — strukturen (och därmed typen) bevaras.
+      const newContent = setFieldValue(section.content, flag.fieldPath, shortened) as typeof section.content;
+      handleSectionChange(section.key, { ...section, content: newContent });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kortningen misslyckades");
+    } finally {
+      setShorteningKey(null);
+    }
   }
 
   function onJumpToField(flag: OverflowFlag) {
@@ -287,7 +321,12 @@ export function BidEditor({
 
       {/* Right panel — pre-export overflow checklist (OverflowChecklist owns its own aside + styling) */}
       <div className="shrink-0 p-4">
-        <OverflowChecklist flags={overflowFlags} onJumpToField={onJumpToField} />
+        <OverflowChecklist
+          flags={overflowFlags}
+          onJumpToField={onJumpToField}
+          onShorten={onShorten}
+          shorteningKey={shorteningKey}
+        />
       </div>
     </div>
   );
