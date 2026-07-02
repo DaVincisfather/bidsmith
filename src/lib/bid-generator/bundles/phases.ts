@@ -6,6 +6,7 @@ import type { BudgetPlan, OverflowFlag } from "@/lib/pptx-template/budget-types"
 import { formatContext, type BidContext } from "../context";
 import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
 import { renderBudgetTable } from "../render-budget-table";
+import { deliverableRequirements } from "../requirement-kind";
 
 export const PhasesV2Schema = z.object({
   phases: z
@@ -50,6 +51,8 @@ VIKTIGT om realism:
 - shortDescription: 3-6 ord, används på fasöversikts-sliden som undertitel.
 - Var konsistent — referera inte till aktiviteter som inte finns i andra faser.
 - Skriv konkret och direkt. Undvik floskler och markdown.
+- Planera in de RFP-leveranser som listas nedan (om några) som deliverables i lämpliga
+  faser — de är vad uppdraget faktiskt ska producera. Formulera om till fas-nivå vid behov.
 
 Svara med giltig JSON:
 {
@@ -74,7 +77,16 @@ export async function buildPhasesBundle(
   plan: BudgetPlan,
   retryBudget: RetryBudget,
 ): Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }> {
-  const basePrompt = SYSTEM_PROMPT + renderBudgetTable(plan.budgets, PHASES_BUDGET_KEYS);
+  // RFP-leveranser (kind=deliverable) matas in så genomförandeplanens deliverables
+  // grundas i vad RFP:en kräver levererat, inte enbart fri AI-generering.
+  const leverabler = deliverableRequirements(ctx.analysis.requirements);
+  const leveransBlock = leverabler.length
+    ? `\n\n## RFP-leveranser att planera in i faserna\n${leverabler
+        .map((r) => `- ${r.description}`)
+        .join("\n")}`
+    : "";
+  const basePrompt =
+    SYSTEM_PROMPT + leveransBlock + renderBudgetTable(plan.budgets, PHASES_BUDGET_KEYS);
 
   const { output: parsed, overflows } = await withBudgetRetry({
     basePrompt,

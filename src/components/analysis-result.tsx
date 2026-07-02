@@ -23,6 +23,10 @@ const PRIORITY_CLASSES: Record<string, string> = {
 export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
   const [expanded, setExpanded] = useState(false);
   const hasBackground = Boolean(analysis.background?.trim());
+  // Ska/bör-krav = äkta kvalifikationskrav; leverabler visas separat (saknat kind ⇒
+  // qualification, bakåtkompatibelt). Håller leveranser ute ur ska/bör-listan.
+  const qualifications = analysis.requirements.filter((r) => r.kind !== "deliverable");
+  const deliverables = analysis.requirements.filter((r) => r.kind === "deliverable");
 
   return (
     <div className="space-y-10">
@@ -80,14 +84,14 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
       <section>
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-ink-mute">
-            Kravmatris
+            Ska-/bör-krav
           </h2>
           <span className="text-xs text-ink-mute">
-            {analysis.requirements.length} krav
+            {qualifications.length} krav
           </span>
         </div>
         <div className="border-t border-rule">
-          {analysis.requirements.map((req, i) => (
+          {qualifications.map((req, i) => (
             <div
               key={i}
               className="border-b border-rule py-3 grid grid-cols-[84px_1fr] sm:grid-cols-[84px_140px_1fr] gap-x-4 gap-y-1 items-start"
@@ -107,6 +111,32 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
           ))}
         </div>
       </section>
+
+      {/* Leveranser — vad uppdraget ska producera (separerat från ska/bör-krav; hör
+          hemma i genomförandeplanen, inte i kravmatrisen). */}
+      {deliverables.length > 0 && (
+        <section>
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-ink-mute">
+              Leveranser
+            </h2>
+            <span className="text-xs text-ink-mute">{deliverables.length} leverabler</span>
+          </div>
+          <div className="border-t border-rule">
+            {deliverables.map((req, i) => (
+              <div
+                key={i}
+                className="border-b border-rule py-3 grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-x-4 gap-y-1 items-start"
+              >
+                <span className="hidden sm:block text-xs text-ink-mute pt-0.5">
+                  {req.category}
+                </span>
+                <p className="text-sm text-ink-soft leading-relaxed">{req.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Utvärderingskriterier */}
       {analysis.evaluationCriteria.length > 0 && (

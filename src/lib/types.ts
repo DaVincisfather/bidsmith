@@ -2,6 +2,10 @@ export interface RfpRequirement {
   category: string;
   description: string;
   priority: "must" | "should" | "nice-to-have";
+  // qualification = krav på anbudsgivaren (bär priority); deliverable = leverans uppdraget
+  // ska producera. Håller leverabler ute ur ska/bör-krav + kravmatrisen. Valfritt i typen
+  // (Zod-schemat defaultar till "qualification" vid parse); saknat värde ⇒ qualification.
+  kind?: "qualification" | "deliverable";
 }
 
 export interface EvaluationCriterion {
