@@ -3,7 +3,9 @@ import {
   parseDocument,
   validateDocument,
   sanitizeFilename,
+  MAX_UPLOAD_REQUEST_BYTES,
 } from "@/lib/document-parser";
+import { enforceContentLength } from "@/lib/api-helpers";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
@@ -11,6 +13,10 @@ import { getUserId } from "@/lib/org";
 
 export async function POST(request: NextRequest) {
   try {
+    // Reject a pathological body before formData() buffers it into memory.
+    const tooLarge = enforceContentLength(request, MAX_UPLOAD_REQUEST_BYTES);
+    if (tooLarge) return tooLarge;
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseDocument } from "@/lib/document-parser";
+import { parseDocument, MAX_UPLOAD_REQUEST_BYTES } from "@/lib/document-parser";
+import { enforceContentLength } from "@/lib/api-helpers";
 import { extractConsultant } from "@/lib/consultant-extractor";
 import { createServiceClient, upsertConsultant } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
@@ -13,6 +14,10 @@ interface UploadResult {
 
 export async function POST(request: NextRequest) {
   try {
+    // Reject a pathological body before formData() buffers every file into memory.
+    const tooLarge = enforceContentLength(request, MAX_UPLOAD_REQUEST_BYTES);
+    if (tooLarge) return tooLarge;
+
     const formData = await request.formData();
     const files = formData.getAll("files") as File[];
 

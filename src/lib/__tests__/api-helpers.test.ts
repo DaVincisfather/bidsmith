@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { parseBody, parseUuidParam } from "@/lib/api-helpers";
+import { parseBody, parseUuidParam, enforceContentLength } from "@/lib/api-helpers";
 
 const TestSchema = z.object({
   name: z.string().min(1),
@@ -86,5 +86,37 @@ describe("parseUuidParam", () => {
         expect(json.error).toContain("bid id");
       }
     }
+  });
+});
+
+describe("enforceContentLength", () => {
+  const MAX = 100 * 1024 * 1024;
+
+  // Content-Length is a forbidden header name, so a real Request silently drops
+  // it — mock just the headers.get surface the helper reads.
+  function requestWithLength(header: string | null): Request {
+    return {
+      headers: { get: (name: string) => (name === "content-length" ? header : null) },
+    } as unknown as Request;
+  }
+
+  it("returns a 413 when Content-Length exceeds the limit", async () => {
+    const res = enforceContentLength(requestWithLength(String(MAX + 1)), MAX);
+    expect(res).not.toBeNull();
+    expect(res!.status).toBe(413);
+    const json = await res!.json();
+    expect(json.error).toContain("too large");
+  });
+
+  it("proceeds (null) when Content-Length is within the limit", () => {
+    expect(enforceContentLength(requestWithLength(String(MAX)), MAX)).toBeNull();
+    expect(enforceContentLength(requestWithLength("1024"), MAX)).toBeNull();
+  });
+
+  it("proceeds (null) when the header is absent or non-numeric", () => {
+    // A missing or unparseable Content-Length can't be trusted to block on;
+    // the precise per-file check downstream is the backstop.
+    expect(enforceContentLength(requestWithLength(null), MAX)).toBeNull();
+    expect(enforceContentLength(requestWithLength("not-a-number"), MAX)).toBeNull();
   });
 });
