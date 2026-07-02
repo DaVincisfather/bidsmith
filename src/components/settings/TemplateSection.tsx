@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TemplateRow } from "@/app/installningar/page";
 import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
+import { fieldDisplayLabel, tightBudgetFields } from "@/lib/pptx-template/budget-types";
 
 interface TemplateSectionProps {
   templates: TemplateRow[];
@@ -183,9 +184,41 @@ interface TemplatePreviewProps {
   activating: boolean;
 }
 
+interface BudgetRow {
+  fieldPath: string;
+  budget: number;
+  tight: boolean;
+}
+interface BudgetGroup {
+  key: string;
+  slide: number | null;
+  fields: BudgetRow[];
+}
+
+/** Grupperar budgetfält per deck-slide (fältSlides), slide-lösa fält sist ("Övrigt"). */
+function groupBudgetsBySlide(
+  budgets: Record<string, number>,
+  fieldSlides: Record<string, number>,
+  tightPaths: Set<string>,
+): BudgetGroup[] {
+  const bySlide = new Map<number | null, BudgetRow[]>();
+  for (const [fieldPath, budget] of Object.entries(budgets)) {
+    const slide = fieldSlides[fieldPath] ?? null;
+    const rows = bySlide.get(slide) ?? [];
+    rows.push({ fieldPath, budget, tight: tightPaths.has(fieldPath) });
+    bySlide.set(slide, rows);
+  }
+  return [...bySlide.entries()]
+    .sort(([a], [b]) => (a ?? Infinity) - (b ?? Infinity))
+    .map(([slide, fields]) => ({ key: slide === null ? "none" : String(slide), slide, fields }));
+}
+
 function TemplatePreview({ preview, onActivate, activating }: TemplatePreviewProps) {
   const { manifest, warnings } = preview;
-  const budgetEntries = Object.entries(manifest.budgets);
+  // Trånga fält: mallens rutor tvingar budgeten under fältets redaktionella tak.
+  const tight = tightBudgetFields(manifest.budgets);
+  const tightPaths = new Set(tight.map((t) => t.fieldPath));
+  const budgetGroups = groupBudgetsBySlide(manifest.budgets, manifest.fieldSlides, tightPaths);
 
   return (
     <div className="border border-rule rounded-lg p-5 space-y-5 bg-paper-2">
@@ -203,6 +236,21 @@ function TemplatePreview({ preview, onActivate, activating }: TemplatePreviewPro
           {warnings.map((w, i) => (
             <p key={i}>{w}</p>
           ))}
+        </div>
+      )}
+
+      {tight.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded text-sm">
+          <p className="font-medium">
+            {`${tight.length} ${tight.length === 1 ? "fält är trångt" : "fält är trånga"} i den här mallen — anbud mot den tvingar kortare text. Du kan aktivera ändå.`}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {tight.map((t) => (
+              <li key={t.fieldPath}>
+                {`${fieldDisplayLabel(t.fieldPath)} — mallen rymmer ${t.budget} tecken (normalt ${t.editorialCap})`}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -261,27 +309,33 @@ function TemplatePreview({ preview, onActivate, activating }: TemplatePreviewPro
         </div>
       )}
 
-      {/* Budgetar */}
-      {budgetEntries.length > 0 && (
+      {/* Teckenbudgetar per slide */}
+      {budgetGroups.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium text-ink-soft mb-2">Teckenbudgetar</h4>
-          <div className="border border-rule rounded-lg overflow-hidden bg-paper">
-            <table className="w-full text-sm">
-              <thead className="bg-paper-2">
-                <tr>
-                  <th className="text-left px-3 py-2 font-medium text-ink-soft">Fält</th>
-                  <th className="text-right px-3 py-2 font-medium text-ink-soft">Tecken</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-rule">
-                {budgetEntries.map(([field, max]) => (
-                  <tr key={field}>
-                    <td className="px-3 py-2 font-mono text-xs text-ink-soft">{field}</td>
-                    <td className="px-3 py-2 text-right text-ink">{max}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <h4 className="text-sm font-medium text-ink-soft mb-2">Teckenbudgetar per slide</h4>
+          <div className="space-y-3">
+            {budgetGroups.map((group) => (
+              <div key={group.key} className="border border-rule rounded-lg overflow-hidden bg-paper">
+                <div className="bg-paper-2 px-3 py-1.5 text-xs font-medium text-ink-soft">
+                  {group.slide !== null ? `Slide ${group.slide}` : "Övrigt"}
+                </div>
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-rule">
+                    {group.fields.map((f) => (
+                      <tr key={f.fieldPath} className={f.tight ? "bg-amber-50" : undefined}>
+                        <td className="px-3 py-2 text-ink-soft">
+                          {fieldDisplayLabel(f.fieldPath)}
+                          {f.tight && (
+                            <span className="ml-2 text-xs text-amber-700">trångt</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right text-ink">{f.budget}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
           </div>
         </div>
       )}
