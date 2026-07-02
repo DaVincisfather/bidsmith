@@ -28,7 +28,10 @@ export const RequirementMatrixBundleSchema = z.object({
       }),
     )
     .min(1)
-    .max(6),
+    // No longer capped at the old 6-slot template limit — the matrix paginates
+    // across cloned slides (6 rows each). The upper bound is only a runaway
+    // guard: a real qualification-requirement set won't exceed this.
+    .max(60),
 });
 
 const REQUIREMENT_MATRIX_BUDGET_KEYS: string[] = [];
@@ -41,7 +44,8 @@ För varje ska-/bör-krav i RFP:en:
 3. Fyll i "coverage" — en per-konsult-bedömning: status JA/NEJ/DELVIS + kort evidence (1 mening).
    ALLA konsulter i teamet ska finnas med i coverage-arrayen för varje rad (minst 1).
 
-Fokusera på must- och should-krav. 1-6 rader per matris (template slot cap).
+Skapa EN rad per kvalifikationskrav i listan nedan (prioritera must- och should-krav).
+Matrisen pagineras automatiskt över flera slides — begränsa INTE antalet rader.
 
 Kravmatrisen får ALDRIG innehålla leverabler (det uppdraget ska producera, t.ex.
 rapporter/analyser) — de hör till genomförandeplanen, inte hit. Använd ENDAST
@@ -86,12 +90,22 @@ export async function buildRequirementMatrixBundle(
   const basePrompt =
     SYSTEM_PROMPT + kravBlock + renderBudgetTable(plan.budgets, REQUIREMENT_MATRIX_BUDGET_KEYS);
 
+  // One row per qualification requirement, each carrying a per-consultant
+  // coverage array — so output scales with both requirement count and team
+  // size. The old fixed 4000 truncated large matrices (a 20-req, 5-person team
+  // needs ~7k). Clamped so cost stays bounded; callClaude streams (no ceiling).
+  const teamSize = Math.max(1, ctx.teamConsultants.length);
+  const maxTokens = Math.min(
+    16000,
+    Math.max(4000, 1000 + kvalKrav.length * (140 + teamSize * 40)),
+  );
+
   const { output: parsed, overflows } = await withBudgetRetry({
     basePrompt,
     callLLM: (p) =>
       callClaude({
         model: MODELS.writingSupport,
-        maxTokens: 4000,
+        maxTokens,
         system: p,
         cachedContext: formatContext(ctx),
         userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",

@@ -29,7 +29,7 @@ export const ManifestSlideSchema = z
     source: z.number().int().positive(),
     type: z.enum(SLIDE_TYPES),
     variant: z.enum(PROSE_VARIANTS).optional(),
-    cloneFrom: z.enum(["phases", "references"]).optional(),
+    cloneFrom: z.enum(["phases", "references", "requirement-matrix"]).optional(),
     itemCaps: z.record(z.string(), z.number().int().positive()).optional(),
     placeholders: z.array(z.string()),
     imageShapes: z

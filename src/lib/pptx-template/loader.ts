@@ -12,7 +12,10 @@ import { qualityAssuranceApplicator } from "./applicators/quality-assurance";
 import { phaseDetailApplicator } from "./applicators/phase-detail";
 import { phasesOverviewApplicator } from "./applicators/phases-overview";
 import { teamPricingApplicator } from "./applicators/team-pricing";
-import { requirementMatrixApplicator } from "./applicators/requirement-matrix";
+import {
+  requirementMatrixApplicator,
+  MATRIX_ROWS_PER_SLIDE,
+} from "./applicators/requirement-matrix";
 import { referenceApplicator } from "./applicators/reference";
 import { confidentialityApplicator } from "./applicators/confidentiality";
 import { certificationsApplicator } from "./applicators/certifications";
@@ -121,7 +124,7 @@ function countOutputSlides(
 
 function getCloneItems(
   sections: BidSection[],
-  key: "phases" | "references",
+  key: "phases" | "references" | "requirement-matrix",
 ): unknown[] {
   if (key === "phases") {
     const sec = sections.find((s) => s.content?.format === "phases");
@@ -134,6 +137,22 @@ function getCloneItems(
     if (sec && sec.content?.format === "reference-v2") {
       return sec.content.references ?? [];
     }
+  }
+  if (key === "requirement-matrix") {
+    // One clone per page of MATRIX_ROWS_PER_SLIDE rows. Always at least one
+    // page so the matrix slide never disappears when data is missing/empty
+    // (unlike phases/references, the matrix slide is not optional). The
+    // applicator reads the rows itself and windows on cloneIndex, so the
+    // page items only need the right length — their contents are unused.
+    const sec = sections.find(
+      (s) => s.content?.format === "requirement-matrix-v2",
+    );
+    const rowCount =
+      sec && sec.content?.format === "requirement-matrix-v2"
+        ? sec.content.rows.length
+        : 0;
+    const pages = Math.max(1, Math.ceil(rowCount / MATRIX_ROWS_PER_SLIDE));
+    return Array.from({ length: pages });
   }
   return [];
 }

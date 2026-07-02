@@ -30,7 +30,7 @@ describe("identifySlides (anbudsmall-v2.pptx)", () => {
         itemCaps: { activities: 4, deliverables: 3, decisions: 3 } },
       { source: 11, type: "quality-assurance", variant: undefined, cloneFrom: undefined, itemCaps: undefined },
       { source: 12, type: "team-pricing", variant: undefined, cloneFrom: undefined, itemCaps: undefined },
-      { source: 13, type: "requirement-matrix", variant: undefined, cloneFrom: undefined, itemCaps: undefined },
+      { source: 13, type: "requirement-matrix", variant: undefined, cloneFrom: "requirement-matrix", itemCaps: undefined },
       { source: 14, type: "reference", variant: undefined, cloneFrom: "references", itemCaps: undefined },
       { source: 16, type: "confidentiality", variant: undefined, cloneFrom: undefined, itemCaps: undefined },
       { source: 17, type: "certifications", variant: undefined, cloneFrom: undefined, itemCaps: undefined },

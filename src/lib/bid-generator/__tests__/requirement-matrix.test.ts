@@ -129,10 +129,17 @@ describe("RequirementMatrixBundleSchema", () => {
     );
   });
 
-  it("rejects >6 rows", () => {
-    const seven = Array.from({ length: 7 }, () => validRow);
+  it("accepts more than 6 rows (matrix paginates, no longer slot-capped)", () => {
+    const twenty = Array.from({ length: 20 }, () => validRow);
     expect(() =>
-      RequirementMatrixBundleSchema.parse({ rows: seven }),
+      RequirementMatrixBundleSchema.parse({ rows: twenty }),
+    ).not.toThrow();
+  });
+
+  it("rejects a runaway row count (>60)", () => {
+    const tooMany = Array.from({ length: 61 }, () => validRow);
+    expect(() =>
+      RequirementMatrixBundleSchema.parse({ rows: tooMany }),
     ).toThrow(z.ZodError);
   });
 
