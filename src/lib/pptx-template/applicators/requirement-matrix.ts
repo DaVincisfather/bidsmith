@@ -94,6 +94,91 @@ const DIVIDER_MAX_CY_CM = 0.15;
 // black "UPPFYLLT" cell background, the divider rule) don't show as artifacts.
 const OFFSCREEN_CM = 40;
 
+type RowStatus = "JA" | "NEJ" | "DELVIS";
+
+// Softened compliance colours — muted hues plus fill transparency so the pills
+// read calmer than pure green/amber/red while the white label stays legible.
+const STATUS_COLOR: Record<RowStatus, string> = {
+  JA: "4C8C5E", // muted green
+  DELVIS: "C08A45", // muted amber
+  NEJ: "C46A6A", // muted red
+};
+const STATUS_ALPHA = "82000"; // 82% opacity
+// The template's UPPFYLLT pill (roundRect bg + separate text box). Each label
+// gets a width wide enough to keep it on one line (a too-narrow box wraps and
+// the second line is clipped by the pill height). Pills are centred in the
+// UPPFYLLT column and the label is centred in the pill.
+const PILL_X_CM = 21.48;
+const PILL_TEXT_X_CM = 21.8;
+const PILL_COLUMN_CENTER_CM = 23.28;
+const PILL_W_CM: Record<RowStatus, number> = { JA: 1.21, NEJ: 1.45, DELVIS: 2.35 };
+
+/**
+ * Row-level UPPFYLLT status rolled up from the per-consultant coverage: met by
+ * anyone → JA, else partially met by anyone → DELVIS, else NEJ.
+ */
+export function rowStatus(coverage: { status: RowStatus }[]): RowStatus {
+  if (coverage.some((c) => c.status === "JA")) return "JA";
+  if (coverage.some((c) => c.status === "DELVIS")) return "DELVIS";
+  return "NEJ";
+}
+
+/**
+ * Colours each row's UPPFYLLT pill by its status (muted green/amber/red +
+ * transparency), sizes it to its label, and centres both the pill in the
+ * column and the label in the pill. Runs on the original (pre-restack)
+ * geometry, identifying the pill (roundRect) and its text box by column x + row
+ * band. Unused rows are skipped (restack hides them).
+ */
+function styleStatusPills(doc: XMLDocument, statusValues: string[]): void {
+  const emu = (cm: number) => String(Math.round(cm * EMU_PER_CM));
+  for (const sp of Array.from(doc.getElementsByTagNameNS(P_NS, "sp"))) {
+    const off = sp.getElementsByTagNameNS(A_NS, "off")[0];
+    if (!off) continue;
+    const xCm = Number(off.getAttribute("x")) / EMU_PER_CM;
+    const yCm = Number(off.getAttribute("y")) / EMU_PER_CM;
+    const row = BAND_EDGES.findIndex(
+      (edge, j) => j < 6 && yCm >= edge && yCm < BAND_EDGES[j + 1],
+    );
+    if (row < 0 || row > 5) continue;
+    const status = statusValues[row] as RowStatus | "";
+    if (!status) continue;
+
+    const width = PILL_W_CM[status];
+    const leftCm = PILL_COLUMN_CENTER_CM - width / 2;
+    const ext = (off.parentNode as Element | null)?.getElementsByTagNameNS(A_NS, "ext")[0];
+    const prst = sp
+      .getElementsByTagNameNS(A_NS, "prstGeom")[0]
+      ?.getAttribute("prst");
+
+    if (prst === "roundRect" && Math.abs(xCm - PILL_X_CM) < 0.2) {
+      // Pill background: recolour (with transparency), size, centre in column.
+      for (const clr of Array.from(sp.getElementsByTagNameNS(A_NS, "srgbClr"))) {
+        if (clr.getAttribute("val") !== "000000") continue;
+        clr.setAttribute("val", STATUS_COLOR[status]);
+        const alpha =
+          clr.getElementsByTagNameNS(A_NS, "alpha")[0] ??
+          clr.appendChild(doc.createElementNS(A_NS, "a:alpha"));
+        (alpha as Element).setAttribute("val", STATUS_ALPHA);
+      }
+      ext?.setAttribute("cx", emu(width));
+      off.setAttribute("x", emu(leftCm));
+    } else if (Math.abs(xCm - PILL_TEXT_X_CM) < 0.2) {
+      // Label box: match the pill and centre the text within it.
+      ext?.setAttribute("cx", emu(width));
+      off.setAttribute("x", emu(leftCm));
+      const para = sp.getElementsByTagNameNS(A_NS, "p")[0];
+      if (para) {
+        const pPr =
+          para.getElementsByTagNameNS(A_NS, "pPr")[0] ??
+          para.insertBefore(doc.createElementNS(A_NS, "a:pPr"), para.firstChild);
+        (pPr as Element).setAttribute("algn", "ctr");
+      }
+      sp.getElementsByTagNameNS(A_NS, "bodyPr")[0]?.setAttribute("anchor", "ctr");
+    }
+  }
+}
+
 /** Lines a cell wraps to at the template column widths. */
 function estimateLines(chars: number, perLine: number): number {
   return Math.max(1, Math.ceil(chars / perLine));
@@ -174,6 +259,7 @@ function restackMatrixRows(doc: XMLDocument, rowLines: number[]): void {
     const yEmu = Number(off.getAttribute("y"));
     if (!Number.isFinite(yEmu)) continue;
     const yCm = yEmu / EMU_PER_CM;
+    const xCm = Number(off.getAttribute("x")) / EMU_PER_CM;
     const row = BAND_EDGES.findIndex(
       (edge, j) => j < 6 && yCm >= edge && yCm < BAND_EDGES[j + 1],
     );
@@ -182,6 +268,10 @@ function restackMatrixRows(doc: XMLDocument, rowLines: number[]): void {
     const xfrm = off.parentNode as Element | null;
     const ext = xfrm?.getElementsByTagNameNS(A_NS, "ext")[0];
     const cyCm = ext ? Number(ext.getAttribute("cy")) / EMU_PER_CM : 1;
+    // The single-line row markers — the NR number and the status pill/label —
+    // are vertically centred in the row (multi-line body cells stay top-aligned).
+    const isMarker =
+      (xCm >= 3.0 && xCm <= 6.5) || (xCm >= 21.0 && xCm <= 24.5);
 
     let newYCm: number;
     if (rowLines[row] === 0) {
@@ -191,8 +281,13 @@ function restackMatrixRows(doc: XMLDocument, rowLines: number[]): void {
     } else if (cyCm <= DIVIDER_MAX_CY_CM) {
       // Divider rule → sit at this row's bottom (next row's top).
       newYCm = tops[row + 1] - cyCm;
+    } else if (isMarker) {
+      // Centre the marker box in the row, and centre its text within the box.
+      newYCm = tops[row] + (tops[row + 1] - tops[row] - cyCm) / 2;
+      const sp = xfrm?.parentNode?.parentNode as Element | null;
+      sp?.getElementsByTagNameNS(A_NS, "bodyPr")[0]?.setAttribute("anchor", "ctr");
     } else {
-      // Content/number/JA cell → shift by the row-top delta.
+      // Content cell → shift by the row-top delta (stays top-aligned).
       newYCm = yCm + (tops[row] - OLD_ROW_TOPS[row]);
     }
     off.setAttribute("y", String(Math.round(newYCm * EMU_PER_CM)));
@@ -203,23 +298,25 @@ export function requirementMatrixApplicator(ctx: ApplicatorContext) {
   const footer = applyFooter(ctx);
 
   return (slide: ISlide) => {
-    const { contentMap, numberMap, jaValues, rowLines } =
+    const { contentMap, numberMap, statusValues, rowLines } =
       buildRequirementMatrixMaps(ctx);
     slide.modify((doc: XMLDocument) => {
       // Row numbers first, exact-match, while content cells still hold their
       // {placeholder} text (so the digit remap can't hit real content).
       replaceExactTextNodes(numberMap)(doc);
-      // The "UPPFYLLT" column is a static "JA" per row — identical text, so it
-      // needs occurrence-based (not value-based) blanking for unused slots.
+      // The "UPPFYLLT" column is a static "JA" per row — identical text, so set
+      // each row's actual status (JA/NEJ/DELVIS, or "" for unused) by occurrence.
       // Run it before the content pass so no filled requirement text with a
       // "JA" substring is matched.
-      replaceNthOccurrence("JA", jaValues)(doc);
+      replaceNthOccurrence("JA", statusValues)(doc);
       // Paragraph-level first — catches any split-run placeholders
       replaceParagraphTextNodes(contentMap)(doc);
       // Node-level for all remaining single-run placeholders (incl. table cells)
       replaceAllTextNodes(contentMap)(doc);
       // Pin all body text to one size (before restack, while y is original).
       normalizeMatrixContentFont(doc);
+      // Colour the status pills (before restack, while y is original).
+      styleStatusPills(doc, statusValues);
       // Spread the rows with content-aware heights so multi-line text doesn't overlap.
       restackMatrixRows(doc, rowLines);
       // Footer last
@@ -235,9 +332,9 @@ function pad2(n: number): string {
 function buildRequirementMatrixMaps(ctx: ApplicatorContext): {
   contentMap: Record<string, string>;
   numberMap: Record<string, string>;
-  /** Per-slot "UPPFYLLT" values in row order — "JA" for a filled slot, "" to
-   *  blank the static cell on an unused row. */
-  jaValues: string[];
+  /** Per-slot "UPPFYLLT" status in row order — JA/NEJ/DELVIS for a filled slot,
+   *  "" to blank the static cell on an unused row. */
+  statusValues: string[];
   /** Estimated wrapped line count per slot (0 for an unused row) — drives the
    *  content-aware row heights in restackMatrixRows. */
   rowLines: number[];
@@ -262,7 +359,7 @@ function buildRequirementMatrixMaps(ctx: ApplicatorContext): {
 
   const contentMap: Record<string, string> = {};
   const numberMap: Record<string, string> = {};
-  const jaValues: string[] = [];
+  const statusValues: string[] = [];
   const rowLines: number[] = [];
 
   for (let i = 1; i <= MATRIX_ROWS_PER_SLIDE; i++) {
@@ -271,8 +368,8 @@ function buildRequirementMatrixMaps(ctx: ApplicatorContext): {
     // Continuous NR column: page 2 slot 1 → "07". Blank an unused slot so the
     // final page shows empty rows without a stray number.
     numberMap[pad2(i)] = row ? pad2(base + i) : "";
-    // Static "JA" cell — keep on a filled row, blank on an unused one.
-    jaValues.push(row ? "JA" : "");
+    // UPPFYLLT status rolled up from coverage — blank on an unused row.
+    statusValues.push(row ? rowStatus(row.coverage) : "");
     // Tallest column's wrapped line count → row height (0 for an unused row).
     rowLines.push(
       row
@@ -302,5 +399,5 @@ function buildRequirementMatrixMaps(ctx: ApplicatorContext): {
     }
   }
 
-  return { contentMap, numberMap, jaValues, rowLines };
+  return { contentMap, numberMap, statusValues, rowLines };
 }
