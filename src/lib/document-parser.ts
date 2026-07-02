@@ -7,6 +7,15 @@ import { randomUUID } from "crypto";
 const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".doc", ".pptx", ".xlsx", ".md", ".txt"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
+/**
+ * Coarse per-request byte ceiling for upload routes, checked from Content-Length
+ * BEFORE the body is materialised (formData/arrayBuffer). It is a circuit-breaker
+ * against memory exhaustion, not the precise per-file limit — validateDocument
+ * still enforces MAX_FILE_SIZE on each file. Sized generously so a legitimate
+ * batch of CVs or a single large RFP passes; only a pathological body is rejected.
+ */
+export const MAX_UPLOAD_REQUEST_BYTES = 100 * 1024 * 1024; // 100 MB
+
 function getExtension(fileName: string): string {
   const ext = fileName.toLowerCase().split(".").pop();
   return ext ? `.${ext}` : "";

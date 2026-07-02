@@ -8,6 +8,31 @@ export type ParseResult<T> =
   | { ok: false; response: NextResponse };
 
 /**
+ * Rejects an over-large upload from its Content-Length BEFORE the body is read,
+ * so formData()/arrayBuffer() never materialises a pathological payload into
+ * memory. Returns a 413 response to short-circuit, or null to proceed.
+ *
+ * Best-effort by nature: a client can omit Content-Length (chunked) or lie, so
+ * this is a coarse circuit-breaker layered on top of the precise per-file
+ * validateDocument check — not a substitute for it.
+ */
+export function enforceContentLength(
+  request: NextRequest | Request,
+  maxBytes: number
+): NextResponse | null {
+  const header = request.headers.get("content-length");
+  if (header === null) return null;
+  const length = Number(header);
+  if (Number.isFinite(length) && length > maxBytes) {
+    return NextResponse.json(
+      { error: `Request too large. Max ${Math.round(maxBytes / 1024 / 1024)}MB.` },
+      { status: 413 }
+    );
+  }
+  return null;
+}
+
+/**
  * Resolves the authenticated user id, returning a 401 response instead of
  * throwing when no session exists.
  *
