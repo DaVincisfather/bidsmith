@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import Link from "next/link";
 import { BidSection, StyleGuide } from "@/lib/types";
 import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
 import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
@@ -15,6 +16,9 @@ import { ForgeLoader } from "../ForgeLoader";
 
 interface BidEditorProps {
   bidId: string;
+  /** The analysis this bid was generated from — powers the back / change-team
+   *  navigation. null for legacy bids without a linked analysis. */
+  analysisId: string | null;
   initialSections: BidSection[];
   initialStatus: string;
   initialStructureEval: StructureEvalSummary | null;
@@ -28,6 +32,7 @@ interface BidEditorProps {
 
 export function BidEditor({
   bidId,
+  analysisId,
   initialSections,
   initialStatus,
   initialStructureEval,
@@ -256,6 +261,18 @@ export function BidEditor({
       {/* Center panel — document view */}
       <main className="flex-1 overflow-y-auto bg-white">
         <div className="max-w-3xl mx-auto py-8 px-6 space-y-8">
+          {analysisId && (
+            <nav className="flex items-center gap-4 text-xs font-mono text-ink-mute">
+              <Link href={`/analysis/${analysisId}`} className="hover:text-ink transition-colors">
+                ← Tillbaka till analys
+              </Link>
+              <span aria-hidden className="text-rule">|</span>
+              <Link href={`/analysis/${analysisId}#team`} className="hover:text-ink transition-colors">
+                Ändra team
+              </Link>
+            </nav>
+          )}
+
           {needsTimpris && (
             <div className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <span role="img" aria-label="varning">⚠</span> Fyll i timpriser i Team-sektionen innan export.

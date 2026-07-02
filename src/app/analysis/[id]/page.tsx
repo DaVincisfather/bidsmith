@@ -75,10 +75,13 @@ export default async function AnalysisPage({ params }: PageProps) {
           analysis={data.analysis as RfpAnalysis}
           fileName={document.file_name}
         />
-        <AnalysisMatchSection
-          analysisId={id}
-          latestMatch={latestMatch}
-        />
+        {/* #team anchor — the bid editor's "Ändra team" link scrolls here. */}
+        <div id="team" className="scroll-mt-6">
+          <AnalysisMatchSection
+            analysisId={id}
+            latestMatch={latestMatch}
+          />
+        </div>
       </div>
     </main>
   );

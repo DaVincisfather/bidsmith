@@ -59,6 +59,7 @@ export default async function BidEditorPage({ params }: PageProps) {
   return (
     <BidEditor
       bidId={bid.id}
+      analysisId={(bid.analysis_id as string | null) ?? null}
       initialSections={bid.sections as BidSection[]}
       initialStatus={bid.status}
       initialStructureEval={(bid.structure_eval as StructureEvalSummary | null) ?? null}
