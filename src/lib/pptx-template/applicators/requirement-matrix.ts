@@ -259,6 +259,7 @@ function restackMatrixRows(doc: XMLDocument, rowLines: number[]): void {
     const yEmu = Number(off.getAttribute("y"));
     if (!Number.isFinite(yEmu)) continue;
     const yCm = yEmu / EMU_PER_CM;
+    const xCm = Number(off.getAttribute("x")) / EMU_PER_CM;
     const row = BAND_EDGES.findIndex(
       (edge, j) => j < 6 && yCm >= edge && yCm < BAND_EDGES[j + 1],
     );
@@ -267,6 +268,10 @@ function restackMatrixRows(doc: XMLDocument, rowLines: number[]): void {
     const xfrm = off.parentNode as Element | null;
     const ext = xfrm?.getElementsByTagNameNS(A_NS, "ext")[0];
     const cyCm = ext ? Number(ext.getAttribute("cy")) / EMU_PER_CM : 1;
+    // The single-line row markers — the NR number and the status pill/label —
+    // are vertically centred in the row (multi-line body cells stay top-aligned).
+    const isMarker =
+      (xCm >= 3.0 && xCm <= 6.5) || (xCm >= 21.0 && xCm <= 24.5);
 
     let newYCm: number;
     if (rowLines[row] === 0) {
@@ -276,8 +281,13 @@ function restackMatrixRows(doc: XMLDocument, rowLines: number[]): void {
     } else if (cyCm <= DIVIDER_MAX_CY_CM) {
       // Divider rule → sit at this row's bottom (next row's top).
       newYCm = tops[row + 1] - cyCm;
+    } else if (isMarker) {
+      // Centre the marker box in the row, and centre its text within the box.
+      newYCm = tops[row] + (tops[row + 1] - tops[row] - cyCm) / 2;
+      const sp = xfrm?.parentNode?.parentNode as Element | null;
+      sp?.getElementsByTagNameNS(A_NS, "bodyPr")[0]?.setAttribute("anchor", "ctr");
     } else {
-      // Content/number/JA cell → shift by the row-top delta.
+      // Content cell → shift by the row-top delta (stays top-aligned).
       newYCm = yCm + (tops[row] - OLD_ROW_TOPS[row]);
     }
     off.setAttribute("y", String(Math.round(newYCm * EMU_PER_CM)));
