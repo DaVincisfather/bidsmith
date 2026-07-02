@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { RfpAnalysis } from "@/lib/types";
+import { qualificationRequirements, deliverableRequirements } from "@/lib/requirement-kind";
 
 interface AnalysisResultProps {
   analysis: RfpAnalysis;
@@ -23,10 +24,10 @@ const PRIORITY_CLASSES: Record<string, string> = {
 export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
   const [expanded, setExpanded] = useState(false);
   const hasBackground = Boolean(analysis.background?.trim());
-  // Ska/bör-krav = äkta kvalifikationskrav; leverabler visas separat (saknat kind ⇒
-  // qualification, bakåtkompatibelt). Håller leveranser ute ur ska/bör-listan.
-  const qualifications = analysis.requirements.filter((r) => r.kind !== "deliverable");
-  const deliverables = analysis.requirements.filter((r) => r.kind === "deliverable");
+  // Ska/bör-krav = äkta kvalifikationskrav; leverabler visas separat. Delad util så
+  // partitionsregeln inte driftar mellan vy, go/no-go och bid-bundles.
+  const qualifications = qualificationRequirements(analysis.requirements);
+  const deliverables = deliverableRequirements(analysis.requirements);
 
   return (
     <div className="space-y-10">

@@ -6,7 +6,7 @@ import type { BudgetPlan, OverflowFlag } from "@/lib/pptx-template/budget-types"
 import { formatContext, type BidContext } from "../context";
 import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
 import { renderBudgetTable } from "../render-budget-table";
-import { deliverableRequirements } from "../requirement-kind";
+import { deliverableRequirements } from "@/lib/requirement-kind";
 
 export const PhasesV2Schema = z.object({
   phases: z

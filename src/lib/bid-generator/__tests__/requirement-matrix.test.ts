@@ -84,6 +84,33 @@ describe("buildRequirementMatrixBundle", () => {
     expect(s.content.rows[0].coverage[0].status).toBe("JA");
     expect(overflowFlags).toEqual([]);
   });
+
+  it("kravBlocket bär kvalifikationskrav men ALDRIG leverabler", async () => {
+    vi.mocked(callClaude).mockResolvedValue({
+      rows: [
+        {
+          requirement: "r",
+          hurUppfylls: "h",
+          referens: "ref",
+          coverage: [{ consultantName: "Anna", status: "JA", evidence: "e" }],
+        },
+      ],
+    });
+    const ctx: BidContext = {
+      ...baseCtx,
+      analysis: {
+        ...baseAnalysis,
+        requirements: [
+          { category: "Kompetens", description: "KVAL_UNIK_krav", priority: "must", kind: "qualification" },
+          { category: "Leverans", description: "LEVERANS_UNIK_output", priority: "must", kind: "deliverable" },
+        ],
+      },
+    };
+    await buildRequirementMatrixBundle(ctx, { budgets: {}, fieldSlides: {} }, { remaining: 5 });
+    const system = vi.mocked(callClaude).mock.calls[0][0].system as string;
+    expect(system).toContain("KVAL_UNIK_krav");
+    expect(system).not.toContain("LEVERANS_UNIK_output");
+  });
 });
 
 describe("RequirementMatrixBundleSchema", () => {
