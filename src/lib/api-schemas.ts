@@ -63,6 +63,16 @@ export const ConsultantUpdateSchema = z.object({
   references: ConsultantExtractionSchema.shape.references.optional(),
 });
 
+// --- Bid: POST /api/bids/[id]/shorten ---
+//
+// Kortar om ett enskilt flaggat fälts text till ≤ budget via skrivmodellen.
+
+export const ShortenRequestSchema = z.object({
+  text: z.string().min(1),
+  budget: z.number().int().positive(),
+  fieldLabel: z.string().min(1),
+});
+
 // --- Go/No-Go: POST /api/go-no-go ---
 
 export const GoNoGoCreateSchema = z.object({
