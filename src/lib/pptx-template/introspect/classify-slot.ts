@@ -4,12 +4,14 @@ import { MODELS } from "@/lib/models";
 import { CAPABILITY_IDS, type CapabilityId } from "../template-profile";
 
 /**
- * Slot auto-classification (template-upload slice 5). Given a placeholder from an
- * uploaded template we don't recognise (identify-slides couldn't match its
- * slide), propose which content capability should fill it — a known specialised
- * one when the label/context clearly points there, else generic-prose — plus a
- * derived intent and a confidence. This SEEDS the onboarding interview: high
- * confidence → pre-selected, low → flagged for the human to confirm.
+ * Slot auto-classification (template-upload slice 5). En kundmall är
+ * OINSTRUMENTERAD — den har inga `{tokens}`, bara textrutor med kundens
+ * exempeltext. Givet en sådan rutas exempeltext + omgivande slide-text föreslår
+ * vi vilken content-capability som ska fylla den — en känd specialiserad när
+ * texten/kontexten tydligt pekar dit, annars generic-prose — plus en härledd
+ * intent, en confidence OCH ett kort svenskt namn för det token som ska
+ * injiceras. Detta SEEDAR onboarding-intervjun: high confidence → förvald, low
+ * → flaggas för mänsklig bekräftelse.
  *
  * Classification, not writing — uses the matching model role (Sonnet), so no
  * eval gate. See notes/2026-07-02-template-upload-architecture.md.
@@ -19,16 +21,20 @@ export const SlotClassificationSchema = z.object({
   capability: z.enum(CAPABILITY_IDS),
   /** Derived purpose of the slot, fed to generic-prose when that's the pick. */
   intent: z.string().min(1),
-  /** high only when the placeholder/context clearly points at the capability. */
+  /** high only when the sample text/context clearly points at the capability. */
   confidence: z.enum(["high", "low"]),
+  /** Short Swedish name for the token to inject, WITHOUT braces, e.g. "Hållbarhet".
+   *  1–40 chars, no { } characters. */
+  name: z.string().min(1).max(40).regex(/^[^{}]+$/),
 });
 export type SlotClassification = z.infer<typeof SlotClassificationSchema>;
 
 export interface ForeignSlotInput {
-  /** The pptx placeholder token, e.g. "{Hållbarhetsredogörelse}". */
-  placeholder: string;
-  /** Static (non-placeholder) text on the same slide — headings/labels that give
-   *  the placeholder meaning. Optional, but improves classification. */
+  /** The shape's current sample text (customer's example content). Primary signal.
+   *  May be empty for an empty fillable box. */
+  shapeText: string;
+  /** Static text from the OTHER shapes on the same slide — headings/labels giving
+   *  the shape meaning. */
   slideText?: string;
 }
 
@@ -55,29 +61,38 @@ const CAPABILITY_MENU_TEXT = CAPABILITY_IDS.map(
   (id) => `- ${id}: ${CAPABILITY_MENU[id]}`,
 ).join("\n");
 
-const SYSTEM_PROMPT = `Du klassificerar en platshållare i en uppladdad svensk anbudsmall.
+const SYSTEM_PROMPT = `Du klassificerar en textruta i en uppladdad svensk anbudsmall.
+Rutan är OINSTRUMENTERAD: du ser kundens exempeltext i rutan (eller "(tom ruta)"
+när den är tom) samt den omgivande texten på sliden (rubriker/etiketter som ger
+rutan mening).
 
-Välj den capability ur listan nedan som bäst fyller platshållaren, utifrån dess
-namn och den omgivande texten på sliden. Om ingen specialiserad capability tydligt
+Välj den capability ur listan nedan som bäst fyller rutan, utifrån dess
+exempeltext och den omgivande texten. Om ingen specialiserad capability tydligt
 passar — välj "generic-prose" (fri prosa-fallback). Gissa inte en specialiserad
 capability på svaga grunder; det är bättre att falla tillbaka på generic-prose.
 
 Härled en kort intent (syftet med sektionen) på svenska, som styr genereringen.
-Sätt confidence "high" ENDAST när platshållaren/kontexten tydligt pekar på den
+Sätt confidence "high" ENDAST när exempeltexten/kontexten tydligt pekar på den
 valda capabilityn; annars "low" (flaggas för mänsklig bekräftelse i onboardingen).
+
+Föreslå dessutom ett kort svenskt namn för det token som ska injiceras i rutan
+(utan klammerparenteser, 1–40 tecken, t.ex. "Hållbarhet"). Namnet blir
+platshållaren, så håll det kort och beskrivande.
 
 Capabilities:
 ${CAPABILITY_MENU_TEXT}
 
 Svara med giltig JSON:
-{ "capability": "<id ur listan>", "intent": "<kort syfte>", "confidence": "high" | "low" }`;
+{ "capability": "<id ur listan>", "intent": "<kort syfte>", "confidence": "high" | "low", "name": "<kort svenskt namn utan { }>" }`;
 
 export async function classifyForeignSlot(
   input: ForeignSlotInput,
   ctx?: { userId?: string | null },
 ): Promise<SlotClassification> {
   const userContent = [
-    `Platshållare: ${input.placeholder}`,
+    // Tom ruta är ett giltigt fall (tom ifyllnadsbox) — ge modellen en explicit
+    // markör i stället för en blank rad så signalen inte tappas.
+    `Exempeltext i rutan: ${input.shapeText.trim() ? input.shapeText : "(tom ruta)"}`,
     input.slideText ? `Omgivande text på sliden:\n${input.slideText}` : null,
   ]
     .filter(Boolean)

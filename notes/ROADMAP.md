@@ -12,8 +12,10 @@ _Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
 - [ ] **Slice 5b — token-injektion** (`instrumentTemplate`): NY kärnkomponent efter beslut
       2026-07-03 (design-doc TILLÄGG). Onboarding instrumenterar en kopia av kundens mall
       (föreslå slots → bekräfta → injicera `{tokens}`) så den token-baserade pipelinen kör
-      oförändrad. `classifyForeignSlot` byggd (auto-klass av slot). Kvar: slot-förslag ur
-      shape-text/geometri + injektionsmotorn.
+      oförändrad. `classifyForeignSlot`, injektionsmotorn (`instrumentTemplate`) OCH
+      förslags-lagret (`onboarding/propose-injection-plan.ts` — kandidat-slots ur
+      shape-text/geometri → auto-klass → utkast-profil) byggda & enhetstestade. Kvar:
+      generic-prose-inkoppling + slice 5-UI som konsumerar planen.
 - [ ] **generic-prose-inkoppling** i `generateAllSections` + `claude-sonnet-5`-byte
       (ny roll i models.ts + prisrad i ai-cost.ts + **eval-grind**) — ersätter Opus/max.
 - [ ] **Slice 5-UI** — onboarding-flöde (upload → slot-förslag → intervju → injicera →
@@ -49,7 +51,8 @@ _Inga just nu._
 - Profil-schema vs renderare: `SlideProfile.capability` är optional ("a slide may mix capabilities") men `applicatorForCapability` dispatchar bara på slide-nivå och kastar på undefined — per-slot-dispatch eller skärpt schema krävs innan främmande profiler renderas (Fable-review 2026-07-03)
 - generic-prose saknar budget-enforcement vid rendering — soft-cap mot `slot.budgetChars` i generic-prose-applikatorn (jfr `_soft-cap.ts`) innan främmande mallar fylls på riktigt
 - Flagg-vägen i `loader.ts` deriverar profilen ur manifestet per render i st.f. `loadTemplateProfile` — en REDIGERAD profil påverkar inte rendering förrän det byts (routine-follow-up #49)
-- **Manuell PowerPoint-smoke av instrumenterad mall FÖRE slice 5-UI:** instrumentTemplate är verifierad mot syntetisk mini-pptx; xmldoms serialisering (ns-redeklarationer, attributordning) är obeprövad mot riktiga kundmallar + att PowerPoint faktiskt öppnar den instrumenterade kopian (routine-follow-up #51)
+- [x] **Manuell PowerPoint-smoke:** GENOMFÖRD 2026-07-03 — riktig anbudsmall-v2 instrumenterad, öppnad i PowerPoint via COM utan reparation, slide exporterad + visuellt verifierad (token med ärvd formatering). instrumentTemplate är verifierad mot syntetisk mini-pptx; xmldoms serialisering (ns-redeklarationer, attributordning) är obeprövad mot riktiga kundmallar + att PowerPoint faktiskt öppnar den instrumenterade kopian (routine-follow-up #51)
+- budgetChars för främmande slots: förslags-lagret lämnar budget osatt — koppla compute-budgets geometri→tecken-matten till ProposedSlot innan generic-prose-fyllning av riktiga kundmallar (annars ingen längdstyrning)
 
 ## Strategiska spår (större, senare)
 - Kapacitetsgap-kartan (vilka ska-krav firman återkommande inte uppfyller)
