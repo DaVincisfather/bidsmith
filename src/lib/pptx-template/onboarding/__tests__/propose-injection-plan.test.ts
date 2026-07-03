@@ -155,15 +155,32 @@ describe("proposeInjectionPlan", () => {
     }
   });
 
-  it("omits slides that have no proposed slots from the draft profile", async () => {
+  it("includes candidate-less slides as static passthrough (they must not vanish from renders)", async () => {
+    // renderFromProfile builds the output deck ONLY from the profile's slides —
+    // an omitted slide (pure image slide, already-instrumented on re-onboarding)
+    // would disappear from rendered bids. Routine-review finding on #52.
     vi.mocked(readPptxSlides).mockResolvedValue([
       { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, shapes: [shape({ paragraphs: ["fyll"] })] },
-      // slide 2: only a token-bearing shape → no candidate → omitted
+      // slide 2: only a token-bearing shape → no candidate → static passthrough
       { source: 2, tokens: ["{X}"], images: { placed: 0, placeholders: 0 }, shapes: [shape({ paragraphs: ["{X}"], tokens: ["{X}"] })] },
     ]);
 
     const { profile } = await proposeInjectionPlan(Buffer.from(""), OPTS);
-    expect(profile.slides.map((s) => s.source)).toEqual([1]);
+    expect(profile.slides.map((s) => s.source)).toEqual([1, 2]);
+    expect(profile.slides[1].capability).toBe("static");
+    expect(profile.slides[1].slots).toEqual([]);
+  });
+
+  it("normalizes token names: trims, collapses whitespace, falls back on empty", async () => {
+    vi.mocked(readPptxSlides).mockResolvedValue(
+      oneSlide([shape({ paragraphs: ["a"] }), shape({ paragraphs: ["b"] })]),
+    );
+    vi.mocked(classifyForeignSlot)
+      .mockResolvedValueOnce(classification({ name: "  Namn\nMed  Radbrytning " }))
+      .mockResolvedValueOnce(classification({ name: "   " }));
+
+    const { slots } = await proposeInjectionPlan(Buffer.from(""), OPTS);
+    expect(slots.map((s) => s.token)).toEqual(["{Namn Med Radbrytning}", "{Sektion}"]);
   });
 
   it("preserves the classified capability on ProposedSlot even when the profile says generic-prose", async () => {
