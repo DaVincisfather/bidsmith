@@ -15,16 +15,23 @@ AI-agent som tar offertförfrågan + konsultprofiler och producerar anbudsutkast
 ## Modellstrategi
 
 - **`src/lib/models.ts` är enda sanningskällan** — roller (extraction/prefilter/matching/
-  gonogo/radar/writing/writingSupport/writingChallenger/judge), aldrig hårdkodade modellsträngar.
-  Modellbyte = enradsändring där + eval-körning. Varje modell måste ha prisrad i `ai-cost.ts`
-  (testat i `models.test.ts`).
+  gonogo/radar/writing/writingSupport/writingGeneric/writingChallenger/judge), aldrig
+  hårdkodade modellsträngar. Varje modell måste ha prisrad i `ai-cost.ts` (testat i
+  `models.test.ts`).
+- **Grind per modellbyte (policy ändrad 2026-07-03, Stefan):** samma modellfamilj uppåt
+  (t.ex. Sonnet 4-6 → 5) = enradsändring + smoke + stickprov på outputs, ingen eval.
+  Familjebyte eller ändring av `writing`-rollen = eval-körning (fas 1-lärdomen: bättre
+  modell på pappret ≠ bättre anbudstext). **Undantag: `judge` byts ALDRIG utan
+  omkalibrering mot blindfacit-paren** — kalibreringen är modellbunden.
 - **Skrivbundles:** Opus 4.8 (`MODELS.writing`) — FAS 1-BESLUT 2026-06-12: behållen efter
   A/B mot Fable 5 (mänsklig blindgranskning Opus 7–1; LLM-judgen sa Fable 50–1 = belagd
   stilbias, se `evals/results-bid-model-comparison.md`)
 - **LLM-judge-tally får ingen beslutsvikt** utan validering mot blindfacit-paren
   (kalibreringsdata från fas 1 — 8 människomärkta par)
-- **Extraction (Sonnet) körs med temperature 0** sedan fas 1 — samma underlag ska ge
-  samma kravlista; **matchning/go-no-go:** Sonnet; **prefilter/radar:** Haiku
+- **Extraction (Sonnet 5) körs med temperature 0** sedan fas 1 — samma underlag ska ge
+  samma kravlista (reproducerbarhet gäller INOM en modellversion); **matchning/go-no-go/
+  writingSupport/writingGeneric:** Sonnet 5 (sedan 2026-07-03); **prefilter/radar:** Haiku;
+  **judge:** Sonnet 4-6 (kalibreringsbunden, se grind-policyn)
 - **Princip:** Varje steg får föregående stegs komprimerade output, inte rådokumenten
 
 ## Arbetsregler

@@ -22,6 +22,11 @@ const OVERLOAD_BASE_DELAY_MS = 5000;
 // retries (429/5xx) consume no output tokens and are NOT gated by this.
 const RETRY_OUTPUT_BUDGET_MULTIPLE = 2.5;
 
+// Modeller där API:t avvisar `temperature` (400 "deprecated for this model").
+// Verifierat empiriskt 2026-07-03 (claude-sonnet-5). Se översättningen i
+// callClaude — temperature-avsikten blir thinking: disabled på dessa.
+const NO_SAMPLING_MODELS = new Set(["claude-sonnet-5"]);
+
 function isOverloaded(error: unknown): boolean {
   return error instanceof APIError && error.status === 529;
 }
@@ -103,6 +108,24 @@ export async function callClaude<T>({
     );
   }
 
+  // Sonnet 5+ avvisar temperature helt (400 "\`temperature\` is deprecated for
+  // this model" — verifierat mot API:t 2026-07-03). Strippas CENTRALT så att
+  // roll-indirektionen i models.ts håller — call sites deklarerar avsikt
+  // (temperature 0 = mekaniskt steg) och ska inte känna till modell-quirks;
+  // annars dör ett user-facing flöde nästa gång en roll byter modell.
+  let effectiveTemperature = temperature;
+  if (effectiveTemperature !== undefined && NO_SAMPLING_MODELS.has(model)) {
+    effectiveTemperature = undefined;
+  }
+
+  // Sonnet 5 defaultar dessutom till adaptiv thinking server-side. Kodbasens
+  // kontrakt är det omvända (se effort-kommentaren: "Omit for Sonnet/Haiku
+  // calls that don't need it") — utan explicit disable får mekaniska JSON-steg
+  // thinking-tokens inom snäva maxTokens (team: 2000, gonogo: 4000) → risk för
+  // trunkerad JSON + betalda format-retries. Återställ kontraktet centralt:
+  // inget effort ⇒ thinking av.
+  const thinkingDisabled = !effort && NO_SAMPLING_MODELS.has(model);
+
   // Nödlucka: BIDSMITH_STRUCTURED_OUTPUTS=off återgår till fritext + extractJson
   // om API:t skulle avvisa något sanerat schema i drift. Tas bort i fas 1 om oanvänd.
   const useStructuredOutputs = process.env.BIDSMITH_STRUCTURED_OUTPUTS !== "off";
@@ -138,8 +161,11 @@ export async function callClaude<T>({
             ]
           : system,
         messages: [{ role: "user", content: userContent }],
-        ...(temperature !== undefined ? { temperature } : {}),
+        ...(effectiveTemperature !== undefined
+          ? { temperature: effectiveTemperature }
+          : {}),
         ...(effort ? { thinking: { type: "adaptive" as const } } : {}),
+        ...(thinkingDisabled ? { thinking: { type: "disabled" as const } } : {}),
         ...(Object.keys(outputConfig).length > 0
           ? { output_config: outputConfig }
           : {}),

@@ -58,14 +58,19 @@ export async function buildGenericProseSection(
   ctx: BidContext,
 ): Promise<BidSection> {
   const parsed = await callClaude({
-    model: MODELS.writing,
+    // Egen roll (inte MODELS.writing): fallbacken kör Sonnet 5 — en främmande
+    // mall kan ha 30+ okända slots per anbud, Opus-pris där bärs av användaren.
+    model: MODELS.writingGeneric,
     maxTokens: 32000,
     system: systemPrompt(slot),
     cachedContext: formatContext(ctx),
     userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
     schema: GenericProseBundleSchema,
     label: "generic-prose bundle",
-    effort: "max",
+    // "high", inte "max": fallback-prosa på Sonnet 5 — max är benäget till
+    // overthinking, och vid 30+ okända slots per anbud är det reell
+    // användarkostnad (routine-review #53).
+    effort: "high",
     userId: ctx.userId,
     bidId: ctx.bidId,
   });

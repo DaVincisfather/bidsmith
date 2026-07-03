@@ -4,7 +4,7 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
+_Senast uppdaterad: 2026-07-03 — slices 3/4/5a/5b-delar mergade (#47–#52), Sonnet 5-roller (#53)_
 
 ---
 
@@ -16,8 +16,9 @@ _Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
       förslags-lagret (`onboarding/propose-injection-plan.ts` — kandidat-slots ur
       shape-text/geometri → auto-klass → utkast-profil) byggda & enhetstestade. Kvar:
       generic-prose-inkoppling + slice 5-UI som konsumerar planen.
-- [ ] **generic-prose-inkoppling** i `generateAllSections` + `claude-sonnet-5`-byte
-      (ny roll i models.ts + prisrad i ai-cost.ts + **eval-grind**) — ersätter Opus/max.
+- [ ] **generic-prose-inkoppling** i genereringen för profil-drivna mallar (VVS:en som får
+      främmande mallar att generera). Modellbytet är GJORT: `writingGeneric` = Sonnet 5
+      (beslut 2026-07-03, ingen eval — ögonkoll på outputs i 5-UI-testningen istället).
 - [ ] **Slice 5-UI** — onboarding-flöde (upload → slot-förslag → intervju → injicera →
       redigerbar profil), med Stefans design-riktning. Egen PR.
 - [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
@@ -43,7 +44,7 @@ _Inga just nu._
 - ai-client detekterar inte `stop_reason: "max_tokens"` → alla bundles re-trunkerar identiskt (bredare härdning)
 - `consultants/upload` sanerar inte filnamn (ingen storage-nyckel-yta idag, men om det ändras)
 - Profil-renderarens `variant` castas `as ProseVariant` utan validering (render-from-profile.ts) — härda när slice 5/6 låter främmande mallar sätta godtyckliga variant-strängar
-- generic-prose kör Opus (`MODELS.writing`) + `effort: max` per okänd slot — kalibrera modell/effort när slice 5 kopplar in den i pipelinen (många okända sektioner = dyrt; användaren bär API-kostnaden)
+- [x] ~~generic-prose kör Opus + effort max per okänd slot~~ — LÖST 2026-07-03: egen roll `writingGeneric` = Sonnet 5 ($2/$10 intro → $3/$15 efter 2026-08-31; bump-påminnelse i ai-cost.ts)
 - **BUG-A:** leveranser hamnar i ska-krav i analysvyn
 - **BUG-B:** analyserad RFP syns inte i dashboarden → svårt att gå tillbaka till analysen
 - "Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera — semantik att se över
@@ -54,6 +55,8 @@ _Inga just nu._
 - [x] **Manuell PowerPoint-smoke:** GENOMFÖRD 2026-07-03 — riktig anbudsmall-v2 instrumenterad, öppnad i PowerPoint via COM utan reparation, slide exporterad + visuellt verifierad (token med ärvd formatering). instrumentTemplate är verifierad mot syntetisk mini-pptx; xmldoms serialisering (ns-redeklarationer, attributordning) är obeprövad mot riktiga kundmallar + att PowerPoint faktiskt öppnar den instrumenterade kopian (routine-follow-up #51)
 - budgetChars för främmande slots: förslags-lagret lämnar budget osatt — koppla compute-budgets geometri→tecken-matten till ProposedSlot innan generic-prose-fyllning av riktiga kundmallar (annars ingen längdstyrning)
 - Re-onboarding av delvis instrumenterad mall: förslags-lagret inkluderar token-bärande slides som static-passthrough (försvinner inte ur rendern) men deras BEFINTLIGA tokens fylls inte — kräver profil-merge mot tidigare sparad profil (routine-follow-up #52)
+- Grind-policyns "smoke" som körbar grej: `skipIf(!process.env.ANTHROPIC_API_KEY)`-gated test som gör ETT riktigt API-anrop per roll i models.ts — exakt gapet som släppte igenom temperature-blockeraren på #53 (routine-follow-up)
+- **Ny blindfacit-validering (förutsättning för judge-byte till Sonnet 5):** ska vara PLANERAD denna gång (Stefan 2026-07-03) — generera ENBART sektioner som faktiskt AI-genereras i produktion; fas 1-rundan inkluderade sektioner som numera är deterministiska (referenser, certifieringar, cover) och judgade därmed delvis text som aldrig shippas
 
 ## Strategiska spår (större, senare)
 - Kapacitetsgap-kartan (vilka ska-krav firman återkommande inte uppfyller)
@@ -70,6 +73,7 @@ _Inga just nu._
 - **PPTX visuell iteration:** rendera via `renderTemplate` → exportera slides→PNG via PowerPoint
   COM (`Presentations.Open(...).Slides.Item(i).Export(png,"PNG",w,h)`) → titta. Slide 50.8×28.575 cm.
   Layout-konstanter i `applicators/requirement-matrix.ts` kalibrerade mot mallens font/kolumner.
-- **Ingen PR-review-bot på bidsmith** → kör lokal `/code-review` (adversariell) före merge på
-  regressionskänsliga ändringar.
+- **PR-review-routinen ÄR aktiv på bidsmith** (verifierad #47–#53, 2026-07-03): triggar på NYA
+  PR:er (inte pushar till befintliga), klassar CRITICAL/…, kör sviten oberoende, lämnar fynd.
+  Vänta in dess kommentar före merge; lokal `/code-review` är komplement vid regressionskänsligt.
 - Migreringar appliceras MANUELLT via Supabase SQL Editor; redigera aldrig en applicerad migration.
