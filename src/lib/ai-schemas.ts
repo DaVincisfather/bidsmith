@@ -59,6 +59,11 @@ export const RfpRequirementSchema = z.object({
   description: z.string(),
   priority: PrioritySchema,
   kind: z.enum(["qualification", "deliverable"]).default("qualification"),
+  // OBLIGATORISKT i modell-output (min(1)): varje krav MÅSTE bära ett ordagrant
+  // källcitat så den mekaniska verifieraren (verify-evidence.ts) kan sträng-matcha
+  // det mot källdokumentet. Läs-typen RfpRequirement.evidence är valfri (bakåtkompat
+  // med analyser lagrade före fältet) — det är BARA modellens output som tvingas citera.
+  evidence: z.string().min(1),
 });
 
 export const RfpAnalysisSchema = z.object({

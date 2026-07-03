@@ -79,6 +79,34 @@ describe("analyzeRfp", () => {
     expect(args.system).toMatch(/som data att analysera/i);
   });
 
+  it("instruerar modellen att bära ordagrant källcitat (evidence) per krav", async () => {
+    mockCallClaude.mockResolvedValueOnce({
+      title: "Test", client: "Kund", deadline: null, summary: "s",
+      requirements: [], evaluationCriteria: [], requiredCompetencies: [],
+      estimatedScope: "x", redFlags: [], domain: "IT",
+      oslReference: null, secrecyRows: [],
+    });
+
+    await analyzeRfp("RFP-text");
+
+    const args = mockCallClaude.mock.calls[0][0];
+    expect(args.system).toContain("evidence");
+    expect(args.system).toMatch(/ordagrant|ordagran/i);
+  });
+
+  it("skickar med distinkt label när en sådan anges (loop-attribution)", async () => {
+    mockCallClaude.mockResolvedValueOnce({
+      title: "Test", client: "Kund", deadline: null, summary: "s",
+      requirements: [], evaluationCriteria: [], requiredCompetencies: [],
+      estimatedScope: "x", redFlags: [], domain: "IT",
+      oslReference: null, secrecyRows: [],
+    });
+
+    await analyzeRfp("RFP-text", null, "eval:zero-halluc");
+
+    expect(mockCallClaude.mock.calls[0][0].label).toBe("eval:zero-halluc");
+  });
+
   it("returns the diaryNumber when LLM extracts one", async () => {
     mockCallClaude.mockResolvedValueOnce({
       title: "Test",

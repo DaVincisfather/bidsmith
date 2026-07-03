@@ -4,11 +4,24 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-03 — slices 3/4/5a/5b-delar mergade (#47–#52), Sonnet 5-roller (#53)_
+_Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-hallucinationsloop byggd (matchningskvalitet före mall-UI)_
 
 ---
 
 ## 🔜 NÄSTA (börja här)
+- [ ] **Noll-hallucinationsloop — operatörskörning (BETALD).** PIVOT 2026-07-03 (Stefan):
+      matchningskvalitet är vallgraven → mål är NOLL hallucinationer i extraktionen.
+      Mekaniken är BYGGD (denna PR, offline-testad, inga API-anrop gjorda):
+      `evidence`-fält på `RfpRequirement` (obligatoriskt i modell-output, valfritt i läs-typen),
+      mekanisk verifierare `evals/harness/core/verify-evidence.ts`, loop-runner
+      `evals/scripts/zero-hallucination-loop.ts` (`npm run eval:zero-halluc`).
+      Design-doc: `notes/2026-07-03-zero-hallucination-loop.md`.
+      KVAR (operatör, under $20-tak): kör loopen → klassa varje miss (prompt/schema/fixture)
+      → justera → kör om → 0 missar över alla 4 fixtures → lås som API-nyckel-gatad
+      regressionsgrind. Sedan fas B (CV input-grounding) + fas C (matchningsmotiveringar).
+- [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
+
+### Nedprioriterat per pivot 2026-07-03 (matchningskvalitet före mall-UI; PPT-export kalibreras mot riktiga case senare)
 - [ ] **Slice 5b — token-injektion** (`instrumentTemplate`): NY kärnkomponent efter beslut
       2026-07-03 (design-doc TILLÄGG). Onboarding instrumenterar en kopia av kundens mall
       (föreslå slots → bekräfta → injicera `{tokens}`) så den token-baserade pipelinen kör
@@ -21,7 +34,6 @@ _Senast uppdaterad: 2026-07-03 — slices 3/4/5a/5b-delar mergade (#47–#52), S
       (beslut 2026-07-03, ingen eval — ögonkoll på outputs i 5-UI-testningen istället).
 - [ ] **Slice 5-UI** — onboarding-flöde (upload → slot-förslag → intervju → injicera →
       redigerbar profil), med Stefans design-riktning. Egen PR.
-- [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
 
 ## Mall-uppladdning (godtyckliga bolagsmallar) — aktiv feature
 Design-doc: `notes/2026-07-02-template-upload-architecture.md` (A+C-combo, B inkrementellt).

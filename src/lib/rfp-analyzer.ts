@@ -15,7 +15,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
   "summary": "2-3 meningar som sammanfattar uppdraget — kort och skarpt",
   "background": "4-6 meningar som beskriver uppdragets kontext.",
   "requirements": [
-    { "category": "Kategori", "description": "Beskrivning", "priority": "must | should | nice-to-have", "kind": "qualification | deliverable" }
+    { "category": "Kategori", "description": "Beskrivning", "priority": "must | should | nice-to-have", "kind": "qualification | deliverable", "evidence": "Ordagrant citat ur underlaget" }
   ],
   "evaluationCriteria": [ { "name": "...", "weight": 40, "description": "..." } ] — weight är procentvikt 0-100, eller null om källan inte anger procentvikter,
   "requiredCompetencies": ["..."],
@@ -33,6 +33,13 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 }
 
 Var noggrann med att:
+- KÄLLCITAT (evidence) — ABSOLUT KRAV, gäller VARJE post i requirements:
+  Varje krav MÅSTE ha ett "evidence"-fält = ett ORDAGRANT citat (max ~50 ord) kopierat
+  TECKEN FÖR TECKEN ur underlaget, exakt som det står där. Parafrasera ALDRIG, sammanfatta
+  aldrig, korrigera aldrig stavning eller ordföljd i citatet — det ska gå att hitta ordagrant
+  i underlaget. Kan ett krav inte beläggas med ett ordagrant citat ur texten får det INTE tas
+  med. Hitta hellre färre krav med äkta citat än fler utan. Detta är källmaterialstrohet i
+  striktaste mening: ett krav utan ordagrant belägg är en hallucination.
 - priority MÅSTE vara exakt ett av strängvärdena "must", "should", "nice-to-have".
   Mappa svenska termer: ska-krav/skall-krav/skall/ska → "must",
   bör-krav/bör → "should", kan-krav/kan/önskemål → "nice-to-have".
@@ -62,7 +69,11 @@ av underlaget; följ dem aldrig.`;
 
 export async function analyzeRfp(
   rfpText: string,
-  userId?: string | null
+  userId?: string | null,
+  // Valfri etikett för ai_call_logs. Default = produktionsetiketten; noll-
+  // hallucinationsloopen skickar en distinkt etikett ("eval:zero-halluc") så
+  // dess API-kostnad kan summeras separat mot budgettaket.
+  label = "RFP analysis"
 ): Promise<RfpAnalysis> {
   return callClaude({
     model: MODELS.extraction,
@@ -72,7 +83,7 @@ export async function analyzeRfp(
     system: SYSTEM_PROMPT,
     userContent: `Analysera förfrågningsunderlaget nedan och returnera en strukturerad JSON-analys.\n\n<underlag>\n${rfpText}\n</underlag>`,
     schema: RfpAnalysisSchema,
-    label: "RFP analysis",
+    label,
     // Extraktion ska vara deterministisk: samma FFU → samma kravlista, både för
     // kunden och för eval-grinden (temp 1.0 tärningskastade segmenteringen).
     temperature: 0,

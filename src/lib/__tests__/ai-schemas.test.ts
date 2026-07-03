@@ -7,6 +7,7 @@ describe("RfpRequirementSchema — kind (qualification vs deliverable)", () => {
       category: "Konsultkvalifikationer",
       description: "Minst 5 års erfarenhet",
       priority: "must",
+      evidence: "Minst 5 års erfarenhet",
     });
     expect(r.kind).toBe("qualification");
   });
@@ -17,6 +18,7 @@ describe("RfpRequirementSchema — kind (qualification vs deliverable)", () => {
       description: "Skriftlig slutrapport",
       priority: "must",
       kind: "deliverable",
+      evidence: "en skriftlig slutrapport ska levereras",
     });
     expect(r.kind).toBe("deliverable");
   });
@@ -28,6 +30,40 @@ describe("RfpRequirementSchema — kind (qualification vs deliverable)", () => {
         description: "y",
         priority: "must",
         kind: "annat",
+        evidence: "citat",
+      }),
+    ).toThrow();
+  });
+});
+
+describe("RfpRequirementSchema — evidence (obligatoriskt i modell-output)", () => {
+  it("accepterar ett krav med ordagrant citat", () => {
+    const r = RfpRequirementSchema.parse({
+      category: "Erfarenhet",
+      description: "Minst tre års erfarenhet",
+      priority: "must",
+      evidence: "minst tre års erfarenhet av liknande uppdrag",
+    });
+    expect(r.evidence).toBe("minst tre års erfarenhet av liknande uppdrag");
+  });
+
+  it("avvisar krav helt utan evidence-fält (modellen MÅSTE citera)", () => {
+    expect(() =>
+      RfpRequirementSchema.parse({
+        category: "x",
+        description: "y",
+        priority: "must",
+      }),
+    ).toThrow();
+  });
+
+  it("avvisar tomt evidence (min(1))", () => {
+    expect(() =>
+      RfpRequirementSchema.parse({
+        category: "x",
+        description: "y",
+        priority: "must",
+        evidence: "",
       }),
     ).toThrow();
   });
@@ -111,9 +147,9 @@ describe("RfpAnalysisSchema — priority coercion in requirements", () => {
     const raw = {
       ...base,
       requirements: [
-        { category: "A", description: "a", priority: "ska-krav" },
-        { category: "B", description: "b", priority: "bör" },
-        { category: "C", description: "c", priority: "kan" },
+        { category: "A", description: "a", priority: "ska-krav", evidence: "a" },
+        { category: "B", description: "b", priority: "bör", evidence: "b" },
+        { category: "C", description: "c", priority: "kan", evidence: "c" },
       ],
     };
     const parsed = RfpAnalysisSchema.parse(raw);
