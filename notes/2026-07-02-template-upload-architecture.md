@@ -140,6 +140,40 @@ kopplar slot→capability→format, och (b) generic-prose-fallbacken.
 Slice 2–3 är den kritiska grinden: om profil-driven rendering reproducerar vår
 egen mall bit-för-bit mot golden, vet vi att generaliseringen inte tappade något.
 
+## TILLÄGG 2026-07-03: Oinstrumenterade kundmallar → token-injektion
+
+**Problem som hela ovanstående design antog bort:** en kunds egen mall har
+textboxar placerade men INGA agentvänliga `{...}`-tokens (vår `anbudsmall-v2` är
+författad med dem per `docs/template-authoring.md`; en främmande mall är det inte).
+Hela pipelinen (identify-slides, applikatorer, `replaceAllTextNodes`) är
+token-baserad.
+
+**Beslut (Stefan 2026-07-03): token-injektion vid onboarding.** Onboarding
+instrumenterar en KOPIA av mallen en gång:
+1. `readPptxSlides` ger redan varje shape + faktisk text + geometri (inte bara
+   `{token}`-boxar) — råmaterialet finns.
+2. Heuristik + `classifyForeignSlot` föreslår vilka shapes som är fyllbara slots
+   och vilken capability + intent var och en har.
+3. Människan bekräftar/ändrar/skippar i intervjun (steg C).
+4. Vi INJICERAR ett `{Token}` i varje bekräftad shape (bevarad rPr/geometri) och
+   sparar en instrumenterad `.pptx` som mall + profilen.
+5. Alla framtida renderingar kör den befintliga token-baserade pipelinen
+   OFÖRÄNDRAD mot den instrumenterade mallen.
+
+Känd box → injicera VÅRA tokens → specialiserad applikator fyller den. Främmande
+box → generiskt token + generic-prose. Ett mekanism för både känt och främmande.
+Matchar premissen "dyr förståelse en gång vid upload"; den instrumenterade mallen
+ÄR den durabla artefakten jämte profilen.
+
+**Förkastad:** shape-referens-adressering (ingen mutation, profilen adresserar
+shapes per index/id + ny renderingsväg) — kräver en andra renderingsmotor och
+shape-identitet är skör över pptx-automizer. Större, mer regressionsrisk.
+
+**Ny kärnkomponent:** `instrumentTemplate(pptx, injektionsspec) → instrumenterad
+pptx` (skriver tokens i shape-XML, bevarar formatering). Verifierbart:
+round-trip — injicera token i en shape → `readPptxSlides` ser tokenet i just den
+shapen, formatering intakt.
+
 ## Öppna frågor / risker
 
 - **Format-detektion från shape.** Kan vi pålitligt skilja tabell/prosa/lista ur

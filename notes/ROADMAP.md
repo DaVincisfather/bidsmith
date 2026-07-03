@@ -9,12 +9,15 @@ _Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **Slice 5b — auto-klassificering** (LLM föreslår capability+intent per främmande slot)
-      + **generic-prose-inkoppling** i `generateAllSections` (profil-medveten generering).
-      Modellbeslut: byt generic-prose till `claude-sonnet-5` (ny roll i models.ts + prisrad i
-      ai-cost.ts + eval-grind) — ersätter Opus/max från slice 4.
-- [ ] **Slice 5-UI** — onboarding-flöde (upload → auto-klass → slot-intervju → redigerbar
-      profil), med Stefans design-riktning. Egen PR.
+- [ ] **Slice 5b — token-injektion** (`instrumentTemplate`): NY kärnkomponent efter beslut
+      2026-07-03 (design-doc TILLÄGG). Onboarding instrumenterar en kopia av kundens mall
+      (föreslå slots → bekräfta → injicera `{tokens}`) så den token-baserade pipelinen kör
+      oförändrad. `classifyForeignSlot` byggd (auto-klass av slot). Kvar: slot-förslag ur
+      shape-text/geometri + injektionsmotorn.
+- [ ] **generic-prose-inkoppling** i `generateAllSections` + `claude-sonnet-5`-byte
+      (ny roll i models.ts + prisrad i ai-cost.ts + **eval-grind**) — ersätter Opus/max.
+- [ ] **Slice 5-UI** — onboarding-flöde (upload → slot-förslag → intervju → injicera →
+      redigerbar profil), med Stefans design-riktning. Egen PR.
 - [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
 
 ## Mall-uppladdning (godtyckliga bolagsmallar) — aktiv feature

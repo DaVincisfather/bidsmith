@@ -18,6 +18,7 @@ let authUser: { id: string } | null;
 const tableResults: Record<string, { data: unknown; error: unknown }> = {};
 const inserted: Record<string, unknown[]> = {};
 const updated: Record<string, unknown[]> = {};
+const upserted: Record<string, unknown[]> = {};
 const uploadMock = vi.fn();
 
 function builder(table: string) {
@@ -37,6 +38,11 @@ function builder(table: string) {
   };
   chain.update = (row: unknown) => {
     (updated[table] ??= []).push(row);
+    return chain;
+  };
+  // profile-store upserts template_profiles after the templates insert.
+  chain.upsert = (row: unknown) => {
+    (upserted[table] ??= []).push(row);
     return chain;
   };
   // Thenable so `await supabase.from(t).update().eq()` resolves directly.
@@ -83,6 +89,7 @@ beforeEach(() => {
   for (const k of Object.keys(tableResults)) delete tableResults[k];
   for (const k of Object.keys(inserted)) delete inserted[k];
   for (const k of Object.keys(updated)) delete updated[k];
+  for (const k of Object.keys(upserted)) delete upserted[k];
   uploadMock.mockResolvedValue({ error: null });
 });
 
@@ -160,6 +167,9 @@ describe("POST /api/templates", () => {
       version: 1,
       storage_path: "min-anbudsmall/v1.pptx",
     });
+    // A starting profile is derived from the manifest and upserted for the new
+    // template (slice 5a), carrying the real template id + version.
+    expect(upserted.template_profiles?.[0]).toMatchObject({ template_id: "new-id" });
     expect(clearTemplateCacheMock).toHaveBeenCalled();
   });
 
