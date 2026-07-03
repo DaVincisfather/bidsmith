@@ -117,6 +117,60 @@ describe("instrumentTemplate — round-trip through readPptxSlides", () => {
     expect(after[0].shapes[1].geometry).toEqual({ x: 500, y: 600, cx: 1000, cy: 1200 });
   });
 
+  it("preserves fontSizePt when the size lived in a deleted run (first run has no sz)", async () => {
+    // Routine-review repro: first run's rPr lacks sz, the SECOND run carries it.
+    // Injection keeps run 1 and deletes run 2 — without re-stamping, introspection
+    // would fall back to the default font size and budgets would drift (16 → null).
+    const base = await buildMiniPptx(
+      slideWithShapes([
+        `<p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="5" cy="5"/></a:xfrm></p:spPr>
+         <p:txBody><a:bodyPr/><a:p><a:r><a:rPr/><a:t>utan sz</a:t></a:r><a:r><a:rPr sz="1600"/><a:t>med sz</a:t></a:r></a:p></p:txBody>`,
+      ]),
+    );
+    const before = await readPptxSlides(base);
+    expect(before[0].shapes[0].fontSizePt).toBe(16);
+
+    const after = await readPptxSlides(
+      await instrumentTemplate(base, [{ source: 1, shapeIndex: 0, token: "{X}" }]),
+    );
+    expect(after[0].shapes[0].fontSizePt).toBe(16);
+    expect(after[0].shapes[0].paragraphs).toEqual(["{X}"]);
+  });
+
+  it("preserves fontSizePt when the size lived in a deleted paragraph", async () => {
+    // Same drift via the other route: size only on the second <a:p>, which the
+    // collapse removes.
+    const base = await buildMiniPptx(
+      slideWithShapes([
+        `<p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="5" cy="5"/></a:xfrm></p:spPr>
+         <p:txBody><a:bodyPr/><a:p><a:r><a:rPr/><a:t>första</a:t></a:r></a:p><a:p><a:r><a:rPr sz="2000"/><a:t>andra</a:t></a:r></a:p></p:txBody>`,
+      ]),
+    );
+    const before = await readPptxSlides(base);
+    expect(before[0].shapes[0].fontSizePt).toBe(20);
+
+    const after = await readPptxSlides(
+      await instrumentTemplate(base, [{ source: 1, shapeIndex: 0, token: "{X}" }]),
+    );
+    expect(after[0].shapes[0].fontSizePt).toBe(20);
+  });
+
+  it("clears text-bearing non-run siblings (a:fld, a:br) so only the token remains", async () => {
+    // The docblock promises fld/br removal; lock it. A slide-number field and a
+    // line break both carry text content that must not leak past injection.
+    const base = await buildMiniPptx(
+      slideWithShapes([
+        `<p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="5" cy="5"/></a:xfrm></p:spPr>
+         <p:txBody><a:bodyPr/><a:p><a:fld id="{ABC-123}" type="slidenum"><a:t>7</a:t></a:fld><a:br/><a:r><a:rPr sz="1400"/><a:t>text</a:t></a:r></a:p></p:txBody>`,
+      ]),
+    );
+    const after = await readPptxSlides(
+      await instrumentTemplate(base, [{ source: 1, shapeIndex: 0, token: "{Ren}" }]),
+    );
+    expect(after[0].shapes[0].paragraphs).toEqual(["{Ren}"]);
+    expect(after[0].shapes[0].tokens).toEqual(["{Ren}"]);
+  });
+
   it("creates a run when the first paragraph has none", async () => {
     // First <a:p> has a pPr but no <a:r> — the create-run branch.
     const base = await buildMiniPptx(

@@ -101,7 +101,8 @@ export async function instrumentTemplate(
     zip.file(path, outXml);
   }
 
-  return zip.generateAsync({ type: "nodebuffer" });
+  // DEFLATE — JSZip defaultar annars till STORE (okomprimerad pptx).
+  return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 }
 
 function validateInjections(injections: TokenInjection[]): void {
@@ -161,6 +162,12 @@ function injectToken(
 ): void {
   const txBody = sp.getElementsByTagNameNS(P_NS, "txBody")[0];
 
+  // Effektiv fontstorlek FÖRE mutation, med samma "första explicita vinner"-scan
+  // som readFontSizePt. Storleken kan bo i en run/paragraf vi strax raderar
+  // (t.ex. första run utan sz, andra run med) — då måste den stämplas tillbaka,
+  // annars driftar introspektionens fontSizePt och budgeten räknas på default.
+  const preSz = effectiveSz(txBody);
+
   // Direkta paragraf-barn i ordning; ta bort alla utom den första.
   const paras = childElements(txBody, "p");
   for (let i = 1; i < paras.length; i++) txBody.removeChild(paras[i]);
@@ -182,6 +189,7 @@ function injectToken(
     n = next;
   }
 
+  let run: Element;
   if (keptRun) {
     // Behåll run:ens rPr; ersätt dess text med ett rent <a:t>token</a:t>.
     const rPr = childElements(keptRun, "rPr")[0] ?? null;
@@ -191,13 +199,41 @@ function injectToken(
       n = next;
     }
     keptRun.appendChild(makeTextNode(doc, token));
+    run = keptRun;
   } else {
     // Ingen run att ärva från — skapa <a:r><a:t>token</a:t></a:r> (drawingml-ns).
-    const run = doc.createElementNS(A_NS, "a:r");
+    run = doc.createElementNS(A_NS, "a:r");
     run.appendChild(makeTextNode(doc, token));
     if (pPr) firstP.insertBefore(run, pPr.nextSibling);
     else firstP.insertBefore(run, firstP.firstChild);
   }
+
+  // Röjde mutationen bort storlekskällan? Stämpla då pre-mutationens sz på den
+  // kvarvarande run:en så introspektionen ser samma fontSizePt före och efter.
+  if (preSz !== null && effectiveSz(txBody) === null) {
+    let rPr = childElements(run, "rPr")[0] ?? null;
+    if (!rPr) {
+      rPr = doc.createElementNS(A_NS, "a:rPr");
+      run.insertBefore(rPr, run.firstChild);
+    }
+    rPr.setAttribute("sz", preSz);
+  }
+}
+
+/**
+ * Speglar readFontSizePt:s scan (rPr före defRPr, första med sz vinner) men
+ * returnerar rå-attributet — instrumenteringen ska bevara exakt värde, inte
+ * tolka punkter.
+ */
+function effectiveSz(txBody: Element): string | null {
+  for (const tag of ["rPr", "defRPr"]) {
+    const nodes = txBody.getElementsByTagNameNS(A_NS, tag);
+    for (let i = 0; i < nodes.length; i++) {
+      const sz = nodes[i].getAttribute("sz");
+      if (sz) return sz;
+    }
+  }
+  return null;
 }
 
 function makeTextNode(
