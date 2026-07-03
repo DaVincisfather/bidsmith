@@ -17,6 +17,7 @@ import { requirementMatrixApplicator } from "./applicators/requirement-matrix";
 import { referenceApplicator } from "./applicators/reference";
 import { confidentialityApplicator } from "./applicators/confidentiality";
 import { certificationsApplicator } from "./applicators/certifications";
+import { genericProseApplicator } from "./applicators/generic-prose";
 import { getCloneItems, streamToBuffer } from "./render-helpers";
 
 /**
@@ -162,6 +163,10 @@ export function applicatorForCapability(
       return confidentialityApplicator(ctx);
     case "certifications":
       return certificationsApplicator(ctx);
+    case "generic-prose":
+      // Fallback: fill this slide's generic-prose slots with plain prose
+      // generated per-slot (template-upload slice 4).
+      return genericProseApplicator(ctx, slide);
     default:
       throw new Error(
         `no applicator for capability: ${slide.capability ?? "(none)"}`,

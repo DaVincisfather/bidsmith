@@ -9,8 +9,9 @@ _Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **Slice 4 — `generic-prose`-bundle** + prose/field-format (täcker främmande sektioner).
-      Första formatet i B; A:s fallback samtidigt.
+- [ ] **Slice 5 — onboarding-UI** (introspektion + intervju + redigerbar profil). Kopplar
+      OCKSÅ in generic-prose i `generateAllSections` (profil-medveten generering) — där
+      kalibreras generic-prose:s modell/effort mot kostnad.
 - [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
 
 ## Mall-uppladdning (godtyckliga bolagsmallar) — aktiv feature
@@ -19,7 +20,7 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 - [x] Slice 1 — mall-profil-schema + migration 008 (#42, merged)
 - [x] Slice 2 — `manifestToProfile`: manifest → capability-klassificering (#44, merged)
 - [x] Slice 3 — profil-driven renderare bakom `BIDSMITH_PROFILE_RENDER`, golden-bitparitet grön
-- [ ] Slice 4 — `generic-prose`-bundle + prose/field-format (täcker främmande sektioner)
+- [~] Slice 4 — `generic-prose`-bundle + prose/field-applikator byggda & enhetstestade (isolerade); pipeline-inkoppling flyttad till slice 5
 - [ ] Slice 5 — onboarding-UI (introspektion + intervju + redigerbar profil)
 - [ ] Slice 6 — B inkrementellt: bullets, sedan godtyckliga table-rows
 
@@ -32,6 +33,7 @@ _Inga just nu._
 - ai-client detekterar inte `stop_reason: "max_tokens"` → alla bundles re-trunkerar identiskt (bredare härdning)
 - `consultants/upload` sanerar inte filnamn (ingen storage-nyckel-yta idag, men om det ändras)
 - Profil-renderarens `variant` castas `as ProseVariant` utan validering (render-from-profile.ts) — härda när slice 5/6 låter främmande mallar sätta godtyckliga variant-strängar
+- generic-prose kör Opus (`MODELS.writing`) + `effort: max` per okänd slot — kalibrera modell/effort när slice 5 kopplar in den i pipelinen (många okända sektioner = dyrt; användaren bär API-kostnaden)
 - **BUG-A:** leveranser hamnar i ska-krav i analysvyn
 - **BUG-B:** analyserad RFP syns inte i dashboarden → svårt att gå tillbaka till analysen
 - "Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera — semantik att se över
