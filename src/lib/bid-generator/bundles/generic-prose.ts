@@ -67,7 +67,10 @@ export async function buildGenericProseSection(
     userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
     schema: GenericProseBundleSchema,
     label: "generic-prose bundle",
-    effort: "max",
+    // "high", inte "max": fallback-prosa på Sonnet 5 — max är benäget till
+    // overthinking, och vid 30+ okända slots per anbud är det reell
+    // användarkostnad (routine-review #53).
+    effort: "high",
     userId: ctx.userId,
     bidId: ctx.bidId,
   });

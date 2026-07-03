@@ -197,6 +197,43 @@ describe("callClaude — temperature passthrough", () => {
     );
   });
 
+  it("Sonnet 5: strippar temperature och sätter thinking disabled (API:t avvisar temperature med 400)", async () => {
+    // Verifierat empiriskt 2026-07-03: "`temperature` is deprecated for this
+    // model". Avsikten (mekaniskt/deterministiskt) översätts centralt till
+    // thinking: disabled — call sites ska inte känna till modell-quirks.
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: '{"a": 1}' }],
+      usage: {},
+    }));
+    await callClaude({ ...baseArgs, model: "claude-sonnet-5", temperature: 0 });
+    const params = mockCreate.mock.calls[0][0] as Record<string, unknown>;
+    expect(params).not.toHaveProperty("temperature");
+    expect(params.thinking).toEqual({ type: "disabled" });
+  });
+
+  it("Sonnet 5 utan effort: thinking disabled (återställer kontraktet 'inget effort = ingen reasoning')", async () => {
+    // Sonnet 5 defaultar till adaptiv thinking server-side — utan disable äter
+    // reasoning-tokens de snäva budgetarna i mekaniska steg (team: 2000).
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: '{"a": 1}' }],
+      usage: {},
+    }));
+    await callClaude({ ...baseArgs, model: "claude-sonnet-5" });
+    const params = mockCreate.mock.calls[0][0] as Record<string, unknown>;
+    expect(params).not.toHaveProperty("temperature");
+    expect(params.thinking).toEqual({ type: "disabled" });
+  });
+
+  it("Sonnet 5 MED effort: adaptiv thinking, inte disabled", async () => {
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: '{"a": 1}' }],
+      usage: {},
+    }));
+    await callClaude({ ...baseArgs, model: "claude-sonnet-5", effort: "high" });
+    const params = mockCreate.mock.calls[0][0] as Record<string, unknown>;
+    expect(params.thinking).toEqual({ type: "adaptive" });
+  });
+
   it("kastar direkt på effort + temperature — API:t avvisar kombinationen med 400", async () => {
     // Adaptive thinking kräver temperature 1/utelämnad; 400 är inte retrybar
     // så utan vakt hårdfailar varje anrop efter att ha kostat ett försök.
