@@ -90,7 +90,9 @@ export async function POST(request: NextRequest) {
   // it be regenerated.
   const allWarnings = [...warnings];
   try {
-    await saveTemplateProfile(manifestToProfile(manifest, { templateId: row.id }));
+    await saveTemplateProfile(
+      manifestToProfile(manifest, { templateId: row.id, version }),
+    );
   } catch (err) {
     allWarnings.push(
       `mall-profil kunde inte sparas (kan regenereras): ${err instanceof Error ? err.message : String(err)}`,
