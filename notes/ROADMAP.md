@@ -9,9 +9,12 @@ _Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **Slice 5 — onboarding-UI** (introspektion + intervju + redigerbar profil). Kopplar
-      OCKSÅ in generic-prose i `generateAllSections` (profil-medveten generering) — där
-      kalibreras generic-prose:s modell/effort mot kostnad.
+- [ ] **Slice 5b — auto-klassificering** (LLM föreslår capability+intent per främmande slot)
+      + **generic-prose-inkoppling** i `generateAllSections` (profil-medveten generering).
+      Modellbeslut: byt generic-prose till `claude-sonnet-5` (ny roll i models.ts + prisrad i
+      ai-cost.ts + eval-grind) — ersätter Opus/max från slice 4.
+- [ ] **Slice 5-UI** — onboarding-flöde (upload → auto-klass → slot-intervju → redigerbar
+      profil), med Stefans design-riktning. Egen PR.
 - [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
 
 ## Mall-uppladdning (godtyckliga bolagsmallar) — aktiv feature
@@ -21,7 +24,9 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 - [x] Slice 2 — `manifestToProfile`: manifest → capability-klassificering (#44, merged)
 - [x] Slice 3 — profil-driven renderare bakom `BIDSMITH_PROFILE_RENDER`, golden-bitparitet grön
 - [~] Slice 4 — `generic-prose`-bundle + prose/field-applikator byggda & enhetstestade (isolerade); pipeline-inkoppling flyttad till slice 5
-- [ ] Slice 5 — onboarding-UI (introspektion + intervju + redigerbar profil)
+- [~] Slice 5a — profil-persistens (`profile-store.ts`) + upload deriverar & sparar startprofil
+- [ ] Slice 5b — auto-klassificering + generic-prose-inkoppling (Sonnet 5)
+- [ ] Slice 5-UI — onboarding-flöde (introspektion + intervju + redigerbar profil)
 - [ ] Slice 6 — B inkrementellt: bullets, sedan godtyckliga table-rows
 
 ## Öppna PR:er (väntar review)
