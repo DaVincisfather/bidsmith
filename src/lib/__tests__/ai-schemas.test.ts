@@ -7,6 +7,7 @@ describe("RfpRequirementSchema — kind (qualification vs deliverable)", () => {
       category: "Konsultkvalifikationer",
       description: "Minst 5 års erfarenhet",
       priority: "must",
+      evidence: "Minst 5 års erfarenhet",
     });
     expect(r.kind).toBe("qualification");
   });
@@ -17,6 +18,7 @@ describe("RfpRequirementSchema — kind (qualification vs deliverable)", () => {
       description: "Skriftlig slutrapport",
       priority: "must",
       kind: "deliverable",
+      evidence: "en skriftlig slutrapport ska levereras",
     });
     expect(r.kind).toBe("deliverable");
   });
@@ -28,8 +30,57 @@ describe("RfpRequirementSchema — kind (qualification vs deliverable)", () => {
         description: "y",
         priority: "must",
         kind: "annat",
+        evidence: "citat",
       }),
     ).toThrow();
+  });
+});
+
+describe("RfpRequirementSchema — evidence (obligatoriskt i modell-output)", () => {
+  it("accepterar ett krav med ordagrant citat", () => {
+    const r = RfpRequirementSchema.parse({
+      category: "Erfarenhet",
+      description: "Minst tre års erfarenhet",
+      priority: "must",
+      evidence: "minst tre års erfarenhet av liknande uppdrag",
+    });
+    expect(r.evidence).toBe("minst tre års erfarenhet av liknande uppdrag");
+  });
+
+  it("avvisar krav helt utan evidence-fält (modellen MÅSTE citera)", () => {
+    expect(() =>
+      RfpRequirementSchema.parse({
+        category: "x",
+        description: "y",
+        priority: "must",
+      }),
+    ).toThrow();
+  });
+
+  it("avvisar tomt evidence (min(1))", () => {
+    expect(() =>
+      RfpRequirementSchema.parse({
+        category: "x",
+        description: "y",
+        priority: "must",
+        evidence: "",
+      }),
+    ).toThrow();
+  });
+
+  it("avvisar TOM kravlista i modell-output (degenererat svar → format-retry)", () => {
+    // Varv 1-belägg 2026-07-03: samma dokument gav 0 krav (235 output-tokens) i
+    // en körning, 20 krav i nästa. En RFP utan krav existerar inte — Zod-missen
+    // gör det degenererade svaret till ResponseFormatError som re-promptas.
+    expect(() =>
+      RfpAnalysisSchema.parse({
+        title: "t", client: "c", deadline: null, summary: "s",
+        requirements: [],
+        evaluationCriteria: [], requiredCompetencies: [],
+        estimatedScope: "", redFlags: [], domain: "",
+        oslReference: null, secrecyRows: [],
+      }),
+    ).toThrow(/requirements|too_small|minst/i);
   });
 });
 
@@ -111,9 +162,9 @@ describe("RfpAnalysisSchema — priority coercion in requirements", () => {
     const raw = {
       ...base,
       requirements: [
-        { category: "A", description: "a", priority: "ska-krav" },
-        { category: "B", description: "b", priority: "bör" },
-        { category: "C", description: "c", priority: "kan" },
+        { category: "A", description: "a", priority: "ska-krav", evidence: "a" },
+        { category: "B", description: "b", priority: "bör", evidence: "b" },
+        { category: "C", description: "c", priority: "kan", evidence: "c" },
       ],
     };
     const parsed = RfpAnalysisSchema.parse(raw);
@@ -131,7 +182,8 @@ describe("RfpAnalysisSchema — evaluationCriteria weight", () => {
     client: "c",
     deadline: null,
     summary: "s",
-    requirements: [],
+    // min(1) på requirements — basen bär ett minimalt giltigt krav.
+    requirements: [{ category: "x", description: "y", priority: "must", evidence: "z" }],
     requiredCompetencies: [],
     estimatedScope: "",
     redFlags: [],

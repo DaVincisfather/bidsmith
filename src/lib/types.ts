@@ -6,6 +6,12 @@ export interface RfpRequirement {
   // ska producera. Håller leverabler ute ur ska/bör-krav + kravmatrisen. Valfritt i typen
   // (Zod-schemat defaultar till "qualification" vid parse); saknat värde ⇒ qualification.
   kind?: "qualification" | "deliverable";
+  /**
+   * Ordagrant citat ur källdokumentet som grundar kravet (evidens-förankring).
+   * Modellen TVINGAS alltid citera (obligatoriskt i output-schemat), men läs-typen
+   * är valfri så tidigare lagrade analyser — skrivna innan fältet fanns — fortsatt parsar.
+   */
+  evidence?: string;
 }
 
 export interface EvaluationCriterion {
