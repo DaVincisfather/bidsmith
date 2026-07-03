@@ -16,8 +16,9 @@ _Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
       förslags-lagret (`onboarding/propose-injection-plan.ts` — kandidat-slots ur
       shape-text/geometri → auto-klass → utkast-profil) byggda & enhetstestade. Kvar:
       generic-prose-inkoppling + slice 5-UI som konsumerar planen.
-- [ ] **generic-prose-inkoppling** i `generateAllSections` + `claude-sonnet-5`-byte
-      (ny roll i models.ts + prisrad i ai-cost.ts + **eval-grind**) — ersätter Opus/max.
+- [ ] **generic-prose-inkoppling** i genereringen för profil-drivna mallar (VVS:en som får
+      främmande mallar att generera). Modellbytet är GJORT: `writingGeneric` = Sonnet 5
+      (beslut 2026-07-03, ingen eval — ögonkoll på outputs i 5-UI-testningen istället).
 - [ ] **Slice 5-UI** — onboarding-flöde (upload → slot-förslag → intervju → injicera →
       redigerbar profil), med Stefans design-riktning. Egen PR.
 - [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
@@ -43,7 +44,7 @@ _Inga just nu._
 - ai-client detekterar inte `stop_reason: "max_tokens"` → alla bundles re-trunkerar identiskt (bredare härdning)
 - `consultants/upload` sanerar inte filnamn (ingen storage-nyckel-yta idag, men om det ändras)
 - Profil-renderarens `variant` castas `as ProseVariant` utan validering (render-from-profile.ts) — härda när slice 5/6 låter främmande mallar sätta godtyckliga variant-strängar
-- generic-prose kör Opus (`MODELS.writing`) + `effort: max` per okänd slot — kalibrera modell/effort när slice 5 kopplar in den i pipelinen (många okända sektioner = dyrt; användaren bär API-kostnaden)
+- [x] ~~generic-prose kör Opus + effort max per okänd slot~~ — LÖST 2026-07-03: egen roll `writingGeneric` = Sonnet 5 ($2/$10 intro → $3/$15 efter 2026-08-31; bump-påminnelse i ai-cost.ts)
 - **BUG-A:** leveranser hamnar i ska-krav i analysvyn
 - **BUG-B:** analyserad RFP syns inte i dashboarden → svårt att gå tillbaka till analysen
 - "Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera — semantik att se över

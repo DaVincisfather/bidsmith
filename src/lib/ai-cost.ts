@@ -1,6 +1,8 @@
-// Anthropic list prices (USD per 1M tokens). Last verified: 2026-06-10.
+// Anthropic list prices (USD per 1M tokens). Last verified: 2026-07-03.
 // Update here when Anthropic publishes new prices.
 // NB: Opus 4.5+ is $5/$25 — the old $15/$75 tier was Opus 4.1 and earlier.
+// NB: Sonnet 5 is INTRO-priced $2/$10 through 2026-08-31, then $3/$15 — bump
+// this row after that date or costs undercount by 1.5×.
 export interface ModelPricing {
   inputPerMTok: number;
   outputPerMTok: number;
@@ -11,6 +13,7 @@ const PRICING: Record<string, ModelPricing> = {
   "claude-opus-4-8": { inputPerMTok: 5, outputPerMTok: 25 },
   "claude-opus-4-7": { inputPerMTok: 5, outputPerMTok: 25 },
   "claude-opus-4-6": { inputPerMTok: 5, outputPerMTok: 25 },
+  "claude-sonnet-5": { inputPerMTok: 2, outputPerMTok: 10 },
   "claude-sonnet-4-6": { inputPerMTok: 3, outputPerMTok: 15 },
   "claude-haiku-4-5-20251001": { inputPerMTok: 1, outputPerMTok: 5 },
 };

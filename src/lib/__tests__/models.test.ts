@@ -12,7 +12,7 @@ describe("MODELS registry", () => {
   it("definierar alla roller med giltiga modell-ID-prefix", () => {
     const roles = [
       "extraction", "prefilter", "matching", "gonogo",
-      "radar", "writing", "writingSupport", "writingChallenger", "judge",
+      "radar", "writing", "writingSupport", "writingGeneric", "writingChallenger", "judge",
     ] as const;
     for (const role of roles) {
       expect(MODELS[role]).toMatch(/^claude-/);
@@ -22,6 +22,13 @@ describe("MODELS registry", () => {
   it("skrivande roll är Opus 4.8 tills A/B-test (fas 1) säger annat", () => {
     expect(MODELS.writing).toBe("claude-opus-4-8");
     expect(MODELS.writingChallenger).toBe("claude-fable-5");
+  });
+
+  it("judge ligger MEDVETET kvar på 4-6 — blindfacit-kalibreringen gjordes mot den", () => {
+    // Fas 1:s 8 människomärkta par validerade 4-6-judgen. En ny judge-modell
+    // kräver omkalibrering innan tally får beslutsvikt — byt inte i smyg via en
+    // svepande uppgradering (Sonnet 5-bytet 2026-07-03 lämnade denna avsiktligt).
+    expect(MODELS.judge).toBe("claude-sonnet-4-6");
   });
 
   it("BIDSMITH_WRITING_MODEL överstyr writing-rollen (för eval:bid-compare)", async () => {
