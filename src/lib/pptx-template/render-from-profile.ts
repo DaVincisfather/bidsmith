@@ -60,22 +60,16 @@ export async function renderFromProfile(
   const totalSlides = countProfileOutputSlides(profile, sections);
 
   for (const slide of profile.slides) {
+    // Clone slides render once per item in the driving capability's data array;
+    // non-clone slides render once (cloneItems null → cloneIndex undefined).
     const cloneItems = cloneItemsFor(slide, sections);
-    if (cloneItems) {
-      // Clone this slide once per item in the driving capability's data array.
-      for (let i = 0; i < cloneItems.length; i++) {
-        outIdx++;
-        const cb = applicatorForCapability(
-          slide,
-          ctxFor(slide, sections, master, outIdx, totalSlides, i),
-        );
-        pres.addSlide("main", slide.source, cb);
-      }
-    } else {
+    const count = cloneItems ? cloneItems.length : 1;
+    for (let i = 0; i < count; i++) {
       outIdx++;
+      const cloneIndex = cloneItems ? i : undefined;
       const cb = applicatorForCapability(
         slide,
-        ctxFor(slide, sections, master, outIdx, totalSlides),
+        ctxFor(slide, sections, master, outIdx, totalSlides, cloneIndex),
       );
       pres.addSlide("main", slide.source, cb);
     }
@@ -113,7 +107,14 @@ function cloneItemsFor(
 ): unknown[] | null {
   if (!slide.cloneFrom) return null;
   const key = CLONE_CAPABILITY_TO_KEY[slide.cloneFrom];
-  return key ? getCloneItems(sections, key) : [];
+  if (!key) {
+    // The schema permits any capability as cloneFrom, but only these three have
+    // a clone-data source. Fail loud rather than silently dropping the slide (an
+    // empty array is truthy → zero clones → the slide vanishes). Reachable once
+    // editable profiles (slice 5/6) can set an arbitrary repeating capability.
+    throw new Error(`cloneFrom capability has no clone-data source: ${slide.cloneFrom}`);
+  }
+  return getCloneItems(sections, key);
 }
 
 function countProfileOutputSlides(

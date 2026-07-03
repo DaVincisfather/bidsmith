@@ -31,6 +31,7 @@ _Inga just nu._
 - `met`/JA-fältet vestigialt i matris-schemat (coverage = sanningskälla) — städbar
 - ai-client detekterar inte `stop_reason: "max_tokens"` → alla bundles re-trunkerar identiskt (bredare härdning)
 - `consultants/upload` sanerar inte filnamn (ingen storage-nyckel-yta idag, men om det ändras)
+- Profil-renderarens `variant` castas `as ProseVariant` utan validering (render-from-profile.ts) — härda när slice 5/6 låter främmande mallar sätta godtyckliga variant-strängar
 - **BUG-A:** leveranser hamnar i ska-krav i analysvyn
 - **BUG-B:** analyserad RFP syns inte i dashboarden → svårt att gå tillbaka till analysen
 - "Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera — semantik att se över
