@@ -80,6 +80,7 @@ export function manifestToProfile(
       capability,
       slots,
       ...(cloneFrom ? { cloneFrom } : {}),
+      ...(s.variant ? { variant: s.variant } : {}),
     };
   });
 

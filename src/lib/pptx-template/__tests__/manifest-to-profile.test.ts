@@ -31,6 +31,16 @@ describe("manifestToProfile — anbudsmall-v2", () => {
     expect(bySource.get(17)?.capability).toBe("certifications");
   });
 
+  it("preserves the prose variant so slides 3/4/5 don't collapse to one", () => {
+    // All three carry capability 'understanding'; only variant tells them apart.
+    // Without it the profile-driven renderer would fill 3/4/5 identically.
+    expect(bySource.get(3)?.variant).toBe("kunden-idag");
+    expect(bySource.get(4)?.variant).toBe("uppdraget");
+    expect(bySource.get(5)?.variant).toBe("vision");
+    // Non-variant slides carry none.
+    expect(bySource.get(1)?.variant).toBeUndefined();
+  });
+
   it("preserves cloneFrom as the driving capability", () => {
     expect(bySource.get(7)?.cloneFrom).toBe("execution-plan"); // phase-detail
     expect(bySource.get(13)?.cloneFrom).toBe("requirement-matrix");
