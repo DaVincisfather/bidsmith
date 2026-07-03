@@ -41,6 +41,19 @@ export function normalizeForEvidence(text: string): string {
       .replace(/[‘’‚‛]/g, "'") // ' ' ‚ ‛ → '
       .replace(/[“”„‟]/g, '"') // " " „ ‟ → "
       .replace(/[–—‒−]/g, "-")  // – — ‒ − → -
+      // Punktlist-glyfer är list-MARKUP, inte innehåll: PDF-extraktion klistrar
+      // dem intill orden ("timmar•genomförts") och modellen utelämnar dem när
+      // den citerar listinnehåll (varv 2: alla tre missar var denna klass).
+      // Whitespace-kollapsen efteråt jämnar ut resterna. Vanliga list-streck
+      // (-, –) normaliseras INTE bort — de är tvetydiga mot innehålls-streck.
+      .replace(/[•●▪◦·]/g, " ")
+      // RIKTIGA avstavningsbindestreck vid radslut ("erfaren-\nhet"): PDF:er
+      // avstavar med vanligt "-" + radbrytning; modellen citerar ordet helt
+      // ("erfarenhet"). Ta bort bindestreck+radbrytning. MEDVETEN AVVÄGNING:
+      // ett äkta sammansättningsstreck som råkar brytas ("IT-\nkonsult") blir
+      // "ITkonsult" och missar mot citatet "IT-konsult" — felar åt säkra hållet
+      // (falsk miss, aldrig falsk träff) och klassas som fixturbrus i loopen.
+      .replace(/-\s*\r?\n\s*/g, "")
       // Alla whitespace-körningar (inkl. radbrytningar/tabbar) → ett mellanslag.
       // PDF-extraktion bryter rader mitt i meningar; ett citat kan ha ett mellanslag
       // där källan har en radbrytning. Kollaps gör dem jämförbara.
@@ -83,8 +96,7 @@ export function verifyEvidence(
       continue;
     }
 
-    const normalizedEvidence = normalizeForEvidence(req.evidence);
-    if (!normalizedSource.includes(normalizedEvidence)) {
+    if (!evidenceFoundIn(normalizedSource, normalizeForEvidence(req.evidence))) {
       misses.push({
         fixtureId,
         requirementText,
@@ -95,4 +107,59 @@ export function verifyEvidence(
   }
 
   return misses;
+}
+
+// Varv 1-lärdomar (evals/results/…zero-hallucination-loop.md): alla missar var
+// KÄLLARTEFAKTER, inte hallucinationer — modellen citerade den logiska texten
+// korrekt. Två väl avgränsade lättnader, båda omöjliga att utnyttja för
+// fabricerade citat:
+//
+// 1. Skiftläge på FÖRSTA tecknet: modellen versaliserar citatets början
+//    ("Anbudsgivaren…" ur mid-sentence "…anbudsgivaren…"). Presentations-, inte
+//    innehållsskillnad. Övriga tecken förblir case-känsliga.
+// 2. Sidbrytnings-gap: PDF:er stoppar in sidhuvud/-fot MITT i meningar
+//    ("…avgifter till [C 2026-0696 … Sida 7/22] vare sig Skatteverket…").
+//    Citatet delas vid ordgränser i två halvor (≥ MIN_HALF tecken var, upp till
+//    SEAM_SLACK tecken får offras vid skarven — täcker även PDF-tapp som
+//    "kund- och"→"kundoch"); båda halvorna måste finnas ORDAGRANT, i ORDNING,
+//    inom GAP_WINDOW tecken. Att fabricera det kräver två långa äkta textsjok
+//    intill varandra — dvs. ett äkta citat.
+const MIN_HALF = 25;
+const SEAM_SLACK = 3;
+const GAP_WINDOW = 400;
+
+function evidenceFoundIn(source: string, evidence: string): boolean {
+  for (const cand of caseVariants(evidence)) {
+    if (source.includes(cand)) return true;
+    if (gapMatch(source, cand)) return true;
+  }
+  return false;
+}
+
+function caseVariants(evidence: string): string[] {
+  if (evidence.length === 0) return [evidence];
+  const lower = evidence[0].toLowerCase() + evidence.slice(1);
+  const upper = evidence[0].toUpperCase() + evidence.slice(1);
+  return lower === upper ? [evidence] : [evidence, lower, upper];
+}
+
+function gapMatch(source: string, evidence: string): boolean {
+  // Prova varje ordgräns som skarv. Upp till SEAM_SLACK tecken får offras i
+  // VARDERA änden av skarven — prefixslut ("kund-" när källan tappat "- " →
+  // "kundoch") och suffixstart (tappade tecken efter sidbrytning).
+  for (let i = evidence.indexOf(" "); i > 0; i = evidence.indexOf(" ", i + 1)) {
+    for (let pSlack = 0; pSlack <= SEAM_SLACK; pSlack++) {
+      const prefix = evidence.slice(0, i - pSlack);
+      if (prefix.length < MIN_HALF) break;
+      const pIdx = source.indexOf(prefix);
+      if (pIdx < 0) continue; // kortare prefix (mer slack) kan ändå finnas
+      for (let sSlack = 0; sSlack <= SEAM_SLACK; sSlack++) {
+        const suffix = evidence.slice(i + 1 + sSlack);
+        if (suffix.length < MIN_HALF) break;
+        const sIdx = source.indexOf(suffix, pIdx + prefix.length);
+        if (sIdx >= 0 && sIdx - (pIdx + prefix.length) <= GAP_WINDOW) return true;
+      }
+    }
+  }
+  return false;
 }

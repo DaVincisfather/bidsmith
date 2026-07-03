@@ -67,6 +67,21 @@ describe("RfpRequirementSchema — evidence (obligatoriskt i modell-output)", ()
       }),
     ).toThrow();
   });
+
+  it("avvisar TOM kravlista i modell-output (degenererat svar → format-retry)", () => {
+    // Varv 1-belägg 2026-07-03: samma dokument gav 0 krav (235 output-tokens) i
+    // en körning, 20 krav i nästa. En RFP utan krav existerar inte — Zod-missen
+    // gör det degenererade svaret till ResponseFormatError som re-promptas.
+    expect(() =>
+      RfpAnalysisSchema.parse({
+        title: "t", client: "c", deadline: null, summary: "s",
+        requirements: [],
+        evaluationCriteria: [], requiredCompetencies: [],
+        estimatedScope: "", redFlags: [], domain: "",
+        oslReference: null, secrecyRows: [],
+      }),
+    ).toThrow(/requirements|too_small|minst/i);
+  });
 });
 
 describe("PrioritySchema — canonical values", () => {
@@ -167,7 +182,8 @@ describe("RfpAnalysisSchema — evaluationCriteria weight", () => {
     client: "c",
     deadline: null,
     summary: "s",
-    requirements: [],
+    // min(1) på requirements — basen bär ett minimalt giltigt krav.
+    requirements: [{ category: "x", description: "y", priority: "must", evidence: "z" }],
     requiredCompetencies: [],
     estimatedScope: "",
     redFlags: [],

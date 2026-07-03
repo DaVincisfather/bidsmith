@@ -78,6 +78,23 @@ describe("verifyEvidence — normaliseringstolerans (innehåll oförändrat)", (
     expect(misses).toEqual([]);
   });
 
+  it("matchar riktigt avstavningsbindestreck vid radslut (erfaren-\\nhet → erfarenhet)", () => {
+    // PDF:er avstavar med VANLIGT "-" + radbrytning, inte bara soft hyphen.
+    const source = "Krav på lång erfaren-\nhet av branschen.";
+    const misses = verifyEvidence(FX, source, [req("lång erfarenhet av branschen")]);
+    expect(misses).toEqual([]);
+  });
+
+  it("MEDVETEN AVVÄGNING: sammansättningsstreck brutet vid radslut ger falsk miss (aldrig falsk träff)", () => {
+    // "IT-\nkonsult" (äkta bindestreck som råkar brytas) blir "ITkonsult" av
+    // avstavningsregeln — citatet "IT-konsult" missar. Felar åt säkra hållet;
+    // klassas som fixturbrus i loopen. Testet låser avvägningen explicit.
+    const source = "Vi söker en IT-\nkonsult med bred profil.";
+    const misses = verifyEvidence(FX, source, [req("en IT-konsult med")]);
+    expect(misses).toHaveLength(1);
+    expect(misses[0].reason).toBe("not-found");
+  });
+
   it("matchar typografiska citattecken mot raka ASCII-citat", () => {
     const source = "Uppdraget kallas ”Ramavtal” i underlaget."; // " "
     const misses = verifyEvidence(FX, source, [req('kallas "Ramavtal" i')]);
@@ -98,9 +115,88 @@ describe("verifyEvidence — normaliseringstolerans (innehåll oförändrat)", (
 });
 
 describe("verifyEvidence — case-känslighet (innehållsskillnad ska fällas)", () => {
-  it("markerar 'not-found' vid enbart skiftlägesskillnad", () => {
-    const source = "anbudsgivaren ska ha erfarenhet";
-    const misses = verifyEvidence(FX, source, [req("Anbudsgivaren ska ha erfarenhet")]);
+  it("matchar när citatets FÖRSTA tecken versaliserats (verkligt varv 1-fall, eskilstuna)", () => {
+    // Modellen börjar citatet med versal ur mid-sentence-text — presentations-,
+    // inte innehållsskillnad. Övriga tecken förblir case-känsliga.
+    const source = 'kreditupplysningsfunktionen där anbudsgivaren som lägst ska ha klassificeringen "A" på ratingskalan.';
+    const misses = verifyEvidence(FX, source, [
+      req('Anbudsgivaren som lägst ska ha klassificeringen "A" på ratingskalan.'),
+    ]);
+    expect(misses).toEqual([]);
+  });
+
+  it("matchar över sidbrytnings-skräp mitt i meningen (verkligt varv 1-fall, chalmers)", () => {
+    // PDF:er stoppar in sidhuvud/-fot mitt i meningar; modellen citerar den
+    // logiska meningen. Båda halvorna måste finnas ordagrant, i ordning, nära.
+    const source =
+      "Anbudsgivaren ska vara fri från betydande skulder avseende svenska skatter och sociala avgifter till C 2026-0696 Affärsutveckling Publicerad 2026-05-22 Sida 7/22 vare sig Skatteverket och Kronofogdemyndigheten. Köparen kontrollerar detta.";
+    const misses = verifyEvidence(FX, source, [
+      req(
+        "Anbudsgivaren ska vara fri från betydande skulder avseende svenska skatter och sociala avgifter till vare sig Skatteverket och Kronofogdemyndigheten.",
+      ),
+    ]);
+    expect(misses).toEqual([]);
+  });
+
+  it("matchar när källan tappat '- ' i sammansättning (verkligt varv 1-fall, 'kundoch')", () => {
+    const source =
+      "Erfarenhet och vana av möten med ledningsgrupper och diskussioner med ledningar i kundoch samarbetsorganisationer • God kunskap inom IP";
+    const misses = verifyEvidence(FX, source, [
+      req(
+        "Erfarenhet och vana av möten med ledningsgrupper och diskussioner med ledningar i kund- och samarbetsorganisationer",
+      ),
+    ]);
+    expect(misses).toEqual([]);
+  });
+
+  it("matchar när källan har bullet-glyf klistrad mot ordet (verkligt varv 2-fall, chalmers)", () => {
+    // PDF-extraktion: "…timmar•genomförts…" — glyfen är list-markup, inte innehåll.
+    const source = "Referensuppdraget ska ha omfattat minst 200 timmar•genomförts inom de senaste tre (3) åren räknat från sista anbudsdag.";
+    const misses = verifyEvidence(FX, source, [
+      req("omfattat minst 200 timmar genomförts inom de senaste tre (3) åren räknat från sista anbudsdag."),
+    ]);
+    expect(misses).toEqual([]);
+  });
+
+  it("matchar flerpunktscitat där modellen utelämnat bullet-markörerna (verkligt varv 2-fall, eskilstuna)", () => {
+    const source =
+      "Konsulten ska ha: \n• För uppdraget relevant examen eller utbildning (t.ex ekonomi)\n• Dokumenterad erfarenhet att leda workshops\n• Behärska svenska språket flytande i tal och skrift.";
+    const misses = verifyEvidence(FX, source, [
+      req(
+        "Konsulten ska ha: \nFör uppdraget relevant examen eller utbildning (t.ex ekonomi)\nDokumenterad erfarenhet att leda workshops\nBehärska svenska språket flytande i tal och skrift.",
+      ),
+    ]);
+    expect(misses).toEqual([]);
+  });
+
+  it("gap-match kan INTE utnyttjas av korta fabricerade citat (halvor < 25 tecken)", () => {
+    // Fabrikationsskyddet: båda halvorna måste vara ≥25 tecken äkta text i
+    // ordning nära varandra. Ett kort hopklipp av två äkta småfraser missar.
+    const source = "Anbudet ska vara skrivet på svenska. Priset anges i SEK exklusive moms.";
+    const misses = verifyEvidence(FX, source, [
+      req("Anbudet ska vara i SEK"), // två äkta fragment, hopklippta
+    ]);
+    expect(misses).toHaveLength(1);
+    expect(misses[0].reason).toBe("not-found");
+  });
+
+  it("gap-match kräver ordning och närhet — omkastade halvor missar", () => {
+    const source =
+      "Del A: leverantören ska ha dokumenterad erfarenhet av offentlig sektor sedan minst fem år. Del B: uppdraget omfattar utredning och analys av verksamhetens processer i sin helhet.";
+    const misses = verifyEvidence(FX, source, [
+      // Suffixet ligger FÖRE prefixet i källan → ingen ordnad träff.
+      req("uppdraget omfattar utredning och analys av verksamhetens processer leverantören ska ha dokumenterad erfarenhet av offentlig sektor"),
+    ]);
+    expect(misses).toHaveLength(1);
+  });
+
+  it("markerar 'not-found' vid skiftlägesskillnad MITT I citatet (bara första tecknet tolereras)", () => {
+    const source = "anbudsgivaren ska ha erfarenhet av offentlig Sektor sedan flera år";
+    // "sektor" gemener i citatet, "Sektor" versal i källan — innehållsskillnad
+    // bortom sentence-start-versaliseringen → miss.
+    const misses = verifyEvidence(FX, source, [
+      req("anbudsgivaren ska ha erfarenhet av offentlig sektor sedan flera år"),
+    ]);
     expect(misses).toHaveLength(1);
     expect(misses[0].reason).toBe("not-found");
   });

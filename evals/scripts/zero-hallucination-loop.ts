@@ -29,19 +29,36 @@ const DEFAULT_BUDGET_USD = 20;
 // run-id) — därför rapporterar vi den kumulativa totalen prominent istället.
 async function fetchCumulativeLoopCost(): Promise<number> {
   const supabase = createServiceClient();
-  const { data, error } = await supabase
-    .from("ai_call_logs")
-    .select("cost_usd")
-    .eq("label", LOOP_LABEL);
-  if (error) throw error;
-  return (data ?? []).reduce((sum, row) => sum + Number(row.cost_usd ?? 0), 0);
+  // Paginerat: Supabase-JS tystnar vid 1000 rader per select — utan range-loop
+  // skulle summan (och därmed budgetgrinden) tyst undervärdera efter ~250 varv
+  // (routine-polish #54).
+  const PAGE = 1000;
+  let sum = 0;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("ai_call_logs")
+      .select("cost_usd")
+      .eq("label", LOOP_LABEL)
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    for (const row of data ?? []) sum += Number(row.cost_usd ?? 0);
+    if (!data || data.length < PAGE) break;
+  }
+  return sum;
 }
 
 interface FixtureResult {
   fixtureId: string;
   requirementCount: number;
+  // Golden-antalet som COVERAGE-ÖGONMÅTT (motvikten: 0 hallucinationer är
+  // trivialt via 0 extraherade krav — varv 1 gav 0/21 på orebro i en körning).
+  // Riktig coverage-jämförelse görs av analyzer-evalen; detta är transparens.
+  goldenRequirementCount: number;
   verifiedCount: number;
   misses: EvidenceMiss[];
+  // Alla extraherade (krav, citat)-par — stickprovs-underlaget för residual-
+  // risken (äkta-men-irrelevant citat) som verifieras av MÄNNISKA vid grönt.
+  pairs: { requirement: string; evidence: string | undefined }[];
   error?: string;
 }
 
@@ -49,7 +66,12 @@ async function loadFixtures(fixtureFilter: string | null): Promise<AnalyzerFixtu
   const dir = analyzerConfig.fixtureDir;
   const entries = await fs.readdir(dir);
   const yamlFiles = entries.filter(
-    (f) => (f.endsWith(".yaml") || f.endsWith(".yml")) && !f.endsWith(".draft.yaml"),
+    (f) =>
+      (f.endsWith(".yaml") || f.endsWith(".yml")) &&
+      !f.endsWith(".draft.yaml") &&
+      // _stub.yaml är en mall för nya fixtures, inte en riktig RFP — varv 1
+      // brände (försumbar men onödig) kostnad på den.
+      !f.startsWith("_"),
   );
   const fixtures: AnalyzerFixture[] = [];
   for (const file of yamlFiles.sort()) {
@@ -81,7 +103,7 @@ function renderReportMd(
 
   lines.push("## Per fixture");
   lines.push("");
-  lines.push("| Fixture | Krav | Verifierade | Coverage | Missar |");
+  lines.push("| Fixture | Krav (golden) | Verifierade | Coverage | Missar |");
   lines.push("|---|---|---|---|---|");
   for (const r of results) {
     if (r.error) {
@@ -90,7 +112,7 @@ function renderReportMd(
     }
     const coverage = r.requirementCount === 0 ? 1 : r.verifiedCount / r.requirementCount;
     lines.push(
-      `| ${r.fixtureId} | ${r.requirementCount} | ${r.verifiedCount} | ${(coverage * 100).toFixed(1)}% | ${r.misses.length} |`,
+      `| ${r.fixtureId} | ${r.requirementCount} (${r.goldenRequirementCount}) | ${r.verifiedCount} | ${(coverage * 100).toFixed(1)}% | ${r.misses.length} |`,
     );
   }
   lines.push("");
@@ -112,6 +134,24 @@ function renderReportMd(
     }
   }
 
+  if (allGreen) {
+    lines.push("## Verifierade par (underlag för mänskligt relevans-stickprov)");
+    lines.push("");
+    lines.push(
+      "_Mekaniken garanterar att citaten finns ordagrant i källan; att citatet är RELEVANT för kravet verifieras av människa (residualrisken, se design-doc)._",
+    );
+    lines.push("");
+    for (const r of results) {
+      lines.push(`### ${r.fixtureId}`);
+      lines.push("");
+      for (const p of r.pairs) {
+        lines.push(`- **${p.requirement}**`);
+        lines.push(`  - källa: \`${p.evidence}\``);
+      }
+      lines.push("");
+    }
+  }
+
   lines.push("## Kostnad");
   lines.push("");
   lines.push(`- Kumulativ loop-kostnad (all-time, \`${LOOP_LABEL}\`): **$${cumulativeCost.toFixed(4)}**`);
@@ -127,7 +167,16 @@ async function main() {
     process.exit(1);
   }
 
-  const budget = Number(process.env.BIDSMITH_LOOP_BUDGET_USD ?? DEFAULT_BUDGET_USD);
+  // Feltolkat tak ska faila CLOSED: Number("tjugo") = NaN och `x > NaN` är
+  // alltid false → grinden hade öppnat helt (routine-fynd #54).
+  const rawBudget = process.env.BIDSMITH_LOOP_BUDGET_USD ?? String(DEFAULT_BUDGET_USD);
+  const budget = Number(rawBudget);
+  if (!Number.isFinite(budget) || budget <= 0) {
+    console.error(
+      `Ogiltig BIDSMITH_LOOP_BUDGET_USD="${rawBudget}" — budgetgrinden failar CLOSED. Sätt ett positivt tal.`,
+    );
+    process.exit(1);
+  }
 
   // BUDGETGRIND FÖRST — före ett enda betalt anrop. Överskriden budget → avbryt.
   const costBefore = await fetchCumulativeLoopCost();
@@ -165,21 +214,29 @@ async function main() {
   const results: FixtureResult[] = [];
   for (const fx of fixtures) {
     console.log(`  → ${fx.id}`);
+    const goldenRequirementCount = fx.golden.requirements.length;
     try {
       const analysis = await analyzeRfp(fx.rfp_text, null, LOOP_LABEL);
       const misses = verifyEvidence(fx.id, fx.rfp_text, analysis.requirements);
       results.push({
         fixtureId: fx.id,
         requirementCount: analysis.requirements.length,
+        goldenRequirementCount,
         verifiedCount: analysis.requirements.length - misses.length,
         misses,
+        pairs: analysis.requirements.map((r) => ({
+          requirement: `${r.category}: ${r.description}`,
+          evidence: r.evidence,
+        })),
       });
     } catch (err) {
       results.push({
         fixtureId: fx.id,
         requirementCount: 0,
+        goldenRequirementCount,
         verifiedCount: 0,
         misses: [],
+        pairs: [],
         error: err instanceof Error ? err.message : String(err),
       });
     }
@@ -204,7 +261,7 @@ async function main() {
     const cov = r.requirementCount === 0 ? 1 : r.verifiedCount / r.requirementCount;
     console.log(
       `  ${r.misses.length === 0 ? "PASS" : "FAIL"}  ${r.fixtureId.padEnd(28)} ` +
-      `krav=${r.requirementCount} verifierade=${r.verifiedCount} coverage=${(cov * 100).toFixed(1)}% missar=${r.misses.length}`,
+      `krav=${r.requirementCount}(golden ${r.goldenRequirementCount}) verifierade=${r.verifiedCount} coverage=${(cov * 100).toFixed(1)}% missar=${r.misses.length}`,
     );
   }
   const totalMiss = results.reduce((s, r) => s + r.misses.length, 0);
@@ -220,8 +277,11 @@ async function main() {
   console.log("");
   console.log(`Resultat: ${outPath}`);
 
-  // Non-zero exit om overifierbara påståenden finns → CI/grind kan gata på det.
-  process.exit(totalMiss === 0 ? 0 : 1);
+  // Non-zero exit om overifierbara påståenden ELLER fixture-fel finns — samma
+  // villkor som rapportens allGreen. En körning där alla fixtures errar (t.ex.
+  // Zod-kast) får ALDRIG exita grönt (routine-fynd #54: skriptet blir grind).
+  const anyError = results.some((r) => r.error);
+  process.exit(totalMiss === 0 && !anyError ? 0 : 1);
 }
 
 main().catch((err) => {

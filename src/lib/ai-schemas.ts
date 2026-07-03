@@ -73,7 +73,13 @@ export const RfpAnalysisSchema = z.object({
   summary: z.string(),
   background: z.string().optional(),
   diaryNumber: z.string().optional(),
-  requirements: z.array(RfpRequirementSchema),
+  // min(1): en RFP utan krav existerar inte — noll extraherade krav är per
+  // definition ett degenererat svar. Belagt i noll-hallucinationsloopens varv 1
+  // (2026-07-03): samma 54k-token-dokument gav 235 output-tokens (0 krav) i en
+  // körning och 4876 (20 krav) i nästa — Sonnet 5 saknar temperature-styrning,
+  // så variansen måste fångas. Zod-missen blir ResponseFormatError →
+  // callClaudes format-retry re-promptar automatiskt.
+  requirements: z.array(RfpRequirementSchema).min(1),
   evaluationCriteria: z.array(
     z.object({
       name: z.string(),

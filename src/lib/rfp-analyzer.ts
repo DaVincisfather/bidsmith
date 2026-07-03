@@ -37,8 +37,10 @@ Var noggrann med att:
   Varje krav MÅSTE ha ett "evidence"-fält = ett ORDAGRANT citat (max ~50 ord) kopierat
   TECKEN FÖR TECKEN ur underlaget, exakt som det står där. Parafrasera ALDRIG, sammanfatta
   aldrig, korrigera aldrig stavning eller ordföljd i citatet — det ska gå att hitta ordagrant
-  i underlaget. Kan ett krav inte beläggas med ett ordagrant citat ur texten får det INTE tas
-  med. Hitta hellre färre krav med äkta citat än fler utan. Detta är källmaterialstrohet i
+  i underlaget. Citatet måste vara ETT SAMMANHÄNGANDE textavsnitt: klipp aldrig ihop eller
+  smält samman text från flera ställen, hoppa aldrig över eller ersätt ord inuti citatet —
+  ett enda utbytt ord gör citatet falskt. Kan ett krav inte beläggas med ett ordagrant citat
+  ur texten får det INTE tas med. Hitta hellre färre krav med äkta citat än fler utan. Detta är källmaterialstrohet i
   striktaste mening: ett krav utan ordagrant belägg är en hallucination.
 - priority MÅSTE vara exakt ett av strängvärdena "must", "should", "nice-to-have".
   Mappa svenska termer: ska-krav/skall-krav/skall/ska → "must",

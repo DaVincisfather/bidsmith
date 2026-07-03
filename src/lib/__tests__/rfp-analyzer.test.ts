@@ -153,7 +153,7 @@ describe("RfpAnalysisSchema — OSL extraction", () => {
   it("accepts oslReference and secrecyRows", () => {
     const raw = {
       title: "t", client: "c", deadline: null, summary: "s",
-      requirements: [], evaluationCriteria: [], requiredCompetencies: [],
+      requirements: [{ category: "x", description: "y", priority: "must", evidence: "z" }], evaluationCriteria: [], requiredCompetencies: [],
       estimatedScope: "", redFlags: [], domain: "",
       oslReference: "19 kap 3 §",
       secrecyRows: [{ reference: "Bilaga 2", scope: "Personuppgifter", justification: "GDPR" }],
@@ -166,7 +166,7 @@ describe("RfpAnalysisSchema — OSL extraction", () => {
   it("accepts null oslReference and empty secrecyRows", () => {
     const raw = {
       title: "t", client: "c", deadline: null, summary: "s",
-      requirements: [], evaluationCriteria: [], requiredCompetencies: [],
+      requirements: [{ category: "x", description: "y", priority: "must", evidence: "z" }], evaluationCriteria: [], requiredCompetencies: [],
       estimatedScope: "", redFlags: [], domain: "",
       oslReference: null,
       secrecyRows: [],

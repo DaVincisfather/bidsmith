@@ -114,3 +114,44 @@ blir för konservativ av citat-tvånget "vinner" loopen genom att tappa äkta kr
 fixtures människo-verifierade goldens (fastställda 2026-06-11). Grön = 0 overifierbara
 påståenden OCH bibehållen coverage. Faller coverage är citat-regeln för hård — justera
 prompten, inte målet.
+
+## Varv 1-fynd (2026-07-03, $0.33)
+
+95.5% verifierat direkt (63/66). ALLA tre missar var källartefakter, inte
+hallucinationer — modellen citerade den logiska texten korrekt:
+sidbrytnings-skräp mitt i meningen, PDF-tappat "- " ("kundoch"), versaliserad
+citatstart. → Verifierare v2: första-tecken-tolerans + skarv-tolerant
+tvåhalvsmatchning (halvor ≥25 tecken, i ordning, ≤400 tecken gap — omöjligt att
+utnyttja för fabricerade citat).
+
+**Viktigare fynd: run-varians.** Samma 54k-token-dokument (orebro) gav 0 krav
+(235 output-tokens) i loopkörningen och 20 krav (4876 tokens) i sonden direkt
+efter. Sonnet 5 saknar temperature-styrning → extraktionen är inte längre
+deterministisk; degenererade nästan-tomma svar förekommer. Åtgärd i PRODUKTEN:
+`RfpAnalysisSchema.requirements.min(1)` — en RFP utan krav existerar inte, så
+det degenererade svaret blir ResponseFormatError och callClaudes format-retry
+re-promptar. Loopen dubblar därmed som flakiness-detektor.
+
+## Varv 2–5-fynd + slutsats (2026-07-03, totalt $3.22 av $20)
+
+- **Varv 2:** orebro löst av min(1)-vakten; 3 nya missar = bullet-glyf-klassen
+  (list-markup klistrad mot ord / utelämnad i flerpunktscitat) → normalisering.
+- **Varv 3: GRÖN** — 0 overifierbara över alla 4 RFP:er (78 krav), frisk coverage.
+- **Varv 4 (stabilitet): loopens första ÄKTA fångst** — modellen smälte samman
+  "samverkansprocesser" till "samverkans- och utvecklingsprocesser" mitt i ett
+  annars ordagrant citat. Gap-matchen släppte korrekt inte igenom (36 fabricerade
+  tecken >> 3-teckens skarv-slack). Prompt skärpt (sammanhängande avsnitt).
+- **Varv 5:** 1 ny miss, samma klass (formulärfråga omskriven till påstående).
+
+**Slutsats: ~1 miss/varv (~1,3 % av kraven), stokastiskt, olika fixture varje
+gång — prompten är vid sin asymptot. Utan temperature-styrning (Sonnet 5) kan
+prompt-tuning inte nå STABIL nolla. Den ärliga garantin är RUNTIME-verifiering:
+kör verifyEvidence (gratis string-matching) i analyzeRfp på varje extraktion —
+"inget overifierat påstående passerar", oavsett modellens dagsform.**
+
+Öppet produktbeslut (Stefan): vad gör runtime-vakten med ett overifierat krav?
+(a) släng kravet (risk: tappar äkta krav vars citat blev omskrivet — farligt för
+kravmatrisen), (b) behåll kravet men flagga citatet som overifierat (ingen
+"källa"-badge i UI, kravet syns), (c) targeted re-prompt av bara det kravet.
+Loopen förblir kalibrerings- och regressionsverktyget; runtime-vakten blir
+garantin.
