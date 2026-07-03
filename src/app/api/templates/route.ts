@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/api-helpers";
 import { introspectTemplate } from "@/lib/pptx-template/introspect";
 import { TEMPLATE_BUCKET, clearTemplateCache } from "@/lib/pptx-template/template-store";
+import { manifestToProfile } from "@/lib/pptx-template/manifest-to-profile";
+import { saveTemplateProfile } from "@/lib/pptx-template/profile-store";
 
 const MAX_TEMPLATE_SIZE = 20 * 1024 * 1024; // samma tak som document-parser
 
@@ -81,8 +83,24 @@ export async function POST(request: NextRequest) {
     .single();
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
 
+  // Derive a starting profile from the introspected manifest so the template is
+  // immediately renderable via the profile-driven path; onboarding (slice 5 UI)
+  // refines it. Non-fatal: the template + storage are already committed, so a
+  // profile-save failure must not fail the upload — surface a warning and let
+  // it be regenerated.
+  const allWarnings = [...warnings];
+  try {
+    await saveTemplateProfile(
+      manifestToProfile(manifest, { templateId: row.id, version }),
+    );
+  } catch (err) {
+    allWarnings.push(
+      `mall-profil kunde inte sparas (kan regenereras): ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
   // Uppladdning aktiverar inte — preview först, aktivering är ett separat,
   // explicit anrop (POST /api/templates/[id]/activate).
   clearTemplateCache();
-  return NextResponse.json({ id: row.id, name, version, manifest, warnings });
+  return NextResponse.json({ id: row.id, name, version, manifest, warnings: allWarnings });
 }
