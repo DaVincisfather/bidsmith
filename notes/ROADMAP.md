@@ -4,7 +4,7 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
+_Senast uppdaterad: 2026-07-03 — slices 3/4/5a/5b-delar mergade (#47–#52), Sonnet 5-roller (#53)_
 
 ---
 
@@ -73,6 +73,7 @@ _Inga just nu._
 - **PPTX visuell iteration:** rendera via `renderTemplate` → exportera slides→PNG via PowerPoint
   COM (`Presentations.Open(...).Slides.Item(i).Export(png,"PNG",w,h)`) → titta. Slide 50.8×28.575 cm.
   Layout-konstanter i `applicators/requirement-matrix.ts` kalibrerade mot mallens font/kolumner.
-- **Ingen PR-review-bot på bidsmith** → kör lokal `/code-review` (adversariell) före merge på
-  regressionskänsliga ändringar.
+- **PR-review-routinen ÄR aktiv på bidsmith** (verifierad #47–#53, 2026-07-03): triggar på NYA
+  PR:er (inte pushar till befintliga), klassar CRITICAL/…, kör sviten oberoende, lämnar fynd.
+  Vänta in dess kommentar före merge; lokal `/code-review` är komplement vid regressionskänsligt.
 - Migreringar appliceras MANUELLT via Supabase SQL Editor; redigera aldrig en applicerad migration.
