@@ -9,17 +9,16 @@ _Senast uppdaterad: 2026-07-02 — main @ `03e3394`_
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **Slice 3 — profil-driven renderare** bakom feature-flagga, grind = bit-för-bit-paritet
-      mot golden. Regressionskänsligt (byter ut kärn-renderingen). **Gör tillsammans med Stefan.**
-- [ ] **Kör migration 008** (`template_profiles`) manuellt i Supabase SQL Editor innan en
-      slice börjar persista profiler.
+- [ ] **Slice 4 — `generic-prose`-bundle** + prose/field-format (täcker främmande sektioner).
+      Första formatet i B; A:s fallback samtidigt.
+- [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
 
 ## Mall-uppladdning (godtyckliga bolagsmallar) — aktiv feature
 Design-doc: `notes/2026-07-02-template-upload-architecture.md` (A+C-combo, B inkrementellt).
 Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profil.
 - [x] Slice 1 — mall-profil-schema + migration 008 (#42, merged)
 - [x] Slice 2 — `manifestToProfile`: manifest → capability-klassificering (#44, merged)
-- [ ] Slice 3 — profil-driven renderare, golden-paritet
+- [x] Slice 3 — profil-driven renderare bakom `BIDSMITH_PROFILE_RENDER`, golden-bitparitet grön
 - [ ] Slice 4 — `generic-prose`-bundle + prose/field-format (täcker främmande sektioner)
 - [ ] Slice 5 — onboarding-UI (introspektion + intervju + redigerbar profil)
 - [ ] Slice 6 — B inkrementellt: bullets, sedan godtyckliga table-rows

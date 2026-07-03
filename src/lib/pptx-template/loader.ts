@@ -12,19 +12,32 @@ import { qualityAssuranceApplicator } from "./applicators/quality-assurance";
 import { phaseDetailApplicator } from "./applicators/phase-detail";
 import { phasesOverviewApplicator } from "./applicators/phases-overview";
 import { teamPricingApplicator } from "./applicators/team-pricing";
-import {
-  requirementMatrixApplicator,
-  paginateMatrixRows,
-} from "./applicators/requirement-matrix";
+import { requirementMatrixApplicator } from "./applicators/requirement-matrix";
 import { referenceApplicator } from "./applicators/reference";
 import { confidentialityApplicator } from "./applicators/confidentiality";
 import { certificationsApplicator } from "./applicators/certifications";
+import {
+  countOutputSlides,
+  getCloneItems,
+  streamToBuffer,
+} from "./render-helpers";
+import { manifestToProfile } from "./manifest-to-profile";
+import { renderFromProfile } from "./render-from-profile";
 
 export async function renderTemplate(
   tpl: Pick<LoadedTemplate, "manifest" | "templateFile">,
   sections: BidSection[],
   master: MasterContext,
 ): Promise<Buffer> {
+  // Feature-flagged profile-driven path (template-upload slice 3). Off by
+  // default; when on, dispatch is driven by a derived TemplateProfile instead of
+  // the manifest slide types. Bit-parity vs the type-driven path below is the
+  // regression gate (golden-render-profile.test.ts).
+  if (process.env.BIDSMITH_PROFILE_RENDER === "1") {
+    const profile = manifestToProfile(tpl.manifest, { templateId: "bundled" });
+    return renderFromProfile(tpl, profile, sections, master);
+  }
+
   const templateDir = path.dirname(tpl.templateFile);
   const templateFile = path.basename(tpl.templateFile);
 
@@ -108,60 +121,4 @@ export function applicatorFor(
     default:
       throw new Error(`unknown slide type: ${(slideCfg as { type: string }).type}`);
   }
-}
-
-function countOutputSlides(
-  manifest: Pick<LoadedTemplate["manifest"], "slides">,
-  sections: BidSection[],
-): number {
-  let n = 0;
-  for (const s of manifest.slides) {
-    if (s.cloneFrom) n += getCloneItems(sections, s.cloneFrom).length;
-    else n += 1;
-  }
-  return n;
-}
-
-function getCloneItems(
-  sections: BidSection[],
-  key: "phases" | "references" | "requirement-matrix",
-): unknown[] {
-  if (key === "phases") {
-    const sec = sections.find((s) => s.content?.format === "phases");
-    if (sec && sec.content?.format === "phases") {
-      return sec.content.phases ?? [];
-    }
-  }
-  if (key === "references") {
-    const sec = sections.find((s) => s.content?.format === "reference-v2");
-    if (sec && sec.content?.format === "reference-v2") {
-      return sec.content.references ?? [];
-    }
-  }
-  if (key === "requirement-matrix") {
-    // One clone per content-aware page (paginateMatrixRows — the same call the
-    // applicator windows on, so counts stay in lockstep). Always at least one
-    // page so the matrix slide never disappears when data is missing/empty
-    // (unlike phases/references, the matrix slide is not optional). The page
-    // items only need the right length — their contents are unused.
-    const sec = sections.find(
-      (s) => s.content?.format === "requirement-matrix-v2",
-    );
-    const rows =
-      sec && sec.content?.format === "requirement-matrix-v2"
-        ? sec.content.rows
-        : [];
-    const pages = rows.length > 0 ? paginateMatrixRows(rows).length : 1;
-    return Array.from({ length: Math.max(1, pages) });
-  }
-  return [];
-}
-
-function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    stream.on("data", (c: Buffer) => chunks.push(c));
-    stream.on("end", () => resolve(Buffer.concat(chunks)));
-    stream.on("error", reject);
-  });
 }

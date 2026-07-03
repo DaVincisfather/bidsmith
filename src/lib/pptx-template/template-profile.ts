@@ -73,6 +73,10 @@ export const SlideProfileSchema = z.object({
   /** Set when the slide is repeated once per item of a capability's data
    *  (e.g. one slide per phase / per reference / per matrix page). */
   cloneFrom: z.enum(CAPABILITY_IDS).optional(),
+  /** Content selector when several slides share one capability but fill from
+   *  different data (our template: prose variant kunden-idag/uppdraget/vision).
+   *  Free-form so arbitrary templates can carry their own discriminator. */
+  variant: z.string().min(1).optional(),
 });
 export type SlideProfile = z.infer<typeof SlideProfileSchema>;
 
