@@ -42,10 +42,14 @@ function buildProseMap(ctx: ApplicatorContext): Record<string, string> {
     case "vision":
       return buildSlide5Map(ctx);
     default:
-      // Manifest utan variant på prose är ett konfigurationsfel — fail loud
-      // (identify-slides sätter alltid variant).
+      // Fail loud on a prose slide we can't map. Distinguish missing variant (a
+      // manifest config error — identify-slides always sets one) from an unknown
+      // variant value (a foreign profile string that passed the `as ProseVariant`
+      // cast in render-from-profile) so the message points at the real cause.
       throw new Error(
-        `prose-slide (source ${ctx.sourceSlide}) saknar variant i manifestet`,
+        ctx.variant
+          ? `prose-slide (source ${ctx.sourceSlide}) har okänd variant "${ctx.variant}"`
+          : `prose-slide (source ${ctx.sourceSlide}) saknar variant i manifestet`,
       );
   }
 }
