@@ -46,6 +46,10 @@ _Inga just nu._
 - **BUG-B:** analyserad RFP syns inte i dashboarden → svårt att gå tillbaka till analysen
 - "Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera — semantik att se över
 - T15 manuell smoke + runtime hallucination/coverage-kalibrering (kräver riktig RFP-data / Ekan-adoption)
+- Profil-schema vs renderare: `SlideProfile.capability` är optional ("a slide may mix capabilities") men `applicatorForCapability` dispatchar bara på slide-nivå och kastar på undefined — per-slot-dispatch eller skärpt schema krävs innan främmande profiler renderas (Fable-review 2026-07-03)
+- generic-prose saknar budget-enforcement vid rendering — soft-cap mot `slot.budgetChars` i generic-prose-applikatorn (jfr `_soft-cap.ts`) innan främmande mallar fylls på riktigt
+- Flagg-vägen i `loader.ts` deriverar profilen ur manifestet per render i st.f. `loadTemplateProfile` — en REDIGERAD profil påverkar inte rendering förrän det byts (routine-follow-up #49)
+- **Manuell PowerPoint-smoke av instrumenterad mall FÖRE slice 5-UI:** instrumentTemplate är verifierad mot syntetisk mini-pptx; xmldoms serialisering (ns-redeklarationer, attributordning) är obeprövad mot riktiga kundmallar + att PowerPoint faktiskt öppnar den instrumenterade kopian (routine-follow-up #51)
 
 ## Strategiska spår (större, senare)
 - Kapacitetsgap-kartan (vilka ska-krav firman återkommande inte uppfyller)

@@ -39,20 +39,23 @@ export interface SlideShapes {
 
 const TOKEN_RE = /\{[^{}]+\}/g;
 
-export async function readPptxSlides(buffer: Buffer): Promise<SlideShapes[]> {
-  const zip = await JSZip.loadAsync(buffer);
-  const parser = new DOMParser();
-
+/**
+ * Resolverar slide-XML-sökvägarna i presentationsordning: presentation.xml
+ * <p:sldIdLst> → r:id → presentation.xml.rels target. Filnamnsordning (slide10 <
+ * slide2 lexikografiskt) är en klassisk fälla — därför sldIdLst, inte glob.
+ *
+ * Exporterad så instrument-template.ts adresserar exakt SAMMA slides i SAMMA
+ * ordning som denna läsare rapporterar (source = index + 1). En kopia hade
+ * kunnat drifta och bryta index-alignmenten mellan introspektion och injektion.
+ */
+export async function resolveSlidePaths(
+  zip: JSZip,
+  parser: DOMParser,
+): Promise<string[]> {
   const presXml = await readEntry(zip, "ppt/presentation.xml");
   const relsXml = await readEntry(zip, "ppt/_rels/presentation.xml.rels");
   const pres = parser.parseFromString(presXml, "application/xml");
   const rels = parser.parseFromString(relsXml, "application/xml");
-
-  // Default-fontstorlek för text-boxar utan egen sz. Plain text-boxar (utan
-  // <p:ph>) ärver från presentationens <p:defaultTextStyle> lvl1-defRPr, inte
-  // från layout-placeholders. Vi resolverar den en gång och langar in som
-  // fallback i shape-extraktionen (annars blir {Mål}-rutans fontSizePt null).
-  const defaultFontSizePt = readDefaultFontSizePt(pres);
 
   // r:id → target ("slides/slide1.xml")
   const relTargets = new Map<string, string>();
@@ -62,8 +65,6 @@ export async function readPptxSlides(buffer: Buffer): Promise<SlideShapes[]> {
     relTargets.set(rel.getAttribute("Id") ?? "", rel.getAttribute("Target") ?? "");
   }
 
-  // <p:sldIdLst> ger presentationsordningen — filnamnsordning (slide10 < slide2
-  // lexikografiskt) är en klassisk fälla.
   const sldIds = pres.getElementsByTagNameNS(P_NS, "sldId");
   const slidePaths: string[] = [];
   for (let i = 0; i < sldIds.length; i++) {
@@ -71,6 +72,23 @@ export async function readPptxSlides(buffer: Buffer): Promise<SlideShapes[]> {
     const target = relTargets.get(rId);
     if (target) slidePaths.push(`ppt/${target.replace(/^\//, "")}`);
   }
+  return slidePaths;
+}
+
+export async function readPptxSlides(buffer: Buffer): Promise<SlideShapes[]> {
+  const zip = await JSZip.loadAsync(buffer);
+  const parser = new DOMParser();
+
+  const presXml = await readEntry(zip, "ppt/presentation.xml");
+  const pres = parser.parseFromString(presXml, "application/xml");
+
+  // Default-fontstorlek för text-boxar utan egen sz. Plain text-boxar (utan
+  // <p:ph>) ärver från presentationens <p:defaultTextStyle> lvl1-defRPr, inte
+  // från layout-placeholders. Vi resolverar den en gång och langar in som
+  // fallback i shape-extraktionen (annars blir {Mål}-rutans fontSizePt null).
+  const defaultFontSizePt = readDefaultFontSizePt(pres);
+
+  const slidePaths = await resolveSlidePaths(zip, parser);
 
   const result: SlideShapes[] = [];
   for (let i = 0; i < slidePaths.length; i++) {
