@@ -158,6 +158,20 @@ export function SectionRenderer({ section, style, onSectionChange, budgets }: Se
           budgets={budgets}
         />
       );
+    case "generic-prose":
+      // Fallback prose for a non-specialised slot (template-upload slice 4).
+      // Minimal editor: a single free-text block bound to the slot's placeholder.
+      return (
+        <div className="space-y-1">
+          <div className="text-xs text-neutral-500">{content.placeholder}</div>
+          <textarea
+            className="w-full min-h-[8rem] rounded border border-neutral-300 p-2 text-sm"
+            value={content.text}
+            readOnly={!onSectionChange}
+            onChange={onSectionChange ? (e) => updateContent({ text: e.target.value }) : undefined}
+          />
+        </div>
+      );
     default: {
       const _exhaustive: never = content;
       return <div className="text-red-500 text-sm">Unknown format: {JSON.stringify(_exhaustive)}</div>;

@@ -255,6 +255,14 @@ export type BidSectionContent =
         number: string;
         validUntil: string;
       }>; // slot cap 4
+    }
+  | {
+      // Fallback prose for a template slot we have no specialised generator for
+      // (template-upload slice 4). Carries its own placeholder so the
+      // profile-driven renderer matches the section to the exact slot it fills.
+      format: "generic-prose";
+      placeholder: string;
+      text: string;
     };
 
 export interface BidSection {
