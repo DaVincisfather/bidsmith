@@ -119,6 +119,31 @@ interface Span {
   end: number;
 }
 
+/** Ett spann i ORIGINALTEXTENS teckenoffset (inte den normaliserade kopian). */
+export interface EvidenceSpan {
+  start: number;
+  end: number;
+}
+
+/** Ett lokaliserat spann som bär sitt eget citat — låter källvyn särskilja det
+ *  klickade (aktiva) citatets spann från övriga för starkare markering. */
+export interface LocatedSpan extends EvidenceSpan {
+  evidence: string;
+}
+
+/**
+ * Returformen från locateAllSpans. TVÅ vyer av samma lokaliseringar:
+ *  - `merged`: sammanslagna, sorterade spann → TÄCKNINGSKARTAN (markeringslagret).
+ *    Överlappande citat unioneras så renderingen slipper dubbelmarkera.
+ *  - `perEvidence`: ett spann per lokaliserat citat (nulls bort), med sitt citat.
+ *    Källvyn slår upp det AKTIVA citatets spann här för egen betoning (behövs även
+ *    när det gått upp i ett merge).
+ */
+export interface LocatedSpans {
+  merged: EvidenceSpan[];
+  perEvidence: LocatedSpan[];
+}
+
 // Sammanhängande träff av hela citatet, med verifierarens första-tecken-varianter.
 function findContiguous(source: string, evidence: string): Span | null {
   for (const cand of caseVariants(evidence)) {
@@ -156,6 +181,77 @@ function findLongestHalf(source: string, evidence: string): Span | null {
 }
 
 /**
+ * Kärnlokaliseringen: matchar citatet i den NORMALISERADE kopian (verifierarens
+ * semantik: första-tecken-varianter + gap-fallback → längsta halvan) och mappar
+ * träffen tillbaka till ORIGINALTEXTENS offset via origStart-kartan. Delas av
+ * locateEvidenceContext och locate*Span så matchningen aldrig driftar. Anroparen
+ * bygger origStart-kartan EN gång och lokaliserar sedan många citat mot samma text.
+ */
+function origSpanFromMap(
+  normalized: string,
+  origStart: number[],
+  evidence: string,
+): EvidenceSpan | null {
+  const normEvidence = normalizeForEvidence(evidence);
+  if (normEvidence.length === 0) return null;
+  const span =
+    findContiguous(normalized, normEvidence) ??
+    findLongestHalf(normalized, normEvidence);
+  if (!span) return null;
+  return { start: origStart[span.start], end: origStart[span.end] };
+}
+
+/**
+ * Lokaliserar ETT citats spann i ORIGINALTEXTENS teckenoffset (start inklusive,
+ * end exklusive). Samma matchning som verifieraren. null när citatet inte återfinns.
+ * Powrar källvyns aktiv-citat-betoning; string-slice(start,end) ger den råa källglyfen.
+ */
+export function locateEvidenceSpan(
+  sourceText: string,
+  evidence: string,
+): EvidenceSpan | null {
+  if (!sourceText || !evidence) return null;
+  const { normalized, origStart } = normalizeWithMap(sourceText);
+  return origSpanFromMap(normalized, origStart, evidence);
+}
+
+/**
+ * Lokaliserar FLERA citat mot samma källtext. Bygger normaliseringskartan en gång,
+ * lokaliserar varje citat, släpper de som inte återfinns, och returnerar både
+ * per-citat-spann och en sammanslagen täckningskarta (se LocatedSpans).
+ */
+export function locateAllSpans(
+  sourceText: string,
+  evidences: string[],
+): LocatedSpans {
+  if (!sourceText) return { merged: [], perEvidence: [] };
+  const { normalized, origStart } = normalizeWithMap(sourceText);
+  const perEvidence: LocatedSpan[] = [];
+  for (const evidence of evidences) {
+    if (!evidence) continue;
+    const span = origSpanFromMap(normalized, origStart, evidence);
+    if (span) perEvidence.push({ start: span.start, end: span.end, evidence });
+  }
+  return { merged: mergeSpans(perEvidence), perEvidence };
+}
+
+// Sammanslagning: sortera på start och unionera överlappande/angränsande spann.
+// `start <= last.end` slår ihop även kant-i-kant-spann (ingen visuell lucka i kartan).
+function mergeSpans(spans: EvidenceSpan[]): EvidenceSpan[] {
+  const sorted = [...spans].sort((a, b) => a.start - b.start || a.end - b.end);
+  const out: EvidenceSpan[] = [];
+  for (const s of sorted) {
+    const last = out[out.length - 1];
+    if (last && s.start <= last.end) {
+      last.end = Math.max(last.end, s.end);
+    } else {
+      out.push({ start: s.start, end: s.end });
+    }
+  }
+  return out;
+}
+
+/**
  * Lokaliserar citatet i källtexten (samma normalisering som verifieraren) och
  * returnerar ±windowChars kontext, snäppt till ordgränser. null när citatet
  * inte återfinns (ska inte hända för verifierad evidence — defensivt).
@@ -167,16 +263,11 @@ export function locateEvidenceContext(
 ): EvidenceContext | null {
   if (!sourceText || !evidence) return null;
   const { normalized, origStart } = normalizeWithMap(sourceText);
-  const normEvidence = normalizeForEvidence(evidence);
-  if (normEvidence.length === 0) return null;
+  const orig = origSpanFromMap(normalized, origStart, evidence);
+  if (!orig) return null;
 
-  const span =
-    findContiguous(normalized, normEvidence) ??
-    findLongestHalf(normalized, normEvidence);
-  if (!span) return null;
-
-  const startOrig = origStart[span.start];
-  const endOrig = origStart[span.end];
+  const startOrig = orig.start;
+  const endOrig = orig.end;
 
   const beforeCut = Math.max(0, startOrig - windowChars);
   const afterCut = Math.min(sourceText.length, endOrig + windowChars);

@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   locateEvidenceContext,
+  locateEvidenceSpan,
+  locateAllSpans,
   normalizeWithMap,
 } from "../evidence-context";
 import { normalizeForEvidence } from "../verify-evidence";
@@ -131,5 +133,87 @@ describe("locateEvidenceContext — hittar citatet och ger sammanhang", () => {
     const ctx = locateEvidenceContext(source, "minst tre års erfarenhet", 50);
     expect(ctx!.before.length).toBeLessThanOrEqual(50);
     expect(ctx!.after.length).toBeLessThanOrEqual(50);
+  });
+});
+
+describe("locateEvidenceSpan — originaltextens offset", () => {
+  it("ger start/end i ORIGINALTEXTEN (slice återger källglyfen)", () => {
+    const source = "Anbudsgivaren ska ha minst tre års erfarenhet av uppdrag.";
+    const span = locateEvidenceSpan(source, "minst tre års erfarenhet");
+    expect(span).not.toBeNull();
+    expect(source.slice(span!.start, span!.end)).toBe("minst tre års erfarenhet");
+  });
+
+  it("mappar tillbaka över radbrytning + mjukt bindestreck i källan", () => {
+    // Källan har radbrytning OCH soft hyphen; citatet är rent. Offsetten pekar in
+    // i originaltexten (inte den normaliserade kopian), så sliceet bär källans glyfer.
+    const source = "Krav på lång erfaren­het av\nbranschen och mer text.";
+    const span = locateEvidenceSpan(source, "erfarenhet av branschen");
+    expect(span).not.toBeNull();
+    const raw = source.slice(span!.start, span!.end);
+    expect(raw).toContain("erfaren­het"); // soft hyphen bevarad i originalet
+    expect(raw).toContain("\n"); // radbrytning bevarad i originalet
+    // Efter normalisering matchar utsnittet citatet.
+    expect(normalizeForEvidence(raw)).toBe("erfarenhet av branschen");
+  });
+
+  it("null när citatet inte finns / tom input", () => {
+    expect(locateEvidenceSpan("helt annan text", "saknas i källan här nånstans")).toBeNull();
+    expect(locateEvidenceSpan("", "x")).toBeNull();
+    expect(locateEvidenceSpan("x", "")).toBeNull();
+  });
+});
+
+describe("locateAllSpans — flerspann + merge", () => {
+  const source =
+    "Anbudsgivaren ska ha minst tre års erfarenhet av liknande uppdrag inom offentlig sektor. Referenser ska bifogas anbudet.";
+
+  it("lokaliserar varje citat och bär evidens per spann", () => {
+    const { perEvidence } = locateAllSpans(source, [
+      "minst tre års erfarenhet",
+      "Referenser ska bifogas",
+    ]);
+    expect(perEvidence).toHaveLength(2);
+    for (const s of perEvidence) {
+      expect(source.slice(s.start, s.end)).toBe(s.evidence);
+    }
+  });
+
+  it("släpper citat som inte återfinns (null-filter)", () => {
+    const { perEvidence, merged } = locateAllSpans(source, [
+      "minst tre års erfarenhet",
+      "detta citat existerar inte i underlaget alls",
+    ]);
+    expect(perEvidence).toHaveLength(1);
+    expect(merged).toHaveLength(1);
+  });
+
+  it("slår ihop överlappande citat i merged men behåller per-citat-spann", () => {
+    // Två citat som citerar överlappande text.
+    const { perEvidence, merged } = locateAllSpans(source, [
+      "minst tre års erfarenhet av liknande",
+      "erfarenhet av liknande uppdrag inom offentlig",
+    ]);
+    expect(perEvidence).toHaveLength(2);
+    // Överlappet unioneras → ETT sammanhängande merged-spann.
+    expect(merged).toHaveLength(1);
+    expect(source.slice(merged[0].start, merged[0].end)).toBe(
+      "minst tre års erfarenhet av liknande uppdrag inom offentlig",
+    );
+    // Per-citat-spannen är fortfarande distinkta (för aktiv-citat-betoningen).
+    expect(perEvidence[0].start).not.toBe(perEvidence[1].start);
+  });
+
+  it("håller isär icke-överlappande citat i merged", () => {
+    const { merged } = locateAllSpans(source, [
+      "minst tre års erfarenhet",
+      "Referenser ska bifogas",
+    ]);
+    expect(merged).toHaveLength(2);
+    expect(merged[0].start).toBeLessThan(merged[1].start);
+  });
+
+  it("tom källa → tomma listor", () => {
+    expect(locateAllSpans("", ["x"])).toEqual({ merged: [], perEvidence: [] });
   });
 });

@@ -4,13 +4,14 @@ import { useState } from "react";
 import { RfpAnalysis } from "@/lib/types";
 import { qualificationRequirements, deliverableRequirements } from "@/lib/requirement-kind";
 import { hasAnyEvidence, badgeState } from "@/lib/evidence-badge";
-import { KallaChip, FlaggedPill } from "@/components/kalla-chip";
+import { KallaChip, FlaggedPill, TrustReceipt } from "@/components/kalla-chip";
+import { SourceViewer } from "@/components/source-viewer";
 
 interface AnalysisResultProps {
   analysis: RfpAnalysis;
   fileName: string;
-  // Analysens id → källa-chippen kan hämta citatets sammanhang ur RFP:ns raw_text.
-  // Valfri: utan den faller chippen tillbaka till dagens rena citatblock.
+  // Analysens id → källa-chippen öppnar källvyn (hela RFP:ns raw_text med citaten
+  // markerade). Valfri: utan den kan källvyn inte hämtas (chippen visas ändå).
   analysisId?: string;
 }
 
@@ -28,9 +29,11 @@ const PRIORITY_CLASSES: Record<string, string> = {
 
 export function AnalysisResult({ analysis, fileName, analysisId }: AnalysisResultProps) {
   const [expanded, setExpanded] = useState(false);
-  const contextUrl = analysisId
-    ? `/api/analyses/${analysisId}/evidence-context`
-    : undefined;
+  // Ett aktivt citat i taget öppnar källvyn (slide-over). Analysvyn äger EN instans.
+  const [activeQuote, setActiveQuote] = useState<string | null>(null);
+  const sourceUrl = analysisId
+    ? `/api/analyses/${analysisId}/source-view`
+    : null;
   const hasBackground = Boolean(analysis.background?.trim());
   // Ska/bör-krav = äkta kvalifikationskrav; leverabler visas separat. Delad util så
   // partitionsregeln inte driftar mellan vy, go/no-go och bid-bundles.
@@ -102,6 +105,8 @@ export function AnalysisResult({ analysis, fileName, analysisId }: AnalysisResul
             {qualifications.length} krav
           </span>
         </div>
+        {/* Trust-receipt: hur många ska/bör-krav är ordagrant belagda i källan. */}
+        <TrustReceipt items={qualifications} />
         <div className="border-t border-rule">
           {qualifications.map((req, i) => (
             <div
@@ -124,7 +129,7 @@ export function AnalysisResult({ analysis, fileName, analysisId }: AnalysisResul
                   <KallaChip
                     quote={req.evidence!}
                     label={req.description.slice(0, 60)}
-                    contextUrl={contextUrl}
+                    onShowSource={setActiveQuote}
                   />
                 )}
                 {badgeState(req.evidence, showBadges) === "flagged" && <FlaggedPill />}
@@ -223,6 +228,14 @@ export function AnalysisResult({ analysis, fileName, analysisId }: AnalysisResul
           </div>
         </section>
       )}
+
+      <SourceViewer
+        open={activeQuote !== null}
+        url={sourceUrl}
+        quote={activeQuote}
+        title={fileName}
+        onClose={() => setActiveQuote(null)}
+      />
     </div>
   );
 }

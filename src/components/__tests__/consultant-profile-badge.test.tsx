@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ConsultantProfile } from "../consultant-profile";
 
@@ -6,6 +6,17 @@ import { ConsultantProfile } from "../consultant-profile";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
 }));
+
+// Källvyn hämtar sin endpoint vid öppning — mocka fetch (ingen live-anrop).
+beforeEach(() => {
+  global.fetch = vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({ sourceText: "", spans: { merged: [], perEvidence: [] } }),
+    }),
+  ) as never;
+});
 
 type Consultant = Parameters<typeof ConsultantProfile>[0]["consultant"];
 
@@ -34,10 +45,12 @@ describe("ConsultantProfile — källa-badge", () => {
       />,
     );
 
+    // Belagd kompetens är klickbar och öppnar källvyn (slide-over) i stället för
+    // att fälla ut citatet inline.
     const chip = screen.getByRole("button", { name: /Projektledning/ });
-    expect(screen.queryByText(/Ledde tre stora projekt/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     fireEvent.click(chip);
-    expect(screen.getByText(/Ledde tre stora projekt/)).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("flaggad kompetens (utan evidens) är inte klickbar", () => {
@@ -70,7 +83,7 @@ describe("ConsultantProfile — källa-badge", () => {
 
     const chip = screen.getByRole("button", { name: /källa/i });
     fireEvent.click(chip);
-    expect(screen.getByText(/Referenscitat ur CV/)).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("legacy-grind: inga dots/chips när varken kompetens eller referens bär evidens", () => {
