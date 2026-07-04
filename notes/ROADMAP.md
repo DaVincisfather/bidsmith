@@ -57,6 +57,27 @@ _Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-h
       som profilen (page-select utökad med `evidence`, per-konsult legacy-grind). Dots only, inga
       expanders i listan (densitet). Tester: evidence-context-lib (found/gränser/ordsnäpp/soft hyphen/
       typografi/gap/not-found), endpoints (auth/uuid/PII-cap/q-validering), list-dot-grind.
+- [x] **Källvy + trust-receipt ITERATION** — SHIPPAD (offline-testad, inga API-anrop). Produktägar-verdikt:
+      ±200-fönstret räckte inte — han vill LANDA i källdokumentet. **A. Källvy (slide-over):** klick på
+      en källa-chip / grundad kompetens-chip öppnar `src/components/source-viewer.tsx` (fast högerpanel,
+      role=dialog + aria-modal, Escape/fokus-på-stäng) som visar HELA källtexten med ALLA verifierade
+      spann markerade (`bg-accent-soft`) och det klickade citatet starkare betonat (ring-accent) +
+      autoscrollat. Vyn ÄR täckningskartan (omarkerat = oanvänt källmaterial). **B. Trust-receipt:**
+      `TrustReceipt` (i `kalla-chip.tsx`) — "X av Y påståenden ordagrant belagda … mekaniskt verifierade,
+      inte AI-bedömda" (+ "· Z obelagda") överst i kravsektionen + konsultprofilen, klient-beräknad,
+      döljs av legacy-grinden. **D. Originalfil-länk:** analys-källvyn signerar `documents.file_path`
+      (`getDocumentSignedUrl`) → "Öppna originalet". **Nya lib-funktioner** i `evidence-context.ts`:
+      `locateEvidenceSpan` (originaloffset) + `locateAllSpans` (merge:ar överlappande spann till en
+      täckningskarta, behåller per-citat-spann). **Nya endpoints** `/api/{analyses,consultants}/[id]/
+      source-view` → `{ sourceText, spans, fileUrl? }`; MEDVETET PII-BYTE (kommenterat): hela källtexten
+      returneras här (bakom auth + explicit klick) — default-läsvägarna förblir restriktiva; spann bara
+      ur LAGRAD evidens. **BORTTAGET (superseded):** ±200-fönster-endpointsen (`.../evidence-context`) +
+      deras route-test; `KallaChip` fäller inte längre ut inline (callback `onShowSource`); `SourceQuote`
+      behållen som källvyns felfallback. **D-ASYMMETRI:** konsulter lagrar ingen originalfil (bara
+      `raw_cv_text`) → ingen `fileUrl` i konsult-källvyn; länken gäller bara analyser. Tester: span-lib
+      (originaloffset/soft-hyphen/merge), source-view-endpoints (auth/uuid/404/spann-ur-lagrad-evidens/
+      fileUrl-signering + fail-graceful), receipt-logik, källvy-render (segment/aktiv-betoning/Escape/
+      fel-fallback), omkopplad chip-callback.
 
 ### Routine-fynd #57 — evidens-round-trip (STÄNGDA denna PR, offline-testade, inga API-anrop)
 - [x] **Läsväg exponerar evidence.** `CONSULTANT_SELECT`/`CONSULTANT_API_SELECT` hämtar nu

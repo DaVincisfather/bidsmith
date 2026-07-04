@@ -37,10 +37,11 @@ describe("AnalysisResult — källa-badge", () => {
       />,
     );
 
+    // Chippen fäller inte ut inline längre — klick öppnar källvyn (slide-over).
     const chip = screen.getByRole("button", { name: /källa/i });
-    expect(screen.queryByText(/minst fem års erfarenhet/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     fireEvent.click(chip);
-    expect(screen.getByText(/minst fem års erfarenhet/i)).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("visar 'obelagd' för krav utan evidens (men grinden öppen tack vare annat belagt krav)", () => {
@@ -66,7 +67,8 @@ describe("AnalysisResult — källa-badge", () => {
       />,
     );
 
-    expect(screen.getByText(/obelagd/i)).toBeInTheDocument();
+    // \b-gränsen skiljer FlaggedPill:ens "obelagd" från trust-receiptens "obelagda".
+    expect(screen.getByText(/\bobelagd\b/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /källa/i })).toBeInTheDocument();
   });
 

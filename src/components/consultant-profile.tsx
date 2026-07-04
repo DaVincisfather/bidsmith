@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { hasAnyEvidence, badgeState } from "@/lib/evidence-badge";
-import { KallaChip, FlaggedPill, SourceQuote } from "@/components/kalla-chip";
+import { KallaChip, FlaggedPill, TrustReceipt } from "@/components/kalla-chip";
+import { SourceViewer } from "@/components/source-viewer";
 
 interface Competency {
   id: string;
@@ -58,19 +59,20 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
   const [level, setLevel] = useState(consultant.level);
   const [summary, setSummary] = useState(consultant.summary || "");
   const [saving, setSaving] = useState(false);
-  // Ett citat öppet i taget i kompetens-sektionen (index i competencies-listan).
-  const [openComp, setOpenComp] = useState<number | null>(null);
+  // Ett aktivt citat i taget öppnar källvyn (slide-over) med hela CV:t markerat.
+  const [activeQuote, setActiveQuote] = useState<string | null>(null);
   const router = useRouter();
 
-  // Källa-chippen hämtar citatets sammanhang ur konsultens raw_cv_text (server-side).
-  const contextUrl = `/api/consultants/${consultant.id}/evidence-context`;
+  // Källvyn hämtar hela raw_cv_text med citaten markerade (server-side, bakom klick).
+  const sourceUrl = `/api/consultants/${consultant.id}/source-view`;
 
   // Legacy-grind per konsult: bär varken kompetens eller referens evidens är profilen
   // skapad före evidens-featuren — visa då inga dots/chips alls.
-  const showBadges = hasAnyEvidence([
+  const allEvidenceItems = [
     ...consultant.consultant_competencies,
     ...consultant.consultant_references,
-  ]);
+  ];
+  const showBadges = hasAnyEvidence(allEvidenceItems);
 
   async function handleSave() {
     setSaving(true);
@@ -195,8 +197,10 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
       {/* Competencies */}
       <section>
         <h2 className="text-lg font-display font-normal mb-3">Kompetenser</h2>
+        {/* Trust-receipt: belagda påståenden (kompetenser + uppdrag) i CV-källan. */}
+        <TrustReceipt items={allEvidenceItems} />
         <div className="flex flex-wrap gap-2">
-          {consultant.consultant_competencies.map((c, i) => {
+          {consultant.consultant_competencies.map((c) => {
             const state = badgeState(c.evidence, showBadges);
             const label = (
               <>
@@ -243,13 +247,13 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
                 </span>
               );
             }
-            // Belagd kompetens: klickbar chip som togglar citatet (ett i taget).
+            // Belagd (grundad) kompetens: klickbar chip som öppnar källvyn på citatet.
             return (
               <button
                 key={c.id}
                 type="button"
-                aria-expanded={openComp === i}
-                onClick={() => setOpenComp((cur) => (cur === i ? null : i))}
+                aria-label={`Visa källa: ${c.competency}`}
+                onClick={() => setActiveQuote(c.evidence!)}
                 className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm transition hover:brightness-95"
               >
                 {dot}
@@ -258,12 +262,6 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
             );
           })}
         </div>
-        {openComp !== null && consultant.consultant_competencies[openComp]?.evidence && (
-          <SourceQuote
-            quote={consultant.consultant_competencies[openComp]!.evidence!}
-            contextUrl={contextUrl}
-          />
-        )}
       </section>
 
       {/* References */}
@@ -284,7 +282,7 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
               <p className="text-sm text-ink-soft">{r.description}</p>
               {badgeState(r.evidence, showBadges) === "kalla" && (
                 <div className="mt-1.5">
-                  <KallaChip quote={r.evidence!} label={r.title} contextUrl={contextUrl} />
+                  <KallaChip quote={r.evidence!} label={r.title} onShowSource={setActiveQuote} />
                 </div>
               )}
               {badgeState(r.evidence, showBadges) === "flagged" && (
@@ -296,6 +294,14 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
           ))}
         </div>
       </section>
+
+      <SourceViewer
+        open={activeQuote !== null}
+        url={sourceUrl}
+        quote={activeQuote}
+        title={consultant.name}
+        onClose={() => setActiveQuote(null)}
+      />
     </div>
   );
 }
