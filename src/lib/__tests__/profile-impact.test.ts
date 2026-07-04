@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { BUNDLE_LABELS } from "@/lib/bid-generator";
 import {
   computeProfileFields,
   countFilled,
@@ -46,6 +47,12 @@ describe("computeProfileFields", () => {
 });
 
 describe("PROFILE_BID_SECTIONS", () => {
+  it("täcker varje AI-bundle + generic-prose (drift-vakt mot bid-generator, routine #66)", () => {
+    // Panelen listar en visningsrad per skrivbundle plus generic-prose
+    // (profilvägens fallback) — antalet ska följa KÄLLAN, inte en handkopia.
+    expect(PROFILE_BID_SECTIONS).toHaveLength(BUNDLE_LABELS.length + 1);
+  });
+
   it("täcker de sex skrivbundlarna profilen injiceras i", () => {
     // Speglar bundles/: understanding, phases, quality, team, requirement-matrix, generic-prose.
     expect(PROFILE_BID_SECTIONS).toHaveLength(6);
