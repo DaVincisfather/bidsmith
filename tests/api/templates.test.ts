@@ -15,11 +15,15 @@ import path from "path";
 // camelCase→snake_case mapping can be asserted.
 
 let authUser: { id: string } | null;
-const tableResults: Record<string, { data: unknown; error: unknown }> = {};
+const tableResults: Record<
+  string,
+  { data: unknown; error: unknown; count?: number }
+> = {};
 const inserted: Record<string, unknown[]> = {};
 const updated: Record<string, unknown[]> = {};
 const upserted: Record<string, unknown[]> = {};
 const uploadMock = vi.fn();
+const removeMock = vi.fn();
 
 function builder(table: string) {
   const result = () =>
@@ -30,6 +34,7 @@ function builder(table: string) {
   chain.eq = ret;
   chain.order = ret;
   chain.limit = ret;
+  chain.delete = ret;
   chain.single = result;
   chain.maybeSingle = result;
   chain.insert = (row: unknown) => {
@@ -53,7 +58,7 @@ function builder(table: string) {
 
 const serviceClient = {
   from: (table: string) => builder(table),
-  storage: { from: () => ({ upload: uploadMock }) },
+  storage: { from: () => ({ upload: uploadMock, remove: removeMock }) },
 };
 
 vi.mock("@/lib/supabase", () => ({
@@ -77,6 +82,7 @@ vi.mock("@/lib/pptx-template/template-store", async () => {
 
 import { GET, POST } from "@/app/api/templates/route";
 import { POST as ACTIVATE } from "@/app/api/templates/[id]/activate/route";
+import { DELETE } from "@/app/api/templates/[id]/route";
 import { clearTemplateCache } from "@/lib/pptx-template/template-store";
 
 const clearTemplateCacheMock = vi.mocked(clearTemplateCache);
@@ -91,6 +97,7 @@ beforeEach(() => {
   for (const k of Object.keys(updated)) delete updated[k];
   for (const k of Object.keys(upserted)) delete upserted[k];
   uploadMock.mockResolvedValue({ error: null });
+  removeMock.mockResolvedValue({ error: null });
 });
 
 async function pptxFile(): Promise<File> {
@@ -234,5 +241,99 @@ describe("POST /api/templates/[id]/activate", () => {
     // Tom tabell → insert-grenen, ingen tyst no-op-update.
     expect(inserted.workspace_settings?.[0]).toEqual({ active_template_id: VALID_UUID });
     expect(updated.workspace_settings).toBeUndefined();
+  });
+});
+
+describe("DELETE /api/templates/[id]", () => {
+  const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
+
+  it("401 utan auth", async () => {
+    authUser = null;
+    const res = await DELETE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(401);
+  });
+
+  it("400 vid ogiltigt uuid", async () => {
+    const res = await DELETE({} as never, ctx("not-a-uuid"));
+    expect(res.status).toBe(400);
+  });
+
+  it("404 när mallen saknas", async () => {
+    tableResults.templates = { data: null, error: null };
+    const res = await DELETE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(404);
+  });
+
+  it("409 när mallen är aktiv", async () => {
+    tableResults.templates = { data: { id: VALID_UUID, storage_path: "min/v1.pptx" }, error: null };
+    tableResults.workspace_settings = { data: { id: "ws-1" }, error: null };
+
+    const res = await DELETE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/aktiv/);
+    // Ingen radering, ingen storage-städning när vi vägrar.
+    expect(removeMock).not.toHaveBeenCalled();
+  });
+
+  it("409 när anbud refererar mallen", async () => {
+    tableResults.templates = { data: { id: VALID_UUID, storage_path: "min/v1.pptx" }, error: null };
+    tableResults.workspace_settings = { data: null, error: null };
+    tableResults.bids = { data: null, error: null, count: 2 };
+
+    const res = await DELETE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("mallen används av 2 anbud");
+    expect(removeMock).not.toHaveBeenCalled();
+  });
+
+  it("happy path — raderar rad, städar storage, rensar cache", async () => {
+    tableResults.templates = {
+      data: { id: VALID_UUID, storage_path: "min-anbudsmall/v1.pptx" },
+      error: null,
+    };
+    tableResults.workspace_settings = { data: null, error: null };
+    tableResults.bids = { data: null, error: null, count: 0 };
+
+    const res = await DELETE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ deleted: true });
+    expect(removeMock).toHaveBeenCalledWith(["min-anbudsmall/v1.pptx"]);
+    expect(clearTemplateCacheMock).toHaveBeenCalledWith(VALID_UUID);
+  });
+
+  it("storage-fel är icke-fatalt — raderingen lyckas ändå", async () => {
+    tableResults.templates = {
+      data: { id: VALID_UUID, storage_path: "min-anbudsmall/v1.pptx" },
+      error: null,
+    };
+    tableResults.workspace_settings = { data: null, error: null };
+    tableResults.bids = { data: null, error: null, count: 0 };
+    removeMock.mockResolvedValue({ error: { message: "boom" } });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const res = await DELETE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ deleted: true });
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it("bundlad mall (storage_path null) — 409, kan inte återskapas via appen", async () => {
+    // Routine-fynd #65: bundlade mallar seedas via migration; en radering är
+    // permanent utan UI-väg tillbaka → vägra.
+    tableResults.templates = { data: { id: VALID_UUID, storage_path: null }, error: null };
+
+    const res = await DELETE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/bundlad/);
+    expect(removeMock).not.toHaveBeenCalled();
+  });
+
+  it("guard-DB-fel ger 500 — faller ALDRIG igenom till raderingen", async () => {
+    tableResults.templates = { data: { id: VALID_UUID, storage_path: "x/v1.pptx" }, error: null };
+    tableResults.workspace_settings = { data: null, error: { message: "transient" } };
+
+    const res = await DELETE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(500);
   });
 });

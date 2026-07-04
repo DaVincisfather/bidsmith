@@ -143,7 +143,7 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga just nu._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
-- **UX: anbudsmallar går inte att RADERA** — bara aktivera; behöver delete-väg (+ storage-städning av mallfilen, samma mönster som CV-originalen) (Stefan 2026-07-04)
+- ~~**UX: anbudsmallar går inte att RADERA**~~ — KLART: `DELETE /api/templates/[id]` + radera-knapp i TemplateSection (vägrar aktiv mall / mall som anbud refererar med 409; storage-städning icke-fatal; template_profiles kaskaderar) (2026-07-04)
 - **UX: företagsprofilen** — flytta till arbetsytan + gör PÅVERKAN begriplig (hur mycket styr profilen anbudstexten? användaren måste förstå vikten av att fylla i den) (Stefan 2026-07-04)
 - Pre-fas-C-lagrade matchmotiveringar (`ScoredConsultant.reasoning` i DB) kan citera obelagda claims och flödar in i go/no-go + anbudskontext tills om-matchning — samma temporala residual, annan väg (routine #64)
 - `consultant.summary` är overifierad friyta in i alla tre AI-inputs — nästa naturliga yta för noll-hallucinationsspåret (routine #64)

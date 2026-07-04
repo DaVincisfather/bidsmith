@@ -28,6 +28,7 @@ export function TemplateSection({ templates, activeTemplateId }: TemplateSection
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [activatingId, setActivatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<UploadResponse | null>(null);
 
@@ -87,6 +88,30 @@ export function TemplateSection({ templates, activeTemplateId }: TemplateSection
     }
   }
 
+  async function handleDelete(id: string, name: string, version: number) {
+    // En radering i taget (deletingId delas mellan raderna).
+    if (deletingId !== null) return;
+    // window.confirm räcker här — samma lågceremoni-idiom som resten av appen,
+    // och raderingen är oåterkallelig.
+    if (!window.confirm(`Ta bort ${name} v${version}? Detta går inte att ångra.`)) return;
+    setDeletingId(id);
+    setError(null);
+    try {
+      const response = await fetch(`/api/templates/${id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const data = await response.json();
+        // 409-meddelandena (aktiv mall / används av N anbud) är begripliga —
+        // ytas rakt av till användaren.
+        throw new Error(data.error || "borttagningen misslyckades");
+      }
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Något gick fel");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <section className="space-y-4">
       <div>
@@ -119,21 +144,40 @@ export function TemplateSection({ templates, activeTemplateId }: TemplateSection
                   <td className="px-4 py-3 text-ink-soft">v{t.version}</td>
                   <td className="px-4 py-3 text-ink-soft">{formatDate(t.created_at)}</td>
                   <td className="px-4 py-3 text-right">
-                    {t.id === activeTemplateId ? (
-                      <span className="text-xs font-medium px-2 py-1 rounded bg-accent-soft text-accent-ink">
-                        Aktiv
-                      </span>
-                    ) : (
+                    <div className="flex items-center justify-end gap-2">
+                      {t.id === activeTemplateId ? (
+                        <span className="text-xs font-medium px-2 py-1 rounded bg-accent-soft text-accent-ink">
+                          Aktiv
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleActivate(t.id)}
+                          disabled={activatingId === t.id}
+                          className="text-xs font-medium px-3 py-1 rounded border border-rule
+                                     hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {activatingId === t.id ? "Aktiverar..." : "Aktivera"}
+                        </button>
+                      )}
+                      {/* Radera: avstängd på den aktiva mallen (title förklarar varför) —
+                          spegling av backend-409:an som vägrar radera den aktiva. */}
                       <button
                         type="button"
-                        onClick={() => handleActivate(t.id)}
-                        disabled={activatingId === t.id}
+                        onClick={() => handleDelete(t.id, t.name, t.version)}
+                        disabled={t.id === activeTemplateId || deletingId === t.id}
+                        title={
+                          t.id === activeTemplateId
+                            ? "mallen är aktiv — aktivera en annan mall först"
+                            : "Ta bort mallen"
+                        }
                         className="text-xs font-medium px-3 py-1 rounded border border-rule
-                                   hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                                   hover:border-red-400 hover:text-red-600
+                                   disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {activatingId === t.id ? "Aktiverar..." : "Aktivera"}
+                        {deletingId === t.id ? "Tar bort..." : "Ta bort"}
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
