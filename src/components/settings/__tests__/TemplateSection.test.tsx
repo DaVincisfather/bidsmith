@@ -53,6 +53,68 @@ describe("TemplateSection", () => {
     expect(screen.getByText("Inga mallar ännu.")).toBeInTheDocument();
   });
 
+  it("disables the delete button on the active row (with an explanatory title)", () => {
+    render(
+      <TemplateSection templates={templates} activeTemplateId="11111111-1111-1111-1111-111111111111" />
+    );
+    const delButtons = screen.getAllByRole("button", { name: /Ta bort/ });
+    expect(delButtons).toHaveLength(2);
+    const disabled = delButtons.filter((b) => (b as HTMLButtonElement).disabled);
+    expect(disabled).toHaveLength(1);
+    expect(disabled[0]).toHaveAttribute(
+      "title",
+      "mallen är aktiv — aktivera en annan mall först"
+    );
+  });
+
+  it("deletes a template via the endpoint after confirmation", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ deleted: true }) });
+    vi.stubGlobal("fetch", fetchMock);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<TemplateSection templates={templates} activeTemplateId={null} />);
+    // Inga aktiva mallar → alla radera-knappar är aktiverade; ta den första raden (v2).
+    const delButtons = screen.getAllByRole("button", { name: /Ta bort/ });
+    fireEvent.click(delButtons[0]);
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/templates/11111111-1111-1111-1111-111111111111",
+        { method: "DELETE" }
+      )
+    );
+    confirmSpy.mockRestore();
+  });
+
+  it("does not call the endpoint when the confirm is dismissed", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    render(<TemplateSection templates={templates} activeTemplateId={null} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Ta bort/ })[0]);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it("surfaces the 409 error message from the delete endpoint", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: "mallen används av 2 anbud" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<TemplateSection templates={templates} activeTemplateId={null} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Ta bort/ })[0]);
+
+    await waitFor(() =>
+      expect(screen.getByText("mallen används av 2 anbud")).toBeInTheDocument()
+    );
+    confirmSpy.mockRestore();
+  });
+
   it("renders the upload preview from the API response", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
