@@ -23,6 +23,7 @@ import {
 } from "./render-helpers";
 import { manifestToProfile } from "./manifest-to-profile";
 import { renderFromProfile } from "./render-from-profile";
+import { loadTemplateProfile } from "./profile-store";
 
 export async function renderTemplate(
   tpl: Pick<LoadedTemplate, "manifest" | "templateFile"> & { id?: string },
@@ -34,11 +35,14 @@ export async function renderTemplate(
   // the manifest slide types. Bit-parity vs the type-driven path below is the
   // regression gate (golden-render-profile.test.ts).
   if (process.env.BIDSMITH_PROFILE_RENDER === "1") {
-    // Real templates.id when the caller has one (export route); "bundled" only
-    // for the bundled/offline template, which has no persisted row.
-    const profile = manifestToProfile(tpl.manifest, {
-      templateId: tpl.id ?? "bundled",
-    });
+    // Prefer the PERSISTED profile so an edited profile actually changes the
+    // render (routine-follow-up #49 — deriving from the manifest per render
+    // ignored profile edits). Fall back to the manifest-derived profile for the
+    // bundled/offline template, which has no persisted row. Real templates.id
+    // when the caller has one (export route); "bundled" otherwise.
+    const stored = tpl.id ? await loadTemplateProfile(tpl.id) : null;
+    const profile =
+      stored ?? manifestToProfile(tpl.manifest, { templateId: tpl.id ?? "bundled" });
     return renderFromProfile(tpl, profile, sections, master);
   }
 

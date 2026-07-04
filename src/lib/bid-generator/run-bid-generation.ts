@@ -1,7 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateAllSections, BID_BUNDLE_COUNT } from "@/lib/bid-generator";
 import type { BidContext, FailedBundle } from "@/lib/bid-generator";
+import {
+  generateSectionsFromProfile,
+  type FailedSection,
+} from "@/lib/bid-generator/generate-from-profile";
 import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
+import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
+import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
+import { isAllGenericProfile } from "@/lib/pptx-template/template-profile";
 import type { BidSection } from "@/lib/types";
 import {
   judgeBidStructure,
@@ -20,31 +27,52 @@ export async function runBidGeneration(
   supabase: SupabaseClient,
   bidId: string,
   ctx: BidContext,
-  template: { manifest: TemplateManifest },
+  template: { id: string; manifest: TemplateManifest },
 ): Promise<void> {
+  // Incremental save: every finished section is appended to the bid row so a
+  // slow generation still shows progress. Shared by both generation paths.
+  const persistSection = async (section: BidSection) => {
+    const { data: currentBid } = await supabase
+      .from("bids")
+      .select("sections")
+      .eq("id", bidId)
+      .single();
+
+    const currentSections = (currentBid?.sections as BidSection[]) ?? [];
+    currentSections.push(section);
+
+    await supabase.from("bids").update({ sections: currentSections }).eq("id", bidId);
+  };
+
   let sections: BidSection[];
-  let overflowFlags: Awaited<ReturnType<typeof generateAllSections>>["overflowFlags"];
-  let failedBundles: FailedBundle[];
+  let overflowFlags: OverflowFlag[];
+  // Both paths report failures the same way to the caller: the failed_bundles
+  // column is jsonb, so a foreign template's per-slot failures (FailedSection)
+  // and our template's per-bundle failures (FailedBundle) share the persistence
+  // path and the export route's "has failed sections → refuse" check.
+  let failedUnits: (FailedBundle | FailedSection)[];
+  let totalWipeout: boolean;
   try {
-    ({ sections, overflowFlags, failedBundles } = await generateAllSections(
-      ctx,
-      template.manifest,
-      async (section: BidSection) => {
-        const { data: currentBid } = await supabase
-          .from("bids")
-          .select("sections")
-          .eq("id", bidId)
-          .single();
-
-        const currentSections = (currentBid?.sections as BidSection[]) ?? [];
-        currentSections.push(section);
-
-        await supabase
-          .from("bids")
-          .update({ sections: currentSections })
-          .eq("id", bidId);
-      },
-    ));
+    // A stored all-generic profile means this is a FOREIGN template: its manifest
+    // is near-empty (upload introspection excludes unrecognised slides), so the
+    // profile is the only truth for BOTH generation and rendering. Our own
+    // template has no stored profile → the type-driven bundle path, unchanged.
+    const storedProfile = await loadTemplateProfile(template.id);
+    if (storedProfile && isAllGenericProfile(storedProfile)) {
+      const result = await generateSectionsFromProfile(storedProfile, ctx, persistSection);
+      sections = result.sections;
+      overflowFlags = [];
+      failedUnits = result.failedSections;
+      // Nothing produced but slots failed = every paid call rejected → no draft
+      // worth opening. Zero targets (all static/skip) is a valid empty bid.
+      totalWipeout = result.sections.length === 0 && result.failedSections.length > 0;
+    } else {
+      const result = await generateAllSections(ctx, template.manifest, persistSection);
+      sections = result.sections;
+      overflowFlags = result.overflowFlags;
+      failedUnits = result.failedBundles;
+      totalWipeout = result.failedBundles.length >= BID_BUNDLE_COUNT;
+    }
   } catch (err) {
     console.error("bid generation failed:", err);
     await markFailed(
@@ -56,13 +84,15 @@ export async function runBidGeneration(
     return;
   }
 
-  // Every bundle failed → no AI content was produced (only deterministic
-  // cover/confidentiality/certifications), so there's no draft worth opening.
-  if (failedBundles.length >= BID_BUNDLE_COUNT) {
-    console.error("all bid bundles failed:", failedBundles);
-    await markFailed(supabase, bidId, "All AI bundles failed", failedBundles);
+  // Total wipeout → no AI content was produced (bundle path still has the
+  // deterministic cover/confidentiality/certifications, but nothing worth
+  // opening as a draft), so mark failed instead of persisting a hollow bid.
+  if (totalWipeout) {
+    console.error("all bid generation units failed:", failedUnits);
+    await markFailed(supabase, bidId, "All AI bundles failed", failedUnits);
     return;
   }
+  const failedBundles = failedUnits;
   // Some bundles failed but others succeeded: keep the partial draft rather
   // than discarding the (already billed) Opus output. failed_bundles is
   // persisted so the UI can tell the user which sections to regenerate.
@@ -101,7 +131,7 @@ async function markFailed(
   supabase: SupabaseClient,
   bidId: string,
   message: string,
-  failedBundles: FailedBundle[],
+  failedBundles: (FailedBundle | FailedSection)[],
 ): Promise<void> {
   const { error } = await supabase
     .from("bids")
