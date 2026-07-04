@@ -7,11 +7,15 @@ export const dynamic = "force-dynamic";
 
 export default async function ArbetsytaPage() {
   const supabase = createServiceClient();
-  const [{ count }, { count: analysisCount }, stats] = await Promise.all([
-    supabase.from("consultants").select("id", { count: "exact", head: true }),
-    supabase.from("analyses").select("id", { count: "exact", head: true }),
-    getWorkspaceStats("all"),
-  ]);
+  const [{ count }, { count: analysisCount }, { count: profileCount }, stats] =
+    await Promise.all([
+      supabase.from("consultants").select("id", { count: "exact", head: true }),
+      supabase.from("analyses").select("id", { count: "exact", head: true }),
+      // org_profiles saknas före migration 005 → count resolvar med error (kastar inte),
+      // profileCount blir null och kortet visar "0 profiler".
+      supabase.from("org_profiles").select("id", { count: "exact", head: true }),
+      getWorkspaceStats("all"),
+    ]);
 
   return (
     <main className="min-h-screen bg-paper">
@@ -41,6 +45,15 @@ export default async function ArbetsytaPage() {
             <h2 className="text-lg font-display font-normal">Analyser</h2>
             <p className="mt-1 text-sm text-ink-mute">
               {analysisCount ?? 0} analyserade RFP:er
+            </p>
+          </Link>
+          <Link
+            href="/arbetsyta/profil"
+            className="block rounded-lg border border-rule p-6 hover:border-accent"
+          >
+            <h2 className="text-lg font-display font-normal">Företagsprofil</h2>
+            <p className="mt-1 text-sm text-ink-mute">
+              {profileCount ?? 0} profiler · röst &amp; bolagsfakta för anbud
             </p>
           </Link>
         </div>

@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { ProfileRow } from "@/app/installningar/page";
+
+export interface ProfileRow {
+  id: string;
+  company_name: string;
+  tonality: string | null;
+  boilerplate: string | null;
+}
 
 interface ProfileSectionProps {
   profiles: ProfileRow[];
