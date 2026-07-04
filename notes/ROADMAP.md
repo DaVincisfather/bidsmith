@@ -37,7 +37,20 @@ _Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-h
       OBS (routine-fynd #56): degenererat underlag (fel fil uppladdad som CV) + competencies.min(1) kan ge en fabricerad-men-flaggad post som når matchern — väg in i policybeslutet.
 - [ ] **"källa:"-badge i UI** (`analysis-result.tsx` + CV-vyn): surfa `evidence` per krav
       OCH per kompetens/referens; poster med `evidence: undefined` (vaktens flaggade)
-      visar ingen badge.
+      visar ingen badge. **Data + läsväg finns nu** (denna PR): SELECT-konstanterna +
+      `mapConsultantRow` exponerar citatet och konsult-editorn round-tripar det —
+      ENDAST själva badge-UI:t återstår.
+
+### Routine-fynd #57 — evidens-round-trip (STÄNGDA denna PR, offline-testade, inga API-anrop)
+- [x] **Läsväg exponerar evidence.** `CONSULTANT_SELECT`/`CONSULTANT_API_SELECT` hämtar nu
+      `evidence` för kompetenser + referenser; `mapConsultantRow` mappar det (DB-null →
+      undefined). Consultant-läs-typerna bar redan `evidence?` via ConsultantCompetency/Reference.
+- [x] **Manuell redigering WIPAR inte längre persisterad evidens.** `PUT /api/consultants/[id]`
+      tar emot valfritt `evidence` per post och RE-VERIFIERAR varje citat mot radens egna
+      `raw_cv_text` via `verifyEvidence` (ren sträng-matchning, inga API-anrop): verifierat →
+      persisteras som text, utelämnat/overifierbart/inget raw_cv_text → null. Behåller round-
+      trippen förlustfri för orörda poster; redigerade/nya/fabricerade citat blir ärligt
+      obelagda. Konsult-editorn (`consultant-profile.tsx`) rider med citatet i PUT-payloaden.
 - [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
 
 ### Nedprioriterat per pivot 2026-07-03 (matchningskvalitet före mall-UI; PPT-export kalibreras mot riktiga case senare)

@@ -36,14 +36,28 @@ export function mapConsultantRow(row: Record<string, unknown>): Consultant {
       (row.consultant_competencies as Array<{
         competency: string;
         category: CompetencyCategory;
-      }>) || [],
+        // Verifierat CV-citat (migration 009). null i DB (obelagt/flaggat) mappas
+        // till undefined så läs-typen ConsultantCompetency.evidence blir tom, inte "null".
+        evidence?: string | null;
+      }>)?.map((c) => ({
+        competency: c.competency,
+        category: c.category,
+        evidence: c.evidence ?? undefined,
+      })) || [],
     references:
       (row.consultant_references as Array<{
         title: string;
         description: string;
         year: number;
         sector: Sector;
-      }>) || [],
+        evidence?: string | null;
+      }>)?.map((r) => ({
+        title: r.title,
+        description: r.description,
+        year: r.year,
+        sector: r.sector,
+        evidence: r.evidence ?? undefined,
+      })) || [],
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };

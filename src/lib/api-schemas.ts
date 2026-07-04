@@ -51,16 +51,38 @@ export const BidCreateSchema = z.object({
 
 // --- Consultant: PUT /api/consultants/[id] ---
 //
-// Reuses ConsultantExtractionSchema's enum/array shapes, but lets callers
-// omit competencies/references (route only replaces them when present).
-
+// Reuses ConsultantExtractionSchema's level enum, but redeklarerar barn-arrayerna
+// så `evidence` blir VALFRITT (extraktionsschemat kräver det, min(1)). Skälet:
+// klienten round-tripar persisterade citat men manuellt tillagda poster saknar
+// citat, och en redigering ska inte 400:a bara för att ett fält är obeklätt.
+// Öppenheten är ofarlig eftersom rutten RE-VERIFIERAR varje citat mot CV-texten
+// före persist — schemat vaktar form, inte äkthet.
 export const ConsultantUpdateSchema = z.object({
   name: z.string().min(1),
   level: ConsultantExtractionSchema.shape.level,
   yearsExperience: z.number(),
   summary: z.string(),
-  competencies: ConsultantExtractionSchema.shape.competencies.optional(),
-  references: ConsultantExtractionSchema.shape.references.optional(),
+  competencies: z
+    .array(
+      z.object({
+        competency: z.string(),
+        category: z.enum(["technical", "domain", "methodology", "certification"]),
+        evidence: z.string().optional(),
+      }),
+    )
+    .min(1)
+    .optional(),
+  references: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string(),
+        year: z.number(),
+        sector: z.enum(["public", "private"]),
+        evidence: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 
 // --- Bid: POST /api/bids/[id]/shorten ---
