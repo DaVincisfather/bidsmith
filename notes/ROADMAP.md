@@ -34,6 +34,7 @@ _Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-h
 - [ ] **Fas C — matchning nedviktar/exkluderar flaggade kompetenser?** Öppet beslut: ska
       matchern nedvikta/exkludera flaggade (evidence-lösa) kompetenser? + matchnings-
       motiveringar får bara citera CV-grundade fakta. Rör INTE matchern i fas B.
+      OBS (routine-fynd #56): degenererat underlag (fel fil uppladdad som CV) + competencies.min(1) kan ge en fabricerad-men-flaggad post som når matchern — väg in i policybeslutet.
 - [ ] **"källa:"-badge i UI** (`analysis-result.tsx` + CV-vyn): surfa `evidence` per krav
       OCH per kompetens/referens; poster med `evidence: undefined` (vaktens flaggade)
       visar ingen badge.

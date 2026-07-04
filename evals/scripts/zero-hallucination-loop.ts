@@ -162,7 +162,14 @@ async function main() {
     process.exit(1);
   }
 
-  const target: Target = parseArg("--target") === "cv" ? "cv" : "rfp";
+  // Fail CLOSED på okänt target: "--target=CV" (fel skiftläge) eller stavfel
+  // ska inte tyst falla tillbaka till den BETALDA rfp-banan (routine-fynd #56).
+  const rawTarget = parseArg("--target") ?? "rfp";
+  if (rawTarget !== "rfp" && rawTarget !== "cv") {
+    console.error(`Okänt --target="${rawTarget}" — giltiga värden: rfp | cv.`);
+    process.exit(1);
+  }
+  const target: Target = rawTarget;
   const fixtureFilter = parseArg("--fixture");
 
   // Feltolkat tak ska faila CLOSED: Number("tjugo") = NaN och `x > NaN` är alltid
