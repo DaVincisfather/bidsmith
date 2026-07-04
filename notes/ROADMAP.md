@@ -20,11 +20,23 @@ _Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-h
       Design-doc: `notes/2026-07-03-zero-hallucination-loop.md`.
       KVAR (operatör, BETALD, under $20-tak): kör loopen mot 4 fixtures för att
       bekräfta stabil grön post-vakt + coverage mot goldens.
-- [ ] **Fas B — CV-extraktion (input-grounding).** Samma mekanism i consultant-
-      extractorn: varje extraherad kompetens/referens bär ett ordagrant citat ur
-      CV-texten, samma `verifyEvidence`-vakt. Se design-docens Fas B.
-- [ ] **"källa:"-badge i UI** (`analysis-result.tsx`): surfa `evidence` per krav;
-      krav med `evidence: undefined` (vaktens flaggade) visar ingen badge.
+- [x] **Fas B — CV-extraktion (input-grounding).** BYGGD 2026-07-03 (offline-testad,
+      inga API-anrop; operatörsvalidering kvar). Vakten utfaktoriserad till delad helper
+      `src/lib/evidence-guard.ts` (`runEvidenceGuard`), använd av både `analyzeRfp` och
+      `extractConsultant`. Kompetenser + referenser bär ordagrant CV-citat (schema
+      `evidence.min(1)` + `competencies.min(1)`); "rimlig bedömning" narrowad till
+      level/years/summary. CV-loop: `npm run eval:zero-halluc -- --target=cv`. Fixture-
+      generator `evals/scripts/generate-cv-fixtures.ts` (BETALD, syntetiskt, ingen PII).
+      **Budget-gate-bugg funnen + fixad:** loopens kostnadsfråga missade `:requote`-anropen
+      (`.eq` → `.like("eval:zero-halluc%")`). Design-docens Fas B.
+      KVAR (operatör, BETALD, under $20-tak): kör `eval:gen-cv-fixtures` sedan
+      `eval:zero-halluc -- --target=cv` → bekräfta stabil grön + kompetens-coverage.
+- [ ] **Fas C — matchning nedviktar/exkluderar flaggade kompetenser?** Öppet beslut: ska
+      matchern nedvikta/exkludera flaggade (evidence-lösa) kompetenser? + matchnings-
+      motiveringar får bara citera CV-grundade fakta. Rör INTE matchern i fas B.
+- [ ] **"källa:"-badge i UI** (`analysis-result.tsx` + CV-vyn): surfa `evidence` per krav
+      OCH per kompetens/referens; poster med `evidence: undefined` (vaktens flaggade)
+      visar ingen badge.
 - [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
 
 ### Nedprioriterat per pivot 2026-07-03 (matchningskvalitet före mall-UI; PPT-export kalibreras mot riktiga case senare)

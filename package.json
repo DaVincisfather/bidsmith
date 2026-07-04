@@ -15,6 +15,7 @@
     "eval:bid-generator": "tsx evals/scripts/run-bid-generator.ts",
     "eval:bid-compare": "tsx evals/scripts/run-bid-model-compare.ts",
     "eval:zero-halluc": "tsx evals/scripts/zero-hallucination-loop.ts",
+    "eval:gen-cv-fixtures": "tsx evals/scripts/generate-cv-fixtures.ts",
     "template:introspect": "tsx scripts/introspect-template.ts"
   },
   "dependencies": {

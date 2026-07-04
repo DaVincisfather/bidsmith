@@ -169,18 +169,32 @@ export const ConsultantExtractionSchema = z.object({
   level: z.enum(["junior", "intermediate", "senior", "expert"]),
   yearsExperience: z.number(),
   summary: z.string(),
-  competencies: z.array(
-    z.object({
-      competency: z.string(),
-      category: z.enum(["technical", "domain", "methodology", "certification"]),
-    })
-  ),
+  // evidence (min(1)): OBLIGATORISKT i modell-output på matchnings-KRITISKA påståenden
+  // (kompetenser, referensuppdrag) — en hallucinerad kompetens är den direkta
+  // falsk-match-vägen i matchern. Verify-evidence.ts sträng-matchar citatet mot
+  // CV-texten (fas B). Läs-typerna (ConsultantCompetency/Reference.evidence) är
+  // valfria: äldre lagrade konsulter parsar oförändrat, och runtime-vakten strippar
+  // overifierbara citat till undefined. level/yearsExperience/summary bär INTE citat —
+  // de är sanktionerade bedömningar (promptens "rimlig bedömning" gäller bara dem).
+  competencies: z
+    .array(
+      z.object({
+        competency: z.string(),
+        category: z.enum(["technical", "domain", "methodology", "certification"]),
+        evidence: z.string().min(1),
+      })
+    )
+    // min(1): ett CV utan en enda kompetens är ett degenererat svar (samma
+    // rationale som requirements.min(1)) → ResponseFormatError + format-retry.
+    .min(1),
+  // references får vara tom: ett junior-CV utan listade uppdrag är legitimt.
   references: z.array(
     z.object({
       title: z.string(),
       description: z.string(),
       year: z.number(),
       sector: z.enum(["public", "private"]),
+      evidence: z.string().min(1),
     })
   ),
 });

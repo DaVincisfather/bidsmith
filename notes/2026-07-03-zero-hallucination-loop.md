@@ -86,14 +86,64 @@ så operatören kan diagnosticera prompt vs schema vs fixture.
   största FFU:n). $20-taket räcker till ~10–15 varv.
 - Skriptet vägrar köra utan `ANTHROPIC_API_KEY`.
 
-## Fas B — CV-extraktion (input-grounding)
+## Fas B — CV-extraktion (input-grounding) — BYGGD 2026-07-03 (operatörsvalidering kvar)
 
-Samma mekanism på konsult-CV:n: varje extraherad kompetens/referens ska bära ett
-ordagrant citat ur CV-texten. Här behövs INTE realistiska CV:n — input-grounding
-kontrollerar bara att citatet finns i inputen, inte att CV:t är trovärdigt. Därför
-genereras syntetiska rå-CV:n från identiteterna i
-`evals/fixtures/consultants/synthetic-pool.yaml` (namn/nivå/kompetenser finns redan
-strukturerade; rendera dem till löptext-CV och kör input-grounding-checken).
+Samma mekanism på konsult-CV:n: varje extraherad **kompetens** och **referens** bär
+ett ordagrant citat ur CV-texten. En hallucinerad kompetens är den DIREKTA falsk-
+match-vägen i matchern — produktens kärnvärde — så det är rätt claim att grunda.
+
+### Scope-beslut
+
+- **Evidens krävs på kompetenser + referenser** (matchnings-kritiska claims).
+  `level`/`yearsExperience`/`summary` förblir **sanktionerade bedömningar** — promptens
+  "rimlig bedömning"-regel är NARROWAD till att gälla ENDAST dem. Kompetenser/
+  referenser får KÄLLCITAT-hårdregeln (ordagrant ≤~50 ord, sammanhängande, tecken för
+  tecken, aldrig sammansmält). Ett kompetens-NAMN får normaliseras ("React",
+  "Svenska (modersmål)") men dess `evidence` måste vara ett ordagrant CV-citat som
+  nämner kompetensen; en claim som inte kan citeras får inte emitteras.
+- **Schema:** `evidence: z.string().min(1)` på varje kompetens + referens;
+  `competencies` får `.min(1)` (ett CV utan en enda kompetens = degenererat svar,
+  samma rationale som `requirements.min(1)`); `references` får vara tom (junior utan
+  listade uppdrag är legitimt). Läs-typerna (`ConsultantCompetency/Reference.evidence`)
+  är valfria — lagrade konsulter parsar oförändrat.
+- **Vaktpolicy:** identisk med RFP — behåll + flagga (`evidence: undefined`).
+
+### Guarden utfaktoriserad
+
+Vakt-mekaniken är flyttad ur `rfp-analyzer.ts` till en generisk helper
+`src/lib/evidence-guard.ts` (`runEvidenceGuard`): verifiera alla → 0 missar ⇒
+returnera befintliga citat, noll API-anrop → annars ETT batchat re-citat (numrerade
+missade poster + full källa i `<underlag>`, `itemNoun` interpolerad i prompten) →
+re-verifiera → adoptera/strip → fel ⇒ `console.warn` + undefined. `rfp-analyzer.ts`
+och `consultant-extractor.ts` anropar båda helpern; RFP-vaktens observerbara beteende
+är oförändrat (befintliga guard-tester gröna efter refaktorn). `extractConsultant` kör
+guarden EN gång över konkatenationen kompetenser + referenser (kompetens → `text`:
+namn; referens → `text`: `titel: beskrivning`), så en enda re-citat-omgång täcker
+båda kinds — därav `itemNoun = "kompetenser och referensuppdrag"`.
+
+### CV-loop + fixtures
+
+`npm run eval:zero-halluc -- --target=cv` kör `extractConsultant` över
+`evals/fixtures/cv/*.yaml` (`CvFixtureSchema`: `{ id, cv_text, golden:
+{ competency_count } }`) och verifierar kompetens- + referenscitaten mot `cv_text`.
+Rapporten visar extraherat-vs-golden kompetens-antal (coverage-ögonmått) och
+verifierade par på grönt. `extractConsultant` fick en `label`-param (default
+`consultant-extraction`; loopen skickar `eval:zero-halluc-cv`), samma mönster som
+`analyzeRfp`. Här behövs INTE realistiska CV:n för mekaniken, men fixturerna görs ändå
+realistiska så extraktionen blir icke-trivial: `evals/scripts/generate-cv-fixtures.ts`
+(operatörskörd, BETALD, `MODELS.writingSupport`, label `eval:cv-fixture-gen`) renderar
+identiteterna i `synthetic-pool.yaml` till löptext-CV:n (rubriker, punktlistor,
+anställningshistorik) med `golden.competency_count` = poolprofilens kompetens-antal.
+**Fixturerna är syntetiska — ingen PII.**
+
+### Budget-gate-bugg funnen + fixad
+
+Loopens kostnadsfråga använde `.eq("label", LOOP_LABEL)` — men re-citat-anropen loggas
+under `<label>:requote` och FÅNGADES ALDRIG av grinden (verklig underskattning idag).
+Fixad: `.like("label", "eval:zero-halluc%")` (paginering behållen). Mönstret täcker nu
+rfp, cv OCH båda requote-etiketterna — budgetgrinden summerar bådas kostnad före ett
+enda betalt anrop. Cost-helpern är utbruten till `evals/harness/core/loop-budget.ts`,
+rapport-renderingen till `evals/harness/core/loop-report.ts` (loop-skriptet < 300 rader).
 
 ## Fas C — matchningsmotiveringar
 

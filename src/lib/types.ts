@@ -61,6 +61,13 @@ export interface ConsultantCompetency {
   id?: string;
   competency: string;
   category: CompetencyCategory;
+  /**
+   * Ordagrant citat ur CV-texten som grundar kompetensen (evidens-förankring,
+   * fas B). Modellen TVINGAS citera (obligatoriskt i output-schemat), men läs-typen
+   * är valfri: konsulter lagrade före fältet parsar oförändrat, och runtime-vakten
+   * kan STRIPPA ett overifierbart citat (undefined = flaggat, kompetensen behålls).
+   */
+  evidence?: string;
 }
 
 export interface ConsultantReference {
@@ -69,6 +76,8 @@ export interface ConsultantReference {
   description: string;
   year: number;
   sector: Sector;
+  /** Ordagrant CV-citat som grundar referensuppdraget (fas B). Se ConsultantCompetency.evidence. */
+  evidence?: string;
 }
 
 export interface ConsultantExtraction {
