@@ -24,7 +24,7 @@ Varje extraherat krav tvingas bära ett **ordagrant källcitat** (`evidence`):
    befintliga källmaterialstroheten: citatet ska vara kopierat tecken för tecken ur
    underlaget (max ~50 ord), ingen parafras; kan ett krav inte citeras ordagrant får
    det inte tas med.
-3. **Mekanisk verifiering.** `evals/harness/core/verify-evidence.ts` sträng-matchar
+3. **Mekanisk verifiering.** `src/lib/verify-evidence.ts` sträng-matchar
    citatet mot källdokumentet efter normalisering (se nedan). Träff = förankrat.
    Miss = utelämnat (`missing`) eller uppdiktat (`not-found`).
 
@@ -155,3 +155,38 @@ kravmatrisen), (b) behåll kravet men flagga citatet som overifierat (ingen
 "källa"-badge i UI, kravet syns), (c) targeted re-prompt av bara det kravet.
 Loopen förblir kalibrerings- och regressionsverktyget; runtime-vakten blir
 garantin.
+
+## Beslut & leverans (2026-07-03, Stefan): re-prompt SEDAN flagga
+
+Beslutet är **(c) följt av (b)**: verifiera → ETT batchat riktat re-citat-anrop
+för de krav vars citat inte gick att verifiera → fortfarande overifierbart ⇒
+strippa citatet (`evidence: undefined`, flaggat), behåll kravet. Aldrig (a) —
+inget äkta krav tappas.
+
+**Shippat:** vakten sitter i `analyzeRfp` (`src/lib/rfp-analyzer.ts`), och
+verifieraren är flyttad till produktkod (`src/lib/verify-evidence.ts`, delad av
+vakt + loop). Mekaniken:
+
+1. `verifyEvidence("runtime", …)` på extraktionens krav — gratis. 0 missar
+   (vanligast) → returnera direkt, noll extra anrop.
+2. Missar → ETT batchat re-citat-anrop (aldrig per krav; dokumentet dominerar
+   input-tokens och skickas en gång). Etikett `${label}:requote` → loopens budget
+   summerar båda anropen. Schema tillåter `evidence: null` så modellen ärligt kan
+   koncedera i st.f. att tvingas fabricera.
+3. Re-verifiera varje returnerat citat. Verifierar → ersätt. Null/saknat/
+   fortfarande overifierbart → `evidence: undefined`.
+4. Re-citat-anropet är try/catch:at — ett fel STRIPPAR de missade citaten och
+   returnerar analysen. Vakt-degradering ≠ analysfel; användaren blockeras aldrig.
+
+### Ny loop-semantik (viktig för diagnos)
+
+Loopen mäter nu **POST-vakt**-kvalitet. Därför skiftar miss-klassernas betydelse:
+
+- En **`missing`**-miss betyder nu "**overifierbar ÄVEN EFTER ett reparations-
+  försök**" — dvs. vaktens flaggade krav (citatet strippades). Det är förväntat,
+  inte ett fel: residualen (~1,3 %) landar här som flaggade krav utan källa-badge.
+- En **`not-found`**-miss ska vara **OMÖJLIG post-vakt** — vakten strippar varje
+  citat som inte verifierar, så ett citat som finns men inte matchar kan inte nå
+  loopens verifiering. Dyker en `not-found` ändå upp indikerar det en **bugg i
+  vakten** (t.ex. att den inte kördes, eller att strip-vägen missade ett index),
+  inte en modell-hallucination. Behandla den som en regression, inte fixturbrus.

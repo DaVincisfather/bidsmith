@@ -149,6 +149,125 @@ describe("analyzeRfp", () => {
   });
 });
 
+describe("analyzeRfp — runtime evidence guard", () => {
+  beforeEach(() => {
+    mockCallClaude.mockReset();
+  });
+
+  // Underlag där "minst tre års erfarenhet av projektledning" och "behärska
+  // svenska språket flytande" finns ordagrant, men fabricerade citat inte gör det.
+  const RFP =
+    "Anbudsgivaren ska ha minst tre års erfarenhet av projektledning. Konsulten ska behärska svenska språket flytande i tal och skrift.";
+
+  function analysis(requirements: unknown[]) {
+    return {
+      title: "Test",
+      client: "Kund",
+      deadline: null,
+      summary: "s",
+      requirements,
+      evaluationCriteria: [],
+      requiredCompetencies: [],
+      estimatedScope: "x",
+      redFlags: [],
+      domain: "IT",
+      oslReference: null,
+      secrecyRows: [],
+    };
+  }
+
+  // Fabriker (inte delade objekt): vakten muterar `evidence` in place, så varje
+  // test måste få FÄRSKA krav-objekt annars läcker en mutation mellan testerna.
+  const verifiedReq = () => ({
+    category: "Erfarenhet",
+    description: "Alfa dokumenterad projektledning",
+    priority: "must",
+    kind: "qualification",
+    evidence: "minst tre års erfarenhet av projektledning",
+  });
+  const fabricatedReq = () => ({
+    category: "Språk",
+    description: "Beta obligatorisk språkkunskap",
+    priority: "must",
+    kind: "qualification",
+    evidence: "svenska på modersmålsnivå enligt CEFR-nivå C2",
+  });
+
+  it("gör INGET extra anrop när alla citat verifierar (vanliga fallet)", async () => {
+    mockCallClaude.mockResolvedValueOnce(analysis([verifiedReq()]));
+
+    const result = await analyzeRfp(RFP);
+
+    expect(mockCallClaude).toHaveBeenCalledOnce();
+    expect(result.requirements[0].evidence).toBe(
+      "minst tre års erfarenhet av projektledning",
+    );
+  });
+
+  it("ett overifierbart krav → ETT re-citat-anrop med bara det kravet numrerat; verifierande citat adopteras", async () => {
+    mockCallClaude.mockResolvedValueOnce(analysis([verifiedReq(), fabricatedReq()]));
+    mockCallClaude.mockResolvedValueOnce({
+      quotes: [{ index: 1, evidence: "behärska svenska språket flytande" }],
+    });
+
+    const result = await analyzeRfp(RFP);
+
+    expect(mockCallClaude).toHaveBeenCalledTimes(2);
+    const requoteArgs = mockCallClaude.mock.calls[1][0];
+    // Bara det missade kravets beskrivning numreras — inte det verifierade.
+    expect(requoteArgs.userContent).toContain("Beta obligatorisk språkkunskap");
+    expect(requoteArgs.userContent).not.toContain("Alfa dokumenterad projektledning");
+    // Adopterat citat + orört verifierat citat.
+    expect(result.requirements[1].evidence).toBe("behärska svenska språket flytande");
+    expect(result.requirements[0].evidence).toBe(
+      "minst tre års erfarenhet av projektledning",
+    );
+  });
+
+  it("re-citat returnerar null → evidence undefined, kravet behålls", async () => {
+    mockCallClaude.mockResolvedValueOnce(analysis([fabricatedReq()]));
+    mockCallClaude.mockResolvedValueOnce({ quotes: [{ index: 0, evidence: null }] });
+
+    const result = await analyzeRfp(RFP);
+
+    expect(result.requirements).toHaveLength(1);
+    expect(result.requirements[0].evidence).toBeUndefined();
+  });
+
+  it("re-citat returnerar ett FORTFARANDE overifierbart citat → evidence undefined", async () => {
+    mockCallClaude.mockResolvedValueOnce(analysis([fabricatedReq()]));
+    mockCallClaude.mockResolvedValueOnce({
+      quotes: [{ index: 0, evidence: "ett citat som inte heller finns i underlaget" }],
+    });
+
+    const result = await analyzeRfp(RFP);
+
+    expect(result.requirements[0].evidence).toBeUndefined();
+  });
+
+  it("re-citat-anropet kastar → analysen returneras ändå, missat krav flaggat, verifierat orört", async () => {
+    mockCallClaude.mockResolvedValueOnce(analysis([verifiedReq(), fabricatedReq()]));
+    mockCallClaude.mockRejectedValueOnce(new Error("boom"));
+
+    const result = await analyzeRfp(RFP);
+
+    expect(result.requirements).toHaveLength(2);
+    expect(result.requirements[0].evidence).toBe(
+      "minst tre års erfarenhet av projektledning",
+    );
+    expect(result.requirements[1].evidence).toBeUndefined();
+  });
+
+  it("etikett-trådning: re-citat använder `${label}:requote`", async () => {
+    mockCallClaude.mockResolvedValueOnce(analysis([fabricatedReq()]));
+    mockCallClaude.mockResolvedValueOnce({ quotes: [{ index: 0, evidence: null }] });
+
+    await analyzeRfp(RFP, null, "eval:zero-halluc");
+
+    expect(mockCallClaude.mock.calls[1][0].label).toBe("eval:zero-halluc:requote");
+  });
+});
+
 describe("RfpAnalysisSchema — OSL extraction", () => {
   it("accepts oslReference and secrecyRows", () => {
     const raw = {

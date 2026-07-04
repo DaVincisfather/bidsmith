@@ -1,4 +1,7 @@
-// Mekanisk evidens-verifierare för noll-hallucinationsloopen.
+// Mekanisk evidens-verifierare. DUBBEL ROLL:
+//   1. PRODUKTKOD (runtime): analyzeRfp:s evidensvakt kör den på varje extraktion
+//      för att garantera att inget overifierat citat når en analys.
+//   2. EVAL-TOOLING: noll-hallucinationsloopen mäter POST-vakt-kvalitet med den.
 //
 // Kärnidé: extraktionen tvingar varje krav att bära ett ORDAGRANT källcitat
 // (RfpRequirementSchema.evidence, min(1)). Här sträng-matchar vi citatet mot
