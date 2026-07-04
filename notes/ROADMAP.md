@@ -4,141 +4,45 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-04 — extraktions-versions-diskriminator (migration 011) stänger fas C-residualen för nya rader (PENDING manuell migration före merge)_
+_Senast uppdaterad: 2026-07-04 — noll-hallucinationsspåret komplett & mergat (#54–#68); migr. 009/010/011 körda. NÄSTA: onboarding-wizard._
 
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [x] **Noll-hallucinationsloop + runtime-evidensvakt.** PIVOT 2026-07-03 (Stefan):
-      matchningskvalitet är vallgraven → mål är NOLL hallucinationer i extraktionen.
-      Loop + mekanik byggd; **runtime-vakten shippad** (denna PR, offline-testad, inga
-      API-anrop): verifieraren flyttad till produktkod (`src/lib/verify-evidence.ts`,
-      delad av vakt + loop), vakten i `analyzeRfp` (`src/lib/rfp-analyzer.ts`) —
-      verifiera → ETT batchat riktat re-citat → fortfarande overifierbart ⇒ strippa
-      citatet (`evidence: undefined`, flaggat), kravet behålls. Loopen
-      (`npm run eval:zero-halluc`) mäter nu POST-vakt-kvalitet.
-      Design-doc: `notes/2026-07-03-zero-hallucination-loop.md`.
-      KVAR (operatör, BETALD, under $20-tak): kör loopen mot 4 fixtures för att
-      bekräfta stabil grön post-vakt + coverage mot goldens.
-- [x] **Fas B — CV-extraktion (input-grounding).** BYGGD 2026-07-03 (offline-testad,
-      inga API-anrop; operatörsvalidering kvar). Vakten utfaktoriserad till delad helper
-      `src/lib/evidence-guard.ts` (`runEvidenceGuard`), använd av både `analyzeRfp` och
-      `extractConsultant`. Kompetenser + referenser bär ordagrant CV-citat (schema
-      `evidence.min(1)` + `competencies.min(1)`); "rimlig bedömning" narrowad till
-      level/years/summary. CV-loop: `npm run eval:zero-halluc -- --target=cv`. Fixture-
-      generator `evals/scripts/generate-cv-fixtures.ts` (BETALD, syntetiskt, ingen PII).
-      **Budget-gate-bugg funnen + fixad:** loopens kostnadsfråga missade `:requote`-anropen
-      (`.eq` → `.like("eval:zero-halluc%")`). Design-docens Fas B.
-      KVAR (operatör, BETALD, under $20-tak): kör `eval:gen-cv-fixtures` sedan
-      `eval:zero-halluc -- --target=cv` → bekräfta stabil grön + kompetens-coverage.
-- [x] **Fas C — LEVERERAD (policy A, Stefan 2026-07-04):** flaggade claims EXKLUDERAS ur all AI-input (matcher båda steg, go/no-go, anbudskontext); motiveringar belagda per konstruktion. Ursprunglig fråga: Öppet beslut: ska
-      matchern nedvikta/exkludera flaggade (evidence-lösa) kompetenser? + matchnings-
-      motiveringar får bara citera CV-grundade fakta. Rör INTE matchern i fas B.
-      OBS (routine-fynd #56): degenererat underlag (fel fil uppladdad som CV) + competencies.min(1) kan ge en fabricerad-men-flaggad post som når matchern — väg in i policybeslutet.
-- [x] **"källa:"-badge i UI** — SHIPPAD för analysvyn + konsultprofilen. V1 expanderbar
-      källa-chip (`src/components/kalla-chip.tsx`: `KallaChip`/`FlaggedPill`/`SourceQuote`)
-      på krav-rader (`analysis-result.tsx`), kompetens-chips (dot burgundy=belagt/amber=flaggat)
-      + referenser (`consultant-profile.tsx`). Obelagda poster (`evidence` undefined/null) får
-      amber "obelagd"-pill, ej expanderbar. Legacy-grind: bär ingen post i analysen/profilen
-      evidens visas inga badges (gate-logik i `src/lib/evidence-badge.ts`, enhets-testad).
-      Komponenttester täcker chip/flagged/legacy-gate/toggle. **KVAR (medvetet utanför scope):**
-      leverabel-raderna i analysvyn fick ingen badge (designen beskrev bara krav-radernas grid).
-- [x] **Källa-badge ITERATION** — SHIPPAD (offline-testad, inga API-anrop). Två produktägar-fynd:
-      **(1) Citat i SAMMANHANG:** utfällt citat duplicerade ofta påståendet ordagrant ("meningslöst").
-      Ny lib `src/lib/evidence-context.ts` (`locateEvidenceContext`) lokaliserar citatet i källtexten
-      med SAMMA normalisering/matchning som verifieraren (`normalizeWithMap` + exporterade
-      `caseVariants`/gap-konstanter ur `verify-evidence.ts` — verify-semantiken orörd, tester gröna)
-      och returnerar ±200 tecken kontext, snäppt till ordgränser (gap-matchade citat → längsta halvan).
-      Två auth-gate:ade endpoints (`/api/analyses/[id]/evidence-context`, `/api/consultants/[id]/evidence-context`)
-      exponerar BARA fönstret (PII: rå käll-/CV-text lämnar aldrig servern helt; q kapad till 500 tecken,
-      fönster satt server-side). `SourceQuote`/`KallaChip` tar `contextUrl`, hämtar vid utfällning och
-      markerar citatspannet i dämpad omgivning; fallback till rena citatblocket vid laddning/null.
-      **(2) List-dots:** konsult-LISTAN (`consultant-list.tsx`) fick nu samma dot + sr-only-behandling
-      som profilen (page-select utökad med `evidence`, per-konsult legacy-grind). Dots only, inga
-      expanders i listan (densitet). Tester: evidence-context-lib (found/gränser/ordsnäpp/soft hyphen/
-      typografi/gap/not-found), endpoints (auth/uuid/PII-cap/q-validering), list-dot-grind.
-- [x] **Källvy + trust-receipt ITERATION** — SHIPPAD (offline-testad, inga API-anrop). Produktägar-verdikt:
-      ±200-fönstret räckte inte — han vill LANDA i källdokumentet. **A. Källvy (slide-over):** klick på
-      en källa-chip / grundad kompetens-chip öppnar `src/components/source-viewer.tsx` (fast högerpanel,
-      role=dialog + aria-modal, Escape/fokus-på-stäng) som visar HELA källtexten med ALLA verifierade
-      spann markerade (`bg-accent-soft`) och det klickade citatet starkare betonat (ring-accent) +
-      autoscrollat. Vyn ÄR täckningskartan (omarkerat = oanvänt källmaterial). **B. Trust-receipt:**
-      `TrustReceipt` (i `kalla-chip.tsx`) — "X av Y påståenden ordagrant belagda … mekaniskt verifierade,
-      inte AI-bedömda" (+ "· Z obelagda") överst i kravsektionen + konsultprofilen, klient-beräknad,
-      döljs av legacy-grinden. **D. Originalfil-länk:** analys-källvyn signerar `documents.file_path`
-      (`getDocumentSignedUrl`) → "Öppna originalet". **Nya lib-funktioner** i `evidence-context.ts`:
-      `locateEvidenceSpan` (originaloffset) + `locateAllSpans` (merge:ar överlappande spann till en
-      täckningskarta, behåller per-citat-spann). **Nya endpoints** `/api/{analyses,consultants}/[id]/
-      source-view` → `{ sourceText, spans, fileUrl? }`; MEDVETET PII-BYTE (kommenterat): hela källtexten
-      returneras här (bakom auth + explicit klick) — default-läsvägarna förblir restriktiva; spann bara
-      ur LAGRAD evidens. **BORTTAGET (superseded):** ±200-fönster-endpointsen (`.../evidence-context`) +
-      deras route-test; `KallaChip` fäller inte längre ut inline (callback `onShowSource`); `SourceQuote`
-      behållen som källvyns felfallback. **D-ASYMMETRI:** konsulter lagrar ingen originalfil (bara
-      `raw_cv_text`) → ingen `fileUrl` i konsult-källvyn; länken gäller bara analyser. Tester: span-lib
-      (originaloffset/soft-hyphen/merge), source-view-endpoints (auth/uuid/404/spann-ur-lagrad-evidens/
-      fileUrl-signering + fail-graceful), receipt-logik, källvy-render (segment/aktiv-betoning/Escape/
-      fel-fallback), omkopplad chip-callback.
-- [~] **D-SYMMETRI: konsulter lagrar nu originalfilen** — SHIPPAD i kod (offline-testad, inga API-anrop),
-      VÄNTAR TVÅ MANUELLA OPERATÖRS-STEG FÖRE MERGE. CV-uploaden persisterar nu originalbufferten till
-      den PRIVATA bucketen `consultant-cvs` vid `${consultantId}/${slug}.${ext}` (upsert:true = om-uppladdat
-      CV skriver över, speglar upsertConsultants ersätt-barnen-semantik). NON-FATAL: storage-/update-fel
-      fäller inte uploaden (extraktion + rad redan committade) → varning på `results[].warning` + console.warn,
-      cv_file_path lämnas orört. Konsult-källvyn signerar `cv_file_path` (`getCvSignedUrl`, ny bucket-param-
-      generaliserad helper i `storage-urls.ts`) → "Öppna originalet" fungerar nu symmetriskt med analyser
-      (ingen UI-ändring — vyn renderade redan `fileUrl` när den finns). Filnamns-saneringen (se backlog) är
-      aktiverad + löst. **OPERATÖRS-CHECKLISTA FÖRE MERGE:** (1) kör migration 010 (`consultants.cv_file_path`)
-      manuellt i Supabase SQL Editor; (2) skapa den PRIVATA bucketen `consultant-cvs` i Supabase Storage
-      (buckets är inte SQL). Tester: storage-urls (bucket-routing + fail), upload-route (nyckel + cv_file_path-
-      update + sanering + storage-fail non-fatal + update-fail non-fatal), konsult-source-view (fileUrl när
-      cv_file_path finns / utelämnas när null / degraderar vid signeringsfel).
+- [ ] **Onboarding-wizard för kundmallar** — SISTA biten av mall-uppladdningsspåret.
+      Riktning LÅST (Stefan 2026-07-04): **guidad wizard, slide-för-slide** (valt över
+      checklista/hybrid). Flöde: upload → introspektion + `proposeInjectionPlan` (förslag
+      förvalda per textruta) → bekräfta/ändra/skippa per slot → `instrumentTemplate`
+      (injicera `{tokens}`) → spara profil → mallen körbar. All backend finns
+      (introspektion, `classifyForeignSlot`, förslagslager, injektionsmotor, profil-
+      persistens, profil-driven generering via #68); wizarden är UI:t som binder ihop dem.
+      Skip-slots blankas redan på render-sidan (#68), FailedSection visas i partial-bannern.
+- [ ] **STICKPROV (operatör — Stefan, planerat 2026-07-05):** relevans-stickprov av
+      citaten på gröna loopkörningar. Mekaniken garanterar att citaten FINNS ordagrant;
+      att de är RELEVANTA för påståendet är residualen som verifieras av människa. Underlag:
+      verifierade par i `evals/results/*.md` (RFP + CV, från gröna varven).
+- [ ] **LOOP-VALIDERING (operatör, BETALD, under $20-tak, vid behov):** om-kör
+      `npm run eval:zero-halluc [-- --target=cv]` för stabil grön post-vakt + coverage mot
+      goldens. Spårkostnad hittills ~$5 av $20.
 
-### Routine-fynd #57 — evidens-round-trip (STÄNGDA denna PR, offline-testade, inga API-anrop)
-- [x] **Läsväg exponerar evidence.** `CONSULTANT_SELECT`/`CONSULTANT_API_SELECT` hämtar nu
-      `evidence` för kompetenser + referenser; `mapConsultantRow` mappar det (DB-null →
-      undefined). Consultant-läs-typerna bar redan `evidence?` via ConsultantCompetency/Reference.
-- [x] **Manuell redigering WIPAR inte längre persisterad evidens.** `PUT /api/consultants/[id]`
-      tar emot valfritt `evidence` per post och RE-VERIFIERAR varje citat mot radens egna
-      `raw_cv_text` via `verifyEvidence` (ren sträng-matchning, inga API-anrop): verifierat →
-      persisteras som text, utelämnat/overifierbart/inget raw_cv_text → null. Behåller round-
-      trippen förlustfri för orörda poster; redigerade/nya/fabricerade citat blir ärligt
-      obelagda. Konsult-editorn (`consultant-profile.tsx`) rider med citatet i PUT-payloaden.
-- [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
-
-- [x] **Kostnadsstatistik förenklad till tre kategorier.** Produktägar-feedback: den långa
-      per-etikett-listan i statistik-vyn var brus. Primär vy visar nu tre begripliga buckets
-      (Analys / Konsultmatchning / Anbudsgenerering) + Övrigt-restpost, med kostnad + antal
-      anrop per bucket och totalsumma. Per-etikett-listan finns kvar bakom en kollapsad
-      "Visa detaljer"-disclosure (`aria-expanded`, samma mönster som källa-chippen). Ren
-      total etikett→bucket-mappning i `src/lib/cost-buckets.ts` (prefix-regler; `:requote`
-      ärver förälderns bucket; okänt → Övrigt), enhets- + komponenttestad. UI:
-      `src/app/arbetsyta/statistik/CostBuckets.tsx`. Offline-testad, inga API-anrop.
-
-### Nedprioriterat per pivot 2026-07-03 (matchningskvalitet före mall-UI; PPT-export kalibreras mot riktiga case senare)
-- [ ] **Slice 5b — token-injektion** (`instrumentTemplate`): NY kärnkomponent efter beslut
-      2026-07-03 (design-doc TILLÄGG). Onboarding instrumenterar en kopia av kundens mall
-      (föreslå slots → bekräfta → injicera `{tokens}`) så den token-baserade pipelinen kör
-      oförändrad. `classifyForeignSlot`, injektionsmotorn (`instrumentTemplate`) OCH
-      förslags-lagret (`onboarding/propose-injection-plan.ts` — kandidat-slots ur
-      shape-text/geometri → auto-klass → utkast-profil) byggda & enhetstestade. Kvar:
-      generic-prose-inkoppling + slice 5-UI som konsumerar planen.
-- [x] **generic-prose-inkoppling** i genereringen för profil-drivna mallar (VVS:en som får
-      främmande mallar att generera) — SHIPPAD (offline-testad, inga API-anrop).
-      `generateSectionsFromProfile` (`src/lib/bid-generator/generate-from-profile.ts`): en
-      betald `buildGenericProseSection` per generic-prose-slot (status≠skip), CHUNKAD
-      samtidighet (4) + `Promise.allSettled` (partiella lyckade behålls, `failedSections`).
-      Routing via diskriminatorn `isAllGenericProfile` (`template-profile.ts`): en mall med
-      lagrad all-generic-profil kör profil-vägen för BÅDE generering (`run-bid-generation.ts`)
-      och rendering (`export/route.ts` → `renderFromProfile`), oberoende av
-      `BIDSMITH_PROFILE_RENDER` (flaggan gäller fortsatt bara VÅR malls paritetsväg). VÅR mall
-      (ingen lagrad profil / blandade kapabiliteter) = oförändrad bundle+typ-driven väg.
-      #49-fix: flagg-vägen i `loader.ts` laddar nu den PERSISTERADE profilen (loadTemplateProfile)
-      istället för att härleda per render. Modellbytet var redan gjort: `writingGeneric` = Sonnet 5.
-      KVAR för hela mall-spåret: onboarding-wizard (se nedan).
-- [ ] **Slice 5-UI — onboarding-wizard (SISTA biten i mall-spåret).** Vald riktning: GUIDAD
-      wizard (upload → slot-förslag → intervju → injicera `{tokens}` → redigerbar profil), med
-      Stefans design-riktning. Egen PR. Med generic-prose-inkopplingen ovan genererar och
-      renderar en onboardad främmande mall redan end-to-end; wizarden är UI:t som producerar
-      profilen den vägen konsumerar.
+## Levererat 2026-07-03/04 (noll-hallucinationsspåret + UX-pass)
+**PIVOT (Stefan 2026-07-03):** matchningskvalitet är vallgraven; PPT-export-perfektion
+nedprioriterad (kalibreras mot riktiga case senare). Kedjan komplett & mergad **#54–#68**:
+varje krav/kompetens/referens bär ordagrant källcitat (schema-tvingat) → mekanisk verifiering
+(`src/lib/verify-evidence.ts`, INGEN LLM-judge = inget kalibreringsproblem) → runtime-vakt
+(`src/lib/evidence-guard.ts`: verifiera → ETT batchat re-citat → strippa/flagga, kastar aldrig)
+i `analyzeRfp` + `extractConsultant` → persistens (migr. 009) → förlustfri redigering
+(server-återverifierad round-trip) → UI (trust-receipt → källa-chip → källvisare med
+täckningskarta → originalfil-länk, symmetriskt RFP/CV; migr. 010 + privat bucket `consultant-cvs`)
+→ **fas C:** flaggade (obelagda) claims EXKLUDERAS ur all AI-input (`grounded-claims.ts`,
+motiveringar belagda per konstruktion) → **extraktions-versions-diskriminator** (migr. 011)
+stänger legacy-tvetydigheten. **Modellbyte #53:** Sonnet-roller → Sonnet 5, ny `writingGeneric`-
+roll; `judge` medvetet kvar på 4-6 (kalibreringsbunden). Loopar GRÖNA: RFP 0/77, CV 0/66;
+spårkostnad ~$5 av $20-taket. **UX-pass:** kostnadsvyn i tre hinkar (#60), mall-radering med
+aktiv/anbud/bundlad-skydd (#65), företagsprofil → `/arbetsyta/profil` + påverkans-panel (#66),
+profil-driven generering för onboardade mallar (#68, stänger #49-follow-up). Migrationer
+009/010/011 + bucket `consultant-cvs` KÖRDA av operatören. Design-doc:
+`notes/2026-07-03-zero-hallucination-loop.md`.
 
 ## Mall-uppladdning (godtyckliga bolagsmallar) — aktiv feature
 Design-doc: `notes/2026-07-02-template-upload-architecture.md` (A+C-combo, B inkrementellt).
@@ -147,13 +51,13 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 - [x] Slice 2 — `manifestToProfile`: manifest → capability-klassificering (#44, merged)
 - [x] Slice 3 — profil-driven renderare bakom `BIDSMITH_PROFILE_RENDER`, golden-bitparitet grön
 - [x] Slice 4 — `generic-prose`-bundle + prose/field-applikator; pipeline-inkoppling levererad i slice 5b
-- [~] Slice 5a — profil-persistens (`profile-store.ts`) + upload deriverar & sparar startprofil
+- [x] Slice 5a — profil-persistens (`profile-store.ts`) + upload deriverar & sparar startprofil
 - [x] Slice 5b — auto-klassificering (`propose-injection-plan`) + generic-prose-inkoppling (`generateSectionsFromProfile` + all-generic-routing, Sonnet 5)
 - [ ] Slice 5-UI — onboarding-wizard (introspektion + intervju + redigerbar profil) — SISTA biten
 - [ ] Slice 6 — B inkrementellt: bullets, sedan godtyckliga table-rows
 
 ## Öppna PR:er (väntar review)
-_Inga just nu._
+_Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
 - ~~**UX: anbudsmallar går inte att RADERA**~~ — KLART: `DELETE /api/templates/[id]` + radera-knapp i TemplateSection (vägrar aktiv mall / mall som anbud refererar / bundlad mall med 409; storage-städning icke-fatal; template_profiles kaskaderar) (2026-07-04)
