@@ -51,16 +51,36 @@ export const BidCreateSchema = z.object({
 
 // --- Consultant: PUT /api/consultants/[id] ---
 //
-// Reuses ConsultantExtractionSchema's enum/array shapes, but lets callers
-// omit competencies/references (route only replaces them when present).
-
+// Deriverar barn-formerna ur ConsultantExtractionSchema men gör `evidence`
+// VALFRITT (extraktionsschemat kräver det, min(1)). Skälet:
+// klienten round-tripar persisterade citat men manuellt tillagda poster saknar
+// citat, och en redigering ska inte 400:a bara för att ett fält är obeklätt.
+// Öppenheten är ofarlig eftersom rutten RE-VERIFIERAR varje citat mot CV-texten
+// före persist — schemat vaktar form, inte äkthet.
 export const ConsultantUpdateSchema = z.object({
   name: z.string().min(1),
   level: ConsultantExtractionSchema.shape.level,
   yearsExperience: z.number(),
   summary: z.string(),
-  competencies: ConsultantExtractionSchema.shape.competencies.optional(),
-  references: ConsultantExtractionSchema.shape.references.optional(),
+  // Derivera barn-formerna ur extraktionsschemat (routine-fynd #58: en fri-
+  // stående kopia av enum:erna driftar när extraktionen ändras). .extend gör
+  // ENDA skillnaden — evidence valfri här (obligatorisk i modell-output).
+  // Inget .min(1): "ta bort alla kompetenser" måste gå att uttrycka i editorn
+  // (extraktionens min(1) vaktar degenererade MODELL-svar, inte människoval).
+  competencies: z
+    .array(
+      ConsultantExtractionSchema.shape.competencies.element.extend({
+        evidence: z.string().optional(),
+      }),
+    )
+    .optional(),
+  references: z
+    .array(
+      ConsultantExtractionSchema.shape.references.element.extend({
+        evidence: z.string().optional(),
+      }),
+    )
+    .optional(),
 });
 
 // --- Bid: POST /api/bids/[id]/shorten ---

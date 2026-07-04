@@ -7,6 +7,10 @@ interface Competency {
   id: string;
   competency: string;
   category: string;
+  // Verifierat CV-citat (migration 009). Passthrough-fält: osynligt i editorn
+  // (källa-badge är separat roadmap-punkt), men måste ridas med i PUT-payloaden
+  // så en redigering inte tappar det persisterade citatet. Rutten re-verifierar.
+  evidence?: string;
 }
 
 interface Reference {
@@ -15,6 +19,7 @@ interface Reference {
   description: string;
   year: number;
   sector: string;
+  evidence?: string;
 }
 
 interface ConsultantData {
@@ -64,15 +69,19 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
           level,
           summary,
           yearsExperience: consultant.years_experience,
+          // evidence rids med oförändrat (passthrough): oredigerade posters citat
+          // ska överleva round-trippen. Nya poster som saknar citat skickar undefined.
           competencies: consultant.consultant_competencies.map((c) => ({
             competency: c.competency,
             category: c.category,
+            evidence: c.evidence,
           })),
           references: consultant.consultant_references.map((r) => ({
             title: r.title,
             description: r.description,
             year: r.year,
             sector: r.sector,
+            evidence: r.evidence,
           })),
         }),
       });
