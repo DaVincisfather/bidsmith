@@ -86,7 +86,7 @@ describe("ConsultantProfile — källa-badge", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("legacy-grind: inga dots/chips när varken kompetens eller referens bär evidens", () => {
+  it("legacy-grind (extraction_version null): inga dots/chips när varken kompetens eller referens bär evidens", () => {
     render(
       <ConsultantProfile
         consultant={makeConsultant({
@@ -104,5 +104,29 @@ describe("ConsultantProfile — källa-badge", () => {
     expect(screen.queryByText(/obelagd/i)).not.toBeInTheDocument();
     // Kompetens-chippen renderas fortfarande som ren text (ingen knapp).
     expect(screen.queryByRole("button", { name: /Gammal kompetens/ })).not.toBeInTheDocument();
+  });
+
+  it("versions-diskriminator (migration 011): all-strippad post-feature-rad VISAR amber-flaggor i st.f. att dölja badges", () => {
+    render(
+      <ConsultantProfile
+        consultant={makeConsultant({
+          // Post-feature: extraction_version satt, men vakten strippade all evidens
+          // (degenererat underlag). Grinden är då alltid på ⇒ all-amber, inte gömt.
+          extraction_version: 1,
+          consultant_competencies: [
+            { id: "k1", competency: "Fabricerad", category: "technical" },
+          ],
+          consultant_references: [
+            { id: "r1", title: "Obelagt uppdrag", description: "Beskrivning", year: 2024, sector: "public" },
+          ],
+        })}
+      />,
+    );
+
+    // Kompetensen visar obelagd-dot (sr-only "(obelagd)"); referensen visar FlaggedPill ("obelagd").
+    expect(screen.getByText("(obelagd)")).toBeInTheDocument();
+    expect(screen.getByText("obelagd")).toBeInTheDocument();
+    // Fortfarande inte klickbar — inget citat att visa.
+    expect(screen.queryByRole("button", { name: /Fabricerad/ })).not.toBeInTheDocument();
   });
 });

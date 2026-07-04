@@ -9,6 +9,9 @@ interface ConsultantRow {
   level: string;
   years_experience: number | null;
   summary: string | null;
+  // Extraktions-generation (migration 011). non-null ⇒ dot-grinden alltid på (all-
+  // strippad rad visar amber-dots i st.f. att döljas). null/undefined ⇒ union-heuristik.
+  extraction_version?: number | null;
   // evidence: verifierat CV-citat (migration 009). Bär dot-badgen på list-chippen
   // (#59 gav dem bara på [id]-profilen — produktägaren "hittade ingen chip" i listan).
   consultant_competencies: Array<{
@@ -95,10 +98,12 @@ export function ConsultantList({ initialData }: ConsultantListProps) {
             </thead>
             <tbody className="divide-y divide-rule">
               {filtered.map((c) => {
-                // Legacy-grind per konsult över booleans (listan får inte citaten).
-                const listShowsBadges = c.consultant_competencies.some(
-                  (cc) => cc.hasEvidence,
-                );
+                // Versions-medveten legacy-grind per konsult över booleans (listan får
+                // inte citaten). Post-feature-rad (extraction_version non-null) → dots
+                // alltid; äkta legacy (null) → dots bara om någon kompetens är belagd.
+                const listShowsBadges =
+                  c.extraction_version != null ||
+                  c.consultant_competencies.some((cc) => cc.hasEvidence);
                 return (
                 <tr key={c.id} className="hover:bg-paper-2">
                   <td className="px-4 py-3">

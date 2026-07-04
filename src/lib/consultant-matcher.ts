@@ -97,7 +97,8 @@ export function formatConsultantsForPrompt(consultants: Consultant[]): string {
     .map(([level, cons]) => {
       const entries = cons.map((c) => {
         // Fas C: filtrera obelagda claims vid serialiserings-gränsen mot AI-input.
-        const { competencies, references } = groundedConsultantClaims(c);
+        // extractionVersion (migration 011): post-feature-rad → grinden alltid på.
+        const { competencies, references } = groundedConsultantClaims(c, c.extractionVersion);
         const comps = competencies.map((co) => co.competency).join(", ");
         const refs = references
           .map((r) => `${r.title} (${r.year}, ${r.sector})`)

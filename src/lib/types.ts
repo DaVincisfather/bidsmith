@@ -98,6 +98,12 @@ export interface Consultant {
   rawCvText: string | null;
   competencies: ConsultantCompetency[];
   references: ConsultantReference[];
+  // Extraktions-generation (migration 011). null = extraherad före evidens-featuren
+  // (äkta legacy); non-null = evidens-förankrade generationen → grundnings-grinden är
+  // ALLTID på för raden (all-strippad ≠ legacy). Se extraction-version.ts. Valfri i
+  // typen (additivt, bakåtkompat) — mapConsultantRow sätter den alltid (null vid legacy),
+  // äldre fixtures/anropare som utelämnar den behandlas som legacy (== null).
+  extractionVersion?: number | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -28,7 +28,8 @@ export function formatContext(ctx: BidContext): string {
       );
       // Fas C (policy A): en obelagd claim i anbudstexten är samma hallucinations-
       // väg in i leveransen — filtrera bort flaggade claims vid serialiserings-gränsen.
-      const { competencies, references } = groundedConsultantClaims(c);
+      // extractionVersion (migration 011): post-feature-rad → grinden alltid på.
+      const { competencies, references } = groundedConsultantClaims(c, c.extractionVersion);
       const comps = competencies.map((co) => co.competency).join(", ");
       const refs = references
         .map((r) => `${r.title} (${r.year}, ${r.sector})`)

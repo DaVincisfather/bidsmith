@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { hasAnyEvidence, badgeState } from "@/lib/evidence-badge";
+import { showEvidenceBadges, badgeState } from "@/lib/evidence-badge";
 import { KallaChip, FlaggedPill, TrustReceipt } from "@/components/kalla-chip";
 import { SourceViewer } from "@/components/source-viewer";
 
@@ -31,6 +31,9 @@ interface ConsultantData {
   level: string;
   years_experience: number | null;
   summary: string | null;
+  // Extraktions-generation (migration 011). Valfri för bakåtkompat i tester/anropare;
+  // non-null ⇒ badge-grinden är alltid på (all-strippad rad visar all-amber, döljs ej).
+  extraction_version?: number | null;
   consultant_competencies: Competency[];
   consultant_references: Reference[];
 }
@@ -66,13 +69,18 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
   // Källvyn hämtar hela raw_cv_text med citaten markerade (server-side, bakom klick).
   const sourceUrl = `/api/consultants/${consultant.id}/source-view`;
 
-  // Legacy-grind per konsult: bär varken kompetens eller referens evidens är profilen
-  // skapad före evidens-featuren — visa då inga dots/chips alls.
+  // Versions-medveten legacy-grind per konsult (migration 011): en post-feature-rad
+  // (extraction_version non-null) visar badges ALLTID — en all-strippad konsult får
+  // all-amber i st.f. att badges göms. Är versionen null gäller union-heuristiken:
+  // bär varken kompetens eller referens evidens (äkta legacy) döljs badge-lagret.
   const allEvidenceItems = [
     ...consultant.consultant_competencies,
     ...consultant.consultant_references,
   ];
-  const showBadges = hasAnyEvidence(allEvidenceItems);
+  const showBadges = showEvidenceBadges(
+    allEvidenceItems,
+    consultant.extraction_version,
+  );
 
   async function handleSave() {
     setSaving(true);
@@ -198,7 +206,7 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
       <section>
         <h2 className="text-lg font-display font-normal mb-3">Kompetenser</h2>
         {/* Trust-receipt: belagda påståenden (kompetenser + uppdrag) i CV-källan. */}
-        <TrustReceipt items={allEvidenceItems} />
+        <TrustReceipt items={allEvidenceItems} extractionVersion={consultant.extraction_version} />
         <div className="flex flex-wrap gap-2">
           {consultant.consultant_competencies.map((c) => {
             const state = badgeState(c.evidence, showBadges);
