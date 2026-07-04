@@ -1,27 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { groundedItems, groundedConsultantClaims } from "@/lib/grounded-claims";
+import { groundedConsultantClaims } from "@/lib/grounded-claims";
 
 type Item = { evidence?: string | null; name: string };
-
-describe("groundedItems", () => {
-  it("passes ALL items through for a legacy list (no post bears evidence)", () => {
-    const items: Item[] = [
-      { name: "a", evidence: null },
-      { name: "b" },
-      { name: "c", evidence: "" },
-    ];
-    expect(groundedItems(items).map((i) => i.name)).toEqual(["a", "b", "c"]);
-  });
-
-  it("drops flagged items when the list bears any evidence (post-feature)", () => {
-    const items: Item[] = [
-      { name: "grundad", evidence: "ordagrant citat" },
-      { name: "flaggad", evidence: null },
-      { name: "tom", evidence: "   " },
-    ];
-    expect(groundedItems(items).map((i) => i.name)).toEqual(["grundad"]);
-  });
-});
 
 describe("groundedConsultantClaims", () => {
   it("legacy consultant (no evidence anywhere): passes competencies + references through", () => {

@@ -145,6 +145,8 @@ _Inga just nu._
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
 - **UX: anbudsmallar går inte att RADERA** — bara aktivera; behöver delete-väg (+ storage-städning av mallfilen, samma mönster som CV-originalen) (Stefan 2026-07-04)
 - **UX: företagsprofilen** — flytta till arbetsytan + gör PÅVERKAN begriplig (hur mycket styr profilen anbudstexten? användaren måste förstå vikten av att fylla i den) (Stefan 2026-07-04)
+- Pre-fas-C-lagrade matchmotiveringar (`ScoredConsultant.reasoning` i DB) kan citera obelagda claims och flödar in i go/no-go + anbudskontext tills om-matchning — samma temporala residual, annan väg (routine #64)
+- `consultant.summary` är overifierad friyta in i alla tre AI-inputs — nästa naturliga yta för noll-hallucinationsspåret (routine #64)
 - Extraktions-versions-diskriminator: all-strippad post-feature-konsult (fel fil) är i datat identisk med legacy → grinden släpper igenom; en extraktions-timestamp/versionskolumn skiljer dem (fas C-residual, dokumenterad i grounded-claims.ts)
 - Statisk TOC-sidnumrering desyncar (hårdkodad; matris-paginering + tomma referenser förskjuter riktiga nummer)
 - `met`/JA-fältet vestigialt i matris-schemat (coverage = sanningskälla) — städbar

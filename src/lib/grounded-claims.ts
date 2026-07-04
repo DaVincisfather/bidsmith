@@ -14,15 +14,6 @@
 import { hasEvidence, hasAnyEvidence } from "./evidence-badge";
 
 /**
- * Poster som får nå AI-input. Legacy-grind över LISTAN: bär ingen post evidens
- * (för-feature) passerar alla; annars passerar bara belagda.
- */
-export function groundedItems<T extends { evidence?: string | null }>(items: T[]): T[] {
-  if (!hasAnyEvidence(items)) return items;
-  return items.filter((item) => hasEvidence(item.evidence));
-}
-
-/**
  * Per-konsult: applicera över kompetenser + referenser med GEMENSAM legacy-grind
  * (grind över UNIONEN av båda arrayerna — en konsult med evidens på kompetenser men
  * inte referenser är post-feature: referenser utan evidens är då flaggade och faller).
