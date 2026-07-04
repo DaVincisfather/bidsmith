@@ -149,9 +149,9 @@ describe("aggregate", () => {
     );
 
     expect(result.costByLabel).toEqual([
-      { label: "opportunity scoring", costUsd: 5 },
-      { label: "RFP analysis", costUsd: 3 },
-      { label: "Okänd typ", costUsd: 0.5 },
+      { label: "opportunity scoring", costUsd: 5, count: 1 },
+      { label: "RFP analysis", costUsd: 3, count: 2 },
+      { label: "Okänd typ", costUsd: 0.5, count: 1 },
     ]);
   });
 

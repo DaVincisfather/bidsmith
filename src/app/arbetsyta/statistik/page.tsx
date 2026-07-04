@@ -7,6 +7,7 @@ import {
   type StatsPeriod,
 } from "@/lib/stats";
 import { StatsTable } from "./StatsTable";
+import { CostBuckets } from "./CostBuckets";
 
 // Reads live workspace data (also implicitly dynamic via searchParams); be explicit.
 export const dynamic = "force-dynamic";
@@ -57,32 +58,9 @@ export default async function StatistikPage({
         <StatsTable perUser={stats.perUser} />
 
         <h2 className="mt-12 mb-4 text-lg font-display font-normal">
-          Kostnad per anrop-typ
+          Kostnad per kategori
         </h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-rule text-left text-ink-mute">
-              <th className="py-2 font-medium">Typ</th>
-              <th className="py-2 text-right font-medium">Kostnad</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.costByLabel.length === 0 ? (
-              <tr>
-                <td colSpan={2} className="py-4 text-ink-mute">
-                  Ingen data ännu.
-                </td>
-              </tr>
-            ) : (
-              stats.costByLabel.map((c) => (
-                <tr key={c.label} className="border-b border-rule">
-                  <td className="py-2">{c.label}</td>
-                  <td className="py-2 text-right">{formatUsd(c.costUsd)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <CostBuckets costByLabel={stats.costByLabel} />
       </div>
     </main>
   );

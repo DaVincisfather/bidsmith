@@ -56,6 +56,15 @@ _Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-h
       obelagda. Konsult-editorn (`consultant-profile.tsx`) rider med citatet i PUT-payloaden.
 - [x] **Kör migration 008** (`template_profiles`) — applicerad manuellt i Supabase 2026-07-03.
 
+- [x] **Kostnadsstatistik förenklad till tre kategorier.** Produktägar-feedback: den långa
+      per-etikett-listan i statistik-vyn var brus. Primär vy visar nu tre begripliga buckets
+      (Analys / Konsultmatchning / Anbudsgenerering) + Övrigt-restpost, med kostnad + antal
+      anrop per bucket och totalsumma. Per-etikett-listan finns kvar bakom en kollapsad
+      "Visa detaljer"-disclosure (`aria-expanded`, samma mönster som källa-chippen). Ren
+      total etikett→bucket-mappning i `src/lib/cost-buckets.ts` (prefix-regler; `:requote`
+      ärver förälderns bucket; okänt → Övrigt), enhets- + komponenttestad. UI:
+      `src/app/arbetsyta/statistik/CostBuckets.tsx`. Offline-testad, inga API-anrop.
+
 ### Nedprioriterat per pivot 2026-07-03 (matchningskvalitet före mall-UI; PPT-export kalibreras mot riktiga case senare)
 - [ ] **Slice 5b — token-injektion** (`instrumentTemplate`): NY kärnkomponent efter beslut
       2026-07-03 (design-doc TILLÄGG). Onboarding instrumenterar en kopia av kundens mall
