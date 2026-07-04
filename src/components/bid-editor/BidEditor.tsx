@@ -6,7 +6,7 @@ import { BidSection, StyleGuide } from "@/lib/types";
 import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
 import type { FieldBudgets, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { verifyFieldBudgets } from "@/lib/pptx-template/verify-budgets";
-import { BUNDLE_LABELS_SV, type FailedBundle } from "@/lib/bundle-labels";
+import { failedUnitLabel, type FailedUnit } from "@/lib/bundle-labels";
 import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./renderers";
 import { StructureEvalBadge } from "./StructureEvalBadge";
@@ -26,7 +26,7 @@ interface BidEditorProps {
   budgets: FieldBudgets;
   fieldSlides: Record<string, number>;
   initialOverflowFlags: OverflowFlag[];
-  initialFailedBundles: FailedBundle[];
+  initialFailedBundles: FailedUnit[];
   initialGenerationError: string | null;
 }
 
@@ -47,7 +47,7 @@ export function BidEditor({
   const [status, setStatus] = useState(initialStatus);
   const [structureEval, setStructureEval] = useState<StructureEvalSummary | null>(initialStructureEval);
   const [overflowFlags, setOverflowFlags] = useState<OverflowFlag[]>(initialOverflowFlags);
-  const [failedBundles, setFailedBundles] = useState<FailedBundle[]>(initialFailedBundles);
+  const [failedBundles, setFailedBundles] = useState<FailedUnit[]>(initialFailedBundles);
   const [generationError, setGenerationError] = useState<string | null>(initialGenerationError);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
   const [shorteningKey, setShorteningKey] = useState<string | null>(null);
@@ -296,7 +296,7 @@ export function BidEditor({
             <div className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               {failedBundles.length === 1 ? "En sektion" : `${failedBundles.length} sektioner`} kunde
               inte genereras:{" "}
-              {failedBundles.map((f) => BUNDLE_LABELS_SV[f.bundle] ?? f.bundle).join(", ")}.
+              {failedBundles.map(failedUnitLabel).join(", ")}.
               Utkastet är ofullständigt.
             </div>
           )}

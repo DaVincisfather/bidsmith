@@ -8,13 +8,19 @@ vi.mock("@/lib/bid-generator", () => ({
   BID_BUNDLE_COUNT: 6,
 }));
 
+// No stored profile → the type-driven bundle path (these tests). The all-generic
+// profile routing lives in run-bid-generation-routing.test.ts.
+vi.mock("@/lib/pptx-template/profile-store", () => ({
+  loadTemplateProfile: vi.fn(async () => null),
+}));
+
 import { generateAllSections } from "@/lib/bid-generator";
 import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import { runBidGeneration } from "../run-bid-generation";
 
 // generateAllSections is mocked, so runBidGeneration never reads the manifest —
-// a stub that satisfies the { manifest } shape is enough.
-const template = { manifest: {} as unknown as TemplateManifest };
+// a stub that satisfies the { id, manifest } shape is enough.
+const template = { id: "tpl-ours", manifest: {} as unknown as TemplateManifest };
 
 const baseAnalysis: RfpAnalysis = {
   title: "t", client: "c", deadline: null, summary: "s",

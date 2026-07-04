@@ -55,6 +55,18 @@ describe("buildGenericProseMap", () => {
     expect(buildGenericProseMap(ctx, slide)).toEqual({});
   });
 
+  it("blanks a skip-slot to \"\" so no raw {token} exports (routine #68)", () => {
+    const withSkip: SlideProfile = {
+      source: 3,
+      slots: [
+        { placeholder: "{A}", capability: "generic-prose", format: "prose", intent: "", status: "generic" },
+        { placeholder: "{Hoppa}", capability: "generic-prose", format: "prose", intent: "", status: "skip" },
+      ],
+    };
+    const ctx = ctxWith([proseSection("{A}", "text A")]);
+    expect(buildGenericProseMap(ctx, withSkip)).toEqual({ "{A}": "text A", "{Hoppa}": "" });
+  });
+
   it("ignores slots whose capability is not generic-prose", () => {
     const mixed: SlideProfile = {
       source: 2,

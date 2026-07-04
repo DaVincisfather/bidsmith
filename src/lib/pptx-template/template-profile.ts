@@ -94,3 +94,20 @@ export type TemplateProfile = z.infer<typeof TemplateProfileSchema>;
 export function parseTemplateProfile(raw: unknown): TemplateProfile {
   return TemplateProfileSchema.parse(raw);
 }
+
+/**
+ * Routing discriminator: true when EVERY slide's capability is generic-prose or
+ * static — the signature of a FOREIGN template onboarded via the proposal layer,
+ * which deliberately maps every slot to generic-prose fill (see
+ * onboarding/propose-injection-plan.ts). OUR own template's derived profile
+ * carries specialised slide capabilities (cover/understanding/…), so it returns
+ * false. This is the seam that sends a foreign template down the profile-driven
+ * generation + render path (its near-empty manifest can't drive the type path),
+ * while OUR template keeps the type-driven bundle path. A slide with no
+ * capability set returns false (routes to the type path — the safe default).
+ */
+export function isAllGenericProfile(profile: TemplateProfile): boolean {
+  return profile.slides.every(
+    (s) => s.capability === "generic-prose" || s.capability === "static",
+  );
+}

@@ -121,11 +121,24 @@ _Senast uppdaterad: 2026-07-04 — extraktions-versions-diskriminator (migration
       förslags-lagret (`onboarding/propose-injection-plan.ts` — kandidat-slots ur
       shape-text/geometri → auto-klass → utkast-profil) byggda & enhetstestade. Kvar:
       generic-prose-inkoppling + slice 5-UI som konsumerar planen.
-- [ ] **generic-prose-inkoppling** i genereringen för profil-drivna mallar (VVS:en som får
-      främmande mallar att generera). Modellbytet är GJORT: `writingGeneric` = Sonnet 5
-      (beslut 2026-07-03, ingen eval — ögonkoll på outputs i 5-UI-testningen istället).
-- [ ] **Slice 5-UI** — onboarding-flöde (upload → slot-förslag → intervju → injicera →
-      redigerbar profil), med Stefans design-riktning. Egen PR.
+- [x] **generic-prose-inkoppling** i genereringen för profil-drivna mallar (VVS:en som får
+      främmande mallar att generera) — SHIPPAD (offline-testad, inga API-anrop).
+      `generateSectionsFromProfile` (`src/lib/bid-generator/generate-from-profile.ts`): en
+      betald `buildGenericProseSection` per generic-prose-slot (status≠skip), CHUNKAD
+      samtidighet (4) + `Promise.allSettled` (partiella lyckade behålls, `failedSections`).
+      Routing via diskriminatorn `isAllGenericProfile` (`template-profile.ts`): en mall med
+      lagrad all-generic-profil kör profil-vägen för BÅDE generering (`run-bid-generation.ts`)
+      och rendering (`export/route.ts` → `renderFromProfile`), oberoende av
+      `BIDSMITH_PROFILE_RENDER` (flaggan gäller fortsatt bara VÅR malls paritetsväg). VÅR mall
+      (ingen lagrad profil / blandade kapabiliteter) = oförändrad bundle+typ-driven väg.
+      #49-fix: flagg-vägen i `loader.ts` laddar nu den PERSISTERADE profilen (loadTemplateProfile)
+      istället för att härleda per render. Modellbytet var redan gjort: `writingGeneric` = Sonnet 5.
+      KVAR för hela mall-spåret: onboarding-wizard (se nedan).
+- [ ] **Slice 5-UI — onboarding-wizard (SISTA biten i mall-spåret).** Vald riktning: GUIDAD
+      wizard (upload → slot-förslag → intervju → injicera `{tokens}` → redigerbar profil), med
+      Stefans design-riktning. Egen PR. Med generic-prose-inkopplingen ovan genererar och
+      renderar en onboardad främmande mall redan end-to-end; wizarden är UI:t som producerar
+      profilen den vägen konsumerar.
 
 ## Mall-uppladdning (godtyckliga bolagsmallar) — aktiv feature
 Design-doc: `notes/2026-07-02-template-upload-architecture.md` (A+C-combo, B inkrementellt).
@@ -133,10 +146,10 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 - [x] Slice 1 — mall-profil-schema + migration 008 (#42, merged)
 - [x] Slice 2 — `manifestToProfile`: manifest → capability-klassificering (#44, merged)
 - [x] Slice 3 — profil-driven renderare bakom `BIDSMITH_PROFILE_RENDER`, golden-bitparitet grön
-- [~] Slice 4 — `generic-prose`-bundle + prose/field-applikator byggda & enhetstestade (isolerade); pipeline-inkoppling flyttad till slice 5
+- [x] Slice 4 — `generic-prose`-bundle + prose/field-applikator; pipeline-inkoppling levererad i slice 5b
 - [~] Slice 5a — profil-persistens (`profile-store.ts`) + upload deriverar & sparar startprofil
-- [ ] Slice 5b — auto-klassificering + generic-prose-inkoppling (Sonnet 5)
-- [ ] Slice 5-UI — onboarding-flöde (introspektion + intervju + redigerbar profil)
+- [x] Slice 5b — auto-klassificering (`propose-injection-plan`) + generic-prose-inkoppling (`generateSectionsFromProfile` + all-generic-routing, Sonnet 5)
+- [ ] Slice 5-UI — onboarding-wizard (introspektion + intervju + redigerbar profil) — SISTA biten
 - [ ] Slice 6 — B inkrementellt: bullets, sedan godtyckliga table-rows
 
 ## Öppna PR:er (väntar review)
@@ -160,7 +173,7 @@ _Inga just nu._
 - T15 manuell smoke + runtime hallucination/coverage-kalibrering (kräver riktig RFP-data / Ekan-adoption)
 - Profil-schema vs renderare: `SlideProfile.capability` är optional ("a slide may mix capabilities") men `applicatorForCapability` dispatchar bara på slide-nivå och kastar på undefined — per-slot-dispatch eller skärpt schema krävs innan främmande profiler renderas (Fable-review 2026-07-03)
 - generic-prose saknar budget-enforcement vid rendering — soft-cap mot `slot.budgetChars` i generic-prose-applikatorn (jfr `_soft-cap.ts`) innan främmande mallar fylls på riktigt
-- Flagg-vägen i `loader.ts` deriverar profilen ur manifestet per render i st.f. `loadTemplateProfile` — en REDIGERAD profil påverkar inte rendering förrän det byts (routine-follow-up #49)
+- [x] ~~Flagg-vägen i `loader.ts` deriverar profilen ur manifestet per render i st.f. `loadTemplateProfile`~~ — LÖST: flagg-vägen laddar nu den persisterade profilen (fallback till manifest-härledd för bundlade mallen utan rad) (routine-follow-up #49)
 - [x] **Manuell PowerPoint-smoke:** GENOMFÖRD 2026-07-03 — riktig anbudsmall-v2 instrumenterad, öppnad i PowerPoint via COM utan reparation, slide exporterad + visuellt verifierad (token med ärvd formatering). instrumentTemplate är verifierad mot syntetisk mini-pptx; xmldoms serialisering (ns-redeklarationer, attributordning) är obeprövad mot riktiga kundmallar + att PowerPoint faktiskt öppnar den instrumenterade kopian (routine-follow-up #51)
 - budgetChars för främmande slots: förslags-lagret lämnar budget osatt — koppla compute-budgets geometri→tecken-matten till ProposedSlot innan generic-prose-fyllning av riktiga kundmallar (annars ingen längdstyrning)
 - Re-onboarding av delvis instrumenterad mall: förslags-lagret inkluderar token-bärande slides som static-passthrough (försvinner inte ur rendern) men deras BEFINTLIGA tokens fylls inte — kräver profil-merge mot tidigare sparad profil (routine-follow-up #52)

@@ -44,6 +44,13 @@ export function buildGenericProseMap(
 ): Record<string, string> {
   const map: Record<string, string> = {};
   for (const slot of slide.slots) {
+    if (slot.status === "skip") {
+      // Användaren valde att lämna sloten tom — ersätt platshållaren med "" så
+      // inget rått {token} läcker ut i det exporterade anbudet (routine-fynd #68;
+      // export-vägran triggas inte för skip-slots eftersom inget failade).
+      map[slot.placeholder] = "";
+      continue;
+    }
     if (slot.capability !== "generic-prose") continue;
     const sec = ctx.sections.find(
       (s) =>
