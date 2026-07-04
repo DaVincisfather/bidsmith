@@ -127,6 +127,9 @@ describe("runBidGeneration routing", () => {
     const final = updates[updates.length - 1];
     expect(final.status).toBe("draft");
     expect(final.sections).toHaveLength(1);
+    // Struktur-juryn (v2-facit) hoppas på profil-vägen — foreign mall får inte
+    // rött struktur-badge mot en irrelevant mall (routine-fynd #68).
+    expect(final.structure_eval).toBeNull();
   });
 
   it("routes a mixed-capability stored profile to the bundle path", async () => {

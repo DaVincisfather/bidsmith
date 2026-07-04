@@ -52,6 +52,12 @@ export async function runBidGeneration(
   // path and the export route's "has failed sections → refuse" check.
   let failedUnits: (FailedBundle | FailedSection)[];
   let totalWipeout: boolean;
+  // Strukturjuryn (buildStructureEvalSummary) mäter mot VÅR v2-malls 11
+  // obligatoriska format — meningslöst för en främmande mall vars sektioner alla
+  // är generic-prose. Utan denna grind skulle varje foreign-bid få rött
+  // struktur-badge även när den är perfekt (routine-fynd #68). Per-mall-facit är
+  // en egen backlog-post; här persisteras structure_eval null = "ej utvärderad".
+  let onProfilePath = false;
   try {
     // A stored all-generic profile means this is a FOREIGN template: its manifest
     // is near-empty (upload introspection excludes unrecognised slides), so the
@@ -59,6 +65,7 @@ export async function runBidGeneration(
     // template has no stored profile → the type-driven bundle path, unchanged.
     const storedProfile = await loadTemplateProfile(template.id);
     if (storedProfile && isAllGenericProfile(storedProfile)) {
+      onProfilePath = true;
       const result = await generateSectionsFromProfile(storedProfile, ctx, persistSection);
       sections = result.sections;
       overflowFlags = [];
@@ -101,14 +108,17 @@ export async function runBidGeneration(
   }
 
   // Eval failure must never block the bid save — sections took 2-5 min to
-  // generate and we'd rather show "ej utvärderad" than lose them.
+  // generate and we'd rather show "ej utvärderad" than lose them. Skippas helt på
+  // profil-vägen (foreign mall → v2-facit gäller inte, se ovan).
   let structureEval: ReturnType<typeof buildStructureEvalSummary> | null = null;
-  try {
-    structureEval = buildStructureEvalSummary(
-      judgeBidStructure(sections, RUNTIME_MANDATORY_SECTIONS),
-    );
-  } catch (err) {
-    console.error("structure-judge failed (sections still saved):", err);
+  if (!onProfilePath) {
+    try {
+      structureEval = buildStructureEvalSummary(
+        judgeBidStructure(sections, RUNTIME_MANDATORY_SECTIONS),
+      );
+    } catch (err) {
+      console.error("structure-judge failed (sections still saved):", err);
+    }
   }
 
   // Guarded on status: if the stale-generating watchdog already marked this
