@@ -74,6 +74,7 @@ export default async function AnalysisPage({ params }: PageProps) {
         <AnalysisResult
           analysis={data.analysis as RfpAnalysis}
           fileName={document.file_name}
+          analysisId={id}
         />
         {/* #team anchor — the bid editor's "Ändra team" link scrolls here. */}
         <div id="team" className="scroll-mt-6">

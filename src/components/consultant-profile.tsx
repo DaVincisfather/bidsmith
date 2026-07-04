@@ -62,6 +62,9 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
   const [openComp, setOpenComp] = useState<number | null>(null);
   const router = useRouter();
 
+  // Källa-chippen hämtar citatets sammanhang ur konsultens raw_cv_text (server-side).
+  const contextUrl = `/api/consultants/${consultant.id}/evidence-context`;
+
   // Legacy-grind per konsult: bär varken kompetens eller referens evidens är profilen
   // skapad före evidens-featuren — visa då inga dots/chips alls.
   const showBadges = hasAnyEvidence([
@@ -256,7 +259,10 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
           })}
         </div>
         {openComp !== null && consultant.consultant_competencies[openComp]?.evidence && (
-          <SourceQuote quote={consultant.consultant_competencies[openComp]!.evidence!} />
+          <SourceQuote
+            quote={consultant.consultant_competencies[openComp]!.evidence!}
+            contextUrl={contextUrl}
+          />
         )}
       </section>
 
@@ -278,7 +284,7 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
               <p className="text-sm text-ink-soft">{r.description}</p>
               {badgeState(r.evidence, showBadges) === "kalla" && (
                 <div className="mt-1.5">
-                  <KallaChip quote={r.evidence!} label={r.title} />
+                  <KallaChip quote={r.evidence!} label={r.title} contextUrl={contextUrl} />
                 </div>
               )}
               {badgeState(r.evidence, showBadges) === "flagged" && (
