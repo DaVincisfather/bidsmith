@@ -1,4 +1,7 @@
-// Mekanisk evidens-verifierare för noll-hallucinationsloopen.
+// Mekanisk evidens-verifierare. DUBBEL ROLL:
+//   1. PRODUKTKOD (runtime): analyzeRfp:s evidensvakt kör den på varje extraktion
+//      för att garantera att inget overifierat citat når en analys.
+//   2. EVAL-TOOLING: noll-hallucinationsloopen mäter POST-vakt-kvalitet med den.
 //
 // Kärnidé: extraktionen tvingar varje krav att bära ett ORDAGRANT källcitat
 // (RfpRequirementSchema.evidence, min(1)). Här sträng-matchar vi citatet mot
@@ -13,6 +16,9 @@
 
 export interface EvidenceMiss {
   fixtureId: string;
+  /** Position i requirements-arrayen som skickades in — låter anroparen (t.ex.
+   *  runtime-vakten) adressera kravet direkt utan att om-verifiera per krav. */
+  index: number;
   requirementText: string;
   /** Modellens citat. undefined = modellen utelämnade fältet helt. */
   evidence: string | undefined;
@@ -79,7 +85,8 @@ export function verifyEvidence(
   const normalizedSource = normalizeForEvidence(sourceText);
   const misses: EvidenceMiss[] = [];
 
-  for (const req of requirements) {
+  for (let index = 0; index < requirements.length; index++) {
+    const req = requirements[index];
     const requirementText = req.category
       ? `${req.category}: ${req.description}`
       : req.description;
@@ -89,6 +96,7 @@ export function verifyEvidence(
     if (req.evidence === undefined || req.evidence.trim() === "") {
       misses.push({
         fixtureId,
+        index,
         requirementText,
         evidence: req.evidence,
         reason: "missing",
@@ -99,6 +107,7 @@ export function verifyEvidence(
     if (!evidenceFoundIn(normalizedSource, normalizeForEvidence(req.evidence))) {
       misses.push({
         fixtureId,
+        index,
         requirementText,
         evidence: req.evidence,
         reason: "not-found",

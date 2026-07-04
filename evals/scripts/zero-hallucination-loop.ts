@@ -18,7 +18,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { analyzerConfig } from "../harness/configs/analyzer";
 import { AnalyzerFixtureSchema, type AnalyzerFixture } from "../harness/core/fixtures";
 import { loadFixtureFromString } from "../harness/core/fixture-loader";
-import { verifyEvidence, type EvidenceMiss } from "../harness/core/verify-evidence";
+import { verifyEvidence, type EvidenceMiss } from "@/lib/verify-evidence";
 
 // Distinkt etikett så loopens kostnad kan summeras isolerat i ai_call_logs.
 const LOOP_LABEL = "eval:zero-halluc";
