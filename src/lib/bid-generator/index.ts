@@ -19,7 +19,7 @@ const GLOBAL_RETRY_CAP = 5;
 
 // Stable identifiers matching the order bundles are dispatched below.
 // References are deliberately NOT an AI bundle — see deterministic/reference.ts.
-const BUNDLE_LABELS = [
+export const BUNDLE_LABELS = [
   "understanding",
   "phases",
   "quality",
