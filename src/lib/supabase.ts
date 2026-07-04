@@ -146,6 +146,9 @@ export async function upsertConsultant(
         consultant_id: consultantId,
         competency: c.competency,
         category: c.category,
+        // Vaktens verifierade källcitat (migration 009). null = flaggad/obelagd —
+        // källa-badgen och fas C:s matchnings-policy läser detta.
+        evidence: c.evidence ?? null,
       })),
     );
     if (error) throw new Error(error.message);
@@ -158,6 +161,8 @@ export async function upsertConsultant(
         description: r.description,
         year: r.year,
         sector: r.sector,
+        // Se kompetens-kommentaren ovan (migration 009).
+        evidence: r.evidence ?? null,
       })),
     );
     if (error) throw new Error(error.message);
