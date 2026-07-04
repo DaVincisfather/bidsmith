@@ -143,11 +143,10 @@ export async function analyzeRfp(
   const misses = verifyEvidence("runtime", rfpText, analysis.requirements);
   if (misses.length === 0) return analysis;
 
-  // Indexen för de krav som missade. Härleds via verifyEvidence på singleton så
-  // "är detta ett miss?" har EN sanningskälla (ingen duplicerad matchningslogik).
-  const missedIndices = analysis.requirements
-    .map((_req, i) => i)
-    .filter((i) => verifyEvidence("runtime", rfpText, [analysis.requirements[i]]).length > 0);
+  // Indexen kommer direkt ur missarna — ingen om-verifiering per krav (varje
+  // singleton-anrop normaliserade annars om HELA underlaget, n+1 svep över ett
+  // 200k-dokument; routine-fynd #55).
+  const missedIndices = misses.map((m) => m.index);
 
   try {
     // ETT batchat re-citat-anrop, aldrig per krav: dokumentet dominerar
@@ -193,11 +192,16 @@ export async function analyzeRfp(
         analysis.requirements[idx].evidence = undefined;
       }
     }
-  } catch {
+  } catch (err) {
     // Vakten får ALDRIG fälla användarens analys. Ett trasigt re-citat-anrop
     // (nätverk, format-fel, budgettak) är en DEGRADERING av vakten, inte ett
     // analysfel: strippa citaten från de omverifierade kraven (inget overifierat
-    // citat passerar) och returnera analysen med alla krav intakta.
+    // citat passerar) och returnera analysen med alla krav intakta. Varningen
+    // gör en SYSTEMATISK degradering skiljbar från förväntad residual i loggarna
+    // (routine-fynd #55).
+    console.warn(
+      `[rfp-analyzer] re-citat-anropet föll (${label}): ${err instanceof Error ? err.message : String(err)} — ${missedIndices.length} krav flaggas utan reparationsförsök`,
+    );
     for (const idx of missedIndices) analysis.requirements[idx].evidence = undefined;
   }
 
