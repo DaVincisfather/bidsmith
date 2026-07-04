@@ -22,22 +22,28 @@ interface UploadResult {
   warning: string | null;
 }
 
+// contentType härleds ur den WHITELISTADE extensionen — inte klientens file.type,
+// som är opålitlig/spoofbar (routine-polish #63).
+const CONTENT_TYPES: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".doc": "application/msword",
+  ".md": "text/markdown",
+  ".txt": "text/plain",
+};
+
 /**
- * Bygger storage-nyckeln för originalfilen: `${consultantId}/${slug}.${ext}`.
- * Slugar filnamnet exakt som mall-uploaden (gemener, åäö behålls, allt annat → "-")
- * och behåller den ursprungliga (whitelistade) extensionen. Returnerar null om
- * extensionen inte är parserns stödda uppsättning — då hoppas fil-uploaden över.
+ * Bygger storage-nyckeln för originalfilen: FAST nyckel `${consultantId}/cv${ext}`
+ * (routine-fynd #63: filnamnsbaserad nyckel orfanade gamla originalet vid
+ * om-uppladdning med nytt namn, och felvägen kunde lämna cv_file_path pekande på
+ * förra versionens fil). Fast nyckel + upsert:true = om-uppladdning skriver över;
+ * endast extension-BYTE lämnar en gammal fil — den städas explicit av anroparen.
+ * Returnerar null om extensionen inte är parserns stödda uppsättning.
  */
 function buildCvKey(consultantId: string, fileName: string): string | null {
   const ext = getExtension(fileName); // t.ex. ".pdf" (gemen)
   if (!SUPPORTED_EXTENSIONS.includes(ext)) return null;
-  const base = fileName.slice(0, fileName.length - ext.length);
-  const slug =
-    base
-      .toLowerCase()
-      .replace(/[^a-z0-9åäö]+/g, "-")
-      .replace(/(^-|-$)/g, "") || "cv";
-  return `${consultantId}/${slug}${ext}`;
+  return `${consultantId}/cv${ext}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -81,11 +87,20 @@ export async function POST(request: NextRequest) {
         const cvKey = buildCvKey(consultantId, file.name);
         if (cvKey) {
           try {
+            // Extensionsbyte (cv.pdf → cv.docx): hämta ev. gammal nyckel så den
+            // kan städas efter lyckad skrivning — ingen PII-orfan i bucketen.
+            const { data: prevRow } = await supabase
+              .from("consultants")
+              .select("cv_file_path")
+              .eq("id", consultantId)
+              .single();
+            const prevKey = (prevRow?.cv_file_path as string | null) ?? null;
+
             const { error: upErr } = await supabase.storage
               .from(CV_BUCKET)
               .upload(cvKey, buffer, {
                 upsert: true,
-                contentType: file.type || undefined,
+                contentType: CONTENT_TYPES[getExtension(file.name)],
               });
             if (upErr) throw new Error(upErr.message);
 
@@ -94,6 +109,16 @@ export async function POST(request: NextRequest) {
               .update({ cv_file_path: cvKey })
               .eq("id", consultantId);
             if (updErr) throw new Error(updErr.message);
+
+            // Städa förra originalet vid extensionsbyte (efter lyckad skrivning +
+            // raduppdatering). Icke-fatalt — en kvarlämnad fil är sämre än inget
+            // men får inte fälla uploaden.
+            if (prevKey && prevKey !== cvKey) {
+              const { error: rmErr } = await supabase.storage
+                .from(CV_BUCKET)
+                .remove([prevKey]);
+              if (rmErr) console.warn(`kunde inte städa gammalt CV-original ${prevKey}: ${rmErr.message}`);
+            }
           } catch (err) {
             warning = `originalfilen kunde inte sparas (extraktionen är sparad): ${err instanceof Error ? err.message : String(err)}`;
             console.warn(`CV-original för ${file.name}:`, warning);

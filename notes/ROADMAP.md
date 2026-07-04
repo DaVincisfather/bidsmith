@@ -143,6 +143,8 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga just nu._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **UX: anbudsmallar går inte att RADERA** — bara aktivera; behöver delete-väg (+ storage-städning av mallfilen, samma mönster som CV-originalen) (Stefan 2026-07-04)
+- **UX: företagsprofilen** — flytta till arbetsytan + gör PÅVERKAN begriplig (hur mycket styr profilen anbudstexten? användaren måste förstå vikten av att fylla i den) (Stefan 2026-07-04)
 - Statisk TOC-sidnumrering desyncar (hårdkodad; matris-paginering + tomma referenser förskjuter riktiga nummer)
 - `met`/JA-fältet vestigialt i matris-schemat (coverage = sanningskälla) — städbar
 - ai-client detekterar inte `stop_reason: "max_tokens"` → alla bundles re-trunkerar identiskt (bredare härdning)

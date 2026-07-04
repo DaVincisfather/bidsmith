@@ -4,15 +4,24 @@ import type { NextRequest } from "next/server";
 // --- Hoisted mocks (referenced inside vi.mock factories, which are hoisted) ---
 const h = vi.hoisted(() => {
   const uploadMock = vi.fn();
+  const removeMock = vi.fn(() => Promise.resolve({ error: null }));
   const updateEqMock = vi.fn();
   const updateMock = vi.fn(() => ({ eq: updateEqMock }));
-  const tableFromMock = vi.fn(() => ({ update: updateMock }));
-  const storageFromMock = vi.fn(() => ({ upload: uploadMock }));
+  // prev-nyckel-uppslaget (fast nyckel + städning vid extensionsbyte, routine #63):
+  // .select("cv_file_path").eq().single() → default ingen tidigare fil.
+  const prevSingleMock = vi.fn(() =>
+    Promise.resolve({ data: { cv_file_path: null }, error: null }),
+  );
+  const selectMock = vi.fn(() => ({ eq: () => ({ single: prevSingleMock }) }));
+  const tableFromMock = vi.fn(() => ({ update: updateMock, select: selectMock }));
+  const storageFromMock = vi.fn(() => ({ upload: uploadMock, remove: removeMock }));
   const upsertConsultantMock = vi.fn();
   const parseDocumentMock = vi.fn();
   const extractConsultantMock = vi.fn();
   return {
     uploadMock,
+    removeMock,
+    prevSingleMock,
     updateEqMock,
     updateMock,
     tableFromMock,
@@ -90,12 +99,12 @@ describe("POST /api/consultants/upload — original CV persistence", () => {
     expect(h.storageFromMock).toHaveBeenCalledWith("consultant-cvs");
     expect(h.uploadMock).toHaveBeenCalledTimes(1);
     const [key, , opts] = h.uploadMock.mock.calls[0];
-    expect(key).toBe("c-1/anna-svensson-cv.pdf");
+    expect(key).toBe("c-1/cv.pdf"); // FAST nyckel (routine #63): om-uppladdning skriver över, ingen orfan
     expect(opts).toMatchObject({ upsert: true, contentType: "application/pdf" });
 
     // Raden uppdateras med exakt samma nyckel.
     expect(h.tableFromMock).toHaveBeenCalledWith("consultants");
-    expect(h.updateMock).toHaveBeenCalledWith({ cv_file_path: "c-1/anna-svensson-cv.pdf" });
+    expect(h.updateMock).toHaveBeenCalledWith({ cv_file_path: "c-1/cv.pdf" });
     expect(h.updateEqMock).toHaveBeenCalledWith("id", "c-1");
   });
 
@@ -106,7 +115,9 @@ describe("POST /api/consultants/upload — original CV persistence", () => {
     await res.json();
 
     const [key] = h.uploadMock.mock.calls[0];
-    expect(key).toBe("c-1/öäå-ninja-cv-höst-2024.pdf");
+    // Basnamnet används inte alls längre (fast nyckel) — illvilliga sökvägar i
+    // filnamnet kan aldrig nå nyckeln; extensionen förblir whitelistad/gemen.
+    expect(key).toBe("c-1/cv.pdf");
     // Ingen sökvägs-traversal kvar i nyckeln.
     expect(key).not.toContain("..");
     expect(key.split("/").length).toBe(2); // enbart consultantId/-prefixet
