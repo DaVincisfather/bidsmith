@@ -115,7 +115,7 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
                   {req.description}
                 </p>{" "}
                 {badgeState(req.evidence, showBadges) === "kalla" && (
-                  <KallaChip quote={req.evidence!} />
+                  <KallaChip quote={req.evidence!} label={req.description.slice(0, 60)} />
                 )}
                 {badgeState(req.evidence, showBadges) === "flagged" && <FlaggedPill />}
               </div>

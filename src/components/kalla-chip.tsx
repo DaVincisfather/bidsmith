@@ -24,7 +24,7 @@ export function SourceQuote({ quote }: { quote: string }) {
  * påståendet. Egen useState — varje chip togglar oberoende (krav-rader, referenser).
  * <button> med aria-expanded, inte div onClick, för tangentbord/skärmläsare.
  */
-export function KallaChip({ quote }: { quote: string }) {
+export function KallaChip({ quote, label }: { quote: string; label?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -32,6 +32,9 @@ export function KallaChip({ quote }: { quote: string }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
+        // Unikt accessible name per chip — annars blir alla "källa" i
+        // skärmläsarens elementlista omöjliga att skilja (routine-fynd #59).
+        aria-label={label ? `källa: ${label}` : undefined}
         className="inline-flex items-center gap-0.5 align-middle rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent-ink transition hover:brightness-95"
       >
         källa <span aria-hidden="true">{open ? "▾" : "▸"}</span>
@@ -47,7 +50,9 @@ export function KallaChip({ quote }: { quote: string }) {
  */
 export function FlaggedPill() {
   return (
-    <span className="inline-flex items-center gap-1 align-middle rounded-full bg-flag-soft px-2 py-0.5 text-[11px] font-medium text-flag">
+    // text-flag-ink, inte text-flag: 11px-text på flag-soft kräver AA-kontrast
+    // (4.5:1) — dot-färgen --flag räcker inte som textfärg (routine-fynd #59).
+    <span className="inline-flex items-center gap-1 align-middle rounded-full bg-flag-soft px-2 py-0.5 text-[11px] font-medium text-flag-ink">
       <span aria-hidden="true">&#9888;</span> obelagd
     </span>
   );

@@ -214,12 +214,19 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
                 </span>
               );
             }
-            // Dot före namnet: burgundy = belagd, amber = flaggad.
+            // Dot före namnet: burgundy = belagd, amber = flaggad. Färgen är
+            // aria-hidden — sr-only-texten bär distinktionen för skärmläsare
+            // och färgblinda (WCAG 1.4.1, routine-fynd #59).
             const dot = (
-              <span
-                aria-hidden="true"
-                className={`inline-block h-1.5 w-1.5 rounded-full ${state === "kalla" ? "bg-accent" : "bg-flag"}`}
-              />
+              <>
+                <span
+                  aria-hidden="true"
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${state === "kalla" ? "bg-accent" : "bg-flag"}`}
+                />
+                <span className="sr-only">
+                  {state === "kalla" ? "(belagd i CV)" : "(obelagd)"}
+                </span>
+              </>
             );
             // Flaggad kompetens: dot men inte klickbar — inget citat att visa.
             if (state === "flagged") {
@@ -271,7 +278,7 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
               <p className="text-sm text-ink-soft">{r.description}</p>
               {badgeState(r.evidence, showBadges) === "kalla" && (
                 <div className="mt-1.5">
-                  <KallaChip quote={r.evidence!} />
+                  <KallaChip quote={r.evidence!} label={r.title} />
                 </div>
               )}
               {badgeState(r.evidence, showBadges) === "flagged" && (
