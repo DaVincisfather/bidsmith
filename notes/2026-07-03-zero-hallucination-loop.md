@@ -192,19 +192,32 @@ som bär `evidence` för både kompetenser och referenser, och mappas av
 selectar direkt; go/no-go och bid går via `fetchConsultantsByIds` → samma select.
 **Ingen väg saknar evidens** ⇒ legacy-grinden avaktiveras aldrig av tappat fält.
 
-### Ärlig kvarvarande residual (all-stripped ≈ legacy)
+### Residual STÄNGD för nya rader — extraktions-versions-diskriminator (migration 011, 2026-07-04)
 
-En konsult vars extraktion kördes POST-feature men där ALLA poster strippades är i
-datat **oskiljbar** från en äkta legacy-konsult (ingen evidens någonstans ⇒ unionen
-ser inget ⇒ grinden släpper igenom allt, inkl. den fabricerade-men-flaggade posten).
-Det degenererade fallet (fel fil uppladdad som CV; `competencies.min(1)` tvingar
-fram en fabricerad post som vakten sedan strippar) är exakt detta — även flaggat av
-routine på #56. Mitigeringen idag är **temporal** (nya uppladdningar är post-feature)
-och **visuell** (all-amber i UI:t via samma legacy-grind döljer badges — inget falskt
-förtroende signaleras). Den rätta fixen är en **framtida diskriminator**
-(extraktions-timestamp/versionskolumn) som skiljer "kördes post-feature men allt
-strippat" från "för-feature". Lagd som ROADMAP-backlog, byggs INTE nu (kräver
-migration + backfill-beslut och rör inte den vanliga vägen).
+**Tidigare residual:** en konsult vars extraktion kördes POST-feature men där ALLA
+poster strippades var i datat **oskiljbar** från en äkta legacy-konsult (ingen evidens
+någonstans ⇒ unionen ser inget ⇒ grinden släppte igenom allt, inkl. den fabricerade-
+men-flaggade posten). Det degenererade fallet (fel fil uppladdad som CV;
+`competencies.min(1)` tvingar fram en fabricerad post som vakten sedan strippar) är
+exakt detta — även flaggat av routine på #56.
+
+**Fixen (levererad):** `consultants.extraction_version` (migration 011, nullable). NULL =
+extraherad före kolumnen (äkta legacy). `1` = evidens-förankrade generationen. Konstanten
+`EXTRACTION_VERSION = 1` bor i `src/lib/extraction-version.ts`; `upsertConsultant` stämplar
+den på insert + update (en re-uppladdning lyfter en legacy-rad till aktuell version).
+`groundedConsultantClaims(c, c.extractionVersion)` och UI-grinden (`showEvidenceBadges`,
+`TrustReceipt`) tar nu versionen: är den **non-null** är grinden ALLTID på — den all-
+strippade posten filtreras bort (noll grundade claims in i AI-input) och UI:t visar
+**all-amber** (obelagd) i st.f. att gömma badges. Är den **null** gäller union-
+heuristiken oförändrat (äkta legacy skyddad). Parametern är valfri (bakåtkompat): call
+sites utan version behåller dagens beteende.
+
+**Kvarvarande (temporal, krympande):** rader extraherade post-feature men FÖRE migration
+011 bär `extraction_version` NULL och förblir tvetydiga tills de laddas upp på nytt. Ingen
+backfill görs — versionen kan inte härledas i efterhand. För rader skrivna EFTER att detta
+shippat är residualen stängd. **Pending manuellt steg före merge:** kör migration 011 i
+Supabase SQL Editor (upsertConsultant sätter kolumnen explicit — okänd kolumn hade fällt
+CV-uploaden).
 
 ## Produktuppsida
 

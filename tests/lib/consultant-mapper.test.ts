@@ -17,6 +17,11 @@ describe("evidens i läs-selecterna", () => {
   it("API-selecten läcker inte raw_cv_text (PII)", () => {
     expect(CONSULTANT_API_SELECT).not.toMatch(/raw_cv_text/);
   });
+
+  it("API-selecten hämtar extraction_version (migration 011)", () => {
+    // CONSULTANT_SELECT använder `*` (får kolumnen implicit); API-selecten är explicit.
+    expect(CONSULTANT_API_SELECT).toMatch(/\bextraction_version\b/);
+  });
 });
 
 describe("mapConsultantRow — evidens", () => {
@@ -49,5 +54,12 @@ describe("mapConsultantRow — evidens", () => {
     // null i DB (obelagt) blir undefined i läs-typen, inte strängen "null".
     expect(c.competencies[1].evidence).toBeUndefined();
     expect(c.references[0].evidence).toBe("citat B");
+  });
+
+  it("mappar extraction_version (migration 011): tal bevaras, saknad kolumn → null", () => {
+    expect(mapConsultantRow({ ...row, extraction_version: 1 }).extractionVersion).toBe(1);
+    // Legacy-rad utan kolumnen (eller null) mappas till null (äkta legacy).
+    expect(mapConsultantRow(row).extractionVersion).toBeNull();
+    expect(mapConsultantRow({ ...row, extraction_version: null }).extractionVersion).toBeNull();
   });
 });

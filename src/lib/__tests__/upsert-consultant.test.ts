@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ConsultantExtraction } from "@/lib/types";
 import { upsertConsultant } from "@/lib/supabase";
+import { EXTRACTION_VERSION } from "@/lib/extraction-version";
 
 const extraction: ConsultantExtraction = {
   name: "Anna Svensson",
@@ -17,6 +18,7 @@ const extraction: ConsultantExtraction = {
 function makeStub(existing: { id: string } | null) {
   const ops: string[] = [];
   const inserted: Record<string, unknown[]> = {};
+  const updated: Record<string, unknown[]> = {};
   const okThenable = (label: string) => {
     ops.push(label);
     return Promise.resolve({ data: null, error: null });
@@ -32,7 +34,10 @@ function makeStub(existing: { id: string } | null) {
             }),
           }),
         }),
-        update: () => ({ eq: () => okThenable(`${table}.update`) }),
+        update: (row: unknown) => {
+          (updated[table] ??= []).push(row);
+          return { eq: () => okThenable(`${table}.update`) };
+        },
         delete: () => ({ eq: () => okThenable(`${table}.delete`) }),
         insert: (rows: unknown) => {
           (inserted[table] ??= []).push(...(Array.isArray(rows) ? rows : [rows]));
@@ -47,10 +52,12 @@ function makeStub(existing: { id: string } | null) {
     },
     _ops: ops,
     _inserted: inserted,
+    _updated: updated,
   };
   return client as unknown as SupabaseClient & {
     _ops: string[];
     _inserted: Record<string, unknown[]>;
+    _updated: Record<string, unknown[]>;
   };
 }
 
@@ -94,6 +101,22 @@ describe("upsertConsultant", () => {
     ]);
     expect(stub._inserted.consultant_references).toEqual([
       expect.objectContaining({ title: "Ref", evidence: "genomförde uppdraget Ref åt kommunen" }),
+    ]);
+  });
+
+  it("stämplar extraction_version på INSERT-vägen (migration 011)", async () => {
+    const stub = makeStub(null);
+    await upsertConsultant(stub, extraction, "cv-text");
+    expect(stub._inserted.consultants).toEqual([
+      expect.objectContaining({ extraction_version: EXTRACTION_VERSION }),
+    ]);
+  });
+
+  it("stämplar extraction_version på UPDATE-vägen (re-uppladdning lyfter legacy till aktuell version)", async () => {
+    const stub = makeStub({ id: "existing-1" });
+    await upsertConsultant(stub, extraction, "cv-text");
+    expect(stub._updated.consultants).toEqual([
+      expect.objectContaining({ extraction_version: EXTRACTION_VERSION }),
     ]);
   });
 });

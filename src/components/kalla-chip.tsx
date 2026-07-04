@@ -1,6 +1,6 @@
 "use client";
 
-import { hasEvidence, hasAnyEvidence } from "@/lib/evidence-badge";
+import { hasEvidence, hasAnyEvidence, showEvidenceBadges } from "@/lib/evidence-badge";
 
 // Svenska citationstecken (U+201D i båda ändar) — omsluter det ordagranna citatet.
 const Q = "”";
@@ -67,15 +67,21 @@ export function FlaggedPill() {
  * Trust-receipt: aggregatrad överst i kravsektionen / konsultprofilen. Räknar hur
  * många påståenden som är ordagrant belagda i källan (mekaniskt, inte AI-bedömt).
  * Beräknas helt klient-sida ur posternas evidence-fält — ingen endpoint behövs.
- * Döljs av samma legacy-grind som badgarna (bär ingen post evidens → null), så gamla
- * analyser/profiler skrivna före evidens-featuren inte visar en missvisande "0 av N".
+ * Döljs av samma versions-medvetna legacy-grind som badgarna (bär ingen post evidens
+ * OCH ingen extraktions-version → null), så gamla analyser/profiler skrivna före evidens-
+ * featuren inte visar en missvisande "0 av N". För en post-feature-rad (extractionVersion
+ * non-null) visas kvittot ÄVEN när allt är strippat — "0 av N belagda · N obelagda" är då
+ * den ärliga signalen (samma UX-sanning som amber-chippen). extractionVersion är valfri:
+ * analysvyns krav-rader (ingen version) behåller union-heuristiken.
  */
 export function TrustReceipt({
   items,
+  extractionVersion,
 }: {
   items: ReadonlyArray<{ evidence?: string | null }>;
+  extractionVersion?: number | null;
 }) {
-  if (!hasAnyEvidence(items)) return null;
+  if (!showEvidenceBadges(items, extractionVersion) || items.length === 0) return null;
   const total = items.length;
   const proven = items.filter((i) => hasEvidence(i.evidence)).length;
   const unproven = total - proven;

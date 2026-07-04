@@ -8,7 +8,7 @@ export default async function ConsultantsPage() {
   const { data } = await supabase
     .from("consultants")
     .select(`
-      id, name, level, years_experience, summary,
+      id, name, level, years_experience, summary, extraction_version,
       consultant_competencies (competency, category, evidence)
     `)
     .order("name");

@@ -7,6 +7,7 @@ import {
   ConsultantExtraction,
 } from "./types";
 import { CONSULTANT_SELECT } from "./constants";
+import { EXTRACTION_VERSION } from "./extraction-version";
 
 // Singleton — reuse across requests in the same process
 let _client: SupabaseClient | null = null;
@@ -58,6 +59,8 @@ export function mapConsultantRow(row: Record<string, unknown>): Consultant {
         sector: r.sector,
         evidence: r.evidence ?? undefined,
       })) || [],
+    // migration 011: null (legacy / kolumn saknas i äldre rad) bevaras som null.
+    extractionVersion: (row.extraction_version as number | null) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -106,6 +109,10 @@ export async function upsertConsultant(
     years_experience: extraction.yearsExperience,
     summary: extraction.summary,
     raw_cv_text: rawText,
+    // migration 011: stämpla generationen på BÅDA vägarna (insert + update). En
+    // re-uppladdning av en legacy-konsult lyfter den till aktuell version → dess
+    // all-strippade fall skiljs framöver korrekt från äkta legacy. Se extraction-version.ts.
+    extraction_version: EXTRACTION_VERSION,
   };
 
   // Matcha på namn case-insensitivt. Escapa LIKE-metatecken (%/_/\) så ett namn som

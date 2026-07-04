@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { hasEvidence, hasAnyEvidence, badgeState } from "@/lib/evidence-badge";
+import {
+  hasEvidence,
+  hasAnyEvidence,
+  showEvidenceBadges,
+  badgeState,
+} from "@/lib/evidence-badge";
 
 describe("evidence-badge — gate-logik", () => {
   describe("hasEvidence", () => {
@@ -27,6 +32,23 @@ describe("evidence-badge — gate-logik", () => {
     });
     it("false för tom lista", () => {
       expect(hasAnyEvidence([])).toBe(false);
+    });
+  });
+
+  describe("showEvidenceBadges (versions-medveten grind, migration 011)", () => {
+    const noEvidence = [{ evidence: undefined }, { evidence: null }];
+    const someEvidence = [{ evidence: "citat" }, { evidence: null }];
+
+    it("version non-null: visar badges ALLTID, även utan evidens (all-strippad → all-amber)", () => {
+      expect(showEvidenceBadges(noEvidence, 1)).toBe(true);
+      expect(showEvidenceBadges([], 1)).toBe(true);
+    });
+
+    it("version null/undefined: union-heuristiken (dagens legacy-beteende)", () => {
+      expect(showEvidenceBadges(noEvidence, null)).toBe(false);
+      expect(showEvidenceBadges(noEvidence)).toBe(false);
+      expect(showEvidenceBadges(someEvidence, null)).toBe(true);
+      expect(showEvidenceBadges(someEvidence)).toBe(true);
     });
   });
 

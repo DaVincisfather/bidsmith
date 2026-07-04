@@ -20,6 +20,24 @@ export function hasAnyEvidence(items: ReadonlyArray<{ evidence?: string | null }
   return items.some((item) => hasEvidence(item.evidence));
 }
 
+/**
+ * Versions-medveten badge-grind (migration 011). Avgör om badge-lagret ska visas alls:
+ *   - extractionVersion NON-NULL (post-feature-rad): grinden är ALLTID öppen → saknad
+ *     evidens visas som amber "obelagd" ÄVEN om raden saknar evidens överallt (den
+ *     all-strippade degenererade konsulten visar all-amber i st.f. att gömma badges —
+ *     UX-sanning: inget falskt "belagt"-sken, matchningen ser noll grundade claims).
+ *   - extractionVersion NULL/undefined (äkta legacy ELLER call site utan versionsdata):
+ *     union-heuristiken — visa badges bara om NÅGON post bär evidens. BAKÅTKOMPAT:
+ *     parametern är valfri, så anropare som inte kan förse den behåller dagens beteende.
+ */
+export function showEvidenceBadges(
+  items: ReadonlyArray<{ evidence?: string | null }>,
+  extractionVersion?: number | null,
+): boolean {
+  if (extractionVersion != null) return true;
+  return hasAnyEvidence(items);
+}
+
 /** Per-post badge-tillstånd: "kalla" (expanderbart citat), "flagged" (obelagd), eller "none". */
 export type BadgeState = "kalla" | "flagged" | "none";
 

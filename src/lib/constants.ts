@@ -13,7 +13,7 @@ export const CONSULTANT_SELECT = `
 // är ett kort ordagrant utdrag ur CV:t (inte hela CV:t) och röjer därför ingen PII
 // utöver det påstående det redan grundar.
 export const CONSULTANT_API_SELECT = `
-  id, name, level, years_experience, summary, created_at, updated_at,
+  id, name, level, years_experience, summary, extraction_version, created_at, updated_at,
   consultant_competencies (id, competency, category, evidence),
   consultant_references (id, title, description, year, sector, evidence)
 `;

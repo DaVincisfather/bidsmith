@@ -66,7 +66,8 @@ export function formatTeamForPrompt(
     .map((c) => {
       const score = scores.find((s) => s.consultantId === c.id);
       // Fas C: filtrera obelagda claims vid serialiserings-gränsen mot AI-input.
-      const { competencies, references } = groundedConsultantClaims(c);
+      // extractionVersion (migration 011): post-feature-rad → grinden alltid på.
+      const { competencies, references } = groundedConsultantClaims(c, c.extractionVersion);
       const comps = competencies.map((co) => co.competency).join(", ");
       const refs = references
         .map((r) => `${r.title} (${r.year}, ${r.sector})`)
