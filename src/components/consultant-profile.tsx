@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { hasAnyEvidence, badgeState } from "@/lib/evidence-badge";
+import { KallaChip, FlaggedPill, SourceQuote } from "@/components/kalla-chip";
 
 interface Competency {
   id: string;
@@ -56,7 +58,16 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
   const [level, setLevel] = useState(consultant.level);
   const [summary, setSummary] = useState(consultant.summary || "");
   const [saving, setSaving] = useState(false);
+  // Ett citat öppet i taget i kompetens-sektionen (index i competencies-listan).
+  const [openComp, setOpenComp] = useState<number | null>(null);
   const router = useRouter();
+
+  // Legacy-grind per konsult: bär varken kompetens eller referens evidens är profilen
+  // skapad före evidens-featuren — visa då inga dots/chips alls.
+  const showBadges = hasAnyEvidence([
+    ...consultant.consultant_competencies,
+    ...consultant.consultant_references,
+  ]);
 
   async function handleSave() {
     setSaving(true);
@@ -182,18 +193,64 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
       <section>
         <h2 className="text-lg font-display font-normal mb-3">Kompetenser</h2>
         <div className="flex flex-wrap gap-2">
-          {consultant.consultant_competencies.map((c) => (
-            <span
-              key={c.id}
-              className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm"
-            >
-              {c.competency}
-              <span className="text-blue-400 ml-1 text-xs">
-                ({CATEGORY_LABELS[c.category] || c.category})
-              </span>
-            </span>
-          ))}
+          {consultant.consultant_competencies.map((c, i) => {
+            const state = badgeState(c.evidence, showBadges);
+            const label = (
+              <>
+                {c.competency}
+                <span className="text-blue-400 ml-1 text-xs">
+                  ({CATEGORY_LABELS[c.category] || c.category})
+                </span>
+              </>
+            );
+            // Legacy / ingen evidens-feature: original-chippen orörd.
+            if (state === "none") {
+              return (
+                <span
+                  key={c.id}
+                  className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm"
+                >
+                  {label}
+                </span>
+              );
+            }
+            // Dot före namnet: burgundy = belagd, amber = flaggad.
+            const dot = (
+              <span
+                aria-hidden="true"
+                className={`inline-block h-1.5 w-1.5 rounded-full ${state === "kalla" ? "bg-accent" : "bg-flag"}`}
+              />
+            );
+            // Flaggad kompetens: dot men inte klickbar — inget citat att visa.
+            if (state === "flagged") {
+              return (
+                <span
+                  key={c.id}
+                  className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm"
+                >
+                  {dot}
+                  {label}
+                </span>
+              );
+            }
+            // Belagd kompetens: klickbar chip som togglar citatet (ett i taget).
+            return (
+              <button
+                key={c.id}
+                type="button"
+                aria-expanded={openComp === i}
+                onClick={() => setOpenComp((cur) => (cur === i ? null : i))}
+                className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm transition hover:brightness-95"
+              >
+                {dot}
+                {label}
+              </button>
+            );
+          })}
         </div>
+        {openComp !== null && consultant.consultant_competencies[openComp]?.evidence && (
+          <SourceQuote quote={consultant.consultant_competencies[openComp]!.evidence!} />
+        )}
       </section>
 
       {/* References */}
@@ -212,6 +269,16 @@ export function ConsultantProfile({ consultant }: ConsultantProfileProps) {
                 </div>
               </div>
               <p className="text-sm text-ink-soft">{r.description}</p>
+              {badgeState(r.evidence, showBadges) === "kalla" && (
+                <div className="mt-1.5">
+                  <KallaChip quote={r.evidence!} />
+                </div>
+              )}
+              {badgeState(r.evidence, showBadges) === "flagged" && (
+                <div className="mt-1.5">
+                  <FlaggedPill />
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -35,11 +35,14 @@ _Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-h
       matchern nedvikta/exkludera flaggade (evidence-lösa) kompetenser? + matchnings-
       motiveringar får bara citera CV-grundade fakta. Rör INTE matchern i fas B.
       OBS (routine-fynd #56): degenererat underlag (fel fil uppladdad som CV) + competencies.min(1) kan ge en fabricerad-men-flaggad post som når matchern — väg in i policybeslutet.
-- [ ] **"källa:"-badge i UI** (`analysis-result.tsx` + CV-vyn): surfa `evidence` per krav
-      OCH per kompetens/referens; poster med `evidence: undefined` (vaktens flaggade)
-      visar ingen badge. **Data + läsväg finns nu** (denna PR): SELECT-konstanterna +
-      `mapConsultantRow` exponerar citatet och konsult-editorn round-tripar det —
-      ENDAST själva badge-UI:t återstår.
+- [x] **"källa:"-badge i UI** — SHIPPAD för analysvyn + konsultprofilen. V1 expanderbar
+      källa-chip (`src/components/kalla-chip.tsx`: `KallaChip`/`FlaggedPill`/`SourceQuote`)
+      på krav-rader (`analysis-result.tsx`), kompetens-chips (dot burgundy=belagt/amber=flaggat)
+      + referenser (`consultant-profile.tsx`). Obelagda poster (`evidence` undefined/null) får
+      amber "obelagd"-pill, ej expanderbar. Legacy-grind: bär ingen post i analysen/profilen
+      evidens visas inga badges (gate-logik i `src/lib/evidence-badge.ts`, enhets-testad).
+      Komponenttester täcker chip/flagged/legacy-gate/toggle. **KVAR (medvetet utanför scope):**
+      leverabel-raderna i analysvyn fick ingen badge (designen beskrev bara krav-radernas grid).
 
 ### Routine-fynd #57 — evidens-round-trip (STÄNGDA denna PR, offline-testade, inga API-anrop)
 - [x] **Läsväg exponerar evidence.** `CONSULTANT_SELECT`/`CONSULTANT_API_SELECT` hämtar nu

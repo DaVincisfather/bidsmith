@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { RfpAnalysis } from "@/lib/types";
 import { qualificationRequirements, deliverableRequirements } from "@/lib/requirement-kind";
+import { hasAnyEvidence, badgeState } from "@/lib/evidence-badge";
+import { KallaChip, FlaggedPill } from "@/components/kalla-chip";
 
 interface AnalysisResultProps {
   analysis: RfpAnalysis;
@@ -28,6 +30,9 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
   // partitionsregeln inte driftar mellan vy, go/no-go och bid-bundles.
   const qualifications = qualificationRequirements(analysis.requirements);
   const deliverables = deliverableRequirements(analysis.requirements);
+  // Legacy-grind: bär ingen post i HELA analysen evidens är den skapad före evidens-
+  // featuren — visa då inga badges alls (en vägg av "obelagd" vore vilseledande).
+  const showBadges = hasAnyEvidence(analysis.requirements);
 
   return (
     <div className="space-y-10">
@@ -105,9 +110,15 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
               <span className="hidden sm:block text-xs text-ink-mute pt-1">
                 {req.category}
               </span>
-              <p className="col-span-2 sm:col-span-1 text-sm text-ink-soft leading-relaxed">
-                {req.description}
-              </p>
+              <div className="col-span-2 sm:col-span-1">
+                <p className="inline text-sm text-ink-soft leading-relaxed">
+                  {req.description}
+                </p>{" "}
+                {badgeState(req.evidence, showBadges) === "kalla" && (
+                  <KallaChip quote={req.evidence!} />
+                )}
+                {badgeState(req.evidence, showBadges) === "flagged" && <FlaggedPill />}
+              </div>
             </div>
           ))}
         </div>

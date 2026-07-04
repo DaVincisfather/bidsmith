@@ -1,0 +1,95 @@
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { ConsultantProfile } from "../consultant-profile";
+
+// next/navigation's useRouter är otillgänglig utanför App Router-runtimen.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
+type Consultant = Parameters<typeof ConsultantProfile>[0]["consultant"];
+
+function makeConsultant(overrides: Partial<Consultant>): Consultant {
+  return {
+    id: "c1",
+    name: "Anna Andersson",
+    level: "senior",
+    years_experience: 8,
+    summary: "Erfaren konsult",
+    consultant_competencies: [],
+    consultant_references: [],
+    ...overrides,
+  };
+}
+
+describe("ConsultantProfile — källa-badge", () => {
+  it("gör en belagd kompetens klickbar och togglar citatet (ett i taget)", () => {
+    render(
+      <ConsultantProfile
+        consultant={makeConsultant({
+          consultant_competencies: [
+            { id: "k1", competency: "Projektledning", category: "methodology", evidence: "Ledde tre stora projekt" },
+          ],
+        })}
+      />,
+    );
+
+    const chip = screen.getByRole("button", { name: /Projektledning/ });
+    expect(screen.queryByText(/Ledde tre stora projekt/)).not.toBeInTheDocument();
+    fireEvent.click(chip);
+    expect(screen.getByText(/Ledde tre stora projekt/)).toBeInTheDocument();
+  });
+
+  it("flaggad kompetens (utan evidens) är inte klickbar", () => {
+    render(
+      <ConsultantProfile
+        consultant={makeConsultant({
+          consultant_competencies: [
+            { id: "k1", competency: "Belagd", category: "technical", evidence: "Citat" },
+            { id: "k2", competency: "Obelagd", category: "technical", evidence: undefined },
+          ],
+        })}
+      />,
+    );
+
+    // Belagd är en knapp, obelagd är det inte.
+    expect(screen.getByRole("button", { name: /Belagd/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Obelagd/ })).not.toBeInTheDocument();
+  });
+
+  it("källa-chip på referens med evidens togglar citatet", () => {
+    render(
+      <ConsultantProfile
+        consultant={makeConsultant({
+          consultant_references: [
+            { id: "r1", title: "Uppdrag X", description: "Beskrivning", year: 2024, sector: "public", evidence: "Referenscitat ur CV" },
+          ],
+        })}
+      />,
+    );
+
+    const chip = screen.getByRole("button", { name: /källa/i });
+    fireEvent.click(chip);
+    expect(screen.getByText(/Referenscitat ur CV/)).toBeInTheDocument();
+  });
+
+  it("legacy-grind: inga dots/chips när varken kompetens eller referens bär evidens", () => {
+    render(
+      <ConsultantProfile
+        consultant={makeConsultant({
+          consultant_competencies: [
+            { id: "k1", competency: "Gammal kompetens", category: "technical" },
+          ],
+          consultant_references: [
+            { id: "r1", title: "Gammalt uppdrag", description: "Beskrivning", year: 2020, sector: "private" },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: /källa/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/obelagd/i)).not.toBeInTheDocument();
+    // Kompetens-chippen renderas fortfarande som ren text (ingen knapp).
+    expect(screen.queryByRole("button", { name: /Gammal kompetens/ })).not.toBeInTheDocument();
+  });
+});
