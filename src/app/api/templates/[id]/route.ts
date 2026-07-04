@@ -22,22 +22,39 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
   // Verifiera existens FÖRE raderingen — ett 404 är tydligare än en tyst no-op,
   // och storage_path måste läsas ut innan raden försvinner (mallfilen städas nedan).
-  const { data: tpl } = await supabase
+  const { data: tpl, error: tplErr } = await supabase
     .from("templates")
     .select("id, storage_path")
     .eq("id", id)
     .maybeSingle();
+  // Guard-fel får INTE falla igenom till raderingen — då svarar FK:n med ett
+  // rått constraint-fel i st.f. de avsedda 409:orna (routine-fynd #65).
+  if (tplErr) {
+    return NextResponse.json({ error: tplErr.message }, { status: 500 });
+  }
   if (!tpl) {
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
   }
 
+  // Vägra radera BUNDLADE mallar (storage_path null — seedade via migration, kan
+  // inte återskapas via UI:t; uppladdning skapar storage-mallar, inte disk-bundlade).
+  if (tpl.storage_path === null) {
+    return NextResponse.json(
+      { error: "bundlad mall kan inte raderas — den kan inte återskapas via appen" },
+      { status: 409 }
+    );
+  }
+
   // Vägra radera den AKTIVA mallen — säkrare än att tyst nolla pekaren, som skulle
   // lämna arbetsytan utan mall. Användaren aktiverar en annan mall först.
-  const { data: activeWs } = await supabase
+  const { data: activeWs, error: wsErr } = await supabase
     .from("workspace_settings")
     .select("id")
     .eq("active_template_id", id)
     .maybeSingle();
+  if (wsErr) {
+    return NextResponse.json({ error: wsErr.message }, { status: 500 });
+  }
   if (activeWs) {
     return NextResponse.json(
       { error: "mallen är aktiv — aktivera en annan mall först" },
@@ -50,10 +67,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   // export/redigering av de anbuden bryts om mallen försvinner. (bids.template_id
   // saknar ON DELETE CASCADE, så Postgres skulle ändå avvisa raderingen — men ett
   // räknat 409 ger ett begripligt svar i st.f. ett rått constraint-fel.)
-  const { count: bidCount } = await supabase
+  const { count: bidCount, error: bidErr } = await supabase
     .from("bids")
     .select("id", { count: "exact", head: true })
     .eq("template_id", id);
+  if (bidErr) {
+    return NextResponse.json({ error: bidErr.message }, { status: 500 });
+  }
   if (bidCount && bidCount > 0) {
     return NextResponse.json(
       { error: `mallen används av ${bidCount} anbud` },

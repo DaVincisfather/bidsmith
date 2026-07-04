@@ -318,16 +318,22 @@ describe("DELETE /api/templates/[id]", () => {
     warnSpy.mockRestore();
   });
 
-  it("bundlad mall (storage_path null) — raderas utan storage-städning", async () => {
+  it("bundlad mall (storage_path null) — 409, kan inte återskapas via appen", async () => {
+    // Routine-fynd #65: bundlade mallar seedas via migration; en radering är
+    // permanent utan UI-väg tillbaka → vägra.
     tableResults.templates = { data: { id: VALID_UUID, storage_path: null }, error: null };
-    tableResults.workspace_settings = { data: null, error: null };
-    tableResults.bids = { data: null, error: null, count: 0 };
 
     const res = await DELETE({} as never, ctx(VALID_UUID));
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ deleted: true });
-    // Ingen storage-fil att ta bort.
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/bundlad/);
     expect(removeMock).not.toHaveBeenCalled();
-    expect(clearTemplateCacheMock).toHaveBeenCalledWith(VALID_UUID);
+  });
+
+  it("guard-DB-fel ger 500 — faller ALDRIG igenom till raderingen", async () => {
+    tableResults.templates = { data: { id: VALID_UUID, storage_path: "x/v1.pptx" }, error: null };
+    tableResults.workspace_settings = { data: null, error: { message: "transient" } };
+
+    const res = await DELETE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(500);
   });
 });
