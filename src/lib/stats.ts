@@ -30,6 +30,8 @@ export interface UserStats {
 export interface CostByLabel {
   label: string;
   costUsd: number;
+  // Antal anrop under etiketten — driver bucket-vyns "N anrop" (cost-buckets.ts).
+  count: number;
 }
 
 export interface WorkspaceStats {
@@ -107,13 +109,16 @@ export function aggregate(
     return u;
   };
 
-  const byLabel = new Map<string, number>();
+  const byLabel = new Map<string, { costUsd: number; count: number }>();
   for (const r of costRows) {
     const id = r.user_id ?? UNKNOWN_USER;
     const cost = Number(r.cost_usd) || 0;
     ensure(id).costUsd += cost;
     const label = r.label ?? "Okänd typ";
-    byLabel.set(label, (byLabel.get(label) ?? 0) + cost);
+    const l = byLabel.get(label) ?? { costUsd: 0, count: 0 };
+    l.costUsd += cost;
+    l.count += 1;
+    byLabel.set(label, l);
   }
   for (const r of bidRows) {
     if (r.outcome == null) continue; // query already filters; defensive
@@ -153,7 +158,7 @@ export function aggregate(
   const pendingCount = pendingRows.length;
 
   const costByLabel: CostByLabel[] = [...byLabel.entries()]
-    .map(([label, costUsd]) => ({ label, costUsd }))
+    .map(([label, { costUsd, count }]) => ({ label, costUsd, count }))
     .sort((a, b) => b.costUsd - a.costUsd);
 
   return {
