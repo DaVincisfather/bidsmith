@@ -145,10 +145,66 @@ rfp, cv OCH båda requote-etiketterna — budgetgrinden summerar bådas kostnad 
 enda betalt anrop. Cost-helpern är utbruten till `evals/harness/core/loop-budget.ts`,
 rapport-renderingen till `evals/harness/core/loop-report.ts` (loop-skriptet < 300 rader).
 
-## Fas C — matchningsmotiveringar
+## Fas C — grundad matchning (policy A) — BYGGD 2026-07-04
 
 Matchningens motiveringar ("varför denna konsult") måste citera CV-förankrade
-fakta, inte generisk beröm. Samma verifierare, källa = konsultens CV-text.
+fakta, inte generisk beröm.
+
+### Beslut (produktägare 2026-07-04, policy A — implementerad, ej omförhandlad)
+
+En konsult-kompetens/referens vars `evidence` strippats av runtime-vakten
+("overifierbar även efter ett reparationsförsök", fas B) får INTE påverka
+matchning, go/no-go eller anbudstext. Den **filtreras bort ur varje AI-facing
+input**. Konsekvens **per konstruktion**: matchningsmotiveringar kan bara citera
+grundade fakta — de ser aldrig de obelagda (ingen prompt-instruktion behövs, det
+följer av att den flaggade posten aldrig serialiseras). En obelagd claim i
+anbudstexten är samma hallucinations-väg in i leveransen, därför gäller policyn
+även bid-generatorns kontext.
+
+### Legacy-grind (kritisk)
+
+Konsulter extraherade FÖRE evidens-featuren bär `evidence` null på ALLT — de får
+INTE behandlas som flaggade (det skulle döda matchningen för hela den befintliga
+poolen). Samma grind som UI:t (`src/lib/evidence-badge.ts` `hasAnyEvidence`): bara
+när en konsult HAR minst en evidens-bärande post räknas saknad evidens som flaggad.
+Grinden går över **UNIONEN** av kompetenser + referenser per konsult — en
+post-feature-konsult bär evidens någonstans, då är avsaknad var som helst flaggad
+(en konsult med evidens på kompetenser men inte referenser ⇒ referenser utan
+evidens faller).
+
+### Mekanik
+
+`src/lib/grounded-claims.ts` (ren, enhets-testad): `groundedItems` (per-lista-grind)
++ `groundedConsultantClaims` (union-grind per konsult). Applicerad **kirurgiskt vid
+serialiserings-gränsen** i tre call sites, utan att röra flödena:
+- `consultant-matcher.ts` → `formatConsultantsForPrompt` (EN funktion, träffar BÅDA
+  stegen: Haiku-prefiltret över hela poolen + Sonnet-deep över kortlistan).
+- `go-no-go-evaluator.ts` → `formatTeamForPrompt` (teamet bär claims; pool-listan är
+  `ScoredConsultant` utan claims — inget att filtrera där).
+- `bid-generator/context.ts` → `formatContext` (team-summeringen som matar ALLA
+  skrivbundles).
+
+### Dataproveniens (verifierad)
+
+Alla tre vägar laddar konsulter via `CONSULTANT_SELECT` (`src/lib/constants.ts`),
+som bär `evidence` för både kompetenser och referenser, och mappas av
+`mapConsultantRow` (DB-null → undefined). Matcher-routen (`/api/matches/[id]`)
+selectar direkt; go/no-go och bid går via `fetchConsultantsByIds` → samma select.
+**Ingen väg saknar evidens** ⇒ legacy-grinden avaktiveras aldrig av tappat fält.
+
+### Ärlig kvarvarande residual (all-stripped ≈ legacy)
+
+En konsult vars extraktion kördes POST-feature men där ALLA poster strippades är i
+datat **oskiljbar** från en äkta legacy-konsult (ingen evidens någonstans ⇒ unionen
+ser inget ⇒ grinden släpper igenom allt, inkl. den fabricerade-men-flaggade posten).
+Det degenererade fallet (fel fil uppladdad som CV; `competencies.min(1)` tvingar
+fram en fabricerad post som vakten sedan strippar) är exakt detta — även flaggat av
+routine på #56. Mitigeringen idag är **temporal** (nya uppladdningar är post-feature)
+och **visuell** (all-amber i UI:t via samma legacy-grind döljer badges — inget falskt
+förtroende signaleras). Den rätta fixen är en **framtida diskriminator**
+(extraktions-timestamp/versionskolumn) som skiljer "kördes post-feature men allt
+strippat" från "för-feature". Lagd som ROADMAP-backlog, byggs INTE nu (kräver
+migration + backfill-beslut och rör inte den vanliga vägen).
 
 ## Produktuppsida
 
