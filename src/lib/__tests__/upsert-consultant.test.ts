@@ -16,6 +16,7 @@ const extraction: ConsultantExtraction = {
 // loggar vilka tabell-operationer som körs så vi kan skilja update- från insert-vägen.
 function makeStub(existing: { id: string } | null) {
   const ops: string[] = [];
+  const inserted: Record<string, unknown[]> = {};
   const okThenable = (label: string) => {
     ops.push(label);
     return Promise.resolve({ data: null, error: null });
@@ -33,7 +34,8 @@ function makeStub(existing: { id: string } | null) {
         }),
         update: () => ({ eq: () => okThenable(`${table}.update`) }),
         delete: () => ({ eq: () => okThenable(`${table}.delete`) }),
-        insert: (_rows: unknown) => {
+        insert: (rows: unknown) => {
+          (inserted[table] ??= []).push(...(Array.isArray(rows) ? rows : [rows]));
           const p = okThenable(`${table}.insert`);
           return Object.assign(p, {
             select: () => ({
@@ -44,8 +46,12 @@ function makeStub(existing: { id: string } | null) {
       };
     },
     _ops: ops,
+    _inserted: inserted,
   };
-  return client as unknown as SupabaseClient & { _ops: string[] };
+  return client as unknown as SupabaseClient & {
+    _ops: string[];
+    _inserted: Record<string, unknown[]>;
+  };
 }
 
 describe("upsertConsultant", () => {
@@ -66,5 +72,28 @@ describe("upsertConsultant", () => {
     expect(res).toEqual({ consultantId: "new-id", updated: false });
     expect(stub._ops).toContain("consultants.insert");
     expect(stub._ops).not.toContain("consultants.update");
+  });
+
+  it("persisterar vaktens evidence — verifierat citat som text, flaggad post som null (migration 009)", async () => {
+    const stub = makeStub(null);
+    const withEvidence: ConsultantExtraction = {
+      ...extraction,
+      competencies: [
+        { competency: "Projektledning", category: "methodology", evidence: "ledde projekt inom offentlig sektor" },
+        { competency: "React", category: "technical" }, // flaggad av vakten → evidence saknas
+      ],
+      references: [
+        { title: "Ref", description: "d", year: 2024, sector: "public", evidence: "genomförde uppdraget Ref åt kommunen" },
+      ],
+    };
+    await upsertConsultant(stub, withEvidence, "cv-text");
+
+    expect(stub._inserted.consultant_competencies).toEqual([
+      expect.objectContaining({ competency: "Projektledning", evidence: "ledde projekt inom offentlig sektor" }),
+      expect.objectContaining({ competency: "React", evidence: null }),
+    ]);
+    expect(stub._inserted.consultant_references).toEqual([
+      expect.objectContaining({ title: "Ref", evidence: "genomförde uppdraget Ref åt kommunen" }),
+    ]);
   });
 });
