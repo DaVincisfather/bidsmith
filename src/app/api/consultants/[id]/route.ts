@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase";
+import { CV_BUCKET } from "@/lib/storage-urls";
 import { parseBody, parseUuidParam } from "@/lib/api-helpers";
 import { ConsultantUpdateSchema } from "@/lib/api-schemas";
 import { CONSULTANT_API_SELECT } from "@/lib/constants";
@@ -177,7 +179,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     .from("consultants")
     .delete()
     .eq("id", id)
-    .select("id");
+    .select("id, cv_file_path");
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -185,6 +187,16 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
   if (!deletedRows || deletedRows.length === 0) {
     return NextResponse.json({ error: "Consultant not found" }, { status: 404 });
+  }
+
+  // Städa CV-originalet ur bucketen (routine-fynd #63: PII-yta utan raderingsväg
+  // skaver mot datakontrollant-ansvaret). Icke-fatalt — raden är redan borta och
+  // en kvarlämnad fil får inte förvandla en lyckad radering till ett fel.
+  const cvPath = (deletedRows[0] as { cv_file_path?: string | null }).cv_file_path;
+  if (cvPath) {
+    const service = createServiceClient();
+    const { error: rmErr } = await service.storage.from(CV_BUCKET).remove([cvPath]);
+    if (rmErr) console.warn(`kunde inte städa CV-original ${cvPath}: ${rmErr.message}`);
   }
 
   return NextResponse.json({ deleted: true });

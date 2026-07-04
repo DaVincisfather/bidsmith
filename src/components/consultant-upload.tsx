@@ -7,6 +7,10 @@ interface UploadResult {
   fileName: string;
   consultantId: string | null;
   error: string | null;
+  // Icke-fatal varning (t.ex. originalfilen kunde inte sparas) — extraktionen
+  // lyckades men något delsteg degraderade. Utan rendering är icke-fatal-designen
+  // osynlig och ett fel ser ut som full framgång (routine-fynd #63).
+  warning?: string | null;
 }
 
 interface UploadResponse {
@@ -127,6 +131,9 @@ export function ConsultantUpload({ onComplete }: ConsultantUploadProps) {
               </span>
               <span>{r.fileName}</span>
               {r.error && <span className="text-red-400 text-xs">({r.error})</span>}
+              {!r.error && r.warning && (
+                <span className="text-flag-ink text-xs">⚠ {r.warning}</span>
+              )}
             </div>
           ))}
         </div>

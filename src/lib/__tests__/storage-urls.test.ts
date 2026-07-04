@@ -1,21 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getDocumentSignedUrl, DEFAULT_DOC_TTL_SECONDS } from "@/lib/storage-urls";
+import {
+  getDocumentSignedUrl,
+  getCvSignedUrl,
+  DEFAULT_DOC_TTL_SECONDS,
+} from "@/lib/storage-urls";
 
 const mockCreateSignedUrl = vi.fn();
+const mockFrom = vi.fn((bucket: string) => ({
+  bucket,
+  createSignedUrl: mockCreateSignedUrl,
+}));
 
 vi.mock("@/lib/supabase", () => ({
   createServiceClient: () => ({
     storage: {
-      from: (bucket: string) => ({
-        bucket,
-        createSignedUrl: mockCreateSignedUrl,
-      }),
+      from: mockFrom,
     },
   }),
 }));
 
 beforeEach(() => {
   mockCreateSignedUrl.mockReset();
+  mockFrom.mockClear();
 });
 
 describe("getDocumentSignedUrl", () => {
@@ -30,6 +36,7 @@ describe("getDocumentSignedUrl", () => {
     const url = await getDocumentSignedUrl("org-1/123-rfp.pdf");
 
     expect(url).toBe("https://example.com/signed");
+    expect(mockFrom).toHaveBeenCalledWith("rfp-documents");
     expect(mockCreateSignedUrl).toHaveBeenCalledWith(
       "org-1/123-rfp.pdf",
       DEFAULT_DOC_TTL_SECONDS
@@ -67,5 +74,35 @@ describe("getDocumentSignedUrl", () => {
     await expect(
       getDocumentSignedUrl("missing/path.pdf")
     ).rejects.toThrow();
+  });
+});
+
+describe("getCvSignedUrl", () => {
+  it("signs against the private consultant-cvs bucket with the default TTL", async () => {
+    mockCreateSignedUrl.mockResolvedValue({
+      data: { signedUrl: "https://example.com/cv-signed" },
+      error: null,
+    });
+
+    const url = await getCvSignedUrl("consultant-1/anna-cv.pdf");
+
+    expect(url).toBe("https://example.com/cv-signed");
+    // Distinkt bucket från RFP-dokumenten — får aldrig signera fel yta.
+    expect(mockFrom).toHaveBeenCalledWith("consultant-cvs");
+    expect(mockCreateSignedUrl).toHaveBeenCalledWith(
+      "consultant-1/anna-cv.pdf",
+      DEFAULT_DOC_TTL_SECONDS
+    );
+  });
+
+  it("throws when Supabase returns an error (caller degrades to omitted fileUrl)", async () => {
+    mockCreateSignedUrl.mockResolvedValue({
+      data: null,
+      error: { message: "object not found" },
+    });
+
+    await expect(
+      getCvSignedUrl("consultant-1/missing.pdf")
+    ).rejects.toThrow(/object not found/);
   });
 });

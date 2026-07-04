@@ -4,7 +4,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { randomUUID } from "crypto";
 
-const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".doc", ".pptx", ".xlsx", ".md", ".txt"];
+export const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".doc", ".pptx", ".xlsx", ".md", ".txt"];
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 /**
@@ -16,7 +16,7 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
  */
 export const MAX_UPLOAD_REQUEST_BYTES = 100 * 1024 * 1024; // 100 MB
 
-function getExtension(fileName: string): string {
+export function getExtension(fileName: string): string {
   const ext = fileName.toLowerCase().split(".").pop();
   return ext ? `.${ext}` : "";
 }

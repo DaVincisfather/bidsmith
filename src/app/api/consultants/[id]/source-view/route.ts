@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseUuidParam, requireUser } from "@/lib/api-helpers";
 import { locateAllSpans } from "@/lib/evidence-context";
+import { getCvSignedUrl } from "@/lib/storage-urls";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -12,9 +13,11 @@ interface RouteContext {
 // analyses/[id]/source-view/route.ts. Bakom auth + explicit källa-chip-klick.
 // `spans` täcker enbart lagrad evidens (kompetenser + referenser).
 //
-// D-ASYMMETRI: consultants-tabellen lagrar INGEN originalfil (bara raw_cv_text) —
-// CV-uploaden persisterar aldrig råfilen till storage. Därför INGEN fileUrl här;
-// "Öppna originalet"-länken gäller bara analyser. (Analyser: documents.file_path.)
+// D-SYMMETRI (migration 010): consultants.cv_file_path pekar in i den privata
+// `consultant-cvs`-bucketen → signerad URL för "Öppna originalet", exakt samma
+// form som analys-källvyn (documents.file_path). Saknas cv_file_path (konsulter
+// uppladdade före featuren) eller fallerar signeringen utelämnas fileUrl —
+// källvyn visar ändå raw_cv_text.
 export async function GET(request: NextRequest, { params }: RouteContext) {
   const supabase = await createClient();
   const auth = await requireUser(supabase);
@@ -28,7 +31,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   const { data, error } = await supabase
     .from("consultants")
     .select(
-      "raw_cv_text, consultant_competencies (evidence), consultant_references (evidence)",
+      "raw_cv_text, cv_file_path, consultant_competencies (evidence), consultant_references (evidence)",
     )
     .eq("id", id)
     .single();
@@ -50,6 +53,18 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     .filter((e): e is string => typeof e === "string" && e.trim() !== "");
   const spans = locateAllSpans(sourceText, evidences);
 
-  // Ingen fileUrl (se D-asymmetri ovan).
-  return NextResponse.json({ sourceText, spans });
+  // Originalfil-länk (D-symmetri): cv_file_path pekar in i den privata
+  // consultant-cvs-bucketen → signerad URL. Saknas file_path eller fallerar
+  // signeringen utelämnas fileUrl — källvyn visar ändå raw_cv_text.
+  const cvFilePath = data.cv_file_path as string | null;
+  let fileUrl: string | undefined;
+  if (cvFilePath) {
+    try {
+      fileUrl = await getCvSignedUrl(cvFilePath);
+    } catch {
+      fileUrl = undefined;
+    }
+  }
+
+  return NextResponse.json({ sourceText, spans, fileUrl });
 }

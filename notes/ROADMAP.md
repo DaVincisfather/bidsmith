@@ -78,6 +78,19 @@ _Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-h
       (originaloffset/soft-hyphen/merge), source-view-endpoints (auth/uuid/404/spann-ur-lagrad-evidens/
       fileUrl-signering + fail-graceful), receipt-logik, källvy-render (segment/aktiv-betoning/Escape/
       fel-fallback), omkopplad chip-callback.
+- [~] **D-SYMMETRI: konsulter lagrar nu originalfilen** — SHIPPAD i kod (offline-testad, inga API-anrop),
+      VÄNTAR TVÅ MANUELLA OPERATÖRS-STEG FÖRE MERGE. CV-uploaden persisterar nu originalbufferten till
+      den PRIVATA bucketen `consultant-cvs` vid `${consultantId}/${slug}.${ext}` (upsert:true = om-uppladdat
+      CV skriver över, speglar upsertConsultants ersätt-barnen-semantik). NON-FATAL: storage-/update-fel
+      fäller inte uploaden (extraktion + rad redan committade) → varning på `results[].warning` + console.warn,
+      cv_file_path lämnas orört. Konsult-källvyn signerar `cv_file_path` (`getCvSignedUrl`, ny bucket-param-
+      generaliserad helper i `storage-urls.ts`) → "Öppna originalet" fungerar nu symmetriskt med analyser
+      (ingen UI-ändring — vyn renderade redan `fileUrl` när den finns). Filnamns-saneringen (se backlog) är
+      aktiverad + löst. **OPERATÖRS-CHECKLISTA FÖRE MERGE:** (1) kör migration 010 (`consultants.cv_file_path`)
+      manuellt i Supabase SQL Editor; (2) skapa den PRIVATA bucketen `consultant-cvs` i Supabase Storage
+      (buckets är inte SQL). Tester: storage-urls (bucket-routing + fail), upload-route (nyckel + cv_file_path-
+      update + sanering + storage-fail non-fatal + update-fail non-fatal), konsult-source-view (fileUrl när
+      cv_file_path finns / utelämnas när null / degraderar vid signeringsfel).
 
 ### Routine-fynd #57 — evidens-round-trip (STÄNGDA denna PR, offline-testade, inga API-anrop)
 - [x] **Läsväg exponerar evidence.** `CONSULTANT_SELECT`/`CONSULTANT_API_SELECT` hämtar nu
@@ -130,10 +143,12 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga just nu._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **UX: anbudsmallar går inte att RADERA** — bara aktivera; behöver delete-väg (+ storage-städning av mallfilen, samma mönster som CV-originalen) (Stefan 2026-07-04)
+- **UX: företagsprofilen** — flytta till arbetsytan + gör PÅVERKAN begriplig (hur mycket styr profilen anbudstexten? användaren måste förstå vikten av att fylla i den) (Stefan 2026-07-04)
 - Statisk TOC-sidnumrering desyncar (hårdkodad; matris-paginering + tomma referenser förskjuter riktiga nummer)
 - `met`/JA-fältet vestigialt i matris-schemat (coverage = sanningskälla) — städbar
 - ai-client detekterar inte `stop_reason: "max_tokens"` → alla bundles re-trunkerar identiskt (bredare härdning)
-- `consultants/upload` sanerar inte filnamn (ingen storage-nyckel-yta idag, men om det ändras)
+- [x] ~~`consultants/upload` sanerar inte filnamn (ingen storage-nyckel-yta idag, men om det ändras)~~ — AKTIVERAD + LÖST: originalfilen persisteras nu, så en storage-nyckel-yta finns; `buildCvKey` slugar filnamnet (gemener, åäö behålls, allt annat → "-", sökväg strippas) som mall-uploaden och behåller den whitelistade extensionen
 - Profil-renderarens `variant` castas `as ProseVariant` utan validering (render-from-profile.ts) — härda när slice 5/6 låter främmande mallar sätta godtyckliga variant-strängar
 - [x] ~~generic-prose kör Opus + effort max per okänd slot~~ — LÖST 2026-07-03: egen roll `writingGeneric` = Sonnet 5 ($2/$10 intro → $3/$15 efter 2026-08-31; bump-påminnelse i ai-cost.ts)
 - **BUG-A:** leveranser hamnar i ska-krav i analysvyn
