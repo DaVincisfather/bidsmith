@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { ProfileSection } from "../ProfileSection";
-import type { ProfileRow } from "@/app/installningar/page";
+import { ProfileSection, type ProfileRow } from "../ProfileSection";
 
 // next/navigation's useRouter is unavailable outside the App Router runtime.
 vi.mock("next/navigation", () => ({
