@@ -51,8 +51,8 @@ export const BidCreateSchema = z.object({
 
 // --- Consultant: PUT /api/consultants/[id] ---
 //
-// Reuses ConsultantExtractionSchema's level enum, but redeklarerar barn-arrayerna
-// så `evidence` blir VALFRITT (extraktionsschemat kräver det, min(1)). Skälet:
+// Deriverar barn-formerna ur ConsultantExtractionSchema men gör `evidence`
+// VALFRITT (extraktionsschemat kräver det, min(1)). Skälet:
 // klienten round-tripar persisterade citat men manuellt tillagda poster saknar
 // citat, och en redigering ska inte 400:a bara för att ett fält är obeklätt.
 // Öppenheten är ofarlig eftersom rutten RE-VERIFIERAR varje citat mot CV-texten
@@ -62,23 +62,21 @@ export const ConsultantUpdateSchema = z.object({
   level: ConsultantExtractionSchema.shape.level,
   yearsExperience: z.number(),
   summary: z.string(),
+  // Derivera barn-formerna ur extraktionsschemat (routine-fynd #58: en fri-
+  // stående kopia av enum:erna driftar när extraktionen ändras). .extend gör
+  // ENDA skillnaden — evidence valfri här (obligatorisk i modell-output).
+  // Inget .min(1): "ta bort alla kompetenser" måste gå att uttrycka i editorn
+  // (extraktionens min(1) vaktar degenererade MODELL-svar, inte människoval).
   competencies: z
     .array(
-      z.object({
-        competency: z.string(),
-        category: z.enum(["technical", "domain", "methodology", "certification"]),
+      ConsultantExtractionSchema.shape.competencies.element.extend({
         evidence: z.string().optional(),
       }),
     )
-    .min(1)
     .optional(),
   references: z
     .array(
-      z.object({
-        title: z.string(),
-        description: z.string(),
-        year: z.number(),
-        sector: z.enum(["public", "private"]),
+      ConsultantExtractionSchema.shape.references.element.extend({
         evidence: z.string().optional(),
       }),
     )
