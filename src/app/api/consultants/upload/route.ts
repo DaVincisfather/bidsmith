@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseDocument, MAX_UPLOAD_REQUEST_BYTES } from "@/lib/document-parser";
+import {
+  parseDocument,
+  getExtension,
+  SUPPORTED_EXTENSIONS,
+  MAX_UPLOAD_REQUEST_BYTES,
+} from "@/lib/document-parser";
 import { enforceContentLength } from "@/lib/api-helpers";
 import { extractConsultant } from "@/lib/consultant-extractor";
 import { createServiceClient, upsertConsultant } from "@/lib/supabase";
+import { CV_BUCKET } from "@/lib/storage-urls";
 import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 
@@ -10,6 +16,28 @@ interface UploadResult {
   fileName: string;
   consultantId: string | null;
   error: string | null;
+  // Icke-fatal varning: extraktionen + konsultraden är redan committade, men att
+  // spara ORIGINALFILEN (D-symmetri med analys-källvyn) fallerade — CV:t fungerar,
+  // bara "Öppna originalet"-länken saknas för just denna konsult.
+  warning: string | null;
+}
+
+/**
+ * Bygger storage-nyckeln för originalfilen: `${consultantId}/${slug}.${ext}`.
+ * Slugar filnamnet exakt som mall-uploaden (gemener, åäö behålls, allt annat → "-")
+ * och behåller den ursprungliga (whitelistade) extensionen. Returnerar null om
+ * extensionen inte är parserns stödda uppsättning — då hoppas fil-uploaden över.
+ */
+function buildCvKey(consultantId: string, fileName: string): string | null {
+  const ext = getExtension(fileName); // t.ex. ".pdf" (gemen)
+  if (!SUPPORTED_EXTENSIONS.includes(ext)) return null;
+  const base = fileName.slice(0, fileName.length - ext.length);
+  const slug =
+    base
+      .toLowerCase()
+      .replace(/[^a-z0-9åäö]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "cv";
+  return `${consultantId}/${slug}${ext}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -44,16 +72,46 @@ export async function POST(request: NextRequest) {
         // i stället för att bli en dubblett.
         const { consultantId } = await upsertConsultant(supabase, extraction, rawText);
 
+        // Persistera originalfilen så konsult-källvyns "Öppna originalet" fungerar
+        // symmetriskt med analyser (D-symmetri). ICKE-FATAL: extraktionen + raden
+        // är redan committade, så ett storage-/update-fel får INTE fälla uploaden —
+        // vi loggar en varning och lämnar cv_file_path orört. upsert:true speglar
+        // upsertConsultants ersätt-barnen-semantik: ett om-uppladdat CV skriver över.
+        let warning: string | null = null;
+        const cvKey = buildCvKey(consultantId, file.name);
+        if (cvKey) {
+          try {
+            const { error: upErr } = await supabase.storage
+              .from(CV_BUCKET)
+              .upload(cvKey, buffer, {
+                upsert: true,
+                contentType: file.type || undefined,
+              });
+            if (upErr) throw new Error(upErr.message);
+
+            const { error: updErr } = await supabase
+              .from("consultants")
+              .update({ cv_file_path: cvKey })
+              .eq("id", consultantId);
+            if (updErr) throw new Error(updErr.message);
+          } catch (err) {
+            warning = `originalfilen kunde inte sparas (extraktionen är sparad): ${err instanceof Error ? err.message : String(err)}`;
+            console.warn(`CV-original för ${file.name}:`, warning);
+          }
+        }
+
         results.push({
           fileName: file.name,
           consultantId,
           error: null,
+          warning,
         });
       } catch (err) {
         results.push({
           fileName: file.name,
           consultantId: null,
           error: err instanceof Error ? err.message : "Unknown error",
+          warning: null,
         });
       }
     }
