@@ -87,6 +87,23 @@ export const ConsultantPoolSchema = z.object({
 
 export type SyntheticConsultant = z.infer<typeof SyntheticConsultantSchema>;
 
+// --- CV-extraktion fixture (noll-hallucinationsloop, fas B) ---
+
+// Rå-CV som löptext + golden-antalet kompetenser (coverage-ögonmått, inte hård
+// grind — jämför fixtures/analyzer där golden är fullständig). Loopen input-groundar:
+// den verifierar att extraktionens kompetens-/referenscitat finns ORDAGRANT i cv_text,
+// inte att CV:t är trovärdigt. Fixtures är syntetiska (genereras ur synthetic-pool) —
+// ingen PII.
+export const CvFixtureSchema = z.object({
+  id: z.string(),
+  cv_text: z.string(),
+  golden: z.object({
+    competency_count: z.number().int().nonnegative(),
+  }),
+});
+
+export type CvFixture = z.infer<typeof CvFixtureSchema>;
+
 // --- Matcher fixture ---
 
 export const MatcherFixtureSchema = z.object({
