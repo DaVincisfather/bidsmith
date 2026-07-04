@@ -8,6 +8,7 @@ import { GoNoGoResultSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
 import { MODELS } from "./models";
 import { qualificationRequirements } from "./requirement-kind";
+import { groundedConsultantClaims } from "./grounded-claims";
 
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
 Du får en RFP-analys, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
@@ -55,15 +56,19 @@ Regler:
 - strengths/gaps: koppla till specifika krav i RFP:en, inte generella påståenden.
 - reasoning: 2-4 meningar, professionell ton.`;
 
-function formatTeamForPrompt(
+// Exporterad för enhets-testning (fas C, policy A): flaggade claims utelämnas ur
+// team-texten för post-feature-konsulter, allt bärs för legacy-konsulter.
+export function formatTeamForPrompt(
   team: Consultant[],
   scores: ScoredConsultant[]
 ): string {
   return team
     .map((c) => {
       const score = scores.find((s) => s.consultantId === c.id);
-      const comps = c.competencies.map((co) => co.competency).join(", ");
-      const refs = c.references
+      // Fas C: filtrera obelagda claims vid serialiserings-gränsen mot AI-input.
+      const { competencies, references } = groundedConsultantClaims(c);
+      const comps = competencies.map((co) => co.competency).join(", ");
+      const refs = references
         .map((r) => `${r.title} (${r.year}, ${r.sector})`)
         .join("; ");
       // prefilterMiss = defensive 0, not an assessment — a literal "score: 0"

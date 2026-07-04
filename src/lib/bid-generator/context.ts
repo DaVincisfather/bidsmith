@@ -5,6 +5,7 @@ import type {
   GoNoGoResult,
 } from "@/lib/types";
 import type { OrgProfile } from "@/lib/org-profile";
+import { groundedConsultantClaims } from "@/lib/grounded-claims";
 
 export interface BidContext {
   analysis: RfpAnalysis;
@@ -25,8 +26,11 @@ export function formatContext(ctx: BidContext): string {
       const score = ctx.scoredConsultants.find(
         (s) => s.consultantId === c.id
       );
-      const comps = c.competencies.map((co) => co.competency).join(", ");
-      const refs = c.references
+      // Fas C (policy A): en obelagd claim i anbudstexten är samma hallucinations-
+      // väg in i leveransen — filtrera bort flaggade claims vid serialiserings-gränsen.
+      const { competencies, references } = groundedConsultantClaims(c);
+      const comps = competencies.map((co) => co.competency).join(", ");
+      const refs = references
         .map((r) => `${r.title} (${r.year}, ${r.sector})`)
         .join("; ");
       // prefilterMiss = defensive 0, not an assessment — don't feed the bid

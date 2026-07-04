@@ -8,6 +8,7 @@ import {
 import { ScoredMatchResultSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
 import { MODELS } from "./models";
+import { groundedConsultantClaims } from "./grounded-claims";
 
 // Two-stage matching.
 //
@@ -83,7 +84,9 @@ Regler:
 - reasoning: 2-3 meningar, specifik koppling till RFP-kraven, inte generell text
 - Behåll score i samma intervall 0-100 som du fått`;
 
-function formatConsultantsForPrompt(consultants: Consultant[]): string {
+// Exporterad för enhets-testning: prompt-texten ska utelämna flaggade (evidens-lösa)
+// claims för post-feature-konsulter men bära allt för legacy-konsulter (fas C, policy A).
+export function formatConsultantsForPrompt(consultants: Consultant[]): string {
   const grouped: Record<string, Consultant[]> = {};
   for (const c of consultants) {
     if (!grouped[c.level]) grouped[c.level] = [];
@@ -93,8 +96,10 @@ function formatConsultantsForPrompt(consultants: Consultant[]): string {
   return Object.entries(grouped)
     .map(([level, cons]) => {
       const entries = cons.map((c) => {
-        const comps = c.competencies.map((co) => co.competency).join(", ");
-        const refs = c.references
+        // Fas C: filtrera obelagda claims vid serialiserings-gränsen mot AI-input.
+        const { competencies, references } = groundedConsultantClaims(c);
+        const comps = competencies.map((co) => co.competency).join(", ");
+        const refs = references
           .map((r) => `${r.title} (${r.year}, ${r.sector})`)
           .join("; ");
         return `  - ${c.name} [id: ${c.id}]: ${c.summary}\n    Kompetenser: ${comps}\n    Uppdrag: ${refs}`;

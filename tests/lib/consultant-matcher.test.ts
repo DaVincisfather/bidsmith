@@ -5,6 +5,7 @@ import {
   reconcilePrefilter,
   selectTopNPerLevel,
   mergeDeepReasoning,
+  formatConsultantsForPrompt,
 } from "@/lib/consultant-matcher";
 import {
   RfpAnalysis,
@@ -227,6 +228,45 @@ describe("mergeDeepReasoning", () => {
     const deep = [scored({ consultantId: "c1", reasoning: "only one covered" })];
 
     expect(mergeDeepReasoning(base, deep).map((r) => r.consultantId)).toEqual(["c1", "c2", "c3"]);
+  });
+});
+
+// Fas C — policy A: prompt-texten (både prefilter- och deep-steget använder denna
+// formattering) får inte bära obelagda claims för post-feature-konsulter.
+describe("formatConsultantsForPrompt (grundad AI-input)", () => {
+  const postFeature: Consultant = {
+    id: "pf",
+    name: "Belagd Konsult",
+    level: "senior",
+    yearsExperience: 10,
+    summary: "s",
+    rawCvText: null,
+    competencies: [
+      { competency: "Grundad kompetens", category: "domain", evidence: "citat ur CV" },
+      { competency: "Fabricerad kompetens", category: "domain" },
+    ],
+    references: [
+      { title: "Grundat uppdrag", description: "d", year: 2024, sector: "public", evidence: "citat" },
+      { title: "Obelagt uppdrag", description: "d", year: 2023, sector: "public" },
+    ],
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+  };
+
+  it("excludes a flagged competency + reference for a post-feature consultant", () => {
+    const out = formatConsultantsForPrompt([postFeature]);
+    expect(out).toContain("Grundad kompetens");
+    expect(out).not.toContain("Fabricerad kompetens");
+    expect(out).toContain("Grundat uppdrag");
+    expect(out).not.toContain("Obelagt uppdrag");
+  });
+
+  it("includes every claim for a legacy consultant (no evidence anywhere)", () => {
+    // mockConsultants bär ingen evidens → legacy → allt ska med.
+    const out = formatConsultantsForPrompt(mockConsultants);
+    expect(out).toContain("Organisationsöversyner");
+    expect(out).toContain("Ekonomistyrning");
+    expect(out).toContain("Organisationsöversyn Region Mellansverige");
   });
 });
 

@@ -31,7 +31,7 @@ _Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-h
       (`.eq` → `.like("eval:zero-halluc%")`). Design-docens Fas B.
       KVAR (operatör, BETALD, under $20-tak): kör `eval:gen-cv-fixtures` sedan
       `eval:zero-halluc -- --target=cv` → bekräfta stabil grön + kompetens-coverage.
-- [ ] **Fas C — matchning nedviktar/exkluderar flaggade kompetenser?** Öppet beslut: ska
+- [x] **Fas C — LEVERERAD (policy A, Stefan 2026-07-04):** flaggade claims EXKLUDERAS ur all AI-input (matcher båda steg, go/no-go, anbudskontext); motiveringar belagda per konstruktion. Ursprunglig fråga: Öppet beslut: ska
       matchern nedvikta/exkludera flaggade (evidence-lösa) kompetenser? + matchnings-
       motiveringar får bara citera CV-grundade fakta. Rör INTE matchern i fas B.
       OBS (routine-fynd #56): degenererat underlag (fel fil uppladdad som CV) + competencies.min(1) kan ge en fabricerad-men-flaggad post som når matchern — väg in i policybeslutet.
@@ -145,6 +145,9 @@ _Inga just nu._
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
 - **UX: anbudsmallar går inte att RADERA** — bara aktivera; behöver delete-väg (+ storage-städning av mallfilen, samma mönster som CV-originalen) (Stefan 2026-07-04)
 - **UX: företagsprofilen** — flytta till arbetsytan + gör PÅVERKAN begriplig (hur mycket styr profilen anbudstexten? användaren måste förstå vikten av att fylla i den) (Stefan 2026-07-04)
+- Pre-fas-C-lagrade matchmotiveringar (`ScoredConsultant.reasoning` i DB) kan citera obelagda claims och flödar in i go/no-go + anbudskontext tills om-matchning — samma temporala residual, annan väg (routine #64)
+- `consultant.summary` är overifierad friyta in i alla tre AI-inputs — nästa naturliga yta för noll-hallucinationsspåret (routine #64)
+- Extraktions-versions-diskriminator: all-strippad post-feature-konsult (fel fil) är i datat identisk med legacy → grinden släpper igenom; en extraktions-timestamp/versionskolumn skiljer dem (fas C-residual, dokumenterad i grounded-claims.ts)
 - Statisk TOC-sidnumrering desyncar (hårdkodad; matris-paginering + tomma referenser förskjuter riktiga nummer)
 - `met`/JA-fältet vestigialt i matris-schemat (coverage = sanningskälla) — städbar
 - ai-client detekterar inte `stop_reason: "max_tokens"` → alla bundles re-trunkerar identiskt (bredare härdning)
