@@ -11,7 +11,7 @@ interface RouteContext {
 // helhet. Endpointen exponerar bara ett ±WINDOW-teckens fönster runt ett citat som
 // KLIENTEN redan har (det verifierade, redan exponerade citatet). q-längden kapas
 // och fönstret sätts server-side — klienten kan inte begära mer text.
-const MAX_Q = 500;
+const MAX_Q = 2000;
 const WINDOW = 200;
 
 /**
@@ -43,12 +43,26 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
   const { data, error } = await supabase
     .from("analyses")
-    .select("id, documents(raw_text)")
+    .select("id, analysis, documents(raw_text)")
     .eq("id", id)
     .single();
 
   if (error || !data) {
     return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
+  }
+
+  // Hårda PII-taket (routine-fynd #61): q måste vara ett LAGRAT evidence-citat i
+  // just denna analys — annars är fönstret en godtycklig textsöknings-yta som kan
+  // vandras för att rekonstruera hela underlaget. Graciöst null vid miss (ingen
+  // orakel-signal).
+  const requirements =
+    ((data.analysis as { requirements?: { evidence?: string | null }[] } | null)
+      ?.requirements ?? []);
+  const stored = new Set(
+    requirements.map((r) => r.evidence).filter((e): e is string => e != null),
+  );
+  if (!stored.has(q)) {
+    return NextResponse.json({ context: null });
   }
 
   const doc = data.documents as unknown as { raw_text: string | null } | null;

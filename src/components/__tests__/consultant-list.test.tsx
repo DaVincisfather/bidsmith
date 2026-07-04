@@ -6,7 +6,7 @@ import { ConsultantList } from "../consultant-list";
 // grind: bär ingen kompetens evidens visas inga dots. sr-only bär belagd/obelagd.
 
 function row(
-  competencies: Array<{ competency: string; category: string; evidence?: string | null }>,
+  competencies: Array<{ competency: string; category: string; hasEvidence?: boolean }>,
 ) {
   return {
     id: "11111111-1111-1111-1111-111111111111",
@@ -24,7 +24,7 @@ describe("ConsultantList — dot-badges på kompetens-chippen", () => {
       <ConsultantList
         initialData={[
           row([
-            { competency: "Upphandling", category: "domain", evidence: "citat ur CV" },
+            { competency: "Upphandling", category: "domain", hasEvidence: true },
             { competency: "Ledarskap", category: "methodology" },
           ]),
         ]}

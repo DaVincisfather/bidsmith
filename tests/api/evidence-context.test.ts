@@ -85,9 +85,11 @@ describe("GET /api/analyses/[id]/evidence-context", () => {
     expect(res.status).toBe(400);
   });
 
-  it("400 när q överskrider PII-taket (>500 tecken)", async () => {
+  it("400 när q överskrider sanity-bounden (>2000 tecken)", async () => {
+    // Hårda PII-taket är lagrad-evidence-matchningen; MAX_Q är bara en bound
+    // före DB-slaget (500 stängde tyst ute de längsta citaten — routine #61).
     const res = await ANALYSIS_GET(
-      getReq("analyses", VALID_UUID, "a".repeat(501)) as never,
+      getReq("analyses", VALID_UUID, "a".repeat(2001)) as never,
       ctx(VALID_UUID),
     );
     expect(res.status).toBe(400);
@@ -103,7 +105,7 @@ describe("GET /api/analyses/[id]/evidence-context", () => {
   });
 
   it("200 {context:null} när dokumentet saknar raw_text", async () => {
-    tableResults.analyses = { data: { id: VALID_UUID, documents: null }, error: null };
+    tableResults.analyses = { data: { id: VALID_UUID, analysis: { requirements: [{ evidence: "minst tre års dokumenterad erfarenhet" }] }, documents: null }, error: null };
     const res = await ANALYSIS_GET(
       getReq("analyses", VALID_UUID, "minst tre års") as never,
       ctx(VALID_UUID),
@@ -114,7 +116,7 @@ describe("GET /api/analyses/[id]/evidence-context", () => {
 
   it("200 med kontext när citatet finns i raw_text", async () => {
     tableResults.analyses = {
-      data: { id: VALID_UUID, documents: { raw_text: RFP_TEXT } },
+      data: { id: VALID_UUID, analysis: { requirements: [{ evidence: "minst tre års dokumenterad erfarenhet" }] }, documents: { raw_text: RFP_TEXT } },
       error: null,
     };
     const res = await ANALYSIS_GET(
@@ -128,9 +130,23 @@ describe("GET /api/analyses/[id]/evidence-context", () => {
     expect(body.context.after).toContain("liknande");
   });
 
-  it("200 {context:null} när citatet inte återfinns", async () => {
+  it("HÅRT PII-tak: q som inte är LAGRAD evidence ger context:null (ingen textsökning)", async () => {
+    // Fönster-vandring stoppas: godtyckligt q kan inte skörda underlaget även
+    // om texten finns där (routine-fynd #61).
     tableResults.analyses = {
-      data: { id: VALID_UUID, documents: { raw_text: RFP_TEXT } },
+      data: { id: VALID_UUID, analysis: { requirements: [{ evidence: "minst tre års dokumenterad erfarenhet" }] }, documents: { raw_text: RFP_TEXT } },
+      error: null,
+    };
+    const res = await ANALYSIS_GET(
+      getReq("analyses", VALID_UUID, "Referenser ska bifogas anbudet") as never,
+      ctx(VALID_UUID),
+    );
+    expect(await res.json()).toEqual({ context: null });
+  });
+
+  it("200 context:null när lagrat citat inte återfinns i källan (defensivt)", async () => {
+    tableResults.analyses = {
+      data: { id: VALID_UUID, analysis: { requirements: [{ evidence: "detta citat existerar inte i underlaget" }] }, documents: { raw_text: RFP_TEXT } },
       error: null,
     };
     const res = await ANALYSIS_GET(
@@ -146,7 +162,7 @@ describe("GET /api/analyses/[id]/evidence-context", () => {
     const filler = "fyllnadsord ".repeat(200);
     const big = `${filler}minst tre års dokumenterad erfarenhet ${filler}`;
     tableResults.analyses = {
-      data: { id: VALID_UUID, documents: { raw_text: big } },
+      data: { id: VALID_UUID, analysis: { requirements: [{ evidence: "minst tre års dokumenterad erfarenhet" }] }, documents: { raw_text: big } },
       error: null,
     };
     const res = await ANALYSIS_GET(
@@ -189,7 +205,7 @@ describe("GET /api/consultants/[id]/evidence-context", () => {
   });
 
   it("200 {context:null} när raw_cv_text saknas (äldre/manuell konsult)", async () => {
-    tableResults.consultants = { data: { raw_cv_text: null }, error: null };
+    tableResults.consultants = { data: { raw_cv_text: null, consultant_competencies: [{ evidence: "erfarenhet av upphandling" }], consultant_references: [] }, error: null };
     const res = await CONSULTANT_GET(
       getReq("consultants", VALID_UUID, "erfarenhet av upphandling") as never,
       ctx(VALID_UUID),
@@ -199,7 +215,7 @@ describe("GET /api/consultants/[id]/evidence-context", () => {
   });
 
   it("200 med kontext ur CV-texten", async () => {
-    tableResults.consultants = { data: { raw_cv_text: CV_TEXT }, error: null };
+    tableResults.consultants = { data: { raw_cv_text: CV_TEXT, consultant_competencies: [{ evidence: "erfarenhet av upphandling" }], consultant_references: [] }, error: null };
     const res = await CONSULTANT_GET(
       getReq("consultants", VALID_UUID, "erfarenhet av upphandling") as never,
       ctx(VALID_UUID),

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { hasAnyEvidence, badgeState } from "@/lib/evidence-badge";
 
 interface ConsultantRow {
   id: string;
@@ -15,7 +14,8 @@ interface ConsultantRow {
   consultant_competencies: Array<{
     competency: string;
     category: string;
-    evidence?: string | null;
+    // Boolean, inte citatet: listan renderar bara pricken (routine-fynd #61).
+    hasEvidence?: boolean;
   }>;
 }
 
@@ -95,7 +95,10 @@ export function ConsultantList({ initialData }: ConsultantListProps) {
             </thead>
             <tbody className="divide-y divide-rule">
               {filtered.map((c) => {
-                const listShowsBadges = hasAnyEvidence(c.consultant_competencies);
+                // Legacy-grind per konsult över booleans (listan får inte citaten).
+                const listShowsBadges = c.consultant_competencies.some(
+                  (cc) => cc.hasEvidence,
+                );
                 return (
                 <tr key={c.id} className="hover:bg-paper-2">
                   <td className="px-4 py-3">
@@ -117,7 +120,11 @@ export function ConsultantList({ initialData }: ConsultantListProps) {
                         // Legacy-grind per konsult (samma som profilen): bär ingen
                         // kompetens evidens visas inga dots alls. Bara dots i listan —
                         // inga expanderbara citat (densitet).
-                        const state = badgeState(cc.evidence, listShowsBadges);
+                        const state = !listShowsBadges
+                          ? "none"
+                          : cc.hasEvidence
+                            ? "kalla"
+                            : "flagged";
                         return (
                           <span
                             key={i}

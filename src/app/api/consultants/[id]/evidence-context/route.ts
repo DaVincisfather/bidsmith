@@ -7,11 +7,14 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// PII-tak (medvetet): rå CV-text (consultants.raw_cv_text) lämnar ALDRIG servern i
-// sin helhet. Endpointen exponerar bara ett ±WINDOW-teckens fönster runt ett citat
-// klienten redan har (det verifierade, redan exponerade CV-citatet). q-längden kapas
-// och fönstret sätts server-side.
-const MAX_Q = 500;
+// PII-tak (HÅRT, routine-fynd #61): q måste vara ett LAGRAT evidence-citat för
+// exakt denna konsult — annars kunde en autentiserad klient rekonstruera hela
+// raw_cv_text genom fönster-vandring (upprepade anrop med kanten av föregående
+// kontext). Endpointens kontrakt är "kontext för ett VERIFIERAT citat", inte
+// godtycklig textsökning. MAX_Q är därmed bara en sanity-bound före DB-slaget
+// (lagrad evidence är i praktiken ≤~50 ord; 2000 stänger inte ute långa citat —
+// fynd 2: 500 gjorde featuren tyst avstängd för de längsta).
+const MAX_Q = 2000;
 const WINDOW = 200;
 
 /**
@@ -44,12 +47,27 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   // Läser BARA raw_cv_text (PII) server-side — den serialiseras aldrig, bara fönstret.
   const { data, error } = await supabase
     .from("consultants")
-    .select("raw_cv_text")
+    .select("raw_cv_text, consultant_competencies (evidence), consultant_references (evidence)")
     .eq("id", id)
     .single();
 
   if (error || !data) {
     return NextResponse.json({ error: "Consultant not found" }, { status: 404 });
+  }
+
+  // Hårda PII-taket: q måste ordagrant matcha ett lagrat evidence för konsulten.
+  const stored = new Set(
+    [
+      ...((data.consultant_competencies as { evidence: string | null }[] | null) ?? []),
+      ...((data.consultant_references as { evidence: string | null }[] | null) ?? []),
+    ]
+      .map((r) => r.evidence)
+      .filter((e): e is string => e != null),
+  );
+  if (!stored.has(q)) {
+    // Samma graciösa svar som "kan inte lokaliseras" — klienten faller tillbaka
+    // till rena citatblocket; ingen orakel-signal om vad som finns i källan.
+    return NextResponse.json({ context: null });
   }
 
   const rawText = (data.raw_cv_text as string | null) ?? null;
