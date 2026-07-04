@@ -81,6 +81,7 @@ export function SourceViewer({
   } | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const activeRef = useRef<HTMLSpanElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Hämta källvyn när panelen öppnas (monteras lazy → ingen fetch i onödan).
   useEffect(() => {
@@ -106,11 +107,34 @@ export function SourceViewer({
   const isError = Boolean(current?.error);
 
   // Escape stänger; fokusera stäng-knappen vid öppning (tangentbord/skärmläsare).
+  // Tab FÅNGAS inom panelen: aria-modal utlovar en modal — utan fälla vandrar
+  // fokus ut i den visuellt inerta bakgrunden (routine-fynd #62).
   useEffect(() => {
     if (!open) return;
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !panelRef.current) return;
+      const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      } else if (!panelRef.current.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -134,6 +158,7 @@ export function SourceViewer({
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label={title ?? "Källdokument"}
@@ -172,6 +197,14 @@ export function SourceViewer({
       </header>
 
       <div className="flex-1 overflow-y-auto px-5 py-4">
+        {!url && (
+          // Öppnad utan käll-URL (teoretisk väg: chip utan analysis-id) — visa
+          // åtminstone citatet i stället för en tom dialog (routine-fynd #62).
+          <div className="text-sm text-ink-mute">
+            <p>Ingen källa tillgänglig för det här påståendet.</p>
+            {quote && <SourceQuote quote={quote} />}
+          </div>
+        )}
         {isLoading && (
           <p className="text-sm text-ink-mute">Laddar källdokumentet…</p>
         )}
