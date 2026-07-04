@@ -20,6 +20,11 @@
   --outcome-won: #10b981;
   --outcome-lost: #dc2626;
   --outcome-cancelled: #94a3b8;
+
+  /* källa-badge — obelagd/flaggad påstående (amber, matchar urgency-soon-familjen) */
+  --flag: #d97706;
+  --flag-ink: #92400e; /* AA-kontrast (>4.5:1) mot --flag-soft — 11px-text kräver det */
+  --flag-soft: #fdf3e3;
 }
 
 @theme inline {
@@ -32,6 +37,9 @@
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
+  --color-flag: var(--flag);
+  --color-flag-ink: var(--flag-ink);
+  --color-flag-soft: var(--flag-soft);
 
   --font-display: var(--font-fraunces);
   --font-sans: var(--font-inter-tight);
