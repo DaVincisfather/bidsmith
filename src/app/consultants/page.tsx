@@ -9,7 +9,7 @@ export default async function ConsultantsPage() {
     .from("consultants")
     .select(`
       id, name, level, years_experience, summary,
-      consultant_competencies (competency, category)
+      consultant_competencies (competency, category, evidence)
     `)
     .order("name");
 

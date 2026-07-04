@@ -9,6 +9,9 @@ import { KallaChip, FlaggedPill } from "@/components/kalla-chip";
 interface AnalysisResultProps {
   analysis: RfpAnalysis;
   fileName: string;
+  // Analysens id → källa-chippen kan hämta citatets sammanhang ur RFP:ns raw_text.
+  // Valfri: utan den faller chippen tillbaka till dagens rena citatblock.
+  analysisId?: string;
 }
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -23,8 +26,11 @@ const PRIORITY_CLASSES: Record<string, string> = {
   nice: "bg-emerald-50 text-emerald-700 border-emerald-100",
 };
 
-export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
+export function AnalysisResult({ analysis, fileName, analysisId }: AnalysisResultProps) {
   const [expanded, setExpanded] = useState(false);
+  const contextUrl = analysisId
+    ? `/api/analyses/${analysisId}/evidence-context`
+    : undefined;
   const hasBackground = Boolean(analysis.background?.trim());
   // Ska/bör-krav = äkta kvalifikationskrav; leverabler visas separat. Delad util så
   // partitionsregeln inte driftar mellan vy, go/no-go och bid-bundles.
@@ -115,7 +121,11 @@ export function AnalysisResult({ analysis, fileName }: AnalysisResultProps) {
                   {req.description}
                 </p>{" "}
                 {badgeState(req.evidence, showBadges) === "kalla" && (
-                  <KallaChip quote={req.evidence!} label={req.description.slice(0, 60)} />
+                  <KallaChip
+                    quote={req.evidence!}
+                    label={req.description.slice(0, 60)}
+                    contextUrl={contextUrl}
+                  />
                 )}
                 {badgeState(req.evidence, showBadges) === "flagged" && <FlaggedPill />}
               </div>

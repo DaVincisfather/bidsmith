@@ -133,9 +133,11 @@ export function verifyEvidence(
 //    "kund- och"→"kundoch"); båda halvorna måste finnas ORDAGRANT, i ORDNING,
 //    inom GAP_WINDOW tecken. Att fabricera det kräver två långa äkta textsjok
 //    intill varandra — dvs. ett äkta citat.
-const MIN_HALF = 25;
-const SEAM_SLACK = 3;
-const GAP_WINDOW = 400;
+// Exporterade så källkontext-lokaliseraren (evidence-context.ts) kan spegla EXAKT
+// samma gap-matchningssemantik utan att duplicera konstanterna. Rör inte matchningen.
+export const MIN_HALF = 25;
+export const SEAM_SLACK = 3;
+export const GAP_WINDOW = 400;
 
 function evidenceFoundIn(source: string, evidence: string): boolean {
   for (const cand of caseVariants(evidence)) {
@@ -145,7 +147,8 @@ function evidenceFoundIn(source: string, evidence: string): boolean {
   return false;
 }
 
-function caseVariants(evidence: string): string[] {
+// Exporterad så evidence-context.ts kan prova samma första-tecken-varianter.
+export function caseVariants(evidence: string): string[] {
   if (evidence.length === 0) return [evidence];
   const lower = evidence[0].toLowerCase() + evidence.slice(1);
   const upper = evidence[0].toUpperCase() + evidence.slice(1);

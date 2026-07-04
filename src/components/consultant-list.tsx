@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { hasAnyEvidence, badgeState } from "@/lib/evidence-badge";
 
 interface ConsultantRow {
   id: string;
@@ -9,7 +10,13 @@ interface ConsultantRow {
   level: string;
   years_experience: number | null;
   summary: string | null;
-  consultant_competencies: Array<{ competency: string; category: string }>;
+  // evidence: verifierat CV-citat (migration 009). Bär dot-badgen på list-chippen
+  // (#59 gav dem bara på [id]-profilen — produktägaren "hittade ingen chip" i listan).
+  consultant_competencies: Array<{
+    competency: string;
+    category: string;
+    evidence?: string | null;
+  }>;
 }
 
 interface ConsultantListProps {
@@ -87,7 +94,9 @@ export function ConsultantList({ initialData }: ConsultantListProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-rule">
-              {filtered.map((c) => (
+              {filtered.map((c) => {
+                const listShowsBadges = hasAnyEvidence(c.consultant_competencies);
+                return (
                 <tr key={c.id} className="hover:bg-paper-2">
                   <td className="px-4 py-3">
                     <Link
@@ -104,11 +113,31 @@ export function ConsultantList({ initialData }: ConsultantListProps) {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
-                      {c.consultant_competencies.slice(0, 4).map((cc, i) => (
-                        <span key={i} className="bg-paper-2 text-ink-soft px-2 py-0.5 rounded text-xs">
-                          {cc.competency}
-                        </span>
-                      ))}
+                      {c.consultant_competencies.slice(0, 4).map((cc, i) => {
+                        // Legacy-grind per konsult (samma som profilen): bär ingen
+                        // kompetens evidens visas inga dots alls. Bara dots i listan —
+                        // inga expanderbara citat (densitet).
+                        const state = badgeState(cc.evidence, listShowsBadges);
+                        return (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1 bg-paper-2 text-ink-soft px-2 py-0.5 rounded text-xs"
+                          >
+                            {state !== "none" && (
+                              <>
+                                <span
+                                  aria-hidden="true"
+                                  className={`inline-block h-1.5 w-1.5 rounded-full ${state === "kalla" ? "bg-accent" : "bg-flag"}`}
+                                />
+                                <span className="sr-only">
+                                  {state === "kalla" ? "(belagd i CV)" : "(obelagd)"}
+                                </span>
+                              </>
+                            )}
+                            {cc.competency}
+                          </span>
+                        );
+                      })}
                       {c.consultant_competencies.length > 4 && (
                         <span className="text-ink-mute text-xs">
                           +{c.consultant_competencies.length - 4}
@@ -117,7 +146,8 @@ export function ConsultantList({ initialData }: ConsultantListProps) {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

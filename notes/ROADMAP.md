@@ -43,6 +43,20 @@ _Senast uppdaterad: 2026-07-03 — PIVOT: evidens-förankrad extraktion + noll-h
       evidens visas inga badges (gate-logik i `src/lib/evidence-badge.ts`, enhets-testad).
       Komponenttester täcker chip/flagged/legacy-gate/toggle. **KVAR (medvetet utanför scope):**
       leverabel-raderna i analysvyn fick ingen badge (designen beskrev bara krav-radernas grid).
+- [x] **Källa-badge ITERATION** — SHIPPAD (offline-testad, inga API-anrop). Två produktägar-fynd:
+      **(1) Citat i SAMMANHANG:** utfällt citat duplicerade ofta påståendet ordagrant ("meningslöst").
+      Ny lib `src/lib/evidence-context.ts` (`locateEvidenceContext`) lokaliserar citatet i källtexten
+      med SAMMA normalisering/matchning som verifieraren (`normalizeWithMap` + exporterade
+      `caseVariants`/gap-konstanter ur `verify-evidence.ts` — verify-semantiken orörd, tester gröna)
+      och returnerar ±200 tecken kontext, snäppt till ordgränser (gap-matchade citat → längsta halvan).
+      Två auth-gate:ade endpoints (`/api/analyses/[id]/evidence-context`, `/api/consultants/[id]/evidence-context`)
+      exponerar BARA fönstret (PII: rå käll-/CV-text lämnar aldrig servern helt; q kapad till 500 tecken,
+      fönster satt server-side). `SourceQuote`/`KallaChip` tar `contextUrl`, hämtar vid utfällning och
+      markerar citatspannet i dämpad omgivning; fallback till rena citatblocket vid laddning/null.
+      **(2) List-dots:** konsult-LISTAN (`consultant-list.tsx`) fick nu samma dot + sr-only-behandling
+      som profilen (page-select utökad med `evidence`, per-konsult legacy-grind). Dots only, inga
+      expanders i listan (densitet). Tester: evidence-context-lib (found/gränser/ordsnäpp/soft hyphen/
+      typografi/gap/not-found), endpoints (auth/uuid/PII-cap/q-validering), list-dot-grind.
 
 ### Routine-fynd #57 — evidens-round-trip (STÄNGDA denna PR, offline-testade, inga API-anrop)
 - [x] **Läsväg exponerar evidence.** `CONSULTANT_SELECT`/`CONSULTANT_API_SELECT` hämtar nu
