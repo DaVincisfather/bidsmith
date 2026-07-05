@@ -7,6 +7,7 @@ import {
   GoNoGoCreateSchema,
   GoNoGoDecisionPatchSchema,
   OpportunityStatusPatchSchema,
+  OnboardingDecisionSchema,
 } from "@/lib/api-schemas";
 
 describe("BidPatchSchema", () => {
@@ -122,5 +123,20 @@ describe("OpportunityStatusPatchSchema", () => {
     expect(
       OpportunityStatusPatchSchema.safeParse({ status: "analyzed" }).success
     ).toBe(false);
+  });
+});
+
+describe("OnboardingDecisionSchema", () => {
+  it("accepterar ett beslut med redigering", () => {
+    expect(
+      OnboardingDecisionSchema.safeParse({
+        source: 1, shapeIndex: 0, decision: "confirmed",
+        token: "{Metod}", intent: "Metodbeskrivning",
+      }).success,
+    ).toBe(true);
+  });
+  it("avvisar okänt decision-värde och negativ shapeIndex", () => {
+    expect(OnboardingDecisionSchema.safeParse({ source: 1, shapeIndex: 0, decision: "maybe" }).success).toBe(false);
+    expect(OnboardingDecisionSchema.safeParse({ source: 1, shapeIndex: -1, decision: "skipped" }).success).toBe(false);
   });
 });
