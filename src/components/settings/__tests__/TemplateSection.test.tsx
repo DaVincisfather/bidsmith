@@ -28,8 +28,8 @@ const manifest: TemplateManifest = {
 };
 
 const templates: TemplateRow[] = [
-  { id: "11111111-1111-1111-1111-111111111111", name: "anbudsmall-v2", version: 2, manifest, created_at: "2026-06-10T00:00:00Z" },
-  { id: "22222222-2222-2222-2222-222222222222", name: "anbudsmall-v2", version: 1, manifest, created_at: "2026-06-01T00:00:00Z" },
+  { id: "11111111-1111-1111-1111-111111111111", name: "anbudsmall-v2", version: 2, manifest, onboarding_status: "none", created_at: "2026-06-10T00:00:00Z" },
+  { id: "22222222-2222-2222-2222-222222222222", name: "anbudsmall-v2", version: 1, manifest, onboarding_status: "none", created_at: "2026-06-01T00:00:00Z" },
 ];
 
 describe("TemplateSection", () => {
@@ -217,6 +217,22 @@ describe("TemplateSection", () => {
       expect(screen.getByText(/Förhandsgranskning: rymlig-mall/)).toBeInTheDocument()
     );
     expect(screen.queryByText(/tvingar kortare text/i)).not.toBeInTheDocument();
+  });
+
+  it("visar Onboarda-länk i stället för Aktivera för mall som behöver onboarding", () => {
+    render(
+      <TemplateSection
+        templates={[{
+          id: "t-1", name: "kundmall", version: 1, manifest: null,
+          onboarding_status: "needs_onboarding", created_at: "2026-07-05T00:00:00Z",
+        } as unknown as TemplateRow]}
+        activeTemplateId={null}
+      />,
+    );
+    expect(screen.getByRole("link", { name: /onboarda/i })).toHaveAttribute(
+      "href", "/installningar/mallar/t-1/onboarding",
+    );
+    expect(screen.queryByRole("button", { name: /^aktivera$/i })).not.toBeInTheDocument();
   });
 
   afterEach(() => {
