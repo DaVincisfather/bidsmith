@@ -33,6 +33,27 @@ describe("SlideWireframe", () => {
     expect(onSelect).toHaveBeenCalledWith(1);
   });
 
+  it("kandidat kan väljas med tangentbord (Enter/Space), statisk shape har ingen button-roll", () => {
+    const onSelect = vi.fn();
+    render(
+      <SlideWireframe slide={slide} slideSize={size} selectedShapeIndex={null}
+        decisions={new Map([[1, "pending"]])} onSelect={onSelect} />,
+    );
+    const candidate = screen.getByTestId("shape-3-1");
+    expect(candidate).toHaveAttribute("role", "button");
+    expect(candidate).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(candidate, { key: "Enter" });
+    expect(onSelect).toHaveBeenCalledWith(1);
+    fireEvent.keyDown(candidate, { key: " " });
+    expect(onSelect).toHaveBeenCalledTimes(2);
+    // Statisk shape ska inte annonseras som knapp och inte vara fokuserbar.
+    const staticShape = screen.getByTestId("shape-3-0");
+    expect(staticShape).not.toHaveAttribute("role");
+    expect(staticShape).not.toHaveAttribute("tabindex");
+    fireEvent.keyDown(staticShape, { key: "Enter" });
+    expect(onSelect).toHaveBeenCalledTimes(2);
+  });
+
   it("statiska shapes är inte klickbara", () => {
     const onSelect = vi.fn();
     render(

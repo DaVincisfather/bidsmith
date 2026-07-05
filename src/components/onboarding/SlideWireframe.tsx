@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { WireframeSlide } from "@/lib/pptx-template/onboarding/draft";
 
 export type SlotDecision = "confirmed" | "skipped" | "pending";
@@ -35,6 +36,10 @@ export function SlideWireframe({
 }: SlideWireframeProps) {
   const placeable = slide.shapes.filter((s) => s.geometry !== null);
   const floating = slide.shapes.filter((s) => s.geometry === null && s.candidate);
+  // Tangentbordsfokus på kandidat-<g> — SVG saknar :focus-visible-stöd via
+  // Tailwind-klasser på gruppnivå, så fokus markeras med samma stroke-
+  // förstärkning som selected (state i stället för CSS).
+  const [focusedShapeIndex, setFocusedShapeIndex] = useState<number | null>(null);
 
   return (
     <div className="space-y-2">
@@ -48,18 +53,38 @@ export function SlideWireframe({
           const g = shape.geometry!;
           const decision = shape.candidate ? (decisions.get(shape.shapeIndex) ?? "pending") : null;
           const selected = shape.shapeIndex === selectedShapeIndex;
+          const focused = shape.shapeIndex === focusedShapeIndex;
+          const emphasized = selected || focused;
           return (
             <g
               key={shape.shapeIndex}
               data-testid={`shape-${slide.source}-${shape.shapeIndex}`}
               onClick={shape.candidate ? () => onSelect(shape.shapeIndex) : undefined}
-              className={shape.candidate ? "cursor-pointer" : undefined}
+              className={shape.candidate ? "cursor-pointer focus:outline-none" : undefined}
+              // Tangentbordsstöd: <g> är inte fokuserbar av sig själv —
+              // role/tabIndex/Enter/Space gör kandidaterna likvärdiga med
+              // de geometri-lösa <button>-raderna under.
+              role={shape.candidate ? "button" : undefined}
+              tabIndex={shape.candidate ? 0 : undefined}
+              aria-label={shape.candidate ? `Textruta: ${shape.text.slice(0, 48)}` : undefined}
+              onKeyDown={
+                shape.candidate
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault(); // Space scrollar annars sidan
+                        onSelect(shape.shapeIndex);
+                      }
+                    }
+                  : undefined
+              }
+              onFocus={shape.candidate ? () => setFocusedShapeIndex(shape.shapeIndex) : undefined}
+              onBlur={shape.candidate ? () => setFocusedShapeIndex(null) : undefined}
             >
               <rect
                 x={g.x} y={g.y} width={g.cx} height={g.cy}
                 fill={decision ? DECISION_FILL[decision] : "transparent"}
-                stroke={selected ? "var(--accent)" : "var(--rule)"}
-                strokeWidth={(selected ? 2.5 : 0.75) * EMU_PER_PT}
+                stroke={emphasized ? "var(--accent)" : "var(--rule)"}
+                strokeWidth={(emphasized ? 2.5 : 0.75) * EMU_PER_PT}
                 strokeDasharray={decision === "skipped" ? `${2 * EMU_PER_PT} ${2 * EMU_PER_PT}` : undefined}
               />
               <text
