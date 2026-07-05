@@ -53,10 +53,24 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "mallen saknar storage-fil" }, { status: 409 });
   }
 
-  await supabase
+  // Compare-and-set på statusen vi läste: två samtidiga POST (t.ex. dubbelklick
+  // på force) skulle annars båda passera grinden ovan och starta dubbla
+  // after()-jobb = dubbla AI-kostnader. Bara den som träffar raden i oförändrad
+  // status vinner; förloraren får noll träffade rader → 409. onboarding_draft
+  // nollas i samma update — annars kan GET under pågående omkörning visa det
+  // gamla utkastet/fel-payloaden bredvid status 'classifying'.
+  const { data: claimed, error: casError } = await supabase
     .from("templates")
-    .update({ onboarding_status: "classifying" })
-    .eq("id", id);
+    .update({ onboarding_status: "classifying", onboarding_draft: null })
+    .eq("id", id)
+    .eq("onboarding_status", row.onboarding_status)
+    .select("id");
+  if (casError) {
+    return NextResponse.json({ error: casError.message }, { status: 500 });
+  }
+  if (!claimed || claimed.length === 0) {
+    return NextResponse.json({ error: "en klassificering pågår redan" }, { status: 409 });
+  }
 
   after(async () => {
     try {
