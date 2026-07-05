@@ -24,11 +24,18 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   // rått constraint-fel.
   const { data: tpl } = await supabase
     .from("templates")
-    .select("id")
+    .select("id, onboarding_status")
     .eq("id", id)
     .maybeSingle();
   if (!tpl) {
     return NextResponse.json({ error: "Template not found" }, { status: 404 });
+  }
+  // En halvfärdig kundmall får inte bli aktiv — den kan inte rendera något.
+  if (!["none", "onboarded"].includes(tpl.onboarding_status)) {
+    return NextResponse.json(
+      { error: "mallen är inte färdig-onboardad — slutför onboardingen först" },
+      { status: 409 },
+    );
   }
 
   // UPSERT: workspace_settings är en enradstabell vars rad KAN SAKNAS (färsk
