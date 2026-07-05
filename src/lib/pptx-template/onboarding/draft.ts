@@ -10,7 +10,10 @@ import { CAPABILITY_IDS } from "../template-profile";
  * Kolumnen bär även två icke-utkast-payloads som INTE valideras av detta schema:
  * { precount: { slides, candidates } } (satt av upload, läses av startsidan) och
  * { error: string } (satt när klassificeringsjobbet faller). Läsare kollar de
- * nycklarna före parseOnboardingDraft.
+ * nycklarna före parseOnboardingDraft — och måste även tåla ett KORRUPT utkast
+ * (objekt utan de nycklarna som ändå inte matchar schemat): parseOnboardingDraft
+ * kastar ZodError, så route-läsare fångar och mappar till ett fel-payload i
+ * st.f. att låta undantaget bli en icke-JSON-500.
  */
 
 /** Samma kontrakt som instrumentTemplates interna validering. */

@@ -10,20 +10,40 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-/** Läser mall-raden och normaliserar onboarding_draft-kolumnens tre payloads:
- *  utkast (schema-validerat), { error } (klassificeringsfel), { precount }
- *  (satt av upload, före klassificering). */
-async function loadOnboardingRow(id: string) {
+interface OnboardingRow {
+  id: string;
+  name: string;
+  version: number;
+  storage_path: string | null;
+  onboarding_status: string;
+  onboarding_draft: unknown;
+}
+
+/** Läser mall-raden. DB-fel blir ett räknat JSON-500 i st.f. ett throw ur
+ *  handlern — ett ofångat undantag ger en icke-JSON-500 som klienten inte kan
+ *  tolka (samma mönster som DELETE-handlerns guard-fel, routine-fynd #65). */
+async function loadOnboardingRow(
+  id: string,
+): Promise<{ ok: true; row: OnboardingRow | null } | { ok: false; response: NextResponse }> {
   const supabase = createServiceClient();
   const { data: row, error } = await supabase
     .from("templates")
     .select("id, name, version, storage_path, onboarding_status, onboarding_draft")
     .eq("id", id)
     .maybeSingle();
-  if (error) throw new Error(error.message);
-  return row;
+  if (error) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: error.message }, { status: 500 }),
+    };
+  }
+  return { ok: true, row };
 }
 
+/** Normaliserar onboarding_draft-kolumnens payloads: utkast (schema-validerat),
+ *  { error } (klassificeringsfel), { precount } (satt av upload, före
+ *  klassificering). Ett korrupt utkast (objekt som inte matchar något av dem)
+ *  får INTE kasta ZodError ur handlern — det mappas till ett fel-payload. */
 function draftPayload(raw: unknown): {
   draft: ReturnType<typeof parseOnboardingDraft> | null;
   error?: string;
@@ -33,7 +53,11 @@ function draftPayload(raw: unknown): {
     const obj = raw as Record<string, unknown>;
     if (typeof obj.error === "string") return { draft: null, error: obj.error };
     if (obj.precount) return { draft: null, precount: obj.precount as { slides: number; candidates: number } };
-    return { draft: parseOnboardingDraft(raw) };
+    try {
+      return { draft: parseOnboardingDraft(raw) };
+    } catch {
+      return { draft: null, error: "utkastet är korrupt — kör om klassificeringen" };
+    }
   }
   return { draft: null };
 }
@@ -47,7 +71,9 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   const idResult = parseUuidParam(rawId, "template id");
   if (!idResult.ok) return idResult.response;
 
-  const row = await loadOnboardingRow(idResult.data);
+  const loaded = await loadOnboardingRow(idResult.data);
+  if (!loaded.ok) return loaded.response;
+  const row = loaded.row;
   if (!row) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
   return NextResponse.json({
@@ -70,7 +96,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const parsed = await parseBody(request, OnboardingDecisionSchema);
   if (!parsed.ok) return parsed.response;
 
-  const row = await loadOnboardingRow(idResult.data);
+  const loaded = await loadOnboardingRow(idResult.data);
+  if (!loaded.ok) return loaded.response;
+  const row = loaded.row;
   if (!row) return NextResponse.json({ error: "Template not found" }, { status: 404 });
   if (row.onboarding_status !== "draft") {
     return NextResponse.json(
@@ -79,8 +107,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const { draft } = draftPayload(row.onboarding_draft);
-  if (!draft) return NextResponse.json({ error: "utkast saknas" }, { status: 409 });
+  // Korrupt utkast ska svara med SIN orsak, inte det missvisande "utkast saknas".
+  const { draft, error: draftError } = draftPayload(row.onboarding_draft);
+  if (!draft) {
+    return NextResponse.json({ error: draftError ?? "utkast saknas" }, { status: 409 });
+  }
 
   const result = applyDecision(draft, parsed.data);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 422 });
