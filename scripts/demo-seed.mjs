@@ -11,6 +11,7 @@
 //   node scripts/demo-seed.mjs [--base http://localhost:3000] [--rfp rfp-1.md] [--team 3]
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
 import { mintSessionCookies } from "./dev-session-cookies.mjs";
 
 function arg(name, fallback) {
@@ -83,22 +84,35 @@ await call(`/api/go-no-go/${assessment.id}`, {
 console.log(`    assessment ${assessment.id} → go`);
 
 // 5. Generate the bid (async server-side) and poll until it leaves "generating".
+//    Individual sections can fail on transient model hiccups (the export route
+//    refuses partial bids), so a failed attempt is deleted and retried once.
 console.log("5/6 Generating bid …");
-const bid = await call("/api/bids", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ analysisId: analysis.id, assessmentId: assessment.id, teamConsultantIds }),
-});
-let status = bid.status;
-const t0 = Date.now();
-while (status === "generating") {
-  if (Date.now() - t0 > 10 * 60 * 1000) throw new Error("bid generation timed out after 10 min");
-  await new Promise((r) => setTimeout(r, 5000));
-  status = (await call(`/api/bids/${bid.id}`)).status;
-  process.stdout.write(".");
+async function generateBid() {
+  const bid = await call("/api/bids", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ analysisId: analysis.id, assessmentId: assessment.id, teamConsultantIds }),
+  });
+  let info = bid;
+  const t0 = Date.now();
+  while (info.status === "generating") {
+    if (Date.now() - t0 > 10 * 60 * 1000) throw new Error("bid generation timed out after 10 min");
+    await new Promise((r) => setTimeout(r, 5000));
+    info = await call(`/api/bids/${bid.id}`);
+    process.stdout.write(".");
+  }
+  return { ...info, id: bid.id };
 }
-console.log(`\n    bid ${bid.id} → ${status}`);
-if (status !== "draft") throw new Error(`unexpected bid status: ${status}`);
+const bidOk = (b) => b.status === "draft" && (b.failedBundles ?? []).length === 0;
+let bid = await generateBid();
+if (!bidOk(bid)) {
+  console.log(`\n    attempt incomplete (status ${bid.status}, failed: ${JSON.stringify(bid.failedBundles ?? [])}) — retrying once`);
+  const service = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  await service.from("bids").delete().eq("id", bid.id);
+  bid = await generateBid();
+  if (!bidOk(bid)) throw new Error(`bid generation incomplete after retry (status ${bid.status}, failed: ${JSON.stringify(bid.failedBundles ?? [])})`);
+}
+console.log(`\n    bid ${bid.id} → ${bid.status}`);
 
 // 6. Export the PPTX to verify the full chain end-to-end.
 console.log("6/6 Exporting PPTX …");
