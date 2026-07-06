@@ -167,9 +167,11 @@ export async function buildGenericProseSlideSections(
 }
 
 /** Maps a keyed AI response back to one BidSection per slot, dropping slots the
- *  model answered "" (or omitted) — those are left to the caller to record. Same
- *  section shape as buildGenericProseSection; shared by the slide batch and the
- *  re-ask batch so both map responses identically. */
+ *  model answered blank (or omitted) — those are left to the caller to record.
+ *  Same section shape as buildGenericProseSection; shared by the slide batch and
+ *  the re-ask batch so both map responses identically. This is the SINGLE
+ *  empty-decision point: the orchestrator's re-ask collection and its
+ *  post-re-ask merge both derive from which sections this produces. */
 function sectionsFromRecord(
   record: Record<string, unknown>,
   slots: GenericProseSlot[],
@@ -179,8 +181,11 @@ function sectionsFromRecord(
   for (const slot of slots) {
     const text = record[slot.placeholder];
     // Empty answer (the "skriv kortare" rule invites "") or a missing key →
-    // produce no section; the orchestrator records that slot as failed.
-    if (typeof text !== "string" || text.length === 0) continue;
+    // produce no section; the orchestrator re-asks / records that slot as
+    // failed. Trimmed for DETECTION only — "\n  " is as blank on the slide as
+    // "" and must not dodge the re-ask; the stored text stays as the model
+    // wrote it (wave-1 sections have never trimmed content).
+    if (typeof text !== "string" || text.trim().length === 0) continue;
     sections.push({
       type: "ai",
       key: `generic-prose:${slot.placeholder}`,

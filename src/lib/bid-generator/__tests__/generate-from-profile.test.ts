@@ -276,6 +276,30 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
     expect(callSchemaKeys(idx)).toEqual(["{A2}", "{B1}"]);
   });
 
+  // Whitespace-only is as blank on the slide as "" — it must hit the re-ask,
+  // not slip through as a "filled" section (reviewer minor on the F6 pass).
+  it("re-asks a slot the model answered whitespace-only for", async () => {
+    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
+      const out: Record<string, string> = {};
+      for (const key of Object.keys(opts.schema.shape)) {
+        out[key] = !isReask(opts) && key === "{Blank}" ? "\n  " : `text ${key}`;
+      }
+      return out;
+    });
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{Blank}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    const idx = reaskCallIndex();
+    expect(idx).toBeGreaterThan(-1);
+    expect(callSchemaKeys(idx)).toEqual(["{Blank}"]);
+    expect(failedSections).toEqual([]);
+    const refilled = sections.find((s) => s.key === "generic-prose:{Blank}");
+    expect(refilled?.content && refilled.content.format === "generic-prose" && refilled.content.text).toBe("text {Blank}");
+  });
+
   // (b) re-ask fills every empty → all sections present, failedSections empty.
   it("completes every section when the re-ask fills the empties", async () => {
     mockWaveThenReask(["{A2}", "{B1}"]);
