@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { z } from "zod";
 import type { BidContext } from "../context";
 import type { RfpAnalysis } from "@/lib/types";
 
@@ -83,6 +84,110 @@ describe("GenericProseBundleSchema", () => {
   });
 });
 
+// The batch calls hand callClaude a FIXED sections-array schema (constant grammar
+// complexity — the dynamic per-placeholder keys blew the live grammar compiler),
+// and the client maps the array back to one section per requested slot.
+describe("fixed sections-array schema + mapping", () => {
+  const schemaShapeKeys = (call: number) =>
+    Object.keys(
+      (vi.mocked(callClaude).mock.calls[call][0].schema as z.ZodObject<z.ZodRawShape>).shape,
+    );
+
+  it("hands callClaude the fixed schema (one `sections` key, no dynamic placeholder keys)", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
+    await buildGenericProseSlideSections(
+      [{ placeholder: "{Upphandlande organisation}", intent: "i" }],
+      baseCtx,
+    );
+    expect(schemaShapeKeys(0)).toEqual(["sections"]);
+    expect(schemaShapeKeys(0)).not.toContain("{Upphandlande organisation}");
+  });
+
+  it("maps the sections array back to one section per slot (placeholder + key preserved)", async () => {
+    vi.mocked(callClaude).mockResolvedValue({
+      sections: [
+        { placeholder: "{A}", text: "text A" },
+        { placeholder: "{B}", text: "text B" },
+      ],
+    });
+    const out = await buildGenericProseSlideSections(
+      [{ placeholder: "{A}", intent: "ia" }, { placeholder: "{B}", intent: "ib" }],
+      baseCtx,
+    );
+    expect(out.map((s) => s.key)).toEqual(["generic-prose:{A}", "generic-prose:{B}"]);
+    const c = out[0].content;
+    expect(c && c.format === "generic-prose" && c.placeholder).toBe("{A}");
+    expect(c && c.format === "generic-prose" && c.text).toBe("text A");
+  });
+
+  it("drops an unknown placeholder the model invents (no section, no throw)", async () => {
+    vi.mocked(callClaude).mockResolvedValue({
+      sections: [
+        { placeholder: "{A}", text: "text A" },
+        { placeholder: "{HALLUCINATED}", text: "junk the model made up" },
+      ],
+    });
+    const out = await buildGenericProseSlideSections([{ placeholder: "{A}", intent: "ia" }], baseCtx);
+    expect(out.map((s) => s.key)).toEqual(["generic-prose:{A}"]);
+  });
+
+  it("keeps the FIRST element when the model repeats a placeholder (first wins)", async () => {
+    vi.mocked(callClaude).mockResolvedValue({
+      sections: [
+        { placeholder: "{A}", text: "first" },
+        { placeholder: "{A}", text: "second" },
+      ],
+    });
+    const out = await buildGenericProseSlideSections([{ placeholder: "{A}", intent: "ia" }], baseCtx);
+    expect(out).toHaveLength(1);
+    const c = out[0].content;
+    expect(c && c.format === "generic-prose" && c.text).toBe("first");
+  });
+
+  it("produces no section for a requested placeholder the response omits (→ orchestrator re-ask)", async () => {
+    vi.mocked(callClaude).mockResolvedValue({
+      sections: [{ placeholder: "{A}", text: "text A" }],
+    });
+    const out = await buildGenericProseSlideSections(
+      [{ placeholder: "{A}", intent: "ia" }, { placeholder: "{Missing}", intent: "im" }],
+      baseCtx,
+    );
+    expect(out.map((s) => s.key)).toEqual(["generic-prose:{A}"]);
+  });
+
+  it("produces no section for a blank/whitespace-only answer (→ orchestrator re-ask)", async () => {
+    vi.mocked(callClaude).mockResolvedValue({
+      sections: [
+        { placeholder: "{A}", text: "text A" },
+        { placeholder: "{Blank}", text: "\n  " },
+      ],
+    });
+    const out = await buildGenericProseSlideSections(
+      [{ placeholder: "{A}", intent: "ia" }, { placeholder: "{Blank}", intent: "ib" }],
+      baseCtx,
+    );
+    expect(out.map((s) => s.key)).toEqual(["generic-prose:{A}"]);
+  });
+
+  it("re-ask uses the SAME fixed schema and mapping (unknowns dropped, first wins)", async () => {
+    vi.mocked(callClaude).mockResolvedValue({
+      sections: [
+        { placeholder: "{A}", text: "reasked A" },
+        { placeholder: "{A}", text: "dup ignored" },
+        { placeholder: "{X}", text: "unknown dropped" },
+      ],
+    });
+    const out = await buildGenericProseReaskSections(
+      [{ slot: { placeholder: "{A}", intent: "ia" }, slideSource: 1 }],
+      baseCtx,
+    );
+    expect(schemaShapeKeys(0)).toEqual(["sections"]);
+    expect(out.map((s) => s.key)).toEqual(["generic-prose:{A}"]);
+    const c = out[0].content;
+    expect(c && c.format === "generic-prose" && c.text).toBe("reasked A");
+  });
+});
+
 // The key ceiling is enforced IN the bundle functions, not only by the
 // orchestrator's chunking — a future call site that skips the chunking must fail
 // loudly BEFORE the paid call, not reintroduce the API's non-retryable 400
@@ -99,7 +204,7 @@ describe("MAX_KEYS_PER_CALL guard", () => {
   });
 
   it("buildGenericProseSlideSections accepts exactly MAX_KEYS_PER_CALL slots", async () => {
-    vi.mocked(callClaude).mockResolvedValue({});
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
     await expect(
       buildGenericProseSlideSections(slotsOf(MAX_KEYS_PER_CALL), baseCtx),
     ).resolves.toEqual([]);
@@ -115,7 +220,7 @@ describe("MAX_KEYS_PER_CALL guard", () => {
   });
 
   it("buildGenericProseReaskSections accepts exactly MAX_KEYS_PER_CALL targets", async () => {
-    vi.mocked(callClaude).mockResolvedValue({});
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
     const targets = slotsOf(MAX_KEYS_PER_CALL).map((slot) => ({ slot, slideSource: 1 }));
     await expect(buildGenericProseReaskSections(targets, baseCtx)).resolves.toEqual([]);
     expect(vi.mocked(callClaude)).toHaveBeenCalledTimes(1);
@@ -126,7 +231,7 @@ describe("MAX_KEYS_PER_CALL guard", () => {
 // so the sibling block never outgrows the actual work list.
 describe("sibling context", () => {
   it("includes sibling intent, truncated with an ellipsis when long", async () => {
-    vi.mocked(callClaude).mockResolvedValue({ "{A}": "x" });
+    vi.mocked(callClaude).mockResolvedValue({ sections: [{ placeholder: "{A}", text: "x" }] });
     const longIntent = "x".repeat(120);
     await buildGenericProseSlideSections(
       [{ placeholder: "{A}", intent: "a" }],

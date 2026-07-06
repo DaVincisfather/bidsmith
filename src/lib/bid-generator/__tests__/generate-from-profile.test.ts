@@ -6,11 +6,12 @@ import type { TemplateProfile, SlideProfile } from "@/lib/pptx-template/template
 import type { BidContext } from "../context";
 
 // callClaude is the paid Sonnet call — mocked so the generator runs offline
-// while the REAL buildGenericProseSlideSections executes. The mock reads the
-// per-CALL schema it was handed and echoes one string per placeholder, so we can
-// assert call count (one per CHUNK — a slide ≤MAX_KEYS_PER_CALL slots is one
-// chunk, so small slides are still one call each), schema keys (= that chunk's
-// placeholders) and how the response maps back to sections.
+// while the REAL buildGenericProseSlideSections executes. The schema is now the
+// FIXED sections-array schema on every call, so the mock reads the per-CALL
+// placeholders out of the prompt's JSON example and echoes one array element per
+// placeholder. That lets us assert call count (one per CHUNK — a slide
+// ≤MAX_KEYS_PER_CALL slots is one chunk, so small slides are still one call each),
+// which placeholders a call covered, and how the response maps back to sections.
 const callClaudeMock = vi.fn();
 vi.mock("@/lib/ai-client", () => ({
   callClaude: (...args: unknown[]) => callClaudeMock(...args),
@@ -36,24 +37,41 @@ const ctx: BidContext = {
   },
 };
 
-// The schema handed to callClaude, keyed by the slide's placeholders.
-type SlideCall = { schema: z.ZodObject<z.ZodRawShape> };
-function callSchemaKeys(call: number): string[] {
-  const arg = callClaudeMock.mock.calls[call][0] as SlideCall;
-  return Object.keys(arg.schema.shape);
+// The schema is now the FIXED sections-array schema — identical on every call —
+// so a call's requested placeholders no longer live in the schema keys. They're
+// listed in the system prompt's JSON example as `"placeholder": "{...}"`. Reading
+// them back from the prompt is how the mock knows what to echo and how the
+// assertions tell which slots a call covered. Sibling context lines are
+// `- "{P}": intent` (no `"placeholder":`), so they're correctly excluded.
+type CallArg = { schema: z.ZodObject<z.ZodRawShape>; system: string; label?: string };
+function requestedPlaceholders(system: string): string[] {
+  return [...system.matchAll(/"placeholder":\s*"([^"]+)"/g)].map((m) => m[1]);
+}
+function callPlaceholders(call: number): string[] {
+  const arg = callClaudeMock.mock.calls[call][0] as CallArg;
+  return requestedPlaceholders(arg.system);
 }
 
-// Default happy path: echo one string per placeholder the schema asked for.
+// Build a fixed-schema response ({ sections: [...] }) with one element per
+// requested placeholder, blanking any listed in `blank`.
+function sectionsResponse(placeholders: string[], blank: string[] = []) {
+  return {
+    sections: placeholders.map((p) => ({
+      placeholder: p,
+      text: blank.includes(p) ? "" : `text ${p}`,
+    })),
+  };
+}
+
+// Default happy path: echo one element per placeholder the prompt asked for.
 function echoAllKeys() {
-  callClaudeMock.mockImplementation(async (opts: SlideCall) => {
-    const out: Record<string, string> = {};
-    for (const key of Object.keys(opts.schema.shape)) out[key] = `text ${key}`;
-    return out;
-  });
+  callClaudeMock.mockImplementation(async (opts: CallArg) =>
+    sectionsResponse(requestedPlaceholders(opts.system)),
+  );
 }
 
 // Wave-1 slide calls carry label "generic-prose slide bundle"; the batched
-// re-ask carries "generic-prose re-ask" — this is how the mock and the schema-key
+// re-ask carries "generic-prose re-ask" — this is how the mock and the
 // assertions tell the two waves apart.
 const REASK_LABEL = "generic-prose re-ask";
 function isReask(opts: { label?: string }) {
@@ -63,15 +81,12 @@ function isReask(opts: { label?: string }) {
 // Mock that leaves `emptyOnWave1` blank on the first (per-slide) pass, then on
 // the re-ask leaves only `stillEmpty` blank (default: fills everything).
 function mockWaveThenReask(emptyOnWave1: string[], stillEmpty: string[] = []) {
-  callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
-    const reask = isReask(opts);
-    const out: Record<string, string> = {};
-    for (const key of Object.keys(opts.schema.shape)) {
-      const blank = reask ? stillEmpty.includes(key) : emptyOnWave1.includes(key);
-      out[key] = blank ? "" : `text ${key}`;
-    }
-    return out;
-  });
+  callClaudeMock.mockImplementation(async (opts: CallArg) =>
+    sectionsResponse(
+      requestedPlaceholders(opts.system),
+      isReask(opts) ? stillEmpty : emptyOnWave1,
+    ),
+  );
 }
 
 // Index of the single re-ask call (the one labelled REASK_LABEL).
@@ -98,8 +113,8 @@ beforeEach(() => {
 });
 
 describe("generateSectionsFromProfile", () => {
-  // (a) one call per slide; schema keys = that slide's placeholders.
-  it("fires exactly one call per slide with the slide's placeholders as schema keys", async () => {
+  // (a) one call per slide; the call's requested placeholders = that slide's slots.
+  it("fires exactly one call per slide requesting that slide's placeholders", async () => {
     echoAllKeys();
     const profile = profileWith([
       {
@@ -121,8 +136,8 @@ describe("generateSectionsFromProfile", () => {
     await generateSectionsFromProfile(profile, ctx);
 
     expect(callClaudeMock).toHaveBeenCalledTimes(2);
-    expect(callSchemaKeys(0)).toEqual(["{A1}", "{A2}", "{A3}"]);
-    expect(callSchemaKeys(1)).toEqual(["{B1}", "{B2}"]);
+    expect(callPlaceholders(0)).toEqual(["{A1}", "{A2}", "{A3}"]);
+    expect(callPlaceholders(1)).toEqual(["{B1}", "{B2}"]);
   });
 
   // (b) response maps to one BidSection per slot with the right placeholder/key.
@@ -156,12 +171,10 @@ describe("generateSectionsFromProfile", () => {
 
   // (c) one slide's call rejecting fails only that slide's slots; other slide survives.
   it("isolates a slide failure — its slots fail, other slides' sections survive", async () => {
-    callClaudeMock.mockImplementation(async (opts: SlideCall) => {
-      const keys = Object.keys(opts.schema.shape);
-      if (keys.includes("{B1}")) throw new Error("boom");
-      const out: Record<string, string> = {};
-      for (const key of keys) out[key] = `text ${key}`;
-      return out;
+    callClaudeMock.mockImplementation(async (opts: CallArg) => {
+      const ph = requestedPlaceholders(opts.system);
+      if (ph.includes("{B1}")) throw new Error("boom");
+      return sectionsResponse(ph);
     });
     const profile = profileWith([
       { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}")] },
@@ -206,16 +219,17 @@ describe("generateSectionsFromProfile", () => {
     const { sections } = await generateSectionsFromProfile(profile, ctx);
 
     expect(callClaudeMock).toHaveBeenCalledTimes(1);
-    expect(callSchemaKeys(0)).toEqual(["{Keep}"]);
+    expect(callPlaceholders(0)).toEqual(["{Keep}"]);
     expect(sections.map((s) => s.key)).toEqual(["generic-prose:{Keep}"]);
   });
 
   // The schema itself must accept both a blank AND a dropped key — a required
   // z.string() (or a .min(1)) fails Zod client-side and, after paid retries,
-  // sinks the whole slide when the model answers "" or omits a slot. The keys
-  // stay present in the shape (so the response still maps back per placeholder)
-  // but are optional, so a missing key degrades to a per-slot re-ask.
-  it("builds the slide schema with optional keys (empty string AND a missing key both parse)", async () => {
+  // sinks the whole slide when the model answers "" or omits a slot. The fixed
+  // sections-array schema is what the live grammar can compile: ONE `sections`
+  // key (never the placeholders as dynamic keys), and an element's blank text —
+  // or an omitted element — both parse, degrading to a per-slot re-ask.
+  it("uses the fixed sections-array schema (no dynamic placeholder keys); blank text and a missing element both parse", async () => {
     echoAllKeys();
     const profile = profileWith([
       { source: 1, capability: "generic-prose", slots: [genericSlot("{A}"), genericSlot("{B}")] },
@@ -223,12 +237,19 @@ describe("generateSectionsFromProfile", () => {
 
     await generateSectionsFromProfile(profile, ctx);
 
-    const arg = callClaudeMock.mock.calls[0][0] as SlideCall;
-    // Keys are present in the schema shape (one per placeholder)...
-    expect(Object.keys(arg.schema.shape)).toEqual(["{A}", "{B}"]);
-    // ...but optional: "" parses (no min-gate) and a DROPPED key parses too.
-    expect(arg.schema.safeParse({ "{A}": "", "{B}": "" }).success).toBe(true);
-    expect(arg.schema.safeParse({ "{A}": "text {A}" }).success).toBe(true); // {B} omitted
+    const arg = callClaudeMock.mock.calls[0][0] as CallArg;
+    // The schema is fixed: a single `sections` key and NO dynamic placeholder keys.
+    expect(Object.keys(arg.schema.shape)).toEqual(["sections"]);
+    expect(Object.keys(arg.schema.shape)).not.toContain("{A}");
+    expect(Object.keys(arg.schema.shape)).not.toContain("{B}");
+    // The requested placeholders live in the prompt, not the schema.
+    expect(requestedPlaceholders(arg.system)).toEqual(["{A}", "{B}"]);
+    // An element with blank text parses (no min-gate)...
+    expect(arg.schema.safeParse({ sections: [{ placeholder: "{A}", text: "" }] }).success).toBe(true);
+    // ...and an array that omits a requested placeholder parses too ({B} dropped).
+    expect(
+      arg.schema.safeParse({ sections: [{ placeholder: "{A}", text: "text {A}" }] }).success,
+    ).toBe(true);
   });
 
   // Bounds in-flight SLIDES (not one giant Promise.all over every slide). F5
@@ -237,14 +258,12 @@ describe("generateSectionsFromProfile", () => {
   it("caps concurrency at 12 slides (chunked, not unbounded)", async () => {
     let inFlight = 0;
     let peak = 0;
-    callClaudeMock.mockImplementation(async (opts: SlideCall) => {
+    callClaudeMock.mockImplementation(async (opts: CallArg) => {
       inFlight++;
       peak = Math.max(peak, inFlight);
       await new Promise((r) => setTimeout(r, 0));
       inFlight--;
-      const out: Record<string, string> = {};
-      for (const key of Object.keys(opts.schema.shape)) out[key] = `text ${key}`;
-      return out;
+      return sectionsResponse(requestedPlaceholders(opts.system));
     });
     const profile = profileWith(
       Array.from({ length: 15 }, (_, i): SlideProfile => ({
@@ -281,19 +300,18 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
     expect(callClaudeMock).toHaveBeenCalledTimes(3);
     const idx = reaskCallIndex();
     expect(idx).toBe(2);
-    expect(callSchemaKeys(idx)).toEqual(["{A2}", "{B1}"]);
+    expect(callPlaceholders(idx)).toEqual(["{A2}", "{B1}"]);
   });
 
   // Whitespace-only is as blank on the slide as "" — it must hit the re-ask,
   // not slip through as a "filled" section (reviewer minor on the F6 pass).
   it("re-asks a slot the model answered whitespace-only for", async () => {
-    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
-      const out: Record<string, string> = {};
-      for (const key of Object.keys(opts.schema.shape)) {
-        out[key] = !isReask(opts) && key === "{Blank}" ? "\n  " : `text ${key}`;
-      }
-      return out;
-    });
+    callClaudeMock.mockImplementation(async (opts: CallArg) => ({
+      sections: requestedPlaceholders(opts.system).map((p) => ({
+        placeholder: p,
+        text: !isReask(opts) && p === "{Blank}" ? "\n  " : `text ${p}`,
+      })),
+    }));
     const profile = profileWith([
       { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{Blank}")] },
     ]);
@@ -302,7 +320,7 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
 
     const idx = reaskCallIndex();
     expect(idx).toBeGreaterThan(-1);
-    expect(callSchemaKeys(idx)).toEqual(["{Blank}"]);
+    expect(callPlaceholders(idx)).toEqual(["{Blank}"]);
     expect(failedSections).toEqual([]);
     const refilled = sections.find((s) => s.key === "generic-prose:{Blank}");
     expect(refilled?.content && refilled.content.format === "generic-prose" && refilled.content.text).toBe("text {Blank}");
@@ -346,11 +364,9 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
   // (d) the re-ask call rejecting → all re-ask slots to failedSections, wave-1
   // sections untouched. The re-ask must never fell a slot that already succeeded.
   it("sends only re-ask slots to failedSections when the re-ask rejects", async () => {
-    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
+    callClaudeMock.mockImplementation(async (opts: CallArg) => {
       if (isReask(opts)) throw new Error("reask boom");
-      const out: Record<string, string> = {};
-      for (const key of Object.keys(opts.schema.shape)) out[key] = key === "{A2}" ? "" : `text ${key}`;
-      return out;
+      return sectionsResponse(requestedPlaceholders(opts.system), ["{A2}"]);
     });
     const profile = profileWith([
       { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}")] },
@@ -382,12 +398,10 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
   // couldn't parse buys nothing; its slots fail directly, and if that's the only
   // failure no re-ask fires.
   it("does not re-ask a rejected slide's slots", async () => {
-    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
-      const keys = Object.keys(opts.schema.shape);
-      if (keys.includes("{B1}")) throw new Error("boom");
-      const out: Record<string, string> = {};
-      for (const key of keys) out[key] = `text ${key}`;
-      return out;
+    callClaudeMock.mockImplementation(async (opts: CallArg) => {
+      const ph = requestedPlaceholders(opts.system);
+      if (ph.includes("{B1}")) throw new Error("boom");
+      return sectionsResponse(ph);
     });
     const profile = profileWith([
       { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}")] },
@@ -404,19 +418,18 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
     ]);
   });
 
-  // A wave-1 response that OMITS a key entirely (undefined, not "") must degrade
-  // exactly like a blank one: the missing slot goes to the re-ask, the slide's
-  // other sections survive. This is the real-mall failure the optional schema
-  // fixes — a required z.string() would have rejected the whole slide instead.
+  // A wave-1 response that OMITS a slot's element entirely (no array element, not
+  // "") must degrade exactly like a blank one: the missing slot goes to the
+  // re-ask, the slide's other sections survive. This is the real-mall failure the
+  // fixed sections-array schema tolerates — the array simply need not cover every
+  // requested placeholder, so a dropped slot never rejects the whole slide.
   it("re-asks a slot the wave-1 response omits entirely (undefined), other sections survive", async () => {
-    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
-      const out: Record<string, string> = {};
-      for (const key of Object.keys(opts.schema.shape)) {
-        if (!isReask(opts) && key === "{A2}") continue; // drop the key entirely on wave 1
-        out[key] = `text ${key}`;
-      }
-      return out;
-    });
+    callClaudeMock.mockImplementation(async (opts: CallArg) => ({
+      // Drop {A2}'s element entirely on wave 1 (keep it on the re-ask).
+      sections: requestedPlaceholders(opts.system)
+        .filter((p) => isReask(opts) || p !== "{A2}")
+        .map((p) => ({ placeholder: p, text: `text ${p}` })),
+    }));
     const profile = profileWith([
       { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}"), genericSlot("{A3}")] },
       { source: 2, capability: "generic-prose", slots: [genericSlot("{B1}")] },
@@ -426,7 +439,7 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
 
     const idx = reaskCallIndex();
     expect(idx).toBeGreaterThan(-1);
-    expect(callSchemaKeys(idx)).toEqual(["{A2}"]);
+    expect(callPlaceholders(idx)).toEqual(["{A2}"]);
     expect(failedSections).toEqual([]);
     expect(sections.map((s) => s.key).sort()).toEqual([
       "generic-prose:{A1}", "generic-prose:{A2}", "generic-prose:{A3}", "generic-prose:{B1}",
@@ -436,14 +449,12 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
   // A re-ask response that OMITS a key (undefined, not "") degrades per slot too:
   // only that placeholder lands in failedSections, wave-1 sections untouched.
   it("fails only the slot the re-ask response omits (undefined), wave-1 sections untouched", async () => {
-    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
-      const out: Record<string, string> = {};
-      for (const key of Object.keys(opts.schema.shape)) {
-        if (key === "{A2}") continue; // wave 1 drops it, re-ask drops it again
-        out[key] = `text ${key}`;
-      }
-      return out;
-    });
+    callClaudeMock.mockImplementation(async (opts: CallArg) => ({
+      // {A2} dropped on both wave 1 and the re-ask.
+      sections: requestedPlaceholders(opts.system)
+        .filter((p) => p !== "{A2}")
+        .map((p) => ({ placeholder: p, text: `text ${p}` })),
+    }));
     const profile = profileWith([
       { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}")] },
     ]);
@@ -458,7 +469,7 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
 
   // The re-ask schema, like the slide schema, must be optional so a partial
   // re-ask response degrades per slot instead of rejecting the whole re-ask.
-  it("builds the re-ask schema with optional keys (a missing key parses)", async () => {
+  it("uses the same fixed sections-array schema for the re-ask (a missing element parses)", async () => {
     mockWaveThenReask(["{A2}"]);
     const profile = profileWith([
       { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}")] },
@@ -468,16 +479,18 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
 
     const idx = reaskCallIndex();
     expect(idx).toBeGreaterThan(-1);
-    const arg = callClaudeMock.mock.calls[idx][0] as SlideCall;
-    expect(Object.keys(arg.schema.shape)).toEqual(["{A2}"]);
-    expect(arg.schema.safeParse({}).success).toBe(true); // dropped key parses
+    const arg = callClaudeMock.mock.calls[idx][0] as CallArg;
+    // Fixed schema on the re-ask too — single `sections` key, no dynamic keys.
+    expect(Object.keys(arg.schema.shape)).toEqual(["sections"]);
+    expect(requestedPlaceholders(arg.system)).toEqual(["{A2}"]);
+    expect(arg.schema.safeParse({ sections: [] }).success).toBe(true); // dropped element parses
   });
 });
 
-// Key-chunking (≤MAX_KEYS_PER_CALL=12 per call): the live structured-outputs API
-// rejects large optional schemas with NON-retryable 400s ("too many optional
-// parameters (25", "Schema is too complex", "Grammar compilation timed out"), so
-// a slide with 20–30 slots must split across calls instead of firing one wide one.
+// Key-chunking (≤MAX_KEYS_PER_CALL=12 per call): the cap no longer guards schema
+// complexity (the fixed sections-array schema removed that ceiling) but still
+// bounds attention dilution and prompt size, so a slide with 20–30 slots is still
+// split across calls instead of firing one wide one.
 describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => {
   // Builds N generic-prose slots {S0}..{S(N-1)} on one slide.
   function slideWithSlots(source: number, n: number): SlideProfile {
@@ -490,8 +503,8 @@ describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => 
   const reaskCallCount = () =>
     callClaudeMock.mock.calls.filter((c) => isReask(c[0] as { label?: string })).length;
 
-  // (a) 30 slots → ⌈30/12⌉ = 3 calls; schema keys disjoint and together = all 30.
-  it("splits a 30-slot slide into 3 calls whose schema keys are disjoint and cover every slot", async () => {
+  // (a) 30 slots → ⌈30/12⌉ = 3 calls; requested placeholders disjoint and together = all 30.
+  it("splits a 30-slot slide into 3 calls whose requested placeholders are disjoint and cover every slot", async () => {
     echoAllKeys();
     const all = Array.from({ length: 30 }, (_, i) => `{S${i}}`);
     const profile = profileWith([slideWithSlots(1, 30)]);
@@ -499,7 +512,7 @@ describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => 
     const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
 
     expect(callClaudeMock).toHaveBeenCalledTimes(3);
-    const keySets = [callSchemaKeys(0), callSchemaKeys(1), callSchemaKeys(2)];
+    const keySets = [callPlaceholders(0), callPlaceholders(1), callPlaceholders(2)];
     expect(keySets.map((k) => k.length)).toEqual([12, 12, 6]); // ≤12 each
     // Disjoint: no placeholder appears in two calls.
     const flat = keySets.flat();
@@ -521,9 +534,9 @@ describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => 
 
     await generateSectionsFromProfile(profile, ctx);
 
-    const call0 = callClaudeMock.mock.calls[0][0] as SlideCall & { system: string };
-    // {S29} lives in call 2's schema, so on call 0 it can only be a context sibling.
-    expect(callSchemaKeys(0)).not.toContain("{S29}");
+    const call0 = callClaudeMock.mock.calls[0][0] as CallArg;
+    // {S29} lives in call 2's chunk, so on call 0 it can only be a context sibling.
+    expect(callPlaceholders(0)).not.toContain("{S29}");
     expect(call0.system).toContain("Övriga sektioner på samma slide");
     // Placeholder AND its intent, on the "- {P}: intent" line form.
     expect(call0.system).toContain(`- "{S29}": intent {S29}`);
@@ -533,12 +546,10 @@ describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => 
   // chunk survives (chunk-level isolation, not slide-level).
   it("isolates a chunk failure — its slots fail, the slide's other chunk survives", async () => {
     // 15 slots → chunk1 {S0}..{S11}, chunk2 {S12},{S13},{S14}. Reject chunk2.
-    callClaudeMock.mockImplementation(async (opts: SlideCall) => {
-      const keys = Object.keys(opts.schema.shape);
-      if (keys.includes("{S12}")) throw new Error("boom");
-      const out: Record<string, string> = {};
-      for (const key of keys) out[key] = `text ${key}`;
-      return out;
+    callClaudeMock.mockImplementation(async (opts: CallArg) => {
+      const ph = requestedPlaceholders(opts.system);
+      if (ph.includes("{S12}")) throw new Error("boom");
+      return sectionsResponse(ph);
     });
     const profile = profileWith([slideWithSlots(1, 15)]);
 
@@ -572,11 +583,11 @@ describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => 
     expect(callClaudeMock).toHaveBeenCalledTimes(5);
     expect(reaskCallCount()).toBe(2);
     const reaskCalls = callClaudeMock.mock.calls
-      .map((c) => c[0] as SlideCall & { label?: string })
+      .map((c) => c[0] as CallArg)
       .filter((o) => isReask(o));
-    expect(reaskCalls.map((o) => Object.keys(o.schema.shape).length)).toEqual([12, 1]);
+    expect(reaskCalls.map((o) => requestedPlaceholders(o.system).length)).toEqual([12, 1]);
     // Re-ask key union = exactly the 13 empties, disjoint across the 2 calls.
-    const reaskKeys = reaskCalls.flatMap((o) => Object.keys(o.schema.shape));
+    const reaskKeys = reaskCalls.flatMap((o) => requestedPlaceholders(o.system));
     expect(new Set(reaskKeys).size).toBe(reaskKeys.length);
     expect([...reaskKeys].sort()).toEqual([...emptyOnWave1].sort());
     // Every slot filled in the end — nothing failed, all 30 sections present.
