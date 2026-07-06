@@ -18,9 +18,17 @@ function decisionLabel(decision: DraftSlot["decision"]): string {
 }
 
 export function SummaryView({ slots, confirmed, saving, uiError, onBack, onComplete }: SummaryViewProps) {
+  const pending = slots.filter((s) => s.decision === "pending").length;
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-display">Sammanfattning</h2>
+      {pending > 0 && (
+        <div className="bg-amber-50 border border-amber-300 text-amber-900 px-4 py-3 rounded text-sm">
+          {pending === 1
+            ? "1 textruta är ej beslutad — den lämnas orörd i mallen (samma som Skippa)."
+            : `${pending} textrutor är ej beslutade — de lämnas orörda i mallen (samma som Skippa).`}
+        </div>
+      )}
       <table className="w-full text-sm border border-rule rounded-lg overflow-hidden">
         <thead className="bg-paper-2">
           <tr>
