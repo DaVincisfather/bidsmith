@@ -24,6 +24,11 @@ export interface ShapeText {
   /** Autofit ur <a:bodyPr>: "norm" (texten krymps — geometrin är inte bindande),
    *  "spAuto" (boxen växer), "none" (explicit noAutofit) eller null (ej angiven). */
   autofit: "norm" | "spAuto" | "none" | null;
+  /** true = shapen ligger inuti en <p:grpSp>; dess xfrm är grupp-lokal (relativt
+   *  gruppens childOffset), inte slide-global — geometrin kan därför inte ritas
+   *  rakt i slide-koordinater. Shape-indexeringen (dokumentordning) är oförändrad;
+   *  wireframen droppar bara geometrin för dessa (se draft-logic buildDraft). */
+  inGroup: boolean;
 }
 
 export interface SlideShapes {
@@ -142,6 +147,24 @@ function hasPicAncestor(node: Element): boolean {
   return false;
 }
 
+// Sant när shapen har en <p:grpSp>-förfader — då är dess <a:xfrm> grupp-lokal och
+// ritas fel om den tolkas som slide-global (samma parent-traversering som
+// hasPicAncestor). Additivt: påverkar inte extractShapes dokumentordning/index.
+function hasGrpSpAncestor(node: Element): boolean {
+  let parent = node.parentNode;
+  while (parent) {
+    if (
+      parent.nodeType === 1 &&
+      (parent as Element).localName === "grpSp" &&
+      (parent as Element).namespaceURI === P_NS
+    ) {
+      return true;
+    }
+    parent = parent.parentNode;
+  }
+  return false;
+}
+
 async function readEntry(zip: JSZip, name: string): Promise<string> {
   const entry = zip.file(name);
   if (!entry) throw new Error(`PPTX saknar ${name} — är filen en giltig presentation?`);
@@ -178,6 +201,7 @@ function extractShapes(
       fontSizePt: readFontSizePt(txBody) ?? defaultFontSizePt,
       lineSpacingPct: readLineSpacingPct(txBody),
       autofit: readAutofit(txBody),
+      inGroup: hasGrpSpAncestor(sp),
     });
   }
   return shapes;

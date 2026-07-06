@@ -4,26 +4,37 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-04 — noll-hallucinationsspåret komplett & mergat (#54–#68); migr. 009/010/011 körda. NÄSTA: onboarding-wizard._
+_Senast uppdaterad: 2026-07-06 — onboarding-wizarden komplett (PR #70); migr. 012 VÄNTAR på applicering. NÄSTA: migr. 012 + operatörsverifiering + stickprov._
 
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **Onboarding-wizard för kundmallar** — SISTA biten av mall-uppladdningsspåret.
-      Riktning LÅST (Stefan 2026-07-04): **guidad wizard, slide-för-slide** (valt över
-      checklista/hybrid). Flöde: upload → introspektion + `proposeInjectionPlan` (förslag
-      förvalda per textruta) → bekräfta/ändra/skippa per slot → `instrumentTemplate`
-      (injicera `{tokens}`) → spara profil → mallen körbar. All backend finns
-      (introspektion, `classifyForeignSlot`, förslagslager, injektionsmotor, profil-
-      persistens, profil-driven generering via #68); wizarden är UI:t som binder ihop dem.
-      Skip-slots blankas redan på render-sidan (#68), FailedSection visas i partial-bannern.
-- [ ] **STICKPROV (operatör — Stefan, planerat 2026-07-05):** relevans-stickprov av
+- [ ] **MIGRATION 012 (operatör — Stefan, FÖRE deploy av #70):** applicera
+      `supabase/migrations/012_template_onboarding.sql` i Supabase SQL Editor —
+      upload/inställningar refererar de nya kolumnerna och failar utan den.
+- [ ] **OPERATÖRSVERIFIERING onboarding (betald, liten, post-merge #70):** riktig
+      kundmall genom wizarden (klassificering ≈ under en dollar) → PowerPoint-COM-öppning
+      av instrumenterade kopian → en FAKTISK anbudsgenerering mot den onboardade mallen
+      (genereringsvägen är kodverifierad + kedjetestad, men inte live-körd — C1-fixen i #70).
+- [ ] **STICKPROV (operatör — Stefan, påbörjat 2026-07-05):** relevans-stickprov av
       citaten på gröna loopkörningar. Mekaniken garanterar att citaten FINNS ordagrant;
       att de är RELEVANTA för påståendet är residualen som verifieras av människa. Underlag:
       verifierade par i `evals/results/*.md` (RFP + CV, från gröna varven).
 - [ ] **LOOP-VALIDERING (operatör, BETALD, under $20-tak, vid behov):** om-kör
       `npm run eval:zero-halluc [-- --target=cv]` för stabil grön post-vakt + coverage mot
       goldens. Spårkostnad hittills ~$5 av $20.
+
+## Levererat 2026-07-05/06 (onboarding-wizarden, PR #70)
+Mall-uppladdningsspårets sista bit: tokenlösa kundmallar onboardas end-to-end.
+Upload auto-detekterar (`isForeignPptx`) → async klassificering (`propose`, CAS-grindad,
+`after()`-mönstret) → wizard på `/installningar/mallar/[id]/onboarding` (SVG-wireframe i
+EMU-viewBox, tangentbordsnavigerbar; intent/tokennamn redigerbara; static/toc förbekräftas
+ALDRIG) → complete (instrumenterad kopia `{name}/v{n}-instrumented.pptx`, original behålls;
+profil + syntetiskt static-manifest + statusflip i EN update — fel lämnar 'draft', omkörbart)
+→ aktiverings-grind. Utkast persisteras i `templates.onboarding_draft` (migr. 012) — avbrott
+kostar inget. Byggd subagent-drivet med per-task-review + helbransch-slutreview; slutreviewens
+C1 (onboardad mall kraschade genereringen via manifest=null) fixad med `buildForeignManifest`.
+Spec + plan: `notes/2026-07-05-onboarding-wizard-{design,plan}.md`. Sviten 992/0.
 
 ## Levererat 2026-07-03/04 (noll-hallucinationsspåret + UX-pass)
 **PIVOT (Stefan 2026-07-03):** matchningskvalitet är vallgraven; PPT-export-perfektion
@@ -53,13 +64,32 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 - [x] Slice 4 — `generic-prose`-bundle + prose/field-applikator; pipeline-inkoppling levererad i slice 5b
 - [x] Slice 5a — profil-persistens (`profile-store.ts`) + upload deriverar & sparar startprofil
 - [x] Slice 5b — auto-klassificering (`propose-injection-plan`) + generic-prose-inkoppling (`generateSectionsFromProfile` + all-generic-routing, Sonnet 5)
-- [ ] Slice 5-UI — onboarding-wizard (introspektion + intervju + redigerbar profil) — SISTA biten
-- [ ] Slice 6 — B inkrementellt: bullets, sedan godtyckliga table-rows
+- [x] Slice 5-UI — onboarding-wizard (introspektion + intervju + redigerbar profil) (#70, 2026-07-06)
+- [ ] Slice 6 — B inkrementellt: bullets, sedan godtyckliga table-rows. OBS: text i
+      tabeller (`a:tbl`/graphicFrame) deltar INTE i onboardingen idag (inte kandidat, inte
+      i wireframe, kan inte instrumenteras) — kravmatris-liknande slides blir statiska
+      tills detta byggs (dokumenterad begränsning i #70)
 
 ## Öppna PR:er (väntar review)
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Onboarding-wizard residualer (#70, triagerade i slutreview — polish om inte annat anges):**
+  - "Godkänn slidens förslag"-bulkknapp (spec §3) ej byggd + kostnadstexten hårdkodad
+    "under en dollar" oavsett kandidatantal (Stefan-beslut om båda)
+  - retry efter klassificeringsfel visar inte precount-siffrorna ({error} ersatte {precount})
+  - PATCH är read-modify-write på hela utkastet — två flikar kan tappa varandras beslut
+    (correctness-lite; OK single-user)
+  - GET-pollen tyst vid icke-ok-svar (t.ex. 500 under polling) + mall raderad mid-wizard
+    fryser UI:t på gammalt tillstånd
+  - orphan propose-jobb (efter dubbel-force på classifying) kan klobbra nyare utkast med
+    {error} — hör ihop med dokumenterad dubbel-force-residual (correctness, låg sannolikhet)
+  - tom-men-parsbar pptx utan slides → foreign-vägen (precount 0/0) i st.f. 422
+  - TemplateSection.tsx 423 rader (>300-gränsen, pre-existing) — bryt ut TemplatePreview
+  - a11y-polish SlideWireframe: fokus- och selected-markering visuellt identiska; tom
+    aria-label för placerad tom textruta
+  - route-nivå-integrationstester för onboarding-endpoints saknas (logiken enhets-/kedjetestad)
+  - tyst catch utan loggning när korrupt utkast fångas i draftPayload (felsökbarhet)
 - ~~**UX: anbudsmallar går inte att RADERA**~~ — KLART: `DELETE /api/templates/[id]` + radera-knapp i TemplateSection (vägrar aktiv mall / mall som anbud refererar / bundlad mall med 409; storage-städning icke-fatal; template_profiles kaskaderar) (2026-07-04)
 - [x] ~~**UX: företagsprofilen** — flytta till arbetsytan + gör PÅVERKAN begriplig~~ — FLYTTAD till `/arbetsyta/profil` (kort på arbetsyta-landningen + pekare kvar i Inställningar); ny `ProfileImpactPanel` visar var profilen injiceras (6 skrivbundlar, härlett ur `formatContext`), vad tomma fält betyder, och fyllnadsgrad per fält. Fyllnadslogik ren + enhetstestad, drift-vaktad mot `BUNDLE_LABELS`. Visuell polish itereras live med Stefan. (2026-07-04)
 - Pre-fas-C-lagrade matchmotiveringar (`ScoredConsultant.reasoning` i DB) kan citera obelagda claims och flödar in i go/no-go + anbudskontext tills om-matchning — samma temporala residual, annan väg (routine #64). ANNOTERAT 2026-07-04: med `extraction_version` på konsult-raden är staleness nu DETEKTERBAR. Ingen kod behövs nu — om-matchning av en post-feature-konsult regenererar reasoning via den versions-medvetna grinden. Kvar som backlog bara om aktiv invalidering önskas.

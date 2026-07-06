@@ -10,7 +10,8 @@ export interface TemplateRow {
   id: string;
   name: string;
   version: number;
-  manifest: TemplateManifest;
+  manifest: TemplateManifest | null;
+  onboarding_status: string;
   created_at: string;
 }
 
@@ -20,7 +21,7 @@ export default async function InstallningarPage() {
   // Mallar finns alltid efter migration 004 (templates-tabellen är seedad).
   const { data: templates } = await supabase
     .from("templates")
-    .select("id, name, version, manifest, created_at")
+    .select("id, name, version, manifest, onboarding_status, created_at")
     .order("created_at", { ascending: false });
 
   const { data: wsTemplate } = await supabase

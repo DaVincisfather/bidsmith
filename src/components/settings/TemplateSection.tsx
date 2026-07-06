@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { TemplateRow } from "@/app/installningar/page";
 import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import { fieldDisplayLabel, tightBudgetFields } from "@/lib/pptx-template/budget-types";
@@ -11,12 +12,15 @@ interface TemplateSectionProps {
   activeTemplateId: string | null;
 }
 
-// Svaret från POST /api/templates — preview innan aktivering.
+// Svaret från POST /api/templates — preview innan aktivering. Tokenlösa
+// (foreign-) mallar har inget manifest — de får needsOnboarding: true istället
+// och navigerar rakt in i wizarden (se handleUpload).
 interface UploadResponse {
   id: string;
   name: string;
   version: number;
-  manifest: TemplateManifest;
+  manifest?: TemplateManifest;
+  needsOnboarding?: boolean;
   warnings?: string[];
 }
 
@@ -56,6 +60,11 @@ export function TemplateSection({ templates, activeTemplateId }: TemplateSection
         throw new Error(msg);
       }
       const data: UploadResponse = await response.json();
+      if (data.needsOnboarding) {
+        // Kundmall utan tokens — raka vägen in i onboarding-wizarden, ingen preview.
+        router.push(`/installningar/mallar/${data.id}/onboarding`);
+        return;
+      }
       setPreview(data);
       // Upload:en har redan skrivit en ny mall-version i DB:n. Utan refresh syns
       // den inte i listan förrän aktivering — lämnar man previewen blir versionen
@@ -149,6 +158,15 @@ export function TemplateSection({ templates, activeTemplateId }: TemplateSection
                         <span className="text-xs font-medium px-2 py-1 rounded bg-accent-soft text-accent-ink">
                           Aktiv
                         </span>
+                      ) : !["none", "onboarded"].includes(t.onboarding_status) ? (
+                        // Foreign-mall utan slutförd onboarding — aktivering är inte
+                        // meningsfull förrän slot-mappningen finns, skicka till wizarden.
+                        <Link
+                          href={`/installningar/mallar/${t.id}/onboarding`}
+                          className="text-xs font-medium px-3 py-1 rounded border border-rule hover:border-accent"
+                        >
+                          Onboarda →
+                        </Link>
                       ) : (
                         <button
                           type="button"
@@ -217,7 +235,9 @@ export function TemplateSection({ templates, activeTemplateId }: TemplateSection
         </div>
       )}
 
-      {preview && <TemplatePreview preview={preview} onActivate={handleActivate} activating={activatingId === preview.id} />}
+      {preview && preview.manifest && (
+        <TemplatePreview preview={preview} onActivate={handleActivate} activating={activatingId === preview.id} />
+      )}
     </section>
   );
 }
@@ -258,6 +278,10 @@ function groupBudgetsBySlide(
 }
 
 function TemplatePreview({ preview, onActivate, activating }: TemplatePreviewProps) {
+  // Foreign-mallar (needsOnboarding) saknar manifest — de renderas aldrig här
+  // (handleUpload skickar vidare till wizarden), men vakten skyddar mot att
+  // TemplatePreview någonsin körs utan manifest.
+  if (!preview.manifest) return null;
   const { manifest, warnings } = preview;
   // Trånga fält: mallens rutor tvingar budgeten under fältets redaktionella tak.
   const tight = tightBudgetFields(manifest.budgets);

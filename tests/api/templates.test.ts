@@ -221,7 +221,11 @@ describe("POST /api/templates/[id]/activate", () => {
   });
 
   it("UPSERT update — befintlig workspace_settings-rad", async () => {
-    tableResults.templates = { data: { id: VALID_UUID }, error: null };
+    // onboarding_status: "none" speglar migration 012:s default för befintliga rader.
+    tableResults.templates = {
+      data: { id: VALID_UUID, onboarding_status: "none" },
+      error: null,
+    };
     tableResults.workspace_settings = { data: { id: "ws-1" }, error: null };
 
     const res = await ACTIVATE({} as never, ctx(VALID_UUID));
@@ -233,7 +237,10 @@ describe("POST /api/templates/[id]/activate", () => {
   });
 
   it("UPSERT insert — tom workspace_settings-tabell (kritiska fallet)", async () => {
-    tableResults.templates = { data: { id: VALID_UUID }, error: null };
+    tableResults.templates = {
+      data: { id: VALID_UUID, onboarding_status: "none" },
+      error: null,
+    };
     tableResults.workspace_settings = { data: null, error: null };
 
     const res = await ACTIVATE({} as never, ctx(VALID_UUID));
@@ -241,6 +248,21 @@ describe("POST /api/templates/[id]/activate", () => {
     // Tom tabell → insert-grenen, ingen tyst no-op-update.
     expect(inserted.workspace_settings?.[0]).toEqual({ active_template_id: VALID_UUID });
     expect(updated.workspace_settings).toBeUndefined();
+  });
+
+  it("409 när mallen är mitt i onboardingen (onboarding_status: draft)", async () => {
+    // Grinden: en halvfärdig kundmall kan inte rendera → får inte bli aktiv.
+    tableResults.templates = {
+      data: { id: VALID_UUID, onboarding_status: "draft" },
+      error: null,
+    };
+
+    const res = await ACTIVATE({} as never, ctx(VALID_UUID));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/onboard/);
+    // Ingen skrivning mot workspace_settings när vi vägrar.
+    expect(updated.workspace_settings).toBeUndefined();
+    expect(inserted.workspace_settings).toBeUndefined();
   });
 });
 

@@ -126,3 +126,14 @@ export const ProfileBodySchema = z.object({
   boilerplate: z.string().max(4000).nullable().optional(),
   colors: z.record(z.string(), z.string()).nullable().optional(),
 });
+
+// --- Onboarding: PATCH /api/templates/[id]/onboarding ---
+
+/** Slot-beslut i onboarding-wizarden (PATCH /api/templates/[id]/onboarding). */
+export const OnboardingDecisionSchema = z.object({
+  source: z.number().int().positive(),
+  shapeIndex: z.number().int().nonnegative(),
+  decision: z.enum(["confirmed", "skipped", "pending"]),
+  token: z.string().max(80).optional(),
+  intent: z.string().max(500).optional(),
+});

@@ -3,6 +3,10 @@ import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/api-helpers";
 import { introspectTemplate } from "@/lib/pptx-template/introspect";
+import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
+import { readPptxSlides, type SlideShapes } from "@/lib/pptx-template/introspect/read-pptx";
+import { isForeignPptx } from "@/lib/pptx-template/onboarding/detect-foreign";
+import { candidateSlots } from "@/lib/pptx-template/onboarding/propose-injection-plan";
 import { TEMPLATE_BUCKET, clearTemplateCache } from "@/lib/pptx-template/template-store";
 import { manifestToProfile } from "@/lib/pptx-template/manifest-to-profile";
 import { saveTemplateProfile } from "@/lib/pptx-template/profile-store";
@@ -43,16 +47,34 @@ export async function POST(request: NextRequest) {
     .replace(/[^a-z0-9åäö]+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-  let manifest, warnings;
+  // Foreign-detektering FÖRE introspektion: en tokenlös kundmall kan aldrig
+  // matcha slide-signaturerna — den ska in i onboarding, inte få 422.
+  let slides: SlideShapes[];
   try {
-    ({ manifest, warnings } = await introspectTemplate(buffer, name));
+    slides = await readPptxSlides(buffer);
   } catch (err) {
     return NextResponse.json(
       {
-        error: `mallen kunde inte introspekteras: ${err instanceof Error ? err.message : String(err)}`,
+        error: `filen kunde inte läsas som pptx: ${err instanceof Error ? err.message : String(err)}`,
       },
       { status: 422 }
     );
+  }
+  const foreign = isForeignPptx(slides);
+
+  let manifest: TemplateManifest | null = null;
+  let warnings: string[] = [];
+  if (!foreign) {
+    try {
+      ({ manifest, warnings } = await introspectTemplate(buffer, name));
+    } catch (err) {
+      return NextResponse.json(
+        {
+          error: `mallen kunde inte introspekteras: ${err instanceof Error ? err.message : String(err)}`,
+        },
+        { status: 422 }
+      );
+    }
   }
 
   // Append-only versionering — varje uppladdning blir en ny version, gamla bevaras
@@ -78,10 +100,34 @@ export async function POST(request: NextRequest) {
 
   const { data: row, error: insErr } = await service
     .from("templates")
-    .insert({ name, version, storage_path: storagePath, manifest })
+    .insert({
+      name,
+      version,
+      storage_path: storagePath,
+      manifest, // null för foreign — nullable sedan migration 012
+      onboarding_status: foreign ? "needs_onboarding" : "none",
+      // precount: startsidan visar omfång + kostnadsindikation utan att behöva
+      // ladda ner och parsa pptx:en igen.
+      onboarding_draft: foreign
+        ? { precount: { slides: slides.length, candidates: candidateSlots(slides).length } }
+        : null,
+    })
     .select("id")
     .single();
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+
+  // Foreign-mallar går till onboarding-wizarden — ingen manifest-profil att
+  // härleda ännu. Task 8/10 (UI) konsumerar needsOnboarding + precount.
+  if (foreign) {
+    clearTemplateCache();
+    return NextResponse.json({
+      id: row.id,
+      name,
+      version,
+      needsOnboarding: true,
+      precount: { slides: slides.length, candidates: candidateSlots(slides).length },
+    });
+  }
 
   // Derive a starting profile from the introspected manifest so the template is
   // immediately renderable via the profile-driven path; onboarding (slice 5 UI)
@@ -89,14 +135,17 @@ export async function POST(request: NextRequest) {
   // profile-save failure must not fail the upload — surface a warning and let
   // it be regenerated.
   const allWarnings = [...warnings];
-  try {
-    await saveTemplateProfile(
-      manifestToProfile(manifest, { templateId: row.id, version }),
-    );
-  } catch (err) {
-    allWarnings.push(
-      `mall-profil kunde inte sparas (kan regenereras): ${err instanceof Error ? err.message : String(err)}`,
-    );
+  // Endast icke-foreign når hit (foreign returnerade ovan); manifest är då satt.
+  if (manifest) {
+    try {
+      await saveTemplateProfile(
+        manifestToProfile(manifest, { templateId: row.id, version }),
+      );
+    } catch (err) {
+      allWarnings.push(
+        `mall-profil kunde inte sparas (kan regenereras): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   // Uppladdning aktiverar inte — preview först, aktivering är ett separat,
