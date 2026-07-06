@@ -28,7 +28,12 @@ export type { BidContext } from "./context";
 // collapses that to ~12 calls. Still cap in-flight SLIDES so a wide deck can't
 // fire every slide at once → 429s that exhaust retries and sink the (partly paid)
 // batch — the #52-review lesson, same rationale as the classify-slot chunking.
-const SLIDE_CONCURRENCY = 3;
+//
+// F5 (wall-clock): 3 gave ~5,9 min for 12 slides (effort high, maxTokens 32000)
+// > Vercel's 300 s. 6 runs 12 slides / 6 ≈ 2 waves + an occasional re-ask wave
+// ≈ ~2,5 min, comfortably under the ceiling. Effort/maxTokens stay put — quality
+// before speed, and the ceiling is met without touching them.
+const SLIDE_CONCURRENCY = 6;
 
 // A slide's generation targets, grouped so one AI call covers the whole slide.
 interface SlideJob {
