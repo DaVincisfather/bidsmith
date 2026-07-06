@@ -35,20 +35,23 @@ npm install
 
 > Optional: to populate sample TED-radar competencies, repeat with `supabase/seed.sql`.
 
-## 4. Create the storage bucket
+## 4. Create the storage buckets
 
-Uploaded RFP documents are stored in a Supabase Storage bucket. Buckets can't be
-created from SQL, so add it once via the dashboard:
+Uploaded RFP documents and consultant CVs are stored in two Supabase Storage buckets.
+Buckets can't be created from SQL, so add them once via the dashboard:
 
 1. Supabase → **Storage** (left sidebar) → **New bucket**.
 2. Name it exactly **`rfp-documents`**.
 3. Leave **Public bucket OFF** — it stays private; the app generates signed URLs on
    demand.
 4. Click **Create**.
+5. Repeat for a second bucket named exactly **`consultant-cvs`** (also private).
 
 No bucket policies are needed: the app reads and writes via the service-role key.
 
-> Skip this and RFP upload fails with "Bucket not found".
+> Skip `rfp-documents` and RFP upload fails with "Bucket not found". Skip
+> `consultant-cvs` and CV uploads still work, but every upload reports a warning and
+> the "open original CV" link is broken.
 
 ## 5. Configure environment variables
 
