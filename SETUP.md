@@ -23,10 +23,15 @@ npm install
 ## 3. Create the database schema
 
 1. In your Supabase project, open **SQL Editor** (left sidebar) → **New query**.
-2. Open `supabase/migrations/001_initial_schema.sql` from this repo, copy its entire
-   contents, paste into the editor, and click **Run**.
-3. You should see "Success. No rows returned." That's it — all tables, security
-   policies, and the required template configs are now in place.
+2. Run **every file in `supabase/migrations/` in numeric order** (`001_...` through
+   `012_...`): open each file, copy its entire contents, paste into the editor, and
+   click **Run** before moving on to the next. Each one should report success
+   ("Success. No rows returned." for most of them).
+3. That's it — all tables, security policies, and the bundled proposal template are
+   now in place.
+
+> Running only `001_initial_schema.sql` is **not** enough — the template system and
+> organisation profiles live in later migrations, and bid generation fails without them.
 
 > Optional: to populate sample TED-radar competencies, repeat with `supabase/seed.sql`.
 
