@@ -130,16 +130,22 @@ export async function buildGenericProseSection(
  * BidSection per slot — same key/title/placeholder shape as buildGenericProseSection.
  *
  * Distinct schemas per slide never share cache — expected and fine at ~12 calls
- * (see CLAUDE.md). Returns a section only for placeholders present in the
- * response; a dropped key (truncation past the required schema) is left to the
- * caller to record as a failed slot, so one missing key doesn't sink the slide.
+ * (see CLAUDE.md). Returns a section only for placeholders with non-empty text;
+ * an empty string (or missing key) is left to the caller to record as a failed
+ * SLOT, so one blank answer doesn't sink the slide. A rejected call — including
+ * truncated/invalid JSON, where callClaude throws after its retries — fails the
+ * WHOLE slide (per-slide maxTokens heuristic is a backlogged residual).
  */
 export async function buildGenericProseSlideSections(
   slots: GenericProseSlot[],
   ctx: BidContext,
 ): Promise<BidSection[]> {
+  // Deliberately no .min(1): minLength strips out of the API schema anyway, so
+  // the model CAN return "" — a min-gate would then fail Zod client-side and
+  // burn 3 full-price regenerations before sinking ALL the slide's slots. By
+  // accepting "" the empty-answer guard below degrades it to a per-slot failure.
   const shape: Record<string, z.ZodString> = {};
-  for (const slot of slots) shape[slot.placeholder] = z.string().min(1);
+  for (const slot of slots) shape[slot.placeholder] = z.string();
   const schema = z.object(shape);
 
   const parsed = await callClaude({
@@ -162,6 +168,8 @@ export async function buildGenericProseSlideSections(
   const sections: BidSection[] = [];
   for (const slot of slots) {
     const text = record[slot.placeholder];
+    // Empty answer (the "skriv kortare" rule invites "") or a missing key →
+    // produce no section; the orchestrator records that slot as failed.
     if (typeof text !== "string" || text.length === 0) continue;
     sections.push({
       type: "ai",

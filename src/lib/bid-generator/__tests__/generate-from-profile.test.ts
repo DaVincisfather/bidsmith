@@ -182,14 +182,14 @@ describe("generateSectionsFromProfile", () => {
     expect(sections.map((s) => s.key)).toEqual(["generic-prose:{Keep}"]);
   });
 
-  // (f) a key missing from the response (truncation past the schema) fails only
-  // that slot — the rest of the slide survives.
-  it("fails only the missing slot when the response drops a key (not the whole slide)", async () => {
+  // (f) the schema deliberately allows "" (minLength strips out of the API
+  // schema), so an empty answer is a REACHABLE case: it must fail only that
+  // slot — the rest of the slide's paid prose survives.
+  it("fails only the slot the model answered \"\" for (not the whole slide)", async () => {
     callClaudeMock.mockImplementation(async (opts: SlideCall) => {
       const out: Record<string, string> = {};
       for (const key of Object.keys(opts.schema.shape)) {
-        if (key === "{Missing}") continue; // dropped by truncation
-        out[key] = `text ${key}`;
+        out[key] = key === "{Empty}" ? "" : `text ${key}`;
       }
       return out;
     });
@@ -197,7 +197,7 @@ describe("generateSectionsFromProfile", () => {
       {
         source: 1,
         capability: "generic-prose",
-        slots: [genericSlot("{Present}"), genericSlot("{Missing}"), genericSlot("{Also}")],
+        slots: [genericSlot("{Present}"), genericSlot("{Empty}"), genericSlot("{Also}")],
       },
     ]);
 
@@ -205,8 +205,22 @@ describe("generateSectionsFromProfile", () => {
 
     expect(sections.map((s) => s.key)).toEqual(["generic-prose:{Present}", "generic-prose:{Also}"]);
     expect(failedSections).toEqual([
-      { placeholder: "{Missing}", error: "saknas i AI-svaret (trunkerat)" },
+      { placeholder: "{Empty}", error: "tomt eller saknat i AI-svaret" },
     ]);
+  });
+
+  // The empty-string path requires the schema itself to accept "" — a .min(1)
+  // would instead fail Zod client-side and (after paid retries) sink the slide.
+  it("builds the slide schema without a min-length gate (empty string parses)", async () => {
+    echoAllKeys();
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A}")] },
+    ]);
+
+    await generateSectionsFromProfile(profile, ctx);
+
+    const arg = callClaudeMock.mock.calls[0][0] as SlideCall;
+    expect(arg.schema.safeParse({ "{A}": "" }).success).toBe(true);
   });
 
   // Bounds in-flight SLIDES (not one giant Promise.all over every slide).

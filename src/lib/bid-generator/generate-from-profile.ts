@@ -53,10 +53,11 @@ export interface GenerateFromProfileResult {
  * (static passthrough slides) produce nothing; a slide with no generic-prose
  * slots produces no call.
  *
- * Runs the slide calls in chunks under Promise.allSettled: one slide blowing up
+ * Runs the slide calls in chunks under Promise.allSettled: one slide REJECTING
+ * (including truncated/invalid JSON — callClaude throws after its retries)
  * fails only that slide's slots (all recorded in `failedSections`) while other
- * slides survive. A slide that succeeds but drops a slot's key (truncation past
- * the required schema) fails only that slot. onSectionComplete is invoked
+ * slides survive. A slide that succeeds but returns an empty string (or drops a
+ * key) for a slot fails only that slot. onSectionComplete is invoked
  * sequentially over the produced sections, awaited per call — same contract as
  * generateAllSections.
  */
@@ -96,8 +97,11 @@ export async function generateSectionsFromProfile(
       if (result.status === "fulfilled") {
         const produced = result.value;
         sections.push(...produced);
-        // A slide call can succeed yet omit a slot's key — mark only that slot
-        // failed so the rest of the slide's (paid) prose survives.
+        // A slide call can succeed yet answer "" for a slot (the schema allows
+        // it — see buildGenericProseSlideSections) or, defensively, drop a key.
+        // Mark only that slot failed so the rest of the slide's (paid) prose
+        // survives. NOTE: real truncation makes callClaude throw → the reject
+        // branch below, whole slide.
         const got = new Set(
           produced
             .map((s) => (s.content?.format === "generic-prose" ? s.content.placeholder : null))
@@ -107,7 +111,7 @@ export async function generateSectionsFromProfile(
           if (!got.has(slot.placeholder)) {
             failedSections.push({
               placeholder: slot.placeholder,
-              error: "saknas i AI-svaret (trunkerat)",
+              error: "tomt eller saknat i AI-svaret",
             });
           }
         }
