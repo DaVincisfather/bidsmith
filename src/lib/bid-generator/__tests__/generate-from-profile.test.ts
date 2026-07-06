@@ -7,9 +7,10 @@ import type { BidContext } from "../context";
 
 // callClaude is the paid Sonnet call — mocked so the generator runs offline
 // while the REAL buildGenericProseSlideSections executes. The mock reads the
-// per-slide schema it was handed and echoes one string per placeholder, so we
-// can assert call count (one per slide), schema keys (= slide placeholders) and
-// how the response maps back to sections.
+// per-CALL schema it was handed and echoes one string per placeholder, so we can
+// assert call count (one per CHUNK — a slide ≤MAX_KEYS_PER_CALL slots is one
+// chunk, so small slides are still one call each), schema keys (= that chunk's
+// placeholders) and how the response maps back to sections.
 const callClaudeMock = vi.fn();
 vi.mock("@/lib/ai-client", () => ({
   callClaude: (...args: unknown[]) => callClaudeMock(...args),
@@ -470,5 +471,113 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
     const arg = callClaudeMock.mock.calls[idx][0] as SlideCall;
     expect(Object.keys(arg.schema.shape)).toEqual(["{A2}"]);
     expect(arg.schema.safeParse({}).success).toBe(true); // dropped key parses
+  });
+});
+
+// Key-chunking (≤MAX_KEYS_PER_CALL=12 per call): the live structured-outputs API
+// rejects large optional schemas with NON-retryable 400s ("too many optional
+// parameters (25", "Schema is too complex", "Grammar compilation timed out"), so
+// a slide with 20–30 slots must split across calls instead of firing one wide one.
+describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => {
+  // Builds N generic-prose slots {S0}..{S(N-1)} on one slide.
+  function slideWithSlots(source: number, n: number): SlideProfile {
+    return {
+      source,
+      capability: "generic-prose",
+      slots: Array.from({ length: n }, (_, i) => genericSlot(`{S${i}}`)),
+    };
+  }
+  const reaskCallCount = () =>
+    callClaudeMock.mock.calls.filter((c) => isReask(c[0] as { label?: string })).length;
+
+  // (a) 30 slots → ⌈30/12⌉ = 3 calls; schema keys disjoint and together = all 30.
+  it("splits a 30-slot slide into 3 calls whose schema keys are disjoint and cover every slot", async () => {
+    echoAllKeys();
+    const all = Array.from({ length: 30 }, (_, i) => `{S${i}}`);
+    const profile = profileWith([slideWithSlots(1, 30)]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(callClaudeMock).toHaveBeenCalledTimes(3);
+    const keySets = [callSchemaKeys(0), callSchemaKeys(1), callSchemaKeys(2)];
+    expect(keySets.map((k) => k.length)).toEqual([12, 12, 6]); // ≤12 each
+    // Disjoint: no placeholder appears in two calls.
+    const flat = keySets.flat();
+    expect(new Set(flat).size).toBe(flat.length);
+    // Union = every one of the slide's placeholders.
+    expect([...flat].sort()).toEqual([...all].sort());
+    // All 30 map back to sections, none failed.
+    expect(sections).toHaveLength(30);
+    expect(failedSections).toEqual([]);
+  });
+
+  // A chunk's prompt names the slide's OTHER slots as coherence context (not as
+  // schema keys) so a split slide still reads as one whole (#2 of the fix).
+  it("names sibling placeholders as context in a chunked slide's prompt", async () => {
+    echoAllKeys();
+    const profile = profileWith([slideWithSlots(1, 30)]);
+
+    await generateSectionsFromProfile(profile, ctx);
+
+    const call0 = callClaudeMock.mock.calls[0][0] as SlideCall & { system: string };
+    // {S29} lives in call 2's schema, so on call 0 it can only be a context sibling.
+    expect(callSchemaKeys(0)).not.toContain("{S29}");
+    expect(call0.system).toContain("Övriga sektioner på samma slide");
+    expect(call0.system).toContain("{S29}");
+  });
+
+  // (b) one CHUNK rejecting fails only that chunk's slots; the slide's other
+  // chunk survives (chunk-level isolation, not slide-level).
+  it("isolates a chunk failure — its slots fail, the slide's other chunk survives", async () => {
+    // 15 slots → chunk1 {S0}..{S11}, chunk2 {S12},{S13},{S14}. Reject chunk2.
+    callClaudeMock.mockImplementation(async (opts: SlideCall) => {
+      const keys = Object.keys(opts.schema.shape);
+      if (keys.includes("{S12}")) throw new Error("boom");
+      const out: Record<string, string> = {};
+      for (const key of keys) out[key] = `text ${key}`;
+      return out;
+    });
+    const profile = profileWith([slideWithSlots(1, 15)]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    // chunk1's 12 slots survive...
+    expect(sections.map((s) => s.key)).toEqual(
+      Array.from({ length: 12 }, (_, i) => `generic-prose:{S${i}}`),
+    );
+    // ...only chunk2's 3 slots fail. No re-ask (a reject is not re-asked).
+    expect(failedSections).toEqual([
+      { placeholder: "{S12}", error: "boom" },
+      { placeholder: "{S13}", error: "boom" },
+      { placeholder: "{S14}", error: "boom" },
+    ]);
+    expect(reaskCallCount()).toBe(0);
+  });
+
+  // (c) a re-ask that gathers >12 targets is itself chunked ≤12 → multiple re-ask
+  // calls, and every re-filled slot merges back into sections.
+  it("chunks the re-ask when >12 slots come back empty (multiple re-ask calls, correct merge)", async () => {
+    // Leave {S0}..{S12} (13 keys) empty on wave 1 → 13 re-ask targets → 2 re-ask
+    // calls (12 + 1). The re-ask fills them all.
+    const emptyOnWave1 = Array.from({ length: 13 }, (_, i) => `{S${i}}`);
+    mockWaveThenReask(emptyOnWave1);
+    const profile = profileWith([slideWithSlots(1, 30)]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    // 3 wave-1 chunk calls + 2 re-ask chunk calls.
+    expect(callClaudeMock).toHaveBeenCalledTimes(5);
+    expect(reaskCallCount()).toBe(2);
+    const reaskCalls = callClaudeMock.mock.calls
+      .map((c) => c[0] as SlideCall & { label?: string })
+      .filter((o) => isReask(o));
+    expect(reaskCalls.map((o) => Object.keys(o.schema.shape).length)).toEqual([12, 1]);
+    // Re-ask key union = exactly the 13 empties, disjoint across the 2 calls.
+    const reaskKeys = reaskCalls.flatMap((o) => Object.keys(o.schema.shape));
+    expect(new Set(reaskKeys).size).toBe(reaskKeys.length);
+    expect([...reaskKeys].sort()).toEqual([...emptyOnWave1].sort());
+    // Every slot filled in the end — nothing failed, all 30 sections present.
+    expect(failedSections).toEqual([]);
+    expect(sections).toHaveLength(30);
   });
 });

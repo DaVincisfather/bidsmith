@@ -58,11 +58,25 @@ Svara med giltig JSON:
 }`;
 }
 
-// System prompt for a whole SLIDE at once: lists every generic-prose slot on the
-// slide (placeholder + intent + optional budget) and asks for ONE coherent JSON
-// object keyed by placeholder. This is what collapses ~169 per-slot calls to
-// ~12 per-slide calls (F1 timeout fix, notes/2026-07-06-per-slide-generation-plan.md).
-function slideSystemPrompt(slots: GenericProseSlot[]): string {
+// Max placeholder keys per structured-outputs call. The API rejects large optional
+// schemas with NON-retryable 400s — measured against a real customer template:
+// "Schemas contains too many optional parameters (25...)", "Schema is too complex.",
+// "Grammar compilation timed out." Slides with 20–30 slots fell as a block. 12 sits
+// safely under that ceiling; fewer keys per call also lowers the omission risk (F6),
+// so a slide's slots are chunked ≤12 per call (orchestration in generate-from-profile.ts).
+export const MAX_KEYS_PER_CALL = 12;
+
+// System prompt for a chunk of a slide's generic-prose slots: lists the chunk's
+// slots (placeholder + intent + optional budget) and asks for ONE coherent JSON
+// object keyed by placeholder. `siblingPlaceholders` (the slide's OTHER slots,
+// filled by other chunk-calls) are named only as coherence context so a chunked
+// slide still reads as one whole. This is what collapses ~169 per-slot calls to
+// ~12 per-slide calls (F1 timeout fix, notes/2026-07-06-per-slide-generation-plan.md),
+// now chunked ≤MAX_KEYS_PER_CALL to survive the API's optional-schema limit.
+function slideSystemPrompt(
+  slots: GenericProseSlot[],
+  siblingPlaceholders: string[] = [],
+): string {
   const slotLines = slots
     .map((s) => {
       const intent = s.intent || "(ej angivet — härled från platshållaren och kontexten)";
@@ -73,13 +87,20 @@ function slideSystemPrompt(slots: GenericProseSlot[]): string {
   const jsonLines = slots
     .map((s) => `  "${s.placeholder}": "sammanhängande prosa (\\n\\n mellan stycken)"`)
     .join(",\n");
+  // Empty when the slide fits one chunk → prompt is byte-identical to before.
+  const siblingBlock =
+    siblingPlaceholders.length > 0
+      ? `Övriga sektioner på samma slide (skriv dem INTE här — de fylls i andra anrop — men håll din text koherent med dem):
+${siblingPlaceholders.map((p) => `- "${p}"`).join("\n")}
+`
+      : "";
   return `Du skriver flera sektioner till EN slide i ett svenskt konsultanbud. Sektionerna sitter på
 samma slide och ska hänga ihop till en sammanhållen helhet — inte fristående öar. Undvik att
 upprepa samma poäng mellan sektionerna.
 
 Sektioner att skriva (en per nyckel i svaret):
 ${slotLines}
-
+${siblingBlock}
 ${PROSE_VOICE}
 
 Svara med giltig JSON med EXAKT dessa nycklar (en sträng per sektion):
@@ -124,21 +145,25 @@ export async function buildGenericProseSection(
 }
 
 /**
- * Per-SLIDE batch: ONE Sonnet call fills every generic-prose slot on a slide.
- * A dynamic schema (one optional string key per placeholder) lets the model
- * write the slots as a coherent whole while the response still maps back to one
- * BidSection per slot — same key/title/placeholder shape as buildGenericProseSection.
+ * Per-CHUNK batch: ONE Sonnet call fills a chunk (≤MAX_KEYS_PER_CALL) of a slide's
+ * generic-prose slots. A dynamic schema (one optional string key per placeholder)
+ * lets the model write the slots as a coherent whole while the response still maps
+ * back to one BidSection per slot — same key/title/placeholder shape as
+ * buildGenericProseSection. `siblingPlaceholders` names the slide's other slots
+ * (filled by sibling chunk-calls) as coherence context only; the schema stays the
+ * chunk's keys, so a chunked slide never re-inflates the optional schema.
  *
- * Distinct schemas per slide never share cache — expected and fine at ~12 calls
- * (see CLAUDE.md). Returns a section only for placeholders with non-empty text;
- * an empty string (or missing key) is left to the caller to record as a failed
- * SLOT, so one blank answer doesn't sink the slide. A rejected call — including
+ * Distinct schemas never share cache — expected and fine at ~12 calls (see
+ * CLAUDE.md). Returns a section only for placeholders with non-empty text; an
+ * empty string (or missing key) is left to the caller to record as a failed SLOT,
+ * so one blank answer doesn't sink the chunk. A rejected call — including
  * truncated/invalid JSON, where callClaude throws after its retries — fails the
- * WHOLE slide (per-slide maxTokens heuristic is a backlogged residual).
+ * WHOLE chunk (per-slide maxTokens heuristic is a backlogged residual).
  */
 export async function buildGenericProseSlideSections(
   slots: GenericProseSlot[],
   ctx: BidContext,
+  siblingPlaceholders: string[] = [],
 ): Promise<BidSection[]> {
   // Deliberately no .min(1): minLength strips out of the API schema anyway, so
   // the model CAN return "" — a min-gate would then fail Zod client-side and
@@ -161,7 +186,7 @@ export async function buildGenericProseSlideSections(
     // foreign template can carry 30+ unknown slots and that cost lands on the user.
     model: MODELS.writingGeneric,
     maxTokens: 32000,
-    system: slideSystemPrompt(slots),
+    system: slideSystemPrompt(slots, siblingPlaceholders),
     cachedContext: formatContext(ctx),
     userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
     schema,
