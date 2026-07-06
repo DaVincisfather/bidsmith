@@ -25,8 +25,16 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
   const [showSummary, setShowSummary] = useState(false);
 
   const refresh = useCallback(async () => {
-    const res = await fetch(`/api/templates/${templateId}/onboarding`);
-    if (res.ok) setData(await res.json());
+    // Fetch-reject (nät nere) får inte bli en unhandled rejection — då sätts
+    // aldrig uiError och användaren fastnar tyst. refresh sväljer sitt eget fel
+    // (satt som uiError) så anropare (complete/pollning) kan await:a utan att
+    // kasta; en lyckad complete + failad refresh visar felet men behåller vägen.
+    try {
+      const res = await fetch(`/api/templates/${templateId}/onboarding`);
+      if (res.ok) setData(await res.json());
+    } catch {
+      setUiError("nätverksfel — försök igen");
+    }
   }, [templateId]);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -54,13 +62,17 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
 
   async function startClassification(force = false) {
     setUiError(null);
-    const res = await fetch(`/api/templates/${templateId}/onboarding/propose`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ force }),
-    });
-    if (!res.ok) setUiError((await res.json()).error ?? "kunde inte starta");
-    await refresh();
+    try {
+      const res = await fetch(`/api/templates/${templateId}/onboarding/propose`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force }),
+      });
+      if (!res.ok) { setUiError((await res.json()).error ?? "kunde inte starta"); return; }
+      await refresh();
+    } catch {
+      setUiError("nätverksfel — försök igen");
+    }
   }
 
   async function decide(input: { decision: "confirmed" | "skipped"; token?: string; intent?: string }) {
@@ -80,6 +92,10 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
       const body = await res.json();
       if (!res.ok) { setUiError(body.error ?? "kunde inte spara beslutet"); return; }
       setData((d) => (d ? { ...d, draft: body.draft } : d));
+    } catch {
+      // Fetch-reject: beslutet sparades INTE — säg det, annars tror användaren
+      // att det gick igenom (optimistisk setData körs aldrig i denna gren).
+      setUiError("nätverksfel — försök igen");
     } finally {
       setSaving(false);
     }
@@ -91,13 +107,27 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
     try {
       const res = await fetch(`/api/templates/${templateId}/onboarding/complete`, { method: "POST" });
       if (!res.ok) { setUiError((await res.json()).error ?? "kunde inte slutföra"); return; }
+      // Complete lyckades (mallen ÄR onboardad server-side). En failad refresh
+      // ska inte se ut som ett complete-fel: refresh sätter sitt eget mildare
+      // nätverksfel utan att kasta, så vägen framåt (ladda om sidan) behålls.
       await refresh();
+    } catch {
+      setUiError("nätverksfel — försök igen");
     } finally {
       setSaving(false);
     }
   }
 
-  if (!data) return <p className="text-ink-mute py-12">Laddar…</p>;
+  if (!data) {
+    // uiError måste renderas även här: faller mount-refreshens fetch fastnar vi
+    // annars på "Laddar…" i evighet utan att felet syns någonstans.
+    return (
+      <div className="py-12 space-y-2">
+        <p className="text-ink-mute">Laddar…</p>
+        {uiError && <p className="text-sm text-red-700">{uiError}</p>}
+      </div>
+    );
+  }
 
   if (data.status === "needs_onboarding") {
     return (

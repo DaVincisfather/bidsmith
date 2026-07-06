@@ -66,6 +66,17 @@ describe("OnboardingWizard", () => {
     expect(screen.getByRole("link", { name: /inställningar/i })).toHaveAttribute("href", "/installningar");
   });
 
+  it("fetch-reject vid mount: visar uiError i st.f. att fastna tyst på Laddar", async () => {
+    // Utan try/catch runt refresh blir detta en unhandled rejection och uiError
+    // sätts aldrig — användaren tror att sidan bara laddar (I4).
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("network down"));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<OnboardingWizard templateId="t-1" />);
+    await waitFor(() =>
+      expect(screen.getByText(/nätverksfel/i)).toBeInTheDocument(),
+    );
+  });
+
   it("draft utan utkast: visar felsträngen + väg tillbaka", async () => {
     mockGet({ status: "draft", name: "kundmall", version: 1, draft: null, error: "utkastet är korrupt — kör om klassificeringen" });
     render(<OnboardingWizard templateId="t-1" />);
