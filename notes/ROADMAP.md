@@ -4,17 +4,20 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-06 — migr. 012 körd; operatörsverifiering GENOMFÖRD (fann F1: generering timade ut) → per-slide-fixen denna PR. NÄSTA: Radrum-omtest + stickprov._
+_Senast uppdaterad: 2026-07-06 sen kväll — Radrum-omtest KÖRT efter #71: F2 verifierad (67 static), generering GÅR IGENOM men två nya fynd (F5 väggklocka > Vercel-tak, F6 tomma-slot-lotteri). NÄSTA: F6/F5-fix + stickprov._
 
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **RADRUM-OMTEST (operatör/Claude, betald ~$1–2, efter merge av denna PR):**
-      force-omklassificera Radrum-mallen (id 406190c3…, ligger onboardad i DB) —
-      label-skyddet ska synas i pending-antalet → complete → generera anbud
-      (förväntan: <3 min, ~12 anrop) → export → PowerPoint. OBS verifiera särskilt
-      att structured outputs accepterar schema-nycklar med mellanslag/åäö
-      (`{Upphandlande organisation}`) — ej testat mot live-API:t.
+- [ ] **F6/F5-FIX (nästa kodpass — riktning föreslagen, Stefan beslutar):** omtestet
+      (verifieringsdokumentets TILLÄGG) visade att slide-anrop med 20–30 obligatoriska
+      nycklar nondeterministiskt lämnar 1–9 TOMMA (körning 1: en, körning 2: nio) →
+      export-lotteri trots per-slot-nedgradering. Föreslagen F6-fix enligt
+      evidence-guard-mönstret: samla tomma/saknade slots efter slide-anropen → ETT
+      batchat re-ask-anrop → först därefter failedSections. Ta F5 i samma pass:
+      351–352 s väggklocka > Vercels 300 s-tak (höj SLIDE_CONCURRENCY och/eller sänk
+      effort/maxTokens för writingGeneric). Omtest mot Radrum v3 (id 9bf84030…,
+      onboardad med prisfält skippade) — billigt: ingen ny klassificering behövs.
 - [ ] **STICKPROV (operatör — Stefan, påbörjat 2026-07-05):** relevans-stickprov av
       citaten på gröna loopkörningar. Mekaniken garanterar att citaten FINNS ordagrant;
       att de är RELEVANTA för påståendet är residualen som verifieras av människa. Underlag:

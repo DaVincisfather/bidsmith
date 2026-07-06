@@ -62,3 +62,44 @@ Totalt ~$2,5–3,5 för hela verifieringen (klassificering + failad generering).
 ## Nästa steg
 F1 kräver riktningsbeslut innan omtest. F2/F3 → backlog. Radrum-mallen ligger kvar
 onboardad för omtest efter fix.
+
+---
+
+# TILLÄGG: Radrum-omtest efter F1/F2-fixen (PR #71, samma kväll)
+
+F1/F2 fixades (per-slide-batchning + label-skydd, mergad #71) och omtestet kördes
+som ny upload (re-onboarding av onboardad mall är spärrad — v2/v3 av mallen).
+
+## Verifierat GRÖNT i omtestet
+- **F2/label-skyddet:** static-klassningar 6 → **67**, förbekräftade 169 → **132** —
+  etikettrubrikerna fångas och kräver ställningstagande i stället för att AI-fyllas.
+- **F1/per-slide:** genereringen GÅR IGENOM (ingen timeout): 12 slide-anrop i stället
+  för 169, status draft med sektioner persisterade. Ett realistiskt wizard-pass
+  (22 prisfält skippade via PATCH, som en riktig användare) gav 116/117 sektioner.
+- **Schema-nycklar mot live-API:t:** `{Upphandlande organisation}`/åäö/tankstreck
+  accepteras av structured outputs (verifierat FÖRE merge, ~$0.01).
+- Export-guarden vägrar korrekt partiella anbud; per-slot-nedgraderingen (routinens
+  .min(1)-fynd) visade sig omedelbart vara rätt: prisfält utan underlag blev ärliga
+  per-slot-fel i stället för helslide-fel.
+
+## NYA FYND (kvarstår — fixriktning behövs)
+
+### F5: väggklocketid 351–352 s > Vercels 300 s-tak
+Två körningar à ~5,9 min lokalt (12 slides, SLIDE_CONCURRENCY=3, effort high,
+maxTokens 32000). Lokala watchdogen (7 min) klarar det; Vercel Hobby (300 s) hade
+dödat jobbet. Kandidater: höj SLIDE_CONCURRENCY, sänk effort/maxTokens för
+writingGeneric, eller båda.
+
+### F6: tomma-slot-lotteriet — modellen lämnar slumpvis nycklar tomma
+Ett slide-anrop med 20–30 obligatoriska JSON-nycklar lämnar nondeterministiskt
+någon/några tomma: körning 1 → 1 tom ({Risk R3}), körning 2 → 9 tomma (andra slots).
+Per-slot-nedgraderingen gör det icke-fatalt, men exporten kräver noll fel →
+användaren får köra genereringslotteri. Föreslagen fix (mönster-precedens:
+evidence-guardens batchade re-citat): efter slide-anropen, samla tomma/saknade
+slots och gör ETT batchat re-ask-anrop; först därefter failedSections.
+
+## Status efter omtest
+Onboarding-flödet är produktionsverifierat end-to-end t.o.m. generering; export
+väntar på F6-fixen. Radrum v3 (id 9bf84030…, prisfält skippade) ligger onboardad
+för nästa varv; v1/v2 + test-anbud + testanvändare städade; anbudsmall-colors v2
+åter aktiv. Total verifieringskostnad inkl. omtest: ~$8–10.
