@@ -229,8 +229,13 @@ function reaskSystemPrompt(targets: GenericProseReaskTarget[]): string {
   const jsonLines = targets
     .map((t) => `  "${t.slot.placeholder}": "sammanhängande prosa (\\n\\n mellan stycken)"`)
     .join(",\n");
+  // "Skriv allt" och PROSE_VOICE:s "hitta inte på" får inte krocka: tunt underlag
+  // ska ge KORT källtrogen text, inte utfyllnad — annars maskerar re-asken genuint
+  // omöjliga slots med hallucinerad kundtext (routine-fynd PR #72).
   return `Ett tidigare försök lämnade följande sektioner till ett svenskt konsultanbud TOMMA. Skriv
-dem nu — VARJE fält MÅSTE fyllas med substantiellt, sammanhängande innehåll. Lämna inget tomt.
+dem nu — skriv VARJE fält. Om underlaget är tunt för ett fält: skriv kort och källtroget
+(2–3 meningar om det som faktiskt finns i förfrågan/teamkontexten) hellre än utfyllt —
+men lämna det inte tomt.
 
 Sektioner att fylla (en per nyckel i svaret; slide-numret anger var sektionen hör hemma):
 ${slotLines}

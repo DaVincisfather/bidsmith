@@ -90,6 +90,10 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Re-ask-residualer (F6, PR #72-routinen):**
+  - chunka re-asken vid stora tomt-set (>30 targets -> flera batchar) sa F6-monstret skalar med bredare mallar
+  - stickprovsrutinen bor marka re-ask-fyllda sektioner i underlaget (hallucinationsrisken koncentrerad dit)
+  - F5-marginalen ar tunn (~240-290 s berknat) — logga vaggklockan i Radrum-varven; >270 s -> parallellisera re-asken eller hoj concurrency till 8
 - **Per-slide-genereringens residualer (F1-fixen, granskningsnoterade):**
   - trunkering (maxTokens-taket) fäller HELA slidens slots i failedSections — per-slot
     drabbades bara den överstora sloten (correctness, svansrisk på täta slides)
