@@ -8,8 +8,12 @@ vi.mock("@/lib/ai-client", () => ({
 
 import { callClaude } from "@/lib/ai-client";
 import {
+  MAX_KEYS_PER_CALL,
   buildGenericProseSection,
+  buildGenericProseSlideSections,
+  buildGenericProseReaskSections,
   GenericProseBundleSchema,
+  type GenericProseSlot,
 } from "../bundles/generic-prose";
 
 const baseAnalysis: RfpAnalysis = {
@@ -76,5 +80,66 @@ describe("buildGenericProseSection", () => {
 describe("GenericProseBundleSchema", () => {
   it("rejects empty text", () => {
     expect(() => GenericProseBundleSchema.parse({ text: "" })).toThrow();
+  });
+});
+
+// The key ceiling is enforced IN the bundle functions, not only by the
+// orchestrator's chunking — a future call site that skips the chunking must fail
+// loudly BEFORE the paid call, not reintroduce the API's non-retryable 400
+// ("too many optional parameters") silently.
+describe("MAX_KEYS_PER_CALL guard", () => {
+  const slotsOf = (n: number): GenericProseSlot[] =>
+    Array.from({ length: n }, (_, i) => ({ placeholder: `{S${i}}`, intent: `i${i}` }));
+
+  it("buildGenericProseSlideSections throws on >MAX_KEYS_PER_CALL slots without calling the API", async () => {
+    await expect(
+      buildGenericProseSlideSections(slotsOf(MAX_KEYS_PER_CALL + 1), baseCtx),
+    ).rejects.toThrow(/MAX_KEYS_PER_CALL/);
+    expect(vi.mocked(callClaude)).not.toHaveBeenCalled();
+  });
+
+  it("buildGenericProseSlideSections accepts exactly MAX_KEYS_PER_CALL slots", async () => {
+    vi.mocked(callClaude).mockResolvedValue({});
+    await expect(
+      buildGenericProseSlideSections(slotsOf(MAX_KEYS_PER_CALL), baseCtx),
+    ).resolves.toEqual([]);
+    expect(vi.mocked(callClaude)).toHaveBeenCalledTimes(1);
+  });
+
+  it("buildGenericProseReaskSections throws on >MAX_KEYS_PER_CALL targets without calling the API", async () => {
+    const targets = slotsOf(MAX_KEYS_PER_CALL + 1).map((slot) => ({ slot, slideSource: 1 }));
+    await expect(buildGenericProseReaskSections(targets, baseCtx)).rejects.toThrow(
+      /MAX_KEYS_PER_CALL/,
+    );
+    expect(vi.mocked(callClaude)).not.toHaveBeenCalled();
+  });
+
+  it("buildGenericProseReaskSections accepts exactly MAX_KEYS_PER_CALL targets", async () => {
+    vi.mocked(callClaude).mockResolvedValue({});
+    const targets = slotsOf(MAX_KEYS_PER_CALL).map((slot) => ({ slot, slideSource: 1 }));
+    await expect(buildGenericProseReaskSections(targets, baseCtx)).resolves.toEqual([]);
+    expect(vi.mocked(callClaude)).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Sibling intents are coherence context — long intents are truncated (~80 chars)
+// so the sibling block never outgrows the actual work list.
+describe("sibling context", () => {
+  it("includes sibling intent, truncated with an ellipsis when long", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ "{A}": "x" });
+    const longIntent = "x".repeat(120);
+    await buildGenericProseSlideSections(
+      [{ placeholder: "{A}", intent: "a" }],
+      baseCtx,
+      [
+        { placeholder: "{Kort}", intent: "kort syfte" },
+        { placeholder: "{Lång}", intent: longIntent },
+      ],
+    );
+
+    const system = vi.mocked(callClaude).mock.calls[0][0].system;
+    expect(system).toContain(`- "{Kort}": kort syfte`);
+    expect(system).toContain(`- "{Lång}": ${"x".repeat(80)}…`);
+    expect(system).not.toContain("x".repeat(81));
   });
 });
