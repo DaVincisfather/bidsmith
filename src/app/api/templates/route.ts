@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/api-helpers";
 import { introspectTemplate } from "@/lib/pptx-template/introspect";
 import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
-import { readPptxSlides } from "@/lib/pptx-template/introspect/read-pptx";
+import { readPptxSlides, type SlideShapes } from "@/lib/pptx-template/introspect/read-pptx";
 import { isForeignPptx } from "@/lib/pptx-template/onboarding/detect-foreign";
 import { candidateSlots } from "@/lib/pptx-template/onboarding/propose-injection-plan";
 import { TEMPLATE_BUCKET, clearTemplateCache } from "@/lib/pptx-template/template-store";
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   // Foreign-detektering FÖRE introspektion: en tokenlös kundmall kan aldrig
   // matcha slide-signaturerna — den ska in i onboarding, inte få 422.
-  let slides;
+  let slides: SlideShapes[];
   try {
     slides = await readPptxSlides(buffer);
   } catch (err) {

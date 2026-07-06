@@ -1,16 +1,22 @@
 import { describe, it, expect } from "vitest";
 import type { SlideShapes } from "../../introspect/read-pptx";
 import type { ProposedSlot } from "../propose-injection-plan";
+import { TemplateManifestSchema } from "../../manifest-types";
 import {
   buildDraft,
   applyDecision,
   buildInjections,
   buildFinalProfile,
+  buildForeignManifest,
 } from "../draft-logic";
 
 const SIZE = { cx: 12192000, cy: 6858000 };
 
-function shape(text: string, geometry = { x: 0, y: 0, cx: 100, cy: 100 }) {
+function shape(
+  text: string,
+  geometry: { x: number; y: number; cx: number; cy: number } | null = { x: 0, y: 0, cx: 100, cy: 100 },
+  inGroup = false,
+) {
   return {
     paragraphs: [text],
     tokens: [],
@@ -18,6 +24,7 @@ function shape(text: string, geometry = { x: 0, y: 0, cx: 100, cy: 100 }) {
     fontSizePt: 18,
     lineSpacingPct: null,
     autofit: null,
+    inGroup,
   };
 }
 
@@ -72,6 +79,68 @@ describe("buildDraft", () => {
       SIZE,
     );
     expect(draft.wireframe[0].shapes[0].text).toHaveLength(120);
+  });
+
+  it("hög-konfidens static/toc förbekräftas ALDRIG (ska inte fyllas → pending)", () => {
+    // static/toc = kundens footer/innehållsförteckning. En förbockad sådan blir
+    // tyst AI-överskriven om användaren klickar igenom — kräver aktivt beslut.
+    const staticToc: ProposedSlot[] = [
+      { source: 1, shapeIndex: 0, shapeText: "Footer", token: "{Footer}",
+        capability: "static", intent: "footer", confidence: "high" },
+      { source: 1, shapeIndex: 1, shapeText: "Innehåll", token: "{Toc}",
+        capability: "toc", intent: "innehållsförteckning", confidence: "high" },
+      { source: 2, shapeIndex: 0, shapeText: "Metod", token: "{Metod}",
+        capability: "understanding", intent: "metod", confidence: "high" },
+    ];
+    const draft = buildDraft(
+      staticToc,
+      [
+        { ...slides[0], shapes: [shape("Footer"), shape("Innehåll")] },
+        { ...slides[1], shapes: [shape("Metod")] },
+      ],
+      SIZE,
+    );
+    const byToken = Object.fromEntries(draft.slots.map((s) => [s.token, s.decision]));
+    expect(byToken["{Footer}"]).toBe("pending");
+    expect(byToken["{Toc}"]).toBe("pending");
+    // En vanlig hög-konfidens-slot förbekräftas fortfarande.
+    expect(byToken["{Metod}"]).toBe("confirmed");
+  });
+
+  it("grupperade shapes (inGroup) får wireframe-geometri null — hamnar i 'utan position'", () => {
+    // Grupp-lokal xfrm ritas fel/utanför viewBoxen. read-pptx behåller geometrin
+    // (index oförändrade), men wireframe-bygget droppar den för inGroup-shapes.
+    const grouped = [
+      {
+        ...slides[0],
+        shapes: [
+          shape("Rubrik", { x: 0, y: 0, cx: 100, cy: 100 }, true), // inGroup
+          shape("Beskriv er metod", { x: 0, y: 0, cx: 100, cy: 100 }, false),
+        ],
+      },
+      slides[1],
+    ];
+    const draft = buildDraft(proposal, grouped, SIZE);
+    expect(draft.wireframe[0].shapes[0].geometry).toBeNull(); // inGroup droppad
+    expect(draft.wireframe[0].shapes[1].geometry).not.toBeNull();
+    // Kandidat-index oförändrade (shapeIndex 1 är fortfarande kandidaten).
+    expect(draft.wireframe[0].shapes[1].shapeIndex).toBe(1);
+    expect(draft.wireframe[0].shapes[1].candidate).toBe(true);
+  });
+});
+
+describe("buildForeignManifest", () => {
+  it("bygger ett schemagiltigt minimalt manifest — en static-slide per wireframe-slide", () => {
+    const draft = buildDraft(proposal, slides, SIZE);
+    const manifest = buildForeignManifest(draft, "kundmall");
+    // Fail-loud-validering (buildForeignManifest parse:ar redan, dubbelkolla här).
+    expect(() => TemplateManifestSchema.parse(manifest)).not.toThrow();
+    expect(manifest.name).toBe("kundmall");
+    expect(manifest.slides).toHaveLength(draft.wireframe.length);
+    expect(manifest.slides.every((s) => s.type === "static")).toBe(true);
+    expect(manifest.slides.map((s) => s.source)).toEqual(
+      draft.wireframe.map((w) => w.source),
+    );
   });
 });
 

@@ -6,6 +6,10 @@ import {
   type TemplateProfile,
 } from "../template-profile";
 import {
+  TemplateManifestSchema,
+  type TemplateManifest,
+} from "../manifest-types";
+import {
   parseOnboardingDraft,
   TOKEN_RE,
   type OnboardingDraft,
@@ -34,13 +38,23 @@ export function buildDraft(
     capability: s.capability,
     intent: s.intent.slice(0, 500),
     confidence: s.confidence,
-    decision: s.confidence === "high" ? "confirmed" : "pending",
+    // Hög konfidens förbekräftas — MEN static/toc betyder "ska inte fyllas"
+    // (kundens footer/innehållsförteckning). En förbockad sådan slot blir tyst
+    // AI-överskriven om användaren klickar igenom, så den kräver alltid ett
+    // aktivt ställningstagande (pending).
+    decision:
+      s.confidence === "high" && s.capability !== "static" && s.capability !== "toc"
+        ? "confirmed"
+        : "pending",
   }));
   const wireframe = slides.map((slide) => ({
     source: slide.source,
     shapes: slide.shapes.map((shape, shapeIndex) => ({
       shapeIndex,
-      geometry: shape.geometry,
+      // Grupperade shapes har grupp-lokal geometri som ritas fel/utanför
+      // viewBoxen — droppa den så de hamnar i "Rutor utan position"-listan
+      // (fortfarande klickbara). shapeIndex/kandidat-adressering är oförändrad.
+      geometry: shape.inGroup ? null : shape.geometry,
       text: shape.paragraphs.join(" ").slice(0, WIREFRAME_TEXT_MAX),
       candidate: candidateKeys.has(`${slide.source}:${shapeIndex}`),
     })),
@@ -146,5 +160,40 @@ export function buildFinalProfile(
     name: meta.name,
     version: meta.version,
     slides,
+  });
+}
+
+/**
+ * Syntetiskt minimalt manifest för en onboardad FRÄMMANDE mall.
+ *
+ * VARFÖR: materialize() i template-store kräver ett schemagiltigt
+ * templates.manifest för VARJE rad (loadActiveTemplate → loadTemplate anropas
+ * utanför try/catch i bid-/export-vägarna). En foreign mall lämnade manifest =
+ * null → safeParse-miss → 500 vid varje genereringsförsök. complete-routen
+ * skriver därför detta manifest i samma update som statusflippen.
+ *
+ * Manifestet konsulteras ALDRIG för generering: en foreign mall körs på
+ * profil-vägen (isAllGenericProfile på den sparade profilen är sant — buildFinal
+ * Profile mappar allt till generic-prose/static), och den grinden läser profilen,
+ * inte manifestet. type "static" per slide håller manifestet utanför type-vägens
+ * specialiserade slidelogik även om det någonsin lästes. En static-slide per
+ * wireframe-slide räcker för TemplateManifestSchema.min(1); parse:en fail-loud-
+ * validerar vår egen hopsättning (spegling av buildFinalProfile).
+ */
+export function buildForeignManifest(
+  draft: OnboardingDraft,
+  name: string,
+): TemplateManifest {
+  return TemplateManifestSchema.parse({
+    manifestVersion: 1,
+    name,
+    slides: draft.wireframe.map((slide) => ({
+      source: slide.source,
+      type: "static" as const,
+      placeholders: [],
+    })),
+    budgets: {},
+    fieldSlides: {},
+    excludedSlides: [],
   });
 }

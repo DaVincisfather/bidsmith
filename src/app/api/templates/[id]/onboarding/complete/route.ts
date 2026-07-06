@@ -5,8 +5,14 @@ import { requireUser, parseUuidParam } from "@/lib/api-helpers";
 import { TEMPLATE_BUCKET, clearTemplateCache } from "@/lib/pptx-template/template-store";
 import { instrumentTemplate } from "@/lib/pptx-template/instrument/instrument-template";
 import { saveTemplateProfile } from "@/lib/pptx-template/profile-store";
-import { parseOnboardingDraft } from "@/lib/pptx-template/onboarding/draft";
-import { buildInjections, buildFinalProfile } from "@/lib/pptx-template/onboarding/draft-logic";
+import { parseOnboardingDraft, type OnboardingDraft } from "@/lib/pptx-template/onboarding/draft";
+import {
+  buildInjections,
+  buildFinalProfile,
+  buildForeignManifest,
+} from "@/lib/pptx-template/onboarding/draft-logic";
+import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
+import type { TokenInjection } from "@/lib/pptx-template/instrument/instrument-template";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -39,7 +45,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  let draft;
+  let draft: OnboardingDraft;
   try {
     draft = parseOnboardingDraft(row.onboarding_draft);
   } catch {
@@ -47,7 +53,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   }
 
   // Validera FÖRE sidoeffekter — 422:orna ska inte lämna halvt tillstånd.
-  let profile, injections;
+  let profile: TemplateProfile, injections: TokenInjection[];
   try {
     profile = buildFinalProfile(draft, { templateId: id, name: row.name, version: row.version });
     injections = buildInjections(draft);
@@ -104,10 +110,19 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   }
 
   // Status-flippen SIST och atomiskt med storage_path-bytet — ett fel innan
-  // hit lämnar mallen i 'draft' och complete kan köras om.
+  // hit lämnar mallen i 'draft' och complete kan köras om. Ett syntetiskt
+  // minimalt manifest skrivs i SAMMA update: materialize() kräver ett
+  // schemagiltigt manifest för varje rad, annars kraschar loadActiveTemplate i
+  // bid-/export-vägarna (routine-fynd C1). Routingen påverkas inte — foreign
+  // mallar körs på profil-vägen (isAllGenericProfile på profilen ovan), som
+  // läser profilen, inte manifestet.
   const { error: updErr } = await supabase
     .from("templates")
-    .update({ storage_path: instrumentedPath, onboarding_status: "onboarded" })
+    .update({
+      storage_path: instrumentedPath,
+      onboarding_status: "onboarded",
+      manifest: buildForeignManifest(draft, row.name),
+    })
     .eq("id", id);
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });
 

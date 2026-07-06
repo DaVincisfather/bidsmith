@@ -149,6 +149,38 @@ describe("readPptxSlides (syntetisk mini-pptx)", () => {
     expect(b[0].shapes[0].autofit).toBeNull();
   });
 
+  it("flaggar inGroup för shapes inuti <p:grpSp> men inte topp-nivå-shapes (index i dokumentordning oförändrade)", async () => {
+    // Topp-nivå <p:sp> följt av en <p:grpSp> med en inre <p:sp>. Båda hittas av
+    // den rekursiva getElementsByTagNameNS i dokumentordning → shapeIndex 0/1.
+    const slide = `<?xml version="1.0"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld><p:spTree>
+    <p:sp>
+      <p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="100" cy="100"/></a:xfrm></p:spPr>
+      <p:txBody><a:p><a:r><a:t>Topp</a:t></a:r></a:p></p:txBody>
+    </p:sp>
+    <p:grpSp>
+      <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="500" cy="500"/>
+        <a:chOff x="0" y="0"/><a:chExt cx="500" cy="500"/></a:xfrm></p:grpSpPr>
+      <p:sp>
+        <p:spPr><a:xfrm><a:off x="10" y="10"/><a:ext cx="50" cy="50"/></a:xfrm></p:spPr>
+        <p:txBody><a:p><a:r><a:t>Grupperad</a:t></a:r></a:p></p:txBody>
+      </p:sp>
+    </p:grpSp>
+  </p:spTree></p:cSld>
+</p:sld>`;
+    const slides = await readPptxSlides(await buildMiniPptx(slide));
+    expect(slides[0].shapes).toHaveLength(2);
+    expect(slides[0].shapes[0].paragraphs).toEqual(["Topp"]);
+    expect(slides[0].shapes[0].inGroup).toBe(false);
+    expect(slides[0].shapes[1].paragraphs).toEqual(["Grupperad"]);
+    expect(slides[0].shapes[1].inGroup).toBe(true);
+    // read-pptx bevarar shapens egen (grupp-lokala) geometri — det är wireframe-
+    // bygget som droppar den; här verifieras bara flaggan + index-ordningen.
+    expect(slides[0].shapes[1].geometry).not.toBeNull();
+  });
+
   it("kastar svenskt fel när presentation.xml saknas", async () => {
     const zip = new JSZip();
     zip.file("ppt/_rels/presentation.xml.rels", "<Relationships/>");

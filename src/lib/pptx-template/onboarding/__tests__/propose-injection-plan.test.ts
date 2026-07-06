@@ -22,6 +22,7 @@ function shape(partial: Partial<ShapeText> & { paragraphs: string[] }): ShapeTex
     fontSizePt: partial.fontSizePt ?? null,
     lineSpacingPct: partial.lineSpacingPct ?? null,
     autofit: partial.autofit ?? null,
+    inGroup: partial.inGroup ?? false,
   };
 }
 
