@@ -23,6 +23,15 @@ describe("SlideWireframe", () => {
     expect(screen.getByText(/svävande ruta/i)).toBeInTheDocument(); // listan under
   });
 
+  it("ytter-SVG:n har role='group' (inte 'img') — den har interaktiva barn", () => {
+    render(
+      <SlideWireframe slide={slide} slideSize={size} selectedShapeIndex={null}
+        decisions={new Map([[1, "pending"]])} onSelect={() => {}} />,
+    );
+    // role="img" hade gömt kandidat-knapparna för hjälpmedel; group exponerar dem.
+    expect(screen.getByRole("group", { name: /slide 3/i })).toBeInTheDocument();
+  });
+
   it("klick på kandidat anropar onSelect med shapeIndex", () => {
     const onSelect = vi.fn();
     render(

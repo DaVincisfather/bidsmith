@@ -46,7 +46,9 @@ export function SlideWireframe({
       <svg
         viewBox={`0 0 ${slideSize.cx} ${slideSize.cy}`}
         className="w-full border border-rule rounded-lg bg-white"
-        role="img"
+        // group, inte img: SVG:n har interaktiva barn (kandidat-<g> med
+        // role="button") — role="img" gömmer dem för hjälpmedel.
+        role="group"
         aria-label={`Slide ${slide.source}`}
       >
         {placeable.map((shape) => {
