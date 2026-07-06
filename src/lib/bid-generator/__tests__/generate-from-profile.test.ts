@@ -51,6 +51,33 @@ function echoAllKeys() {
   });
 }
 
+// Wave-1 slide calls carry label "generic-prose slide bundle"; the batched
+// re-ask carries "generic-prose re-ask" — this is how the mock and the schema-key
+// assertions tell the two waves apart.
+const REASK_LABEL = "generic-prose re-ask";
+function isReask(opts: { label?: string }) {
+  return opts.label === REASK_LABEL;
+}
+
+// Mock that leaves `emptyOnWave1` blank on the first (per-slide) pass, then on
+// the re-ask leaves only `stillEmpty` blank (default: fills everything).
+function mockWaveThenReask(emptyOnWave1: string[], stillEmpty: string[] = []) {
+  callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
+    const reask = isReask(opts);
+    const out: Record<string, string> = {};
+    for (const key of Object.keys(opts.schema.shape)) {
+      const blank = reask ? stillEmpty.includes(key) : emptyOnWave1.includes(key);
+      out[key] = blank ? "" : `text ${key}`;
+    }
+    return out;
+  });
+}
+
+// Index of the single re-ask call (the one labelled REASK_LABEL).
+function reaskCallIndex(): number {
+  return callClaudeMock.mock.calls.findIndex((c) => isReask(c[0] as { label?: string }));
+}
+
 function genericSlot(placeholder: string, status: "generic" | "skip" = "generic") {
   return {
     placeholder,
@@ -182,33 +209,6 @@ describe("generateSectionsFromProfile", () => {
     expect(sections.map((s) => s.key)).toEqual(["generic-prose:{Keep}"]);
   });
 
-  // (f) the schema deliberately allows "" (minLength strips out of the API
-  // schema), so an empty answer is a REACHABLE case: it must fail only that
-  // slot — the rest of the slide's paid prose survives.
-  it("fails only the slot the model answered \"\" for (not the whole slide)", async () => {
-    callClaudeMock.mockImplementation(async (opts: SlideCall) => {
-      const out: Record<string, string> = {};
-      for (const key of Object.keys(opts.schema.shape)) {
-        out[key] = key === "{Empty}" ? "" : `text ${key}`;
-      }
-      return out;
-    });
-    const profile = profileWith([
-      {
-        source: 1,
-        capability: "generic-prose",
-        slots: [genericSlot("{Present}"), genericSlot("{Empty}"), genericSlot("{Also}")],
-      },
-    ]);
-
-    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
-
-    expect(sections.map((s) => s.key)).toEqual(["generic-prose:{Present}", "generic-prose:{Also}"]);
-    expect(failedSections).toEqual([
-      { placeholder: "{Empty}", error: "tomt eller saknat i AI-svaret" },
-    ]);
-  });
-
   // The empty-string path requires the schema itself to accept "" — a .min(1)
   // would instead fail Zod client-side and (after paid retries) sink the slide.
   it("builds the slide schema without a min-length gate (empty string parses)", async () => {
@@ -249,5 +249,124 @@ describe("generateSectionsFromProfile", () => {
     expect(sections).toHaveLength(7);
     expect(callClaudeMock).toHaveBeenCalledTimes(7);
     expect(peak).toBe(3);
+  });
+});
+
+// F6 — batched re-ask for empty slots (pattern precedent: evidence-guard's one
+// batched re-quote). A per-slide call with many required keys leaves some blank
+// nondeterministically; empties across ALL slides are gathered into ONE re-ask.
+describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
+  // (a) empty keys in wave 1 → EXACTLY one re-ask, its schema keys = just the
+  // empties (across slides), and no others.
+  it("fires exactly one re-ask over only the empty placeholders", async () => {
+    mockWaveThenReask(["{A2}", "{B1}"]);
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}"), genericSlot("{A3}")] },
+      { source: 2, capability: "generic-prose", slots: [genericSlot("{B1}"), genericSlot("{B2}")] },
+    ]);
+
+    await generateSectionsFromProfile(profile, ctx);
+
+    // 2 slide calls + 1 re-ask.
+    expect(callClaudeMock).toHaveBeenCalledTimes(3);
+    const idx = reaskCallIndex();
+    expect(idx).toBe(2);
+    expect(callSchemaKeys(idx)).toEqual(["{A2}", "{B1}"]);
+  });
+
+  // (b) re-ask fills every empty → all sections present, failedSections empty.
+  it("completes every section when the re-ask fills the empties", async () => {
+    mockWaveThenReask(["{A2}", "{B1}"]);
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}"), genericSlot("{A3}")] },
+      { source: 2, capability: "generic-prose", slots: [genericSlot("{B1}"), genericSlot("{B2}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(failedSections).toEqual([]);
+    expect(sections.map((s) => s.key).sort()).toEqual([
+      "generic-prose:{A1}", "generic-prose:{A2}", "generic-prose:{A3}",
+      "generic-prose:{B1}", "generic-prose:{B2}",
+    ]);
+    // The re-filled slots carry the same placeholder mapping as any other.
+    const refilled = sections.find((s) => s.key === "generic-prose:{A2}");
+    expect(refilled?.content && refilled.content.format === "generic-prose" && refilled.content.placeholder).toBe("{A2}");
+  });
+
+  // (c) a slot still empty after the re-ask → only that one to failedSections.
+  it("fails only the slot that stays empty after the re-ask", async () => {
+    mockWaveThenReask(["{A2}", "{A3}"], ["{A3}"]);
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}"), genericSlot("{A3}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(sections.map((s) => s.key).sort()).toEqual(["generic-prose:{A1}", "generic-prose:{A2}"]);
+    expect(failedSections).toEqual([
+      { placeholder: "{A3}", error: "tomt eller saknat även efter re-ask" },
+    ]);
+  });
+
+  // (d) the re-ask call rejecting → all re-ask slots to failedSections, wave-1
+  // sections untouched. The re-ask must never fell a slot that already succeeded.
+  it("sends only re-ask slots to failedSections when the re-ask rejects", async () => {
+    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
+      if (isReask(opts)) throw new Error("reask boom");
+      const out: Record<string, string> = {};
+      for (const key of Object.keys(opts.schema.shape)) out[key] = key === "{A2}" ? "" : `text ${key}`;
+      return out;
+    });
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}")] },
+      { source: 2, capability: "generic-prose", slots: [genericSlot("{B1}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(sections.map((s) => s.key).sort()).toEqual(["generic-prose:{A1}", "generic-prose:{B1}"]);
+    expect(failedSections).toEqual([{ placeholder: "{A2}", error: "reask boom" }]);
+  });
+
+  // (e) no empties in wave 1 → no re-ask call at all.
+  it("makes no re-ask call when wave 1 leaves nothing empty", async () => {
+    echoAllKeys();
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}")] },
+      { source: 2, capability: "generic-prose", slots: [genericSlot("{B1}")] },
+    ]);
+
+    const { failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(callClaudeMock).toHaveBeenCalledTimes(2);
+    expect(reaskCallIndex()).toBe(-1);
+    expect(failedSections).toEqual([]);
+  });
+
+  // A rejected SLIDE (not an empty slot) is not re-asked — re-asking a call that
+  // couldn't parse buys nothing; its slots fail directly, and if that's the only
+  // failure no re-ask fires.
+  it("does not re-ask a rejected slide's slots", async () => {
+    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
+      const keys = Object.keys(opts.schema.shape);
+      if (keys.includes("{B1}")) throw new Error("boom");
+      const out: Record<string, string> = {};
+      for (const key of keys) out[key] = `text ${key}`;
+      return out;
+    });
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}")] },
+      { source: 2, capability: "generic-prose", slots: [genericSlot("{B1}"), genericSlot("{B2}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(reaskCallIndex()).toBe(-1);
+    expect(sections.map((s) => s.key)).toEqual(["generic-prose:{A1}"]);
+    expect(failedSections).toEqual([
+      { placeholder: "{B1}", error: "boom" },
+      { placeholder: "{B2}", error: "boom" },
+    ]);
   });
 });
