@@ -1,6 +1,11 @@
 import type { BidSection } from "@/lib/types";
 import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
-import { buildGenericProseSlideSections, type GenericProseSlot } from "./bundles/generic-prose";
+import {
+  buildGenericProseSlideSections,
+  buildGenericProseReaskSections,
+  type GenericProseSlot,
+  type GenericProseReaskTarget,
+} from "./bundles/generic-prose";
 import type { BidContext } from "./context";
 
 export type { BidContext } from "./context";
@@ -23,7 +28,12 @@ export type { BidContext } from "./context";
 // collapses that to ~12 calls. Still cap in-flight SLIDES so a wide deck can't
 // fire every slide at once → 429s that exhaust retries and sink the (partly paid)
 // batch — the #52-review lesson, same rationale as the classify-slot chunking.
-const SLIDE_CONCURRENCY = 3;
+//
+// F5 (wall-clock): 3 gave ~5,9 min for 12 slides (effort high, maxTokens 32000)
+// > Vercel's 300 s. 6 runs 12 slides / 6 ≈ 2 waves + an occasional re-ask wave
+// ≈ ~2,5 min, comfortably under the ceiling. Effort/maxTokens stay put — quality
+// before speed, and the ceiling is met without touching them.
+const SLIDE_CONCURRENCY = 6;
 
 // A slide's generation targets, grouped so one AI call covers the whole slide.
 interface SlideJob {
@@ -57,9 +67,13 @@ export interface GenerateFromProfileResult {
  * (including truncated/invalid JSON — callClaude throws after its retries)
  * fails only that slide's slots (all recorded in `failedSections`) while other
  * slides survive. A slide that succeeds but returns an empty string (or drops a
- * key) for a slot fails only that slot. onSectionComplete is invoked
- * sequentially over the produced sections, awaited per call — same contract as
- * generateAllSections.
+ * key) for a slot does NOT fail it outright: those empties are collected across
+ * ALL slides and retried in ONE batched re-ask call (F6 — a per-slide call with
+ * 20–30 required keys nondeterministically leaves some blank; a focused second
+ * pass over only the misses fills them, killing the export lottery). Only slots
+ * still empty after the re-ask — or every re-ask slot if that call rejects —
+ * land in `failedSections`. onSectionComplete is invoked sequentially over the
+ * produced sections, awaited per call — same contract as generateAllSections.
  */
 export async function generateSectionsFromProfile(
   profile: TemplateProfile,
@@ -86,6 +100,11 @@ export async function generateSectionsFromProfile(
 
   const sections: BidSection[] = [];
   const failedSections: FailedSection[] = [];
+  // Slots that came back empty/missing from a FULFILLED slide call, gathered
+  // across every slide for ONE batched re-ask below (F6). A REJECTED slide is a
+  // different failure (truncation/invalid JSON) and goes straight to
+  // failedSections — re-asking a call that couldn't parse buys nothing.
+  const reaskTargets: GenericProseReaskTarget[] = [];
 
   for (let i = 0; i < jobs.length; i += SLIDE_CONCURRENCY) {
     const chunk = jobs.slice(i, i + SLIDE_CONCURRENCY);
@@ -99,9 +118,8 @@ export async function generateSectionsFromProfile(
         sections.push(...produced);
         // A slide call can succeed yet answer "" for a slot (the schema allows
         // it — see buildGenericProseSlideSections) or, defensively, drop a key.
-        // Mark only that slot failed so the rest of the slide's (paid) prose
-        // survives. NOTE: real truncation makes callClaude throw → the reject
-        // branch below, whole slide.
+        // Collect that slot for the batched re-ask rather than failing it now.
+        // NOTE: real truncation makes callClaude throw → the reject branch below.
         const got = new Set(
           produced
             .map((s) => (s.content?.format === "generic-prose" ? s.content.placeholder : null))
@@ -109,10 +127,7 @@ export async function generateSectionsFromProfile(
         );
         for (const slot of job.slots) {
           if (!got.has(slot.placeholder)) {
-            failedSections.push({
-              placeholder: slot.placeholder,
-              error: "tomt eller saknat i AI-svaret",
-            });
+            reaskTargets.push({ slot, slideSource: job.source });
           }
         }
       } else {
@@ -124,6 +139,36 @@ export async function generateSectionsFromProfile(
         }
       }
     });
+  }
+
+  // F6 batched re-ask: ONE call over every empty slot (pattern precedent:
+  // evidence-guard's single batched re-quote). It fills what it can; a slot still
+  // empty afterwards — or every re-ask slot if the call rejects — becomes a
+  // failedSection. The re-ask must never fell wave-1 sections: on reject we only
+  // fail the re-ask slots and stop.
+  if (reaskTargets.length > 0) {
+    try {
+      const refilled = await buildGenericProseReaskSections(reaskTargets, ctx);
+      sections.push(...refilled);
+      const got = new Set(
+        refilled
+          .map((s) => (s.content?.format === "generic-prose" ? s.content.placeholder : null))
+          .filter((p): p is string => p !== null),
+      );
+      for (const { slot } of reaskTargets) {
+        if (!got.has(slot.placeholder)) {
+          failedSections.push({
+            placeholder: slot.placeholder,
+            error: "tomt eller saknat även efter re-ask",
+          });
+        }
+      }
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      for (const { slot } of reaskTargets) {
+        failedSections.push({ placeholder: slot.placeholder, error: message });
+      }
+    }
   }
 
   if (onSectionComplete) {

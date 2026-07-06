@@ -4,20 +4,24 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-06 sen kväll — Radrum-omtest KÖRT efter #71: F2 verifierad (67 static), generering GÅR IGENOM men två nya fynd (F5 väggklocka > Vercel-tak, F6 tomma-slot-lotteri). NÄSTA: F6/F5-fix + stickprov._
+_Senast uppdaterad: 2026-07-06 natt — F6/F5-fixen LEVERERAD i kod (branch fix/empty-slot-reask): batchat re-ask för tomma slots + SLIDE_CONCURRENCY 3→6. Sviten 1008/0. NÄSTA: Radrum-grönt-varv (omtest mot v3) + Stefans egen smoke._
 
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **F6/F5-FIX (nästa kodpass — riktning föreslagen, Stefan beslutar):** omtestet
-      (verifieringsdokumentets TILLÄGG) visade att slide-anrop med 20–30 obligatoriska
-      nycklar nondeterministiskt lämnar 1–9 TOMMA (körning 1: en, körning 2: nio) →
-      export-lotteri trots per-slot-nedgradering. Föreslagen F6-fix enligt
-      evidence-guard-mönstret: samla tomma/saknade slots efter slide-anropen → ETT
-      batchat re-ask-anrop → först därefter failedSections. Ta F5 i samma pass:
-      351–352 s väggklocka > Vercels 300 s-tak (höj SLIDE_CONCURRENCY och/eller sänk
-      effort/maxTokens för writingGeneric). Omtest mot Radrum v3 (id 9bf84030…,
-      onboardad med prisfält skippade) — billigt: ingen ny klassificering behövs.
+- [ ] **RADRUM-GRÖNT-VARV + STEFANS SMOKE (verifiera F6/F5 mot riktig mall):** omtest
+      mot Radrum v3 (id 9bf84030…, onboardad med prisfält skippade) — billigt, ingen ny
+      klassificering behövs. Kontroll: (1) genereringen håller sig under Vercels 300 s
+      (F5 — nu SLIDE_CONCURRENCY 6, ~2,5 min förväntat), (2) inga tomma slots efter
+      re-ask-vågen över flera körningar (F6 — lotteriet borta), (3) export GÅR IGENOM.
+      Sedan Stefans egen smoke i UI:t (upload→wizard→complete→generera→export).
+- [x] **F6/F5-FIX (LEVERERAD — branch fix/empty-slot-reask):** F6 = batchat re-ask enligt
+      evidence-guard-mönstret: efter första vågen samlas ALLA tomma/saknade slots (över
+      alla slides) → ETT `callClaude` (`generic-prose re-ask`, dynamiskt Zod-schema över
+      enbart de tomma platshållarna, prompt som kräver substantiellt innehåll per fält)
+      → merge → bara slots som ÄVEN efter re-ask är tomma → failedSections. Re-ask-reject
+      fäller aldrig våg 1-sektioner. F5 = SLIDE_CONCURRENCY 3→6 (effort/maxTokens orörda).
+      Sviten 1008/0, tsc + eslint rena. Väntar Radrum-grönt-varv + Stefans smoke ovan.
 - [ ] **STICKPROV (operatör — Stefan, påbörjat 2026-07-05):** relevans-stickprov av
       citaten på gröna loopkörningar. Mekaniken garanterar att citaten FINNS ordagrant;
       att de är RELEVANTA för påståendet är residualen som verifieras av människa. Underlag:
@@ -86,6 +90,10 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Re-ask-residualer (F6, PR #72-routinen):**
+  - chunka re-asken vid stora tomt-set (>30 targets -> flera batchar) sa F6-monstret skalar med bredare mallar
+  - stickprovsrutinen bor marka re-ask-fyllda sektioner i underlaget (hallucinationsrisken koncentrerad dit)
+  - F5-marginalen ar tunn (~240-290 s berknat) — logga vaggklockan i Radrum-varven; >270 s -> parallellisera re-asken eller hoj concurrency till 8
 - **Per-slide-genereringens residualer (F1-fixen, granskningsnoterade):**
   - trunkering (maxTokens-taket) fäller HELA slidens slots i failedSections — per-slot
     drabbades bara den överstora sloten (correctness, svansrisk på täta slides)
