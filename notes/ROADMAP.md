@@ -4,18 +4,17 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-06 — onboarding-wizarden komplett (PR #70); migr. 012 VÄNTAR på applicering. NÄSTA: migr. 012 + operatörsverifiering + stickprov._
+_Senast uppdaterad: 2026-07-06 — migr. 012 körd; operatörsverifiering GENOMFÖRD (fann F1: generering timade ut) → per-slide-fixen denna PR. NÄSTA: Radrum-omtest + stickprov._
 
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **MIGRATION 012 (operatör — Stefan, FÖRE deploy av #70):** applicera
-      `supabase/migrations/012_template_onboarding.sql` i Supabase SQL Editor —
-      upload/inställningar refererar de nya kolumnerna och failar utan den.
-- [ ] **OPERATÖRSVERIFIERING onboarding (betald, liten, post-merge #70):** riktig
-      kundmall genom wizarden (klassificering ≈ under en dollar) → PowerPoint-COM-öppning
-      av instrumenterade kopian → en FAKTISK anbudsgenerering mot den onboardade mallen
-      (genereringsvägen är kodverifierad + kedjetestad, men inte live-körd — C1-fixen i #70).
+- [ ] **RADRUM-OMTEST (operatör/Claude, betald ~$1–2, efter merge av denna PR):**
+      force-omklassificera Radrum-mallen (id 406190c3…, ligger onboardad i DB) —
+      label-skyddet ska synas i pending-antalet → complete → generera anbud
+      (förväntan: <3 min, ~12 anrop) → export → PowerPoint. OBS verifiera särskilt
+      att structured outputs accepterar schema-nycklar med mellanslag/åäö
+      (`{Upphandlande organisation}`) — ej testat mot live-API:t.
 - [ ] **STICKPROV (operatör — Stefan, påbörjat 2026-07-05):** relevans-stickprov av
       citaten på gröna loopkörningar. Mekaniken garanterar att citaten FINNS ordagrant;
       att de är RELEVANTA för påståendet är residualen som verifieras av människa. Underlag:
@@ -23,6 +22,16 @@ _Senast uppdaterad: 2026-07-06 — onboarding-wizarden komplett (PR #70); migr. 
 - [ ] **LOOP-VALIDERING (operatör, BETALD, under $20-tak, vid behov):** om-kör
       `npm run eval:zero-halluc [-- --target=cv]` för stabil grön post-vakt + coverage mot
       goldens. Spårkostnad hittills ~$5 av $20.
+
+## Levererat 2026-07-06 kväll (operatörsverifiering + F1/F2-fix, denna PR)
+**Operatörsverifiering mot riktig kundmall** (Radrum, 12 slides/221 kandidater — Claude
+Design-genererad; rapport: `notes/2026-07-06-onboarding-operator-verification.md`):
+hela kedjan upload→klassificering→wizard→complete→PowerPoint GRÖN live, men genereringen
+föll — **F1:** per-slot-anrop × 169 bekräftade ≈ 8–10 min > watchdog/Vercel-tak.
+**Fixat i denna PR:** `generateSectionsFromProfile` batchar per SLIDE (ETT callClaude
+per slide, dynamiskt Zod-schema över slidens placeholders, delad `PROSE_VOICE` med
+per-slot-varianten, SLIDE_CONCURRENCY=3) → ~12 anrop; **F2:** klassificerarprompten
+skyddar etikett-rutor (static → pending-grinden). Kvarvarande residualer i backloggen.
 
 ## Levererat 2026-07-05/06 (onboarding-wizarden, PR #70)
 Mall-uppladdningsspårets sista bit: tokenlösa kundmallar onboardas end-to-end.
@@ -74,6 +83,19 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Per-slide-genereringens residualer (F1-fixen, granskningsnoterade):**
+  - trunkering (maxTokens-taket) fäller HELA slidens slots i failedSections — per-slot
+    drabbades bara den överstora sloten (correctness, svansrisk på täta slides)
+  - dubbel-placeholder på samma slide garderas ENBART av onboardingens kollisionssuffix —
+    map-nyckeln skriver tyst över (correctness-lite, ej nåbar idag)
+  - missing-key-nedgraderingen i generate-from-profile är onåbar i produktion (schemat
+    rejectar före) — död defensiv kod med felbeskrivande kommentar (städ)
+  - `buildGenericProseSection` (per-slot) är nu produktions-orphan — behåll/ta bort medvetet
+- **Onboarding-verifieringens övriga fynd (2026-07-06):**
+  - F3 (polish): wireframens textetiketter skalar inte med slideSize — oläsliga på mallar
+    i övernormal storlek (Radrum 150 %)
+  - kostnadstexten på wizard-startsidan hårdkodad "under en dollar" — skala med precount
+    (221 kandidater ≈ $1–1.5, belagd avvikelse)
 - **Onboarding-wizard residualer (#70, triagerade i slutreview — polish om inte annat anges):**
   - "Godkänn slidens förslag"-bulkknapp (spec §3) ej byggd + kostnadstexten hårdkodad
     "under en dollar" oavsett kandidatantal (Stefan-beslut om båda)
