@@ -42,6 +42,20 @@ describe("OnboardingWizard", () => {
     expect(screen.getByText(/12 textrutor att/)).toBeInTheDocument();
   });
 
+  it("needs_onboarding: visar både felet OCH precount-raden vid retry efter klassificeringsfel", async () => {
+    // Fynd #2: klassificeringsfelet fick tidigare skriva över precount — den
+    // ska bevaras med och renderas oberoende av felmeddelandet.
+    mockGet({
+      status: "needs_onboarding", name: "kundmall", version: 1, draft: null,
+      error: "klassificeringen kraschade", precount: { slides: 5, candidates: 12 },
+    });
+    render(<OnboardingWizard templateId="t-1" />);
+    await waitFor(() =>
+      expect(screen.getByText(/klassificeringen kraschade/i)).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/12 textrutor att/)).toBeInTheDocument();
+  });
+
   it("classifying: visar pågår-status", async () => {
     mockGet({ status: "classifying", name: "kundmall", version: 1, draft: null });
     render(<OnboardingWizard templateId="t-1" />);

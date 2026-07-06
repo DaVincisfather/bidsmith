@@ -8,6 +8,7 @@ import { readPptxSlides } from "@/lib/pptx-template/introspect/read-pptx";
 import { proposeInjectionPlan } from "@/lib/pptx-template/onboarding/propose-injection-plan";
 import { readSlideSize } from "@/lib/pptx-template/onboarding/slide-size";
 import { buildDraft } from "@/lib/pptx-template/onboarding/draft-logic";
+import { extractPrecount } from "@/lib/pptx-template/onboarding/draft";
 
 // 50–100+ klassificeringsanrop (chunkade om 6) överlever inte default-timeouten.
 // Samma mönster och tak som bid-genereringen (Vercel Hobby-taket).
@@ -33,10 +34,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   const supabase = createServiceClient();
   const { data: row } = await supabase
     .from("templates")
-    .select("id, name, version, storage_path, onboarding_status")
+    .select("id, name, version, storage_path, onboarding_status, onboarding_draft")
     .eq("id", id)
     .maybeSingle();
   if (!row) return NextResponse.json({ error: "Template not found" }, { status: 404 });
+
+  // Bevaras genom CAS:en/klassificeringsfelet — annars tappar retry-vyn
+  // omfångs-/kostnadsraden (satt av upload, aldrig ombyggd av propose).
+  const precount = extractPrecount(row.onboarding_draft);
 
   // needs_onboarding är normalstarten; draft/classifying kräver force (omkörning
   // slänger beslut resp. kan dubbelköra ett hängt jobb — explicit avsikt krävs).
@@ -57,11 +62,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   // på force) skulle annars båda passera grinden ovan och starta dubbla
   // after()-jobb = dubbla AI-kostnader. Bara den som träffar raden i oförändrad
   // status vinner; förloraren får noll träffade rader → 409. onboarding_draft
-  // nollas i samma update — annars kan GET under pågående omkörning visa det
-  // gamla utkastet/fel-payloaden bredvid status 'classifying'.
+  // rensas till (högst) precount i samma update — annars kan GET under
+  // pågående omkörning visa det gamla utkastet/fel-payloaden bredvid status
+  // 'classifying'. precount är INTE ett utkast — den överlever medvetet.
   const { data: claimed, error: casError } = await supabase
     .from("templates")
-    .update({ onboarding_status: "classifying", onboarding_draft: null })
+    .update({ onboarding_status: "classifying", onboarding_draft: precount ? { precount } : null })
     .eq("id", id)
     .eq("onboarding_status", row.onboarding_status)
     .select("id");
@@ -98,11 +104,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         .eq("id", id);
     } catch (err) {
       // Felet ytas på startsidan; needs_onboarding gör retry-knappen giltig igen.
+      // precount hänger med så omfångs-/kostnadsraden inte försvinner vid retry.
       await supabase
         .from("templates")
         .update({
           onboarding_status: "needs_onboarding",
-          onboarding_draft: { error: err instanceof Error ? err.message : String(err) },
+          onboarding_draft: {
+            error: err instanceof Error ? err.message : String(err),
+            ...(precount ? { precount } : {}),
+          },
         })
         .eq("id", id);
     }

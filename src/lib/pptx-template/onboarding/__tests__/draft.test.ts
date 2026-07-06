@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseOnboardingDraft, TOKEN_RE } from "../draft";
+import { parseOnboardingDraft, TOKEN_RE, extractPrecount } from "../draft";
 
 const validDraft = {
   draftVersion: 1,
@@ -52,5 +52,28 @@ describe("OnboardingDraftSchema", () => {
     expect(TOKEN_RE.test("{Namn}")).toBe(true);
     expect(TOKEN_RE.test("{}")).toBe(false);
     expect(TOKEN_RE.test("{a{b}")).toBe(false);
+  });
+});
+
+describe("extractPrecount", () => {
+  it("plockar ut precount ur en ren precount-payload (satt av upload)", () => {
+    expect(extractPrecount({ precount: { slides: 5, candidates: 12 } })).toEqual({
+      slides: 5, candidates: 12,
+    });
+  });
+
+  it("plockar ut precount ur en error-payload som bär den med (klassificeringsfel efter retry)", () => {
+    expect(extractPrecount({ error: "boom", precount: { slides: 5, candidates: 12 } })).toEqual({
+      slides: 5, candidates: 12,
+    });
+  });
+
+  it("returnerar undefined för ett riktigt utkast (inget precount-fält)", () => {
+    expect(extractPrecount(validDraft)).toBeUndefined();
+  });
+
+  it("returnerar undefined för null/icke-objekt", () => {
+    expect(extractPrecount(null)).toBeUndefined();
+    expect(extractPrecount("sträng")).toBeUndefined();
   });
 });

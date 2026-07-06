@@ -68,3 +68,21 @@ export type OnboardingDraft = z.infer<typeof OnboardingDraftSchema>;
 export function parseOnboardingDraft(raw: unknown): OnboardingDraft {
   return OnboardingDraftSchema.parse(raw);
 }
+
+export interface DraftPrecount {
+  slides: number;
+  candidates: number;
+}
+
+/** Plockar ut { precount } ur en rå onboarding_draft-kolumnvärde, om den bär en.
+ *  Delad av propose-routen (bevara precount över CAS/klassificeringsfel) och
+ *  GET-routens draftPayload (visa precount-raden bredvid ett klassificeringsfel). */
+export function extractPrecount(raw: unknown): DraftPrecount | undefined {
+  if (raw && typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    if (obj.precount && typeof obj.precount === "object") {
+      return obj.precount as DraftPrecount;
+    }
+  }
+  return undefined;
+}

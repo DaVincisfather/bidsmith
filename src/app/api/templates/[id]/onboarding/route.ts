@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser, parseUuidParam, parseBody } from "@/lib/api-helpers";
 import { OnboardingDecisionSchema } from "@/lib/api-schemas";
-import { parseOnboardingDraft } from "@/lib/pptx-template/onboarding/draft";
+import { parseOnboardingDraft, extractPrecount } from "@/lib/pptx-template/onboarding/draft";
 import { applyDecision } from "@/lib/pptx-template/onboarding/draft-logic";
 
 interface RouteContext {
@@ -41,9 +41,12 @@ async function loadOnboardingRow(
 }
 
 /** Normaliserar onboarding_draft-kolumnens payloads: utkast (schema-validerat),
- *  { error } (klassificeringsfel), { precount } (satt av upload, före
- *  klassificering). Ett korrupt utkast (objekt som inte matchar något av dem)
- *  får INTE kasta ZodError ur handlern — det mappas till ett fel-payload. */
+ *  { error, precount? } (klassificeringsfel — precount kan bevaras med, se
+ *  propose-routen), { precount } (satt av upload, före klassificering). Ett
+ *  korrupt utkast (objekt som inte matchar något av dem) får INTE kasta
+ *  ZodError ur handlern — det mappas till ett fel-payload.
+ *  Nyckeldiskriminering (error först, sedan precount, sedan parse) måste
+ *  bevaras — ett utkast får aldrig förväxlas med en precount/error-payload. */
 function draftPayload(raw: unknown): {
   draft: ReturnType<typeof parseOnboardingDraft> | null;
   error?: string;
@@ -51,8 +54,9 @@ function draftPayload(raw: unknown): {
 } {
   if (raw && typeof raw === "object") {
     const obj = raw as Record<string, unknown>;
-    if (typeof obj.error === "string") return { draft: null, error: obj.error };
-    if (obj.precount) return { draft: null, precount: obj.precount as { slides: number; candidates: number } };
+    if (typeof obj.error === "string") return { draft: null, error: obj.error, precount: extractPrecount(raw) };
+    const precount = extractPrecount(raw);
+    if (precount) return { draft: null, precount };
     try {
       return { draft: parseOnboardingDraft(raw) };
     } catch {
