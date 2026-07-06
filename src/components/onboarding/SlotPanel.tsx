@@ -36,6 +36,9 @@ export function SlotPanel({ slot, onDecide, saving }: SlotPanelProps) {
           id="slot-token"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          // PATCH-schemat kräver token ≤ 80 tecken inkl. {klamrar}; vi bär {}
+          // runt namnet → taket för själva namnet är 78.
+          maxLength={78}
           className="mt-1 w-full border border-rule rounded px-3 py-1.5 text-sm bg-paper"
         />
       </div>

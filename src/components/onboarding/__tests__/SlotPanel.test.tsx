@@ -33,4 +33,9 @@ describe("SlotPanel", () => {
     expect(screen.getByText(/understanding/i)).toBeInTheDocument();
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
+
+  it("token-inputen kapas till 78 tecken (PATCH-schemat kräver token ≤ 80 inkl. klamrar)", () => {
+    render(<SlotPanel slot={slot} onDecide={vi.fn()} saving={false} />);
+    expect(screen.getByLabelText(/tokennamn/i)).toHaveAttribute("maxlength", "78");
+  });
 });
