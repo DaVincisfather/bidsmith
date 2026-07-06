@@ -512,8 +512,10 @@ describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => 
   });
 
   // A chunk's prompt names the slide's OTHER slots as coherence context (not as
-  // schema keys) so a split slide still reads as one whole (#2 of the fix).
-  it("names sibling placeholders as context in a chunked slide's prompt", async () => {
+  // schema keys) so a split slide still reads as one whole (#2 of the fix). Each
+  // sibling carries its INTENT — a bare placeholder name gives the coherence
+  // instruction nothing to work with (routine polish finding).
+  it("names sibling placeholders with their intent as context in a chunked slide's prompt", async () => {
     echoAllKeys();
     const profile = profileWith([slideWithSlots(1, 30)]);
 
@@ -523,7 +525,8 @@ describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => 
     // {S29} lives in call 2's schema, so on call 0 it can only be a context sibling.
     expect(callSchemaKeys(0)).not.toContain("{S29}");
     expect(call0.system).toContain("Övriga sektioner på samma slide");
-    expect(call0.system).toContain("{S29}");
+    // Placeholder AND its intent, on the "- {P}: intent" line form.
+    expect(call0.system).toContain(`- "{S29}": intent {S29}`);
   });
 
   // (b) one CHUNK rejecting fails only that chunk's slots; the slide's other

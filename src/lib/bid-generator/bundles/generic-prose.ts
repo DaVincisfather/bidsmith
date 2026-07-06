@@ -66,16 +66,29 @@ Svara med giltig JSON:
 // so a slide's slots are chunked ≤12 per call (orchestration in generate-from-profile.ts).
 export const MAX_KEYS_PER_CALL = 12;
 
+// A sibling's intent in the coherence list is context, not a writing brief —
+// ~80 chars says what the neighbour covers without the sibling block outgrowing
+// the actual work list on a 30-slot slide.
+const SIBLING_INTENT_MAX = 80;
+function siblingLine(s: GenericProseSlot): string {
+  const intent = s.intent || "(ej angivet)";
+  const short =
+    intent.length > SIBLING_INTENT_MAX ? `${intent.slice(0, SIBLING_INTENT_MAX)}…` : intent;
+  return `- "${s.placeholder}": ${short}`;
+}
+
 // System prompt for a chunk of a slide's generic-prose slots: lists the chunk's
 // slots (placeholder + intent + optional budget) and asks for ONE coherent JSON
-// object keyed by placeholder. `siblingPlaceholders` (the slide's OTHER slots,
-// filled by other chunk-calls) are named only as coherence context so a chunked
-// slide still reads as one whole. This is what collapses ~169 per-slot calls to
-// ~12 per-slide calls (F1 timeout fix, notes/2026-07-06-per-slide-generation-plan.md),
-// now chunked ≤MAX_KEYS_PER_CALL to survive the API's optional-schema limit.
+// object keyed by placeholder. `siblings` (the slide's OTHER slots, filled by
+// other chunk-calls) are named with a truncated intent as coherence context only
+// — a bare placeholder name gives the coherence instruction nothing to work
+// with — so a chunked slide still reads as one whole. This is what collapses
+// ~169 per-slot calls to ~12 per-slide calls (F1 timeout fix,
+// notes/2026-07-06-per-slide-generation-plan.md), now chunked
+// ≤MAX_KEYS_PER_CALL to survive the API's optional-schema limit.
 function slideSystemPrompt(
   slots: GenericProseSlot[],
-  siblingPlaceholders: string[] = [],
+  siblings: GenericProseSlot[] = [],
 ): string {
   const slotLines = slots
     .map((s) => {
@@ -89,9 +102,9 @@ function slideSystemPrompt(
     .join(",\n");
   // Empty when the slide fits one chunk → prompt is byte-identical to before.
   const siblingBlock =
-    siblingPlaceholders.length > 0
+    siblings.length > 0
       ? `Övriga sektioner på samma slide (skriv dem INTE här — de fylls i andra anrop — men håll din text koherent med dem):
-${siblingPlaceholders.map((p) => `- "${p}"`).join("\n")}
+${siblings.map(siblingLine).join("\n")}
 `
       : "";
   return `Du skriver flera sektioner till EN slide i ett svenskt konsultanbud. Sektionerna sitter på
@@ -149,9 +162,9 @@ export async function buildGenericProseSection(
  * generic-prose slots. A dynamic schema (one optional string key per placeholder)
  * lets the model write the slots as a coherent whole while the response still maps
  * back to one BidSection per slot — same key/title/placeholder shape as
- * buildGenericProseSection. `siblingPlaceholders` names the slide's other slots
- * (filled by sibling chunk-calls) as coherence context only; the schema stays the
- * chunk's keys, so a chunked slide never re-inflates the optional schema.
+ * buildGenericProseSection. `siblings` names the slide's other slots (filled by
+ * sibling chunk-calls, intent truncated) as coherence context only; the schema
+ * stays the chunk's keys, so a chunked slide never re-inflates the optional schema.
  *
  * Distinct schemas never share cache — expected and fine at ~12 calls (see
  * CLAUDE.md). Returns a section only for placeholders with non-empty text; an
@@ -163,8 +176,18 @@ export async function buildGenericProseSection(
 export async function buildGenericProseSlideSections(
   slots: GenericProseSlot[],
   ctx: BidContext,
-  siblingPlaceholders: string[] = [],
+  siblings: GenericProseSlot[] = [],
 ): Promise<BidSection[]> {
+  // Guard the key ceiling HERE, not only in the orchestrator's chunking: a future
+  // call site that skips the chunking would silently reintroduce the
+  // non-retryable 400 ("too many optional parameters"). Throwing before the paid
+  // call makes the mistake loud and free.
+  if (slots.length > MAX_KEYS_PER_CALL) {
+    throw new Error(
+      `buildGenericProseSlideSections: ${slots.length} slots > MAX_KEYS_PER_CALL (${MAX_KEYS_PER_CALL}) — chunka anropet; API:t avvisar stora optional-scheman med icke-retrybar 400`,
+    );
+  }
+
   // Deliberately no .min(1): minLength strips out of the API schema anyway, so
   // the model CAN return "" — a min-gate would then fail Zod client-side and
   // burn 3 full-price regenerations before sinking ALL the slide's slots. By
@@ -186,7 +209,7 @@ export async function buildGenericProseSlideSections(
     // foreign template can carry 30+ unknown slots and that cost lands on the user.
     model: MODELS.writingGeneric,
     maxTokens: 32000,
-    system: slideSystemPrompt(slots, siblingPlaceholders),
+    system: slideSystemPrompt(slots, siblings),
     cachedContext: formatContext(ctx),
     userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
     schema,
@@ -297,6 +320,15 @@ export async function buildGenericProseReaskSections(
   targets: GenericProseReaskTarget[],
   ctx: BidContext,
 ): Promise<BidSection[]> {
+  // Same key-ceiling guard as the slide batch: the re-ask gathers targets across
+  // the whole first wave, so an unchunked call site here is the LIKELIER way to
+  // silently reintroduce the non-retryable 400. Throw before the paid call.
+  if (targets.length > MAX_KEYS_PER_CALL) {
+    throw new Error(
+      `buildGenericProseReaskSections: ${targets.length} targets > MAX_KEYS_PER_CALL (${MAX_KEYS_PER_CALL}) — chunka anropet; API:t avvisar stora optional-scheman med icke-retrybar 400`,
+    );
+  }
+
   // No .min(1) and .optional(), same reasoning as the slide batch: accepting ""
   // OR a dropped key lets a still-empty answer degrade to a per-slot failure
   // instead of rejecting the whole re-ask client-side and burning paid retries.

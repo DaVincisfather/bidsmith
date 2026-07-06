@@ -42,12 +42,12 @@ export type { BidContext } from "./context";
 const SLIDE_CONCURRENCY = 12;
 
 // One AI call's generation targets: a chunk (≤MAX_KEYS_PER_CALL) of a slide's
-// generic-prose slots, plus that slide's OTHER slot placeholders as coherence
-// context (empty when the slide fits in one chunk).
+// generic-prose slots, plus that slide's OTHER slots as coherence context
+// (placeholder + intent; empty when the slide fits in one chunk).
 interface CallJob {
   source: number;
   slots: GenericProseSlot[];
-  siblings: string[];
+  siblings: GenericProseSlot[];
 }
 
 // Runs `run` over `items` in waves of SLIDE_CONCURRENCY under Promise.allSettled,
@@ -127,13 +127,13 @@ export async function generateSectionsFromProfile(
       });
     }
     if (slots.length === 0) continue;
-    const allPlaceholders = slots.map((s) => s.placeholder);
     for (let k = 0; k < slots.length; k += MAX_KEYS_PER_CALL) {
       const chunkSlots = slots.slice(k, k + MAX_KEYS_PER_CALL);
       const chunkKeys = new Set(chunkSlots.map((s) => s.placeholder));
       // Siblings = the slide's other slots (empty when the slide is one chunk, so
-      // its prompt is unchanged). Names them as coherence context, not schema keys.
-      const siblings = allPlaceholders.filter((p) => !chunkKeys.has(p));
+      // its prompt is unchanged). Passed as coherence context, not schema keys —
+      // the prompt lists their placeholder + truncated intent.
+      const siblings = slots.filter((s) => !chunkKeys.has(s.placeholder));
       jobs.push({ source: slide.source, slots: chunkSlots, siblings });
     }
   }
