@@ -224,9 +224,9 @@ describe("generateSectionsFromProfile", () => {
   });
 
   // Bounds in-flight SLIDES (not one giant Promise.all over every slide). F5
-  // raised SLIDE_CONCURRENCY 3→6 to keep 12 slides under Vercel's 300 s ceiling,
-  // so 9 slides now peak at 6 (chunk 1 = 6 in flight), not 3.
-  it("caps concurrency at 6 slides (chunked, not unbounded)", async () => {
+  // measured 345 s at concurrency 6 (green run) → raised to 12 so a typical
+  // template's whole first wave flies at once; 15 slides peak at 12, not 15.
+  it("caps concurrency at 12 slides (chunked, not unbounded)", async () => {
     let inFlight = 0;
     let peak = 0;
     callClaudeMock.mockImplementation(async (opts: SlideCall) => {
@@ -239,7 +239,7 @@ describe("generateSectionsFromProfile", () => {
       return out;
     });
     const profile = profileWith(
-      Array.from({ length: 9 }, (_, i): SlideProfile => ({
+      Array.from({ length: 15 }, (_, i): SlideProfile => ({
         source: i + 1,
         capability: "generic-prose",
         slots: [genericSlot(`{S${i}}`)],
@@ -248,9 +248,9 @@ describe("generateSectionsFromProfile", () => {
 
     const { sections } = await generateSectionsFromProfile(profile, ctx);
 
-    expect(sections).toHaveLength(9);
-    expect(callClaudeMock).toHaveBeenCalledTimes(9);
-    expect(peak).toBe(6);
+    expect(sections).toHaveLength(15);
+    expect(callClaudeMock).toHaveBeenCalledTimes(15);
+    expect(peak).toBe(12);
   });
 });
 

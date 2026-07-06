@@ -29,11 +29,13 @@ export type { BidContext } from "./context";
 // fire every slide at once → 429s that exhaust retries and sink the (partly paid)
 // batch — the #52-review lesson, same rationale as the classify-slot chunking.
 //
-// F5 (wall-clock): 3 gave ~5,9 min for 12 slides (effort high, maxTokens 32000)
-// > Vercel's 300 s. 6 runs 12 slides / 6 ≈ 2 waves + an occasional re-ask wave
-// ≈ ~2,5 min, comfortably under the ceiling. Effort/maxTokens stay put — quality
-// before speed, and the ceiling is met without touching them.
-const SLIDE_CONCURRENCY = 6;
+// F5 (wall-clock): 3 gave ~5,9 min for 12 slides > Vercel's 300 s; 6 measured
+// 345 s on the Radrum green run (wave 1 ~230 s across two waves + a SERIAL
+// re-ask that needed one retry). 12 puts a typical template's entire first wave
+// in flight at once — wall ≈ slowest single call (~90–120 s measured) + re-ask
+// tail, inside the ceiling even with a retry. Effort/maxTokens stay put —
+// quality before speed.
+const SLIDE_CONCURRENCY = 12;
 
 // A slide's generation targets, grouped so one AI call covers the whole slide.
 interface SlideJob {
