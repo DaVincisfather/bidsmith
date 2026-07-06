@@ -1,6 +1,6 @@
 # Avropsanbud
 
-## Optimering av bemanning och schemaplanering, Göteborgs stad
+## Optimering av bemanning och schemaplanering, Vikstads kommun
 
 **Anbudsgivare:** Nordia Management AB, org.nr. 559012-3456
 **Ramavtal:** Verksamhets- och organisationskonsulter, delområde A
@@ -13,7 +13,7 @@
 
 Nordia Management AB tackar för er förfrågan och är glada att lämna detta anbud.
 
-- **Kund:** Göteborgs stad, Idrotts- och föreningsförvaltningen
+- **Kund:** Vikstads kommun, Idrotts- och föreningsförvaltningen
 - **Uppdrag:** Optimering av bemanning och schemaplanering
 - **Ramavtal:** Verksamhets- och organisationskonsulter
 

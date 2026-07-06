@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const profiles: ProfileRow[] = [
-  { id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", company_name: "Ekan AB", tonality: "Rak", boilerplate: null },
+  { id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", company_name: "Nordia Management AB", tonality: "Rak", boilerplate: null },
   { id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", company_name: "Testbolaget", tonality: null, boilerplate: null },
 ];
 
@@ -17,7 +17,7 @@ describe("ProfileSection", () => {
     render(
       <ProfileSection profiles={profiles} activeProfileId={null} migration005Missing={false} />
     );
-    expect(screen.getByText("Ekan AB")).toBeInTheDocument();
+    expect(screen.getByText("Nordia Management AB")).toBeInTheDocument();
     expect(screen.getByText("Testbolaget")).toBeInTheDocument();
   });
 

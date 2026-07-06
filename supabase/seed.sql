@@ -1,5 +1,6 @@
 -- Optional demo data. Not auto-applied. Run manually in Supabase SQL Editor if you want sample radar competencies.
--- Sourced from migration 005 (Ekan/Nordia-style Swedish public sector competency areas).
+-- Fictional consultancy competency areas (Swedish public sector flavour), matching the
+-- synthetic demo firm in data/synthetic/.
 -- organization_id column has been removed — single-workspace model.
 
 insert into organization_competencies (name, description, keywords, cpv_codes) values
@@ -19,6 +20,6 @@ insert into organization_competencies (name, description, keywords, cpv_codes) v
    ARRAY['79411000', '79412000']),
 
   ('Strategisk processorientering',
-   'Ekan Management stöttar organisationer att etablera en relevant processarkitektur, utveckla roller och styrmodeller samt bygga den förmåga som krävs för att leda och förbättra processbaserad organisation över tid. Resultatet är ökad samverkan, tydligare prioriteringar och en målinriktad organisation.',
+   'Vi stöttar organisationer att etablera en relevant processarkitektur, utveckla roller och styrmodeller samt bygga den förmåga som krävs för att leda och förbättra processbaserad organisation över tid. Resultatet är ökad samverkan, tydligare prioriteringar och en målinriktad organisation.',
    ARRAY['processorientering', 'processarkitektur', 'verksamhetsutveckling', 'lean', 'förbättringsarbete'],
    ARRAY['79411000', '79420000']);

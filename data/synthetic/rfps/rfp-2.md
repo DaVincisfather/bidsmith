@@ -4,18 +4,18 @@
 
 **Referensnummer:** IN-IN23-0496
 **Ramavtal:** Managementkonsulter, Område: Ekonomi och finans
-**Beställare:** Region Västmanland, Kollektivtrafikförvaltningen
+**Beställare:** Region Mälardalen, Kollektivtrafikförvaltningen
 **Kontaktperson:** Per Ekström, Budgetchef
 
 ---
 
 ### Bakgrund
 
-Region Västmanland utreder förutsättningarna för att skatteväxla all allmän kollektivtrafik från kommunerna till regionen. Utredningen ska ge ett heltäckande beslutsunderlag som belyser juridiska, ekonomiska och verksamhetsmässiga aspekter.
+Region Mälardalen utreder förutsättningarna för att skatteväxla all allmän kollektivtrafik från kommunerna till regionen. Utredningen ska ge ett heltäckande beslutsunderlag som belyser juridiska, ekonomiska och verksamhetsmässiga aspekter.
 
 ### Mål med uppdraget
 
-Analysera möjligheter och förutsättningar för skatteväxling av allmän kollektivtrafik i Västmanland, inklusive juridiska, ekonomiska och verksamhetsmässiga aspekter. Utredningen ska redovisa för- och nackdelar med att skatteväxla samt visa på olika konsekvenser och möjligheter och föreslå möjliga alternativ.
+Analysera möjligheter och förutsättningar för skatteväxling av allmän kollektivtrafik i Mälardalen, inklusive juridiska, ekonomiska och verksamhetsmässiga aspekter. Utredningen ska redovisa för- och nackdelar med att skatteväxla samt visa på olika konsekvenser och möjligheter och föreslå möjliga alternativ.
 
 ### Uppdragsbeskrivning
 
