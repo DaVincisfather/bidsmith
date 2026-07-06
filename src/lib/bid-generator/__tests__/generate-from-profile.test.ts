@@ -209,18 +209,25 @@ describe("generateSectionsFromProfile", () => {
     expect(sections.map((s) => s.key)).toEqual(["generic-prose:{Keep}"]);
   });
 
-  // The empty-string path requires the schema itself to accept "" — a .min(1)
-  // would instead fail Zod client-side and (after paid retries) sink the slide.
-  it("builds the slide schema without a min-length gate (empty string parses)", async () => {
+  // The schema itself must accept both a blank AND a dropped key — a required
+  // z.string() (or a .min(1)) fails Zod client-side and, after paid retries,
+  // sinks the whole slide when the model answers "" or omits a slot. The keys
+  // stay present in the shape (so the response still maps back per placeholder)
+  // but are optional, so a missing key degrades to a per-slot re-ask.
+  it("builds the slide schema with optional keys (empty string AND a missing key both parse)", async () => {
     echoAllKeys();
     const profile = profileWith([
-      { source: 1, capability: "generic-prose", slots: [genericSlot("{A}")] },
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A}"), genericSlot("{B}")] },
     ]);
 
     await generateSectionsFromProfile(profile, ctx);
 
     const arg = callClaudeMock.mock.calls[0][0] as SlideCall;
-    expect(arg.schema.safeParse({ "{A}": "" }).success).toBe(true);
+    // Keys are present in the schema shape (one per placeholder)...
+    expect(Object.keys(arg.schema.shape)).toEqual(["{A}", "{B}"]);
+    // ...but optional: "" parses (no min-gate) and a DROPPED key parses too.
+    expect(arg.schema.safeParse({ "{A}": "", "{B}": "" }).success).toBe(true);
+    expect(arg.schema.safeParse({ "{A}": "text {A}" }).success).toBe(true); // {B} omitted
   });
 
   // Bounds in-flight SLIDES (not one giant Promise.all over every slide). F5
@@ -394,5 +401,74 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
       { placeholder: "{B1}", error: "boom" },
       { placeholder: "{B2}", error: "boom" },
     ]);
+  });
+
+  // A wave-1 response that OMITS a key entirely (undefined, not "") must degrade
+  // exactly like a blank one: the missing slot goes to the re-ask, the slide's
+  // other sections survive. This is the real-mall failure the optional schema
+  // fixes — a required z.string() would have rejected the whole slide instead.
+  it("re-asks a slot the wave-1 response omits entirely (undefined), other sections survive", async () => {
+    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
+      const out: Record<string, string> = {};
+      for (const key of Object.keys(opts.schema.shape)) {
+        if (!isReask(opts) && key === "{A2}") continue; // drop the key entirely on wave 1
+        out[key] = `text ${key}`;
+      }
+      return out;
+    });
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}"), genericSlot("{A3}")] },
+      { source: 2, capability: "generic-prose", slots: [genericSlot("{B1}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    const idx = reaskCallIndex();
+    expect(idx).toBeGreaterThan(-1);
+    expect(callSchemaKeys(idx)).toEqual(["{A2}"]);
+    expect(failedSections).toEqual([]);
+    expect(sections.map((s) => s.key).sort()).toEqual([
+      "generic-prose:{A1}", "generic-prose:{A2}", "generic-prose:{A3}", "generic-prose:{B1}",
+    ]);
+  });
+
+  // A re-ask response that OMITS a key (undefined, not "") degrades per slot too:
+  // only that placeholder lands in failedSections, wave-1 sections untouched.
+  it("fails only the slot the re-ask response omits (undefined), wave-1 sections untouched", async () => {
+    callClaudeMock.mockImplementation(async (opts: SlideCall & { label?: string }) => {
+      const out: Record<string, string> = {};
+      for (const key of Object.keys(opts.schema.shape)) {
+        if (key === "{A2}") continue; // wave 1 drops it, re-ask drops it again
+        out[key] = `text ${key}`;
+      }
+      return out;
+    });
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(sections.map((s) => s.key)).toEqual(["generic-prose:{A1}"]);
+    expect(failedSections).toEqual([
+      { placeholder: "{A2}", error: "tomt eller saknat även efter re-ask" },
+    ]);
+  });
+
+  // The re-ask schema, like the slide schema, must be optional so a partial
+  // re-ask response degrades per slot instead of rejecting the whole re-ask.
+  it("builds the re-ask schema with optional keys (a missing key parses)", async () => {
+    mockWaveThenReask(["{A2}"]);
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [genericSlot("{A1}"), genericSlot("{A2}")] },
+    ]);
+
+    await generateSectionsFromProfile(profile, ctx);
+
+    const idx = reaskCallIndex();
+    expect(idx).toBeGreaterThan(-1);
+    const arg = callClaudeMock.mock.calls[idx][0] as SlideCall;
+    expect(Object.keys(arg.schema.shape)).toEqual(["{A2}"]);
+    expect(arg.schema.safeParse({}).success).toBe(true); // dropped key parses
   });
 });
