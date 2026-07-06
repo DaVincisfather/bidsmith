@@ -71,6 +71,11 @@ exempeltext och den omgivande texten. Om ingen specialiserad capability tydligt
 passar — välj "generic-prose" (fri prosa-fallback). Gissa inte en specialiserad
 capability på svaga grunder; det är bättre att falla tillbaka på generic-prose.
 
+ETIKETT-RUTOR: om rutans text bara är en kort etikett eller rubrik som beskriver
+en ANNAN rutas innehåll (t.ex. "Diarienummer", "Upphandlande organisation",
+"Anbudsdag" intill ett värdefält) ska den klassas "static" — den är formgivning
+som redan står i mallen, inte en yta som ska fyllas med genererat innehåll.
+
 Härled en kort intent (syftet med sektionen) på svenska, som styr genereringen.
 Sätt confidence "high" ENDAST när exempeltexten/kontexten tydligt pekar på den
 valda capabilityn; annars "low" (flaggas för mänsklig bekräftelse i onboardingen).

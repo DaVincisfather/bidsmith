@@ -1,6 +1,6 @@
 import type { BidSection } from "@/lib/types";
 import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
-import { buildGenericProseSection, type GenericProseSlot } from "./bundles/generic-prose";
+import { buildGenericProseSlideSections, type GenericProseSlot } from "./bundles/generic-prose";
 import type { BidContext } from "./context";
 
 export type { BidContext } from "./context";
@@ -17,12 +17,19 @@ export type { BidContext } from "./context";
  * See notes/2026-07-02-template-upload-architecture.md.
  */
 
-// Each generic-prose slot is ONE paid Sonnet call, and a real customer template
-// can carry 30+ of them. An unbounded Promise.all would fire them all at once →
-// 429s that exhaust retries and sink the whole (partly paid) batch — the
-// #52-review lesson, same rationale as the classify-slot chunking. Cap the
-// in-flight calls; each chunk settles before the next dispatches.
-const SLOT_CONCURRENCY = 4;
+// One paid Sonnet call per SLIDE now (was one per slot). A real customer
+// template (Radrum: 169 confirmed slots) fired ~169 calls ≈ 8–10 min → past
+// Vercel's 300 s ceiling → bid failed "Generation timed out". Batching per slide
+// collapses that to ~12 calls. Still cap in-flight SLIDES so a wide deck can't
+// fire every slide at once → 429s that exhaust retries and sink the (partly paid)
+// batch — the #52-review lesson, same rationale as the classify-slot chunking.
+const SLIDE_CONCURRENCY = 3;
+
+// A slide's generation targets, grouped so one AI call covers the whole slide.
+interface SlideJob {
+  source: number;
+  slots: GenericProseSlot[];
+}
 
 export interface FailedSection {
   /** The placeholder the failed slot would have filled (stable identifier). */
@@ -41,51 +48,80 @@ export interface GenerateFromProfileResult {
 
 /**
  * Generates a BidSection for every generic-prose slot across the profile's
- * slides. Slots with status "skip" and non-generic-prose capabilities (static
- * passthrough slides) produce nothing.
+ * slides, batched per SLIDE — one AI call fills all of a slide's slots as a
+ * coherent whole. Slots with status "skip" and non-generic-prose capabilities
+ * (static passthrough slides) produce nothing; a slide with no generic-prose
+ * slots produces no call.
  *
- * Runs the paid calls in chunks under Promise.allSettled: a single slot blowing
- * up must not throw away the ones that succeeded (returned in `failedSections`
- * for the caller to surface). onSectionComplete is invoked sequentially over the
- * produced sections, awaited per call — same contract as generateAllSections.
+ * Runs the slide calls in chunks under Promise.allSettled: one slide REJECTING
+ * (including truncated/invalid JSON — callClaude throws after its retries)
+ * fails only that slide's slots (all recorded in `failedSections`) while other
+ * slides survive. A slide that succeeds but returns an empty string (or drops a
+ * key) for a slot fails only that slot. onSectionComplete is invoked
+ * sequentially over the produced sections, awaited per call — same contract as
+ * generateAllSections.
  */
 export async function generateSectionsFromProfile(
   profile: TemplateProfile,
   ctx: BidContext,
   onSectionComplete?: (section: BidSection) => void | Promise<void>,
 ): Promise<GenerateFromProfileResult> {
-  // Flatten every generation target across all slides. Static slides carry no
-  // generic-prose slots; skip-status slots are intentionally left blank.
-  const targets: GenericProseSlot[] = [];
+  // Group generation targets per slide. Static slides carry no generic-prose
+  // slots; skip-status slots are intentionally left blank; a slide left with no
+  // targets is dropped so it fires no call.
+  const jobs: SlideJob[] = [];
   for (const slide of profile.slides) {
+    const slots: GenericProseSlot[] = [];
     for (const slot of slide.slots) {
       if (slot.capability !== "generic-prose") continue;
       if (slot.status === "skip") continue;
-      targets.push({
+      slots.push({
         placeholder: slot.placeholder,
         intent: slot.intent,
         ...(slot.budgetChars !== undefined ? { budgetChars: slot.budgetChars } : {}),
       });
     }
+    if (slots.length > 0) jobs.push({ source: slide.source, slots });
   }
 
   const sections: BidSection[] = [];
   const failedSections: FailedSection[] = [];
 
-  for (let i = 0; i < targets.length; i += SLOT_CONCURRENCY) {
-    const chunk = targets.slice(i, i + SLOT_CONCURRENCY);
+  for (let i = 0; i < jobs.length; i += SLIDE_CONCURRENCY) {
+    const chunk = jobs.slice(i, i + SLIDE_CONCURRENCY);
     const settled = await Promise.allSettled(
-      chunk.map((slot) => buildGenericProseSection(slot, ctx)),
+      chunk.map((job) => buildGenericProseSlideSections(job.slots, ctx)),
     );
     settled.forEach((result, j) => {
+      const job = chunk[j];
       if (result.status === "fulfilled") {
-        sections.push(result.value);
+        const produced = result.value;
+        sections.push(...produced);
+        // A slide call can succeed yet answer "" for a slot (the schema allows
+        // it — see buildGenericProseSlideSections) or, defensively, drop a key.
+        // Mark only that slot failed so the rest of the slide's (paid) prose
+        // survives. NOTE: real truncation makes callClaude throw → the reject
+        // branch below, whole slide.
+        const got = new Set(
+          produced
+            .map((s) => (s.content?.format === "generic-prose" ? s.content.placeholder : null))
+            .filter((p): p is string => p !== null),
+        );
+        for (const slot of job.slots) {
+          if (!got.has(slot.placeholder)) {
+            failedSections.push({
+              placeholder: slot.placeholder,
+              error: "tomt eller saknat i AI-svaret",
+            });
+          }
+        }
       } else {
+        // Whole slide rejected → every slot on it failed; other slides survive.
         const reason = result.reason;
-        failedSections.push({
-          placeholder: chunk[j].placeholder,
-          error: reason instanceof Error ? reason.message : String(reason),
-        });
+        const message = reason instanceof Error ? reason.message : String(reason);
+        for (const slot of job.slots) {
+          failedSections.push({ placeholder: slot.placeholder, error: message });
+        }
       }
     });
   }
