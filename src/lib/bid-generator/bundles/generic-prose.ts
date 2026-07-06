@@ -125,7 +125,7 @@ export async function buildGenericProseSection(
 
 /**
  * Per-SLIDE batch: ONE Sonnet call fills every generic-prose slot on a slide.
- * A dynamic schema (one required string key per placeholder) lets the model
+ * A dynamic schema (one optional string key per placeholder) lets the model
  * write the slots as a coherent whole while the response still maps back to one
  * BidSection per slot — same key/title/placeholder shape as buildGenericProseSection.
  *
@@ -144,8 +144,16 @@ export async function buildGenericProseSlideSections(
   // the model CAN return "" — a min-gate would then fail Zod client-side and
   // burn 3 full-price regenerations before sinking ALL the slide's slots. By
   // accepting "" the empty-answer guard below degrades it to a per-slot failure.
-  const shape: Record<string, z.ZodString> = {};
-  for (const slot of slots) shape[slot.placeholder] = z.string();
+  //
+  // .optional() for the same reason a level up: on a wide slide the model can
+  // OMIT a key entirely, not just answer "". A required z.string() rejects the
+  // whole slide client-side and burns 3 full-price retries before sinking ALL 25
+  // slots — measured against a real customer template that dropped 2 of 25 keys.
+  // Optional lets a missing key pass validation; sectionsFromRecord then produces
+  // no section for it and the orchestrator's got-has check routes that one slot
+  // into the batched re-ask (→ at worst a per-SLOT failure, never the slide).
+  const shape: Record<string, z.ZodOptional<z.ZodString>> = {};
+  for (const slot of slots) shape[slot.placeholder] = z.string().optional();
   const schema = z.object(shape);
 
   const parsed = await callClaude({
@@ -264,10 +272,13 @@ export async function buildGenericProseReaskSections(
   targets: GenericProseReaskTarget[],
   ctx: BidContext,
 ): Promise<BidSection[]> {
-  // No .min(1), same reasoning as the slide batch: accepting "" lets a still-
-  // empty answer degrade to a per-slot failure instead of burning paid retries.
-  const shape: Record<string, z.ZodString> = {};
-  for (const t of targets) shape[t.slot.placeholder] = z.string();
+  // No .min(1) and .optional(), same reasoning as the slide batch: accepting ""
+  // OR a dropped key lets a still-empty answer degrade to a per-slot failure
+  // instead of rejecting the whole re-ask client-side and burning paid retries.
+  // A partial re-ask response must fail only the slots it left out, never the
+  // ones it filled.
+  const shape: Record<string, z.ZodOptional<z.ZodString>> = {};
+  for (const t of targets) shape[t.slot.placeholder] = z.string().optional();
   const schema = z.object(shape);
 
   const parsed = await callClaude({
