@@ -33,6 +33,7 @@ export function EditableText({
     if (ref.current && value !== lastValueRef.current) {
       ref.current.textContent = value;
       lastValueRef.current = value;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- baselined at CI introduction
       setLength(value.length);
     }
   }, [value]);
