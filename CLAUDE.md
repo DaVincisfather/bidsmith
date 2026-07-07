@@ -8,9 +8,22 @@
 
 ## Produkten
 
-AI-agent som tar offertförfrågan + konsultprofiler och producerar anbudsutkast. Målgrupp: medelstora konsultfirmor (20-100 konsulter).
+AI-agent som tar offertförfrågan + konsultprofiler och producerar anbudsutkast. Målgrupp: medelstora konsultfirmor (20-100 konsulter). Open source (Apache-2.0), ingen prismodell — kostnadsresonemang gäller användarens API-driftkostnad, inte marginal.
 
-**Milstolpar:** M0 Kravanalys -> M1 Matchning -> M1.5 Go/No-Go -> M2 Anbudsgenerering -> M3 RFP-radar
+**Status & roadmap:** bor i `notes/ROADMAP.md` + git-historik — läs där innan du svarar på "vad är nästa steg". Bär inte status i den här filen.
+
+## Kommandon
+
+```bash
+npm run dev                # dev-server (Turbopack: sällan anropade routes kan ge 404 första gången — trigga rebuild)
+npm test                   # vitest, enhetstester
+npm run test:integration   # kräver .env.local
+npm run lint               # eslint
+npx tsc --noEmit           # typecheck
+npm run eval:bid-generator # m.fl. eval:*-scripts — krävs enligt grind-policyn nedan
+```
+
+Innan "klart": lint + test + typecheck, visa output (se global verifieringsregel).
 
 ## Modellstrategi
 
@@ -36,21 +49,11 @@ AI-agent som tar offertförfrågan + konsultprofiler och producerar anbudsutkast
 
 ## Arbetsregler
 
-### Goal-Driven Execution (inspirerat av Karpathy)
+### Verifierbara mål före implementation
 
 Varje uppgift ska ha verifierbara framgångskriterier INNAN implementation startar.
-
-Omformulera vaga mål:
-- "Fixa PPTX:en" -> "Slides ska ha konsekvent padding, logo i header, och matchande färger mot StyleGuide — verifiera via manuell PPTX-export"
-- "Lägg till validering" -> "Skriv test för ogiltiga inputs, implementera tills testerna passerar"
-- "Refaktorera X" -> "Alla befintliga tester passerar före och efter"
-
-Vid flerstegsuppgifter, formulera plan som:
-```
-1. [Steg] -> verifiera: [kontroll]
-2. [Steg] -> verifiera: [kontroll]
-```
-
+Omformulera vaga mål till mätbara ("Fixa PPTX:en" → "konsekvent padding + logo i header,
+verifiera via PPTX-export"). Vid flersteg: plan som `[steg] → verifiera: [kontroll]`.
 Tydliga kriterier = autonomt arbete. Vaga kriterier = stanna och fråga.
 
 ### Surgical Changes
@@ -74,8 +77,6 @@ Vid ändringar i befintlig kod:
 - DB-migreringar: namnge `NNN_beskrivning.sql`, applicera manuellt via Supabase SQL Editor
 - **Redigera ALDRIG en applicerad migration** — skriv en ny migration med `ALTER` istället. Att ändra historik orsakar drift mellan dev/prod schema.
 - Filstorlek-gräns: 20MB i document-parser
-- Rate limits: håll koll vid externa API-anrop
-- Encoding: explicit UTF-8 för alla strängoperationer med svenska tecken
 
 ## Tech-stack
 
@@ -84,9 +85,9 @@ Next.js 16 (App Router), Tailwind v4, Supabase (PostgreSQL + Storage), pptx-auto
 ## Viktiga filer
 
 ```
-src/lib/ai-client.ts       # Centraliserad Claude-anrop med retry
+src/lib/ai-client.ts        # Centraliserad Claude-anrop med retry
 src/lib/ai-schemas.ts       # Zod-schemas för AI-responses
 src/lib/document-parser.ts  # markitdown-js wrapper
 src/lib/bid-generator.ts    # M2: parallella AI-anrop, PPTX-rendering
-docs/architecture.html       # Arkitekturöversikt
+docs/architecture.html      # Arkitekturöversikt
 ```
