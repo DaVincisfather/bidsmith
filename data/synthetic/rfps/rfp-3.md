@@ -1,16 +1,16 @@
 # Förfrågningsunderlag
 
-## Förstudie: Dataplattform och BI-strategi för Region Sörmland
+## Förstudie: Dataplattform och BI-strategi för Region Svealand
 
 **Referensnummer:** RS-2025-1247
-**Beställare:** Region Sörmland, IT- och digitaliseringsavdelningen
+**Beställare:** Region Svealand, IT- och digitaliseringsavdelningen
 **Kontaktperson:** Karin Holm, IT-strateg
 
 ---
 
 ### Bakgrund
 
-Region Sörmland har idag en fragmenterad datainfrastruktur med information spridd över ett flertal system — ekonomisystem (Raindance), personalsystem (Heroma), vårdinformationssystem (Cambio Cosmic) och flera fristående Excel-baserade rapporteringsflöden. Det saknas en sammanhållen BI-strategi och en gemensam plattform för analys och uppföljning.
+Region Svealand har idag en fragmenterad datainfrastruktur med information spridd över ett flertal system — ekonomisystem (Raindance), personalsystem (Heroma), vårdinformationssystem (Cambio Cosmic) och flera fristående Excel-baserade rapporteringsflöden. Det saknas en sammanhållen BI-strategi och en gemensam plattform för analys och uppföljning.
 
 Regionledningen har identifierat behov av en förstudie för att kartlägga nuläge och ta fram en rekommendation för framtida dataplattform och BI-strategi.
 

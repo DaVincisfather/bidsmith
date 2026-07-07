@@ -1,6 +1,6 @@
 # Avropsanbud
 
-## Utredning av hel skatteväxling — Region Västmanland
+## Utredning av hel skatteväxling — Region Mälardalen
 
 **Anbudsgivare:** Nordia Management AB, org.nr. 559012-3456
 **Ramavtal:** Managementkonsulter, Ekonomi och finans
@@ -11,7 +11,7 @@
 
 ### 1. Uppdragsförståelse
 
-Region Västmanland utreder förutsättningarna för att skatteväxla all allmän kollektivtrafik från kommunerna till regionen. Uppdraget kräver en kombination av juridisk, ekonomisk och verksamhetsmässig kompetens, samt erfarenhet av liknande utredningar i andra regioner.
+Region Mälardalen utreder förutsättningarna för att skatteväxla all allmän kollektivtrafik från kommunerna till regionen. Uppdraget kräver en kombination av juridisk, ekonomisk och verksamhetsmässig kompetens, samt erfarenhet av liknande utredningar i andra regioner.
 
 Vi har genomfört likartade utredningar för Region Östergötland och Region Dalarna och har djup insikt i de praktiska utmaningar som uppstår vid skatteväxling av kollektivtrafik.
 
@@ -63,7 +63,7 @@ Utredningen struktureras i fyra delmoment som genomförs parallellt med iterativ
 
 **Totalpris: 620 000 SEK exkl. moms**
 
-Priset inkluderar samtliga konsultkostnader, resor inom Västmanland, och två presentationstillfällen (tjänstepersoner + förtroendevalda).
+Priset inkluderar samtliga konsultkostnader, resor inom Mälardalen, och två presentationstillfällen (tjänstepersoner + förtroendevalda).
 
 ### 6. Referenser
 

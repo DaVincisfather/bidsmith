@@ -4,14 +4,14 @@
 
 **Referensnummer:** IFF-2025-0342
 **Ramavtal:** Verksamhets- och organisationskonsulter, delområde A
-**Beställare:** Göteborgs stad, Idrotts- och föreningsförvaltningen
+**Beställare:** Vikstads kommun, Idrotts- och föreningsförvaltningen
 **Kontaktperson:** Lisa Andersson, verksamhetscontroller
 
 ---
 
 ### Bakgrund
 
-Idrotts- och föreningsförvaltningen ansvarar för stadens idrotts- och motionsanläggningar, inklusive drift och uthyrning. Avdelningen Anläggning befinner sig i en tillväxtfas med planerad expansion under kommande år. Avdelningen behöver säkerställa långsiktigt hållbar bemanning och resursstyrning i takt med verksamhetens expansion.
+Idrotts- och föreningsförvaltningen ansvarar för kommunens idrotts- och motionsanläggningar, inklusive drift och uthyrning. Avdelningen Anläggning befinner sig i en tillväxtfas med planerad expansion under kommande år. Avdelningen behöver säkerställa långsiktigt hållbar bemanning och resursstyrning i takt med verksamhetens expansion.
 
 ### Syfte
 

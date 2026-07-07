@@ -1,6 +1,6 @@
 # Anbud
 
-## Förstudie: Dataplattform och BI-strategi — Region Sörmland
+## Förstudie: Dataplattform och BI-strategi — Region Svealand
 
 **Anbudsgivare:** Nordia Management AB, org.nr. 559012-3456
 **Referensnummer:** RS-2025-1247
@@ -10,7 +10,7 @@
 
 ### 1. Uppdragsförståelse
 
-Region Sörmland har en fragmenterad datainfrastruktur med information spridd över Raindance, Heroma, Cambio Cosmic och diverse Excel-lösningar. Regionledningen behöver en sammanhållen BI-strategi och en rekommendation för framtida dataplattform.
+Region Svealand har en fragmenterad datainfrastruktur med information spridd över Raindance, Heroma, Cambio Cosmic och diverse Excel-lösningar. Regionledningen behöver en sammanhållen BI-strategi och en rekommendation för framtida dataplattform.
 
 Vi ser tre centrala utmaningar:
 1. **Datasilor** — varje system lever sitt eget liv utan standardiserad integration

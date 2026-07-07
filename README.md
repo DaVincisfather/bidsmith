@@ -67,6 +67,19 @@ checks against the template's layout budget so the exported deck stays clean.
   post-generation verification with retry → flag-only review in the editor) keeps the
   PowerPoint output close to the source template.
 
+## What it costs to run
+
+Bidsmith is free and open source — there is no license fee and no hosted service. You
+run it yourself, and the only running cost is your own Anthropic API usage. Measured
+on the bundled synthetic data (July 2026, Sonnet 5 extraction + Opus 4.8 writing):
+
+- **Onboarding 10 consultant CVs:** ≈ $0.19 total (about 2 cents per CV, one-time)
+- **One tender, end to end** — analysis, matching, go/no-go, full proposal draft,
+  PowerPoint export: **≈ $1.5–2**, most of it the Opus writing pass
+
+Costs stay predictable because each pipeline step receives the previous step's
+compressed output, never the raw documents.
+
 ## Tech stack
 
 Next.js 16 (App Router) · TypeScript · Tailwind v4 · Supabase (PostgreSQL + Storage) ·
@@ -76,16 +89,24 @@ Claude API · Vercel.
 ## Getting started
 
 **See [SETUP.md](SETUP.md) for the full 10-minute guide** — Supabase project, database
-schema, storage bucket, environment variables, and email login, step by step.
+schema, storage buckets, environment variables, and email login, step by step.
 
 The short version:
 
 ```bash
 npm install
 cp .env.local.example .env.local   # fill in your keys (see SETUP.md)
-# → run supabase/migrations/001_initial_schema.sql in the Supabase SQL Editor
-# → create a private storage bucket named "rfp-documents"
+# → run every file in supabase/migrations/ in numeric order in the Supabase SQL Editor
+# → create two private storage buckets: "rfp-documents" and "consultant-cvs"
 npm run dev                         # → http://localhost:3000
+```
+
+Want a populated workspace without hunting for documents? Seed the bundled synthetic
+demo data — ten consultant CVs and a public-sector tender run through the entire
+pipeline to an exported PowerPoint (≈ $2.5 in API usage):
+
+```bash
+node scripts/demo-seed.mjs         # against a running dev server
 ```
 
 ### Running the evaluators
@@ -123,7 +144,9 @@ style, and run the evaluators before submitting.
 
 Bidsmith never sends raw documents between pipeline steps — only compressed,
 structured output. Real tender and consultant data stays in your own Supabase
-instance. The public repository ships only synthetic sample data.
+instance. Anthropic does not train models on API data under its standard commercial
+terms, so CV and tender content sent to Claude is processed, not retained for
+training. The public repository ships only synthetic sample data.
 
 ## License
 

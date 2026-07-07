@@ -16,7 +16,7 @@ describe("computeProfileFields", () => {
 
   it("markerar bara fält med faktiskt innehåll som ifyllda", () => {
     const fields = computeProfileFields({
-      companyName: "Ekan AB",
+      companyName: "Nordia Management AB",
       tonality: null,
       boilerplate: "Grundat 2001 i Göteborg.",
     });
@@ -38,7 +38,7 @@ describe("computeProfileFields", () => {
 
   it("alla fält ifyllda → 3 av 3", () => {
     const fields = computeProfileFields({
-      companyName: "Ekan AB",
+      companyName: "Nordia Management AB",
       tonality: "Rak, konkret.",
       boilerplate: "Fakta.",
     });

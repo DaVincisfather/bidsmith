@@ -23,27 +23,35 @@ npm install
 ## 3. Create the database schema
 
 1. In your Supabase project, open **SQL Editor** (left sidebar) → **New query**.
-2. Open `supabase/migrations/001_initial_schema.sql` from this repo, copy its entire
-   contents, paste into the editor, and click **Run**.
-3. You should see "Success. No rows returned." That's it — all tables, security
-   policies, and the required template configs are now in place.
+2. Run **every file in `supabase/migrations/` in numeric order** (`001_...` through
+   `012_...`): open each file, copy its entire contents, paste into the editor, and
+   click **Run** before moving on to the next. Each one should report success
+   ("Success. No rows returned." for most of them).
+3. That's it — all tables, security policies, and the bundled proposal template are
+   now in place.
+
+> Running only `001_initial_schema.sql` is **not** enough — the template system and
+> organisation profiles live in later migrations, and bid generation fails without them.
 
 > Optional: to populate sample TED-radar competencies, repeat with `supabase/seed.sql`.
 
-## 4. Create the storage bucket
+## 4. Create the storage buckets
 
-Uploaded RFP documents are stored in a Supabase Storage bucket. Buckets can't be
-created from SQL, so add it once via the dashboard:
+Uploaded RFP documents and consultant CVs are stored in two Supabase Storage buckets.
+Buckets can't be created from SQL, so add them once via the dashboard:
 
 1. Supabase → **Storage** (left sidebar) → **New bucket**.
 2. Name it exactly **`rfp-documents`**.
 3. Leave **Public bucket OFF** — it stays private; the app generates signed URLs on
    demand.
 4. Click **Create**.
+5. Repeat for a second bucket named exactly **`consultant-cvs`** (also private).
 
 No bucket policies are needed: the app reads and writes via the service-role key.
 
-> Skip this and RFP upload fails with "Bucket not found".
+> Skip `rfp-documents` and RFP upload fails with "Bucket not found". Skip
+> `consultant-cvs` and CV uploads still work, but every upload reports a warning and
+> the "open original CV" link is broken.
 
 ## 5. Configure environment variables
 

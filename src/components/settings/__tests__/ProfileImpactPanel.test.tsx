@@ -19,7 +19,7 @@ describe("ProfileImpactPanel", () => {
   it("räknar ifyllda fält för den aktiva profilen", () => {
     render(
       <ProfileImpactPanel
-        activeProfile={{ companyName: "Ekan AB", tonality: "Rak", boilerplate: null }}
+        activeProfile={{ companyName: "Nordia Management AB", tonality: "Rak", boilerplate: null }}
       />
     );
     expect(screen.getByText(/2 av 3 fält/)).toBeInTheDocument();
