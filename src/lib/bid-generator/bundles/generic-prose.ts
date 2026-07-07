@@ -251,8 +251,9 @@ export async function buildGenericProseSlideSections(
  *  works unchanged. First element for a placeholder wins (duplicates dropped);
  *  placeholders the model invented that no slot asked for simply sit unused in the
  *  Record — sectionsFromRecord only reads the requested slots, so unknowns are
- *  dropped without a log. `sections` is guaranteed by the schema, but default to
- *  [] defensively for the BIDSMITH_STRUCTURED_OUTPUTS=off free-text path. */
+ *  dropped without a log. `sections` is guaranteed in BOTH output modes —
+ *  parseAndValidate runs schema.safeParse even with BIDSMITH_STRUCTURED_OUTPUTS=off
+ *  — so the `?? []` below is pure belt-and-braces, never load-bearing. */
 function recordFromSections(parsed: z.infer<typeof GenericProseSectionsSchema>): Record<string, string> {
   const record: Record<string, string> = {};
   for (const { placeholder, text } of parsed.sections ?? []) {
