@@ -4,7 +4,7 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-07 natt — HELGRÖNT VARV: #72–#76 mergade (re-ask, concurrency, optional-nycklar, chunkning, FAST schema), varv 5 = 117/117 sektioner / 0 failade / 150 s / export + PowerPoint gröna. NÄSTA: Stefans egen smoke + budgetChars (overflow visuellt belagd) + kolla varför PR-routinen inte triggade på #76._
+_Senast uppdaterad: 2026-07-07 — STICKPROVET KLART (143 bedömda, 78 % relevant → nytt CITAT-TÄCKNINGS-spår i extraktionen). Stefans smoke pågår (Turbopack-404 på propose-routen felsökt & löst — dev-server-fenomen, ingen kodändring). NÄSTA: smoken klar → Stefan prioriterar citat-täckning vs budgetChars + kolla PR-routinen (#76)._
 
 ---
 
@@ -34,10 +34,18 @@ _Senast uppdaterad: 2026-07-07 natt — HELGRÖNT VARV: #72–#76 mergade (re-as
       → merge → bara slots som ÄVEN efter re-ask är tomma → failedSections. Re-ask-reject
       fäller aldrig våg 1-sektioner. F5 = SLIDE_CONCURRENCY 3→6 (effort/maxTokens orörda).
       Sviten 1008/0, tsc + eslint rena. Väntar Radrum-grönt-varv + Stefans smoke ovan.
-- [ ] **STICKPROV (operatör — Stefan, påbörjat 2026-07-05):** relevans-stickprov av
-      citaten på gröna loopkörningar. Mekaniken garanterar att citaten FINNS ordagrant;
-      att de är RELEVANTA för påståendet är residualen som verifieras av människa. Underlag:
-      verifierade par i `evals/results/*.md` (RFP + CV, från gröna varven).
+- [x] **STICKPROV (KLART 2026-07-07):** 143/143 bedömda — 111 relevant (78 %),
+      15 tveksamma, 17 ej stöd. Resultat + mönsteranalys + Stefans fullständiga export:
+      `notes/2026-07-07-relevans-stickprov-resultat.md`. Dominant mönster: sammansatta
+      claims där citatet bara täcker en del ("håll dig till källan, don't infer");
+      4 fall ren inferens (Riskguardian-rating värst); CV-referensernas roll-etiketter
+      saknar källförankring. → Föder CITAT-TÄCKNINGS-fixen nedan.
+- [ ] **CITAT-TÄCKNING i extraktionen (nytt, ur stickprovet — Stefan prioriterar mot
+      budgetChars):** (1) extraktionsprompt: atomära claims, citatet ska täcka ALLA led,
+      inkludera listpunkter när citatet slutar på kolon, specificera aldrig utöver källan;
+      (2) billig mekanisk flagga för kolon-trunkerade citat; (3) CV-referensernas
+      roll-etiketter härleds ur källans formulering; (4) om-mät på sample (baslinje 78 %).
+      Fallen i stickprovsdokumentet är färdiga testfixturer.
 - [ ] **LOOP-VALIDERING (operatör, BETALD, under $20-tak, vid behov):** om-kör
       `npm run eval:zero-halluc [-- --target=cv]` för stabil grön post-vakt + coverage mot
       goldens. Spårkostnad hittills ~$5 av $20.
