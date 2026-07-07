@@ -205,6 +205,16 @@ _Inga — #54–#68 mergade 2026-07-03/04._
 - #42 mall-profil-schema · #43 bid-editor-nav · #44 manifest→profil · #45 denna ROADMAP
 
 ## Arbetsnoter / gotchas
+- **PPTX-INSPEKTIONSHARNESS (obligatorisk grind, 2026-07-07):**
+  `pwsh -File scripts/inspect-pptx.ps1 -Pptx <fil.pptx>` → per-slide-PNGs +
+  composite-grid + teckenvolym/slide med PASS/WARN/FAIL (>1500/>3000 tecken;
+  exit-kod 0/1/2). **Ska köras på VARJE genererat deck innan visuell dom** —
+  smoke-lärdomen: spot-check av enstaka slides missade deck-katastrofen två varv
+  i rad. Kalibrerad: katastrof-anbudet 378c78a5 = FAIL (47,5k tecken, 8 FAIL-slides);
+  tomma Radrum-mallen = PASS (6,5k — designerns avsedda täthet ≈ 540 tecken/slide,
+  användbar som budget-facit). Volymstatistiken följer presentation.xml:s sldIdLst
+  (pptx-automizer lämnar mallens slide-XML:er som föräldralösa i zipen — glob
+  dubbelräknar). Stats funkar utan PowerPoint (`-NoRender`).
 - **PPTX visuell iteration:** rendera via `renderTemplate` → exportera slides→PNG via PowerPoint
   COM (`Presentations.Open(...).Slides.Item(i).Export(png,"PNG",w,h)`) → titta. Slide 50.8×28.575 cm.
   Layout-konstanter i `applicators/requirement-matrix.ts` kalibrerade mot mallens font/kolumner.
