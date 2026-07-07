@@ -4,7 +4,25 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-07 em — SMOKEN KLAR: mekaniken grön men outputen katastrofal (45,8k tecken/deck, 0 budgetChars, syskondubbletter) → LÄNGDSTYRNINGS-paketet är nu kritiskt spår. Stickprovet också klart (78 % relevant → CITAT-TÄCKNINGS-spår). Stefan prioriterar: längdstyrning vs citat-täckning. + kolla PR-routinen (#76)._
+_Senast uppdaterad: 2026-07-07 em — ⏸️ PAUS med ÖPPET VÄGBESLUT: Stefans smoke visade att onboarding-mekaniken är grön men outputen katastrofal (45,8k tecken/deck, 0 budgetChars, syskondubbletter). **Stefan lutar åt att REVERTA hela wizard-onboardingspåret — alternativet är räddningsförsöket (LÄNGDSTYRNINGS-paketet nedan). Inget beslut fattat; nästa session börjar där.** Stickprovet också klart (78 % relevant → CITAT-TÄCKNINGS-spår)._
+
+## ⚖️ ÖPPET BESLUT vid återupptag: revert eller rädda wizard-onboardingen?
+Underlag för beslutet (mätning: TILLÄGG 3 i `notes/2026-07-06-onboarding-operator-verification.md`):
+- **För rädda:** mekaniken är hel (upload→klassificering→wizard→generering→export,
+  0 failade, 150 s); rotorsakerna är avgränsade (ingen längdbudget, ingen fältkaraktär,
+  ingen syskon-arbetsdelning) och geometrin för budget finns redan i utkastet —
+  räddningsförsöket är verifierbart för ~$1–2 mot befintlig v4-onboarding utan ny
+  klassificering. Risken är att textkvaliteten i 26-rutors-slides ändå inte når
+  användbart även med budget (tabell-byggda slides är egentligen slice 6-terräng).
+- **För revert:** spåret har kostat ~$20 verifiering + 7 PR:er och slutprodukten är
+  oanvändbar; onboardade mallar utan längdstyrning ger sämre intryck än ingen
+  foreign-mall-support alls (lanseringsrisk). Revert = ta bort wizard-UI/foreign-vägen
+  ur upload men BEHÅLL det som är generellt (fast schema #76, re-ask #72, label-skydd,
+  API-lärdomarna gäller all structured output).
+- **Mellanväg (om revert):** grinda foreign-vägen bakom env-flagga i st.f. att riva
+  kod — bevarar arbetet, tar bort ytan ur produkten tills längdstyrningen finns.
+- Beslutet påverkar: PR #70–#76-ytorna, migration 012 (behålls oavsett — additiv),
+  ROADMAP-punkterna LÄNGDSTYRNING + slice 6 + onboarding-residualerna nedan.
 
 ---
 
