@@ -103,3 +103,50 @@ Onboarding-flödet är produktionsverifierat end-to-end t.o.m. generering; expor
 väntar på F6-fixen. Radrum v3 (id 9bf84030…, prisfält skippade) ligger onboardad
 för nästa varv; v1/v2 + test-anbud + testanvändare städade; anbudsmall-colors v2
 åter aktiv. Total verifieringskostnad inkl. omtest: ~$8–10.
+
+---
+
+# TILLÄGG 2 (2026-07-07 natt): fixkedjan F5/F6 → helgrönt varv
+
+Fyra PR:er till innan kedjan höll hela vägen (varje steg drivet av betalda
+verifieringsvarv — mönstret var att varje fix exponerade nästa API-verklighet):
+
+- **#72 F6:** batchat re-ask för tomma slots (evidence-guard-mönstret) +
+  SLIDE_CONCURRENCY 3→6. Varv: 117/117 sektioner ✓ men 345 s väggklocka.
+- **#73 F5:** concurrency 6→12. Varv: EN slide (25 slots) fälld av required-schema
+  när modellen utelämnade 2 nycklar — 3 betalda retries, 337 s.
+- **#74:** optional-nycklar så utelämnade går till re-ask. Varv: **API-gräns
+  upptäckt** — structured outputs 400:ar stora optional-scheman ("too many optional
+  parameters (25", "Schema is too complex", "Grammar compilation timed out",
+  icke-retrybara, ~185 s häng per försök) → 78 slots föll som block.
+- **#75:** nyckel-chunkning ≤12 per anrop. Varv: grammatiken 400:ar ÄNDÅ —
+  dynamiska property-namn med långa svenska placeholders är problemet, inte antalet.
+- **#76 (slutfixen):** FAST schema `{ sections: [{ placeholder, text }] }` —
+  konstant grammatik oavsett mall + identiskt output_config över alla anrop →
+  prompt-cachen delar prefix mellan slide-anropen. OBS: PR-routinen triggade
+  ALDRIG på #76 (40+ min; #70–#75 tog minuter) — ersattes av dokumenterad lokal
+  Opus-granskning (Approved), merge noterad transparent i PR:en. **Kolla routinens
+  körlogg.**
+
+## SLUTRESULTAT (varv 5, bid 5120ee1d)
+- **117/117 sektioner, 0 failade, väggklocka 150 s** (halva Vercel-taket; ner
+  från 345 s — ingen retry-bränning + cache-delning).
+- Export ✓ (guard släppte igenom), PowerPoint öppnar utan reparation, innehåll
+  ur riktiga RetailTech-analysen i Rådrums design.
+- **Visuellt belagd residual:** titel-sloten överflödar sin ruta grovt —
+  `budgetChars`-residualen (geometri→budget osatt för foreign slots, ingen
+  längdstyrning). Prioritet UPP på backloggen: det är nu den synligaste bristen
+  i slutprodukten. Även noterat: modellen ekade "ÅÅÅÅ-MM-DD" i Anbudsdag-fältet
+  (intent-eko när underlag saknas — innehållskvalitet, stickprovsyta).
+
+API-lärdomar för framtida structured outputs-design (generaliserbara):
+1. Dynamiska property-namn skalar inte — grammatiken kompileras per schema och
+   klarar inte långa/många/svenska nycklar. Använd fasta scheman med
+   nyckel-som-VÄRDE i stället för nyckel-som-PROPERTY.
+2. Optional-parameters har ett hårt tak (~24) och "Grammar compilation timed out"
+   kan ta ~3 min per försök INNAN 400:n — icke-retrybart men retryas ändå av
+   klienten = minuter av död tid. Överväg att inte retrya 400 invalid_request_error.
+3. Fasta scheman återställer dessutom cache-delning över anrop (output_config
+   ingår i cache-prefixet).
+
+Total verifieringskostnad hela spåret (varv 1–5 + klassificeringar): ~$18–20.

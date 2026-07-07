@@ -4,12 +4,24 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-06 natt — F6/F5-fixen LEVERERAD i kod (branch fix/empty-slot-reask): batchat re-ask för tomma slots + SLIDE_CONCURRENCY 3→6. Sviten 1008/0. NÄSTA: Radrum-grönt-varv (omtest mot v3) + Stefans egen smoke._
+_Senast uppdaterad: 2026-07-07 natt — HELGRÖNT VARV: #72–#76 mergade (re-ask, concurrency, optional-nycklar, chunkning, FAST schema), varv 5 = 117/117 sektioner / 0 failade / 150 s / export + PowerPoint gröna. NÄSTA: Stefans egen smoke + budgetChars (overflow visuellt belagd) + kolla varför PR-routinen inte triggade på #76._
 
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **RADRUM-GRÖNT-VARV + STEFANS SMOKE (verifiera F6/F5 mot riktig mall):** omtest
+- [ ] **STEFANS SMOKE (nästa):** hela flödet i UI:t med egen inloggning — guide i chatten
+      2026-07-07. Dev-servern på localhost:3000; Radrum-originalet i Downloads; färdigt
+      genererat anbud (bid 5120ee1d) ligger i arbetsytan att inspektera.
+- [ ] **BUDGETCHARS för foreign slots (prio UPP — visuellt belagd):** exporterat anbud
+      visar titel-slot som överflödar rutan grovt. Koppla compute-budgets geometri→tecken
+      till onboardade slots + soft-cap i generic-prose (fanns redan i backloggen, nu är
+      det synligaste bristen i slutprodukten).
+- [ ] **PR-ROUTINEN triggade inte på #76** — kolla körloggen/återskapa triggern
+      (jfr agentic-dealflow-fallet: pull_request.opened, draft=false, base main).
+- [x] **RADRUM-GRÖNT-VARV (KLART 2026-07-07, varv 5):** 117/117 sektioner, 0 failade,
+      150 s väggklocka, export + PowerPoint gröna. Krävde #72–#76 — hela kedjan och
+      API-lärdomarna dokumenterade i verifieringsdokumentets TILLÄGG 2.
+      Ursprunglig plan nedan: omtest
       mot Radrum v3 (id 9bf84030…, onboardad med prisfält skippade) — billigt, ingen ny
       klassificering behövs. Kontroll: (1) genereringen håller sig under Vercels 300 s
       (F5 — nu SLIDE_CONCURRENCY 6, ~2,5 min förväntat), (2) inga tomma slots efter
