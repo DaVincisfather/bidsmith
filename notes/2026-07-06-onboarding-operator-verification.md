@@ -150,3 +150,45 @@ API-lärdomar för framtida structured outputs-design (generaliserbara):
    ingår i cache-prefixet).
 
 Total verifieringskostnad hela spåret (varv 1–5 + klassificeringar): ~$18–20.
+
+---
+
+# TILLÄGG 3 (2026-07-07): Stefans egen smoke — mekaniken grön, OUTPUTEN KATASTROFAL
+
+Stefan körde hela flödet själv (Radrum-original → v4-onboarding → generering →
+export). Onboardingen "okej"; en Turbopack-404 på propose-routen felsöktes mitt i
+(dev-server-fenomen, fil-touch löste — retry räcker INTE, se minnesanteckning).
+Utfall: 221 kandidater → 137 bekräftade + 84 pending (inget skippat), generering
+137/137 sektioner, 0 failade, export OK. **Men slutprodukten är oanvändbar.**
+
+## Uppmätt (bid 378c78a5, DB-analys)
+- **45 789 tecken prosa över 11 slides** (~4 200/slide; en normal konsultslide bär
+  ~500–1 500). Värst: slide 5 = 6 861 tecken i 11 rutor, slide 3 = 5 635 i 10.
+- **69 av 137 slots >300 tecken, 13 >600. budgetChars satta i profilen: NOLL.**
+- **Syskonredundans:** slide 4 = NIO ~400-teckens nästan identiska "Om oss"-stycken
+  ({Om oss}, {Företagspresentation} 1–3, {Om Rådrum}, {Oberoende rådgivning} 1–2 …).
+- **Metadata-fält får prosa:** försättssidans {Uppdragets namn} fick 165 tecken
+  inkl. dubblerad meta; {Diarienummer 2} fick 130 teckens ursäktstext ("Inget
+  diarienummer har angivits…") — intent-eko-familjen.
+- **Bid-preview:** 137 platta sektioner utan slide-gruppering = ogranskbar.
+
+## ÄRLIG KORRIGERING av varv 5-domen
+Varv 5-bidet (5120ee1d) har i princip SAMMA volym: 46 126 tecken, 82 slots >300.
+"Helgrönt" avsåg mekaniken (alla sektioner, export, PowerPoint öppnar) — den
+visuella stickkollen fångade bara titel-overflowen, inte helhetsvolymen.
+Lärdom för verifieringsrutinen: visuell dom kräver ALLA slides + en volymmätning
+(tecken/slide är billig att räkna ur DB), inte spot-check av enstaka slides.
+
+## Rotorsaker (i hävstångsordning)
+1. **Ingen längdstyrning:** förslags-lagret sätter aldrig budgetChars, generic-prose
+   har ingen cap — modellen fyller varje ruta med 300–900 tecken anbudsprosa.
+   Geometrin FINNS i onboarding-utkastet (wireframens bbox) — budget kan deriveras
+   utan ny klassificering (jfr compute-budgets geometri→tecken).
+2. **Fältkaraktär ignoreras:** en-radsfält (namn/datum/diarienummer) ska få VÄRDET
+   eller lämnas korta — inte meningar, aldrig ursäktsprosa.
+3. **Ingen arbetsdelning mellan syskonrutor:** sibling-intents skickas med som
+   kontext men prompten kräver inte komplementaritet/korthet → N varianter av
+   samma stycke.
+
+Fixpaket backloggat i ROADMAP ("LÄNGDSTYRNING") — kan verifieras mot befintlig
+v4-onboarding + om-generering (~$1–2), ingen ny klassificering behövs.

@@ -4,18 +4,26 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-07 — STICKPROVET KLART (143 bedömda, 78 % relevant → nytt CITAT-TÄCKNINGS-spår i extraktionen). Stefans smoke pågår (Turbopack-404 på propose-routen felsökt & löst — dev-server-fenomen, ingen kodändring). NÄSTA: smoken klar → Stefan prioriterar citat-täckning vs budgetChars + kolla PR-routinen (#76)._
+_Senast uppdaterad: 2026-07-07 em — SMOKEN KLAR: mekaniken grön men outputen katastrofal (45,8k tecken/deck, 0 budgetChars, syskondubbletter) → LÄNGDSTYRNINGS-paketet är nu kritiskt spår. Stickprovet också klart (78 % relevant → CITAT-TÄCKNINGS-spår). Stefan prioriterar: längdstyrning vs citat-täckning. + kolla PR-routinen (#76)._
 
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **STEFANS SMOKE (nästa):** hela flödet i UI:t med egen inloggning — guide i chatten
-      2026-07-07. Dev-servern på localhost:3000; Radrum-originalet i Downloads; färdigt
-      genererat anbud (bid 5120ee1d) ligger i arbetsytan att inspektera.
-- [ ] **BUDGETCHARS för foreign slots (prio UPP — visuellt belagd):** exporterat anbud
-      visar titel-slot som överflödar rutan grovt. Koppla compute-budgets geometri→tecken
-      till onboardade slots + soft-cap i generic-prose (fanns redan i backloggen, nu är
-      det synligaste bristen i slutprodukten).
+- [x] **STEFANS SMOKE (KLAR 2026-07-07):** onboarding grön (137 bekräftade/84 pending
+      av 221), generering 137/137 mekaniskt grön — men **slutprodukten katastrofal**:
+      45 789 tecken prosa över 11 slides, 0 budgetChars satta, nio dubblett-"Om oss" på
+      en slide, prosa i metadata-fält, preview ogranskbar (137 platta sektioner).
+      OBS: varv 5 hade SAMMA volym (46 126 t) — "helgrönt" gällde mekaniken, inte det
+      visuella. Mätning + rotorsaker: TILLÄGG 3 i verifieringsdokumentet.
+- [ ] **LÄNGDSTYRNING för foreign-generering (KRITISK — ersätter/utvidgar budgetChars-
+      punkten, smoke-belagd):** (1) budgetChars-kedjan: geometri (utkastets bbox) →
+      teckenbudget i profilen (compute-budgets-matten) + cap i generic-prose-prompt och
+      applikator; (2) kortfälts-heuristik: en-radsfält får VÄRDE, inte meningar, aldrig
+      ursäktsprosa ({Diarienummer}-fallet); (3) syskon-arbetsdelning: same-slide-slots
+      med överlappande intents ska komplettera varandra, inte upprepa (9×"Om oss");
+      (4) [polish] bid-preview grupperas per slide. Verifierbart mot befintlig
+      v4-onboarding + om-generering (~$1–2) + volymmätning (tecken/slide ur DB) +
+      visuell dom på ALLA slides.
 - [ ] **PR-ROUTINEN triggade inte på #76** — kolla körloggen/återskapa triggern
       (jfr agentic-dealflow-fallet: pull_request.opened, draft=false, base main).
 - [x] **RADRUM-GRÖNT-VARV (KLART 2026-07-07, varv 5):** 117/117 sektioner, 0 failade,
