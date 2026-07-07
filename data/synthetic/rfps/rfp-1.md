@@ -2,7 +2,7 @@
 
 ## Optimering av bemanning och schemaplanering inom avdelning Anläggning, Idrotts- och föreningsförvaltningen
 
-**Referensnummer:** IFF-2025-0342
+**Referensnummer:** IFF-2026-0342
 **Ramavtal:** Verksamhets- och organisationskonsulter, delområde A
 **Beställare:** Vikstads kommun, Idrotts- och föreningsförvaltningen
 **Kontaktperson:** Lisa Andersson, verksamhetscontroller
@@ -17,7 +17,7 @@ Idrotts- och föreningsförvaltningen ansvarar för kommunens idrotts- och motio
 
 Syftet med uppdraget är att, i nära samverkan med förvaltningen, ta fram ett konkret och användbart beslutsunderlag för hur avdelningen Anläggning kan planera, bemanna och schemalägga personella resurser på ett hållbart och effektivt sätt.
 
-Resultatet ska ge en tydlig nulägesbild, utvecklingsförslag och ett enkelt planeringsstöd som kan användas i 2027 års bemannings- och budgetprocess.
+Resultatet ska ge en tydlig nulägesbild, utvecklingsförslag och ett enkelt planeringsstöd som kan användas i 2028 års bemannings- och budgetprocess.
 
 ### Uppdragsbeskrivning
 
@@ -41,7 +41,7 @@ Uppdraget genomförs i nära dialog med förvaltningen och delas in i tre huvudf
 
 ### Tidsperiod
 
-December 2025 — december 2026. Möjlighet till förlängning med upp till sex månader.
+December 2026 — december 2027. Möjlighet till förlängning med upp till sex månader.
 
 ### Krav på kompetens
 
@@ -60,7 +60,7 @@ Uppdraget bedöms lämpligast utföras av en senior konsult som uppdragsansvarig
 
 Planerad kostnadsram: 500 000 SEK exkl. moms.
 Löpande räkning inom ramavtalets villkor.
-Timpris får inte överstiga ramavtalets takpris (2025 års index: 1 788 SEK senior, 1 430 SEK mellan, 817 SEK junior).
+Timpris får inte överstiga ramavtalets takpris (2026 års index: 1 788 SEK senior, 1 430 SEK mellan, 817 SEK junior).
 
 ### Utvärdering
 
@@ -81,4 +81,4 @@ Kvalitetskriterierna bedöms kvalitativt enligt tregradig skala (1–3 poäng).
 
 ### Sista anbudsdag
 
-2025-11-21 klockan 23:59 via Proceedo.
+2026-11-20 klockan 23:59 via Proceedo.
