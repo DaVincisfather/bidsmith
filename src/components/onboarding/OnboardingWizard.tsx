@@ -37,6 +37,7 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
     }
   }, [templateId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- baselined at CI introduction
   useEffect(() => { refresh(); }, [refresh]);
 
   // Polla under klassificering (bid-genereringens klientmönster).

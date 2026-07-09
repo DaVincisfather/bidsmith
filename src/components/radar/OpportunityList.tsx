@@ -33,6 +33,7 @@ export function OpportunityList() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- baselined at CI introduction
     fetchOpportunities();
   }, [fetchOpportunities]);
 

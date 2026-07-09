@@ -23,6 +23,7 @@ export function PipelineRail() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- baselined at CI introduction
     refetch();
   }, [refetch]);
 
