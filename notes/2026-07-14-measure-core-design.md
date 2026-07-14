@@ -94,7 +94,7 @@ utan renderare. JSON-rapporten är app-kontraktet.
   (deadspace-proxy).
 - Utdata: läsbar tabell per slide + `--json` med `DeckScanReport`
   (`schemaVersion: 1`, per slide: findings `{ checkId, severity, shape, detail }`,
-  summering). Exit-koder: 0 rent / 1 WARN / 2 FAIL — grindbar bredvid
+  summering). Exit-koder: 0 rent / 1 WARN / 2 FAIL / 3 krasch/användningsfel — grindbar bredvid
   `inspect-pptx` + `deck:dupes`.
 - Severity-mappning (justerad vid facit-kalibreringen: vertical-overflow →
   WARN — se 2026-07-14-deck-scan-facit.md): outside-slide, raw-token = FAIL;

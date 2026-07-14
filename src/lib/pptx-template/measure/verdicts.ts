@@ -64,14 +64,18 @@ export function checkOutsideSlide(m: ShapeMeasurementV2, slideWidthPt: number, s
   return null;
 }
 
-/** No-wrap text clipped against its box or running past the slide edge. */
-export function checkHorizontalClip(m: ShapeMeasurementV2, slideWidthPt: number): Finding | null {
+/** No-wrap text clipped against its OWN BOX. Slide-edge overruns are
+ *  deliberately NOT checked here — checkOutsideSlide already owns "where
+ *  does the text land on the slide" (via leftPt + marginLeftPt + boundWidthPt,
+ *  the same geometry), so a no-wrap text past the right slide edge would
+ *  otherwise be double-reported as both outside-slide (FAIL) and
+ *  horizontal-clip (WARN) for the same overflow. */
+export function checkHorizontalClip(m: ShapeMeasurementV2): Finding | null {
   if (m.wordWrap || m.boundWidthPt < 0) return null;
   const available = m.widthPt - m.marginLeftPt - m.marginRightPt;
   const pastBox = m.boundWidthPt > available + THRESHOLDS.tolerancePt;
-  const pastSlide = m.leftPt + m.boundWidthPt > slideWidthPt + THRESHOLDS.tolerancePt;
-  if (pastBox || pastSlide) {
-    return finding("horizontal-clip", m, `no-wrap text ${m.boundWidthPt}pt vs box ${Math.round(available)}pt (slide width ${slideWidthPt}pt)`);
+  if (pastBox) {
+    return finding("horizontal-clip", m, `no-wrap text ${m.boundWidthPt}pt vs box ${Math.round(available)}pt`);
   }
   return null;
 }
@@ -142,7 +146,7 @@ export function calibrationVerdict(
   const signals: CheckId[] = [];
   if (checkVerticalOverflow(m)) signals.push("vertical-overflow");
   if (checkOutsideSlide(m, slideWidthPt, slideHeightPt)) signals.push("outside-slide");
-  if (checkHorizontalClip(m, slideWidthPt)) signals.push("horizontal-clip");
+  if (checkHorizontalClip(m)) signals.push("horizontal-clip");
   if (fontScalePct !== null && fontScalePct < THRESHOLDS.minFontScalePct) signals.push("autofit-shrink");
   return { overBudget: signals.length > 0, signals };
 }

@@ -48,13 +48,18 @@ describe("checkOutsideSlide (com)", () => {
 });
 
 describe("checkHorizontalClip (com)", () => {
-  it("flags no-wrap text wider than its box or running past the slide edge", () => {
+  it("flags no-wrap text wider than its own box", () => {
     // available width = 400 - 4 - 4 = 392; bound 400 > 394
-    expect(checkHorizontalClip(m({ wordWrap: false, boundWidthPt: 400 }), SLIDE_W)?.checkId).toBe("horizontal-clip");
-    // within box but past slide edge: left 1200 + bound 300 = 1500 > 1442
-    expect(checkHorizontalClip(m({ wordWrap: false, widthPt: 600, boundWidthPt: 300, leftPt: 1200 }), SLIDE_W)?.checkId).toBe("horizontal-clip");
-    expect(checkHorizontalClip(m({ wordWrap: true, boundWidthPt: 4000 }), SLIDE_W)).toBeNull();   // wrapping boxes never clip horizontally
-    expect(checkHorizontalClip(m({ wordWrap: false, boundWidthPt: -1 }), SLIDE_W)).toBeNull();     // width unknown (PS fallback)
+    expect(checkHorizontalClip(m({ wordWrap: false, boundWidthPt: 400 }))?.checkId).toBe("horizontal-clip");
+    expect(checkHorizontalClip(m({ wordWrap: true, boundWidthPt: 4000 }))).toBeNull();   // wrapping boxes never clip horizontally
+    expect(checkHorizontalClip(m({ wordWrap: false, boundWidthPt: -1 }))).toBeNull();     // width unknown (PS fallback)
+  });
+  it("does NOT flag no-wrap text that fits its box but runs past the slide edge — that's checkOutsideSlide's job (no double reporting)", () => {
+    // within box: available = 600 - 4 - 4 = 592 > bound 300. Past slide edge:
+    // textRight = 1200 + 4 (marginLeftPt) + 300 = 1504 > 1442.
+    const shape = m({ wordWrap: false, widthPt: 600, boundWidthPt: 300, leftPt: 1200 });
+    expect(checkHorizontalClip(shape)).toBeNull();
+    expect(checkOutsideSlide(shape, SLIDE_W, SLIDE_H)?.checkId).toBe("outside-slide");
   });
 });
 

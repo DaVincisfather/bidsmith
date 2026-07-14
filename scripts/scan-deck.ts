@@ -27,15 +27,18 @@ const PREFIX_LEN = 40;
 
 async function main() {
   const args = process.argv.slice(2);
-  const pptxPath = args.find((a) => !a.startsWith("--"));
-  if (!pptxPath) {
-    console.error("Användning: npm run deck:scan -- <anbud.pptx> [--json ut.json]");
-    process.exit(3);
-  }
+  // --json's VALUE is itself a non-flag token, so it must be excluded from the
+  // positional search below — otherwise `deck:scan -- --json ut.json anbud.pptx`
+  // picks up "ut.json" as the pptx path.
   const jsonIdx = args.indexOf("--json");
-  const jsonOut = jsonIdx >= 0 ? args[jsonIdx + 1] : null;
+  const jsonOut = jsonIdx >= 0 ? args[jsonIdx + 1] ?? null : null;
   if (jsonIdx >= 0 && !jsonOut) {
     console.error("--json kräver en filsökväg");
+    process.exit(3);
+  }
+  const pptxPath = args.find((a, i) => !a.startsWith("--") && (jsonIdx < 0 || i !== jsonIdx + 1));
+  if (!pptxPath) {
+    console.error("Användning: npm run deck:scan -- <anbud.pptx> [--json ut.json]");
     process.exit(3);
   }
 
@@ -56,7 +59,7 @@ async function main() {
       for (const f of [
         checkVerticalOverflow(m),
         checkOutsideSlide(m, measured.slideWidthPt, measured.slideHeightPt),
-        checkHorizontalClip(m, measured.slideWidthPt),
+        checkHorizontalClip(m),
         checkSingleLineBreak(m),
         checkAutofitShrink(m, scale),
       ]) {
