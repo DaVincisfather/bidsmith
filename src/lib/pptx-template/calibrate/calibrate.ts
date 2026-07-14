@@ -13,6 +13,7 @@ import { planTargets, type CalibrationTarget } from "./plan-targets";
 import { finalBudget, initState, step, type SearchState } from "./binary-search";
 import { markerOf, verdictFor, type ShapeMeasurement } from "./overflow";
 import { readFontScales } from "./font-scales";
+import { SHORT_FIELD_MAX_CHARS } from "@/lib/bid-generator/bundles/generic-prose";
 
 /**
  * Calibration orchestrator (design doc 2026-07-14): renders the instrumented
@@ -26,9 +27,6 @@ import { readFontScales } from "./font-scales";
  */
 
 const execFileAsync = promisify(execFile);
-// Inlined per Task 6 interface deltas: Task 7 (not yet executed on this branch)
-// owns the single-source constant; swap this for that import once it lands.
-const SHORT_FIELD_MAX_CHARS = 80;
 const DEFAULT_MAX_ROUNDS = 8;
 
 export interface SlotResult {

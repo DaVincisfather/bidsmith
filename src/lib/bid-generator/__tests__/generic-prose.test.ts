@@ -248,3 +248,78 @@ describe("sibling context", () => {
     expect(system).not.toContain("x".repeat(81));
   });
 });
+
+// Short-field rule (design doc 2026-07-14): a slot with budgetChars <=
+// SHORT_FIELD_MAX_CHARS is a VALUE (a name, a date, a diary number), not prose —
+// routine-fynd 2026-07-07 showed {Diarienummer} came back with a 130-char
+// apology paragraph instead of a value-or-blank. The slide prompt, the re-ask
+// prompt, and the empty-answer handling all carry this rule.
+describe("short-field rule", () => {
+  it("marks slots at or under SHORT_FIELD_MAX_CHARS as KORTFÄLT in the slide prompt", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
+    await buildGenericProseSlideSections(
+      [{ placeholder: "{Diarienummer}", intent: "ärendets diarienummer", budgetChars: 60 }],
+      baseCtx,
+    );
+
+    const system = vi.mocked(callClaude).mock.calls[0][0].system;
+    expect(system).toContain("KORTFÄLT");
+    expect(system).toContain("ENDAST värdet");
+    expect(system).not.toContain("håll dig inom ca 60 tecken");
+  });
+
+  it("adds the sibling-division block when a slide has 2+ slots", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
+    await buildGenericProseSlideSections(
+      [{ placeholder: "{A}", intent: "a" }, { placeholder: "{B}", intent: "b" }],
+      baseCtx,
+    );
+    const system = vi.mocked(callClaude).mock.calls[0][0].system;
+    expect(system).toContain("EGEN tydlig vinkel");
+    expect(system).toContain("upprepa ingen mening");
+
+    vi.mocked(callClaude).mockClear();
+    await buildGenericProseSlideSections([{ placeholder: "{A}", intent: "a" }], baseCtx);
+    const single = vi.mocked(callClaude).mock.calls[0][0].system;
+    expect(single).not.toContain("EGEN tydlig vinkel");
+  });
+
+  it("emits an empty section for a short field answered blank, drops a blank prose slot", async () => {
+    vi.mocked(callClaude).mockResolvedValue({
+      sections: [
+        { placeholder: "{Diarienummer}", text: "" },
+        { placeholder: "{Om oss}", text: "" },
+      ],
+    });
+    const out = await buildGenericProseSlideSections(
+      [
+        { placeholder: "{Diarienummer}", intent: "diarienummer", budgetChars: 60 },
+        { placeholder: "{Om oss}", intent: "om oss", budgetChars: 400 },
+      ],
+      baseCtx,
+    );
+
+    expect(out.map((s) => s.key)).toEqual(["generic-prose:{Diarienummer}"]);
+    const c = out[0].content;
+    expect(c && c.format === "generic-prose" && c.text).toBe("");
+  });
+
+  it("re-ask prompt carries the value-or-empty rule for short fields", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
+    await buildGenericProseReaskSections(
+      [
+        {
+          slot: { placeholder: "{Diarienummer}", intent: "diarienummer", budgetChars: 60 },
+          slideSource: 1,
+        },
+      ],
+      baseCtx,
+    );
+
+    const system = vi.mocked(callClaude).mock.calls[0][0].system;
+    expect(system).toContain("KORTFÄLT");
+    expect(system).toContain("lämna tomt");
+    // The intro still demands substantial content for prose targets.
+    expect(system).toContain("skriv VARJE fält");
+  });
+});

@@ -59,6 +59,15 @@ export interface GenericProseSlot {
   budgetChars?: number;
 }
 
+/** Fields at or under this budget are VALUES (a name, a date, a number), not
+ *  prose. The calibration loop marks them via budgetChars; empty is a correct
+ *  answer for them (no apology prose, no re-ask). Design doc 2026-07-14. */
+export const SHORT_FIELD_MAX_CHARS = 80;
+
+export function isShortField(slot: GenericProseSlot): boolean {
+  return slot.budgetChars !== undefined && slot.budgetChars <= SHORT_FIELD_MAX_CHARS;
+}
+
 // Shared voice + source-fidelity contract — identical for the per-slot fallback
 // and the per-slide batch, so the slide variant reuses (not reinvents) the tone
 // and the hard no-hallucination rule.
@@ -107,6 +116,22 @@ function siblingLine(s: GenericProseSlot): string {
   return `- "${s.placeholder}": ${short}`;
 }
 
+// Slot line, shared by slideSystemPrompt and reaskSystemPrompt: a short field
+// (budgetChars <= SHORT_FIELD_MAX_CHARS) is a VALUE, not prose — the model must
+// write the bare value or "" when the source lacks it, never apology prose
+// (routine-fynd 2026-07-07: {Diarienummer} came back with 130 chars of prose
+// instead of a diary number). Prose slots keep the plain intent+budget line.
+// `suffix` lets the re-ask insert its "(slide N)" annotation right after the
+// placeholder, before the colon, without duplicating the branching logic.
+function slotLine(s: GenericProseSlot, suffix = ""): string {
+  const intent = s.intent || "(ej angivet — härled från platshållaren och kontexten)";
+  if (isShortField(s)) {
+    return `- "${s.placeholder}"${suffix}: ${intent} — KORTFÄLT (max ${s.budgetChars} tecken): skriv ENDAST värdet (t.ex. ett namn, datum eller nummer), ALDRIG meningar eller förklaringar. Saknas uppgiften i underlaget: lämna tomt ("").`;
+  }
+  const budget = s.budgetChars ? ` (håll dig inom ca ${s.budgetChars} tecken)` : "";
+  return `- "${s.placeholder}"${suffix}: ${intent}${budget}`;
+}
+
 // System prompt for a chunk of a slide's generic-prose slots: lists the chunk's
 // slots (placeholder + intent + optional budget) and asks for ONE coherent JSON
 // object keyed by placeholder. `siblings` (the slide's OTHER slots, filled by
@@ -120,13 +145,7 @@ function slideSystemPrompt(
   slots: GenericProseSlot[],
   siblings: GenericProseSlot[] = [],
 ): string {
-  const slotLines = slots
-    .map((s) => {
-      const intent = s.intent || "(ej angivet — härled från platshållaren och kontexten)";
-      const budget = s.budgetChars ? ` (håll dig inom ca ${s.budgetChars} tecken)` : "";
-      return `- "${s.placeholder}": ${intent}${budget}`;
-    })
-    .join("\n");
+  const slotLines = slots.map((s) => slotLine(s)).join("\n");
   const jsonLines = slots
     .map(
       (s) =>
@@ -140,13 +159,26 @@ function slideSystemPrompt(
 ${siblings.map(siblingLine).join("\n")}
 `
       : "";
+  // Only when this prompt covers 2+ sections (this chunk's slots + its
+  // siblings) — nine near-identical "Om oss" paragraphs on one slide is a
+  // distinct failure from timeout/blank (routine-fynd 2026-07-07): siblings
+  // don't divide the work unless told to. A single-section prompt has no
+  // sibling to divide work with, so the block would be dead weight — and
+  // omitting it keeps that prompt byte-identical to before this change.
+  const divisionBlock =
+    slots.length + siblings.length > 1
+      ? `Sektioner med LIKNANDE syfte ska KOMPLETTERA varandra, inte upprepa: ge varje
+sektion en EGEN tydlig vinkel (t.ex. historik, arbetssätt, värdegrund) och upprepa ingen mening
+eller poäng mellan sektionerna.
+`
+      : "";
   return `Du skriver flera sektioner till EN slide i ett svenskt konsultanbud. Sektionerna sitter på
 samma slide och ska hänga ihop till en sammanhållen helhet — inte fristående öar. Undvik att
 upprepa samma poäng mellan sektionerna.
 
 Sektioner att skriva (ett element i "sections" per sektion):
 ${slotLines}
-${siblingBlock}
+${siblingBlock}${divisionBlock}
 ${PROSE_VOICE}
 
 Svara med giltig JSON. Fältet "sections" ska ha EXAKT ett element per sektion ovan — inga extra,
@@ -277,11 +309,12 @@ function sectionsFromRecord(
   for (const slot of slots) {
     const text = record[slot.placeholder];
     // Empty answer (the "skriv kortare" rule invites "") or a missing key →
-    // produce no section; the orchestrator re-asks / records that slot as
-    // failed. Trimmed for DETECTION only — "\n  " is as blank on the slide as
-    // "" and must not dodge the re-ask; the stored text stays as the model
-    // wrote it (wave-1 sections have never trimmed content).
-    if (typeof text !== "string" || text.trim().length === 0) continue;
+    // for a PROSE slot, produce no section; the orchestrator re-asks / records
+    // that slot as failed. Trimmed for DETECTION only — "\n  " is as blank on
+    // the slide as "" and must not dodge the re-ask; the stored text stays as
+    // the model wrote it (wave-1 sections have never trimmed content).
+    const blank = typeof text !== "string" || text.trim().length === 0;
+    if (blank && !isShortField(slot)) continue;
     sections.push({
       type: "ai",
       key: `generic-prose:${slot.placeholder}`,
@@ -289,7 +322,11 @@ function sectionsFromRecord(
       content: {
         format: "generic-prose",
         placeholder: slot.placeholder,
-        text,
+        // Blank short field: emit "" so the applicator blanks the token
+        // instead of leaving a raw {placeholder} visible, and the orchestrator
+        // neither re-asks nor fails it — empty IS the correct answer for a
+        // short field the source material doesn't cover (design doc 2026-07-14).
+        text: blank ? "" : (text as string),
       },
       generatedAt,
     });
@@ -313,14 +350,7 @@ export interface GenericProseReaskTarget {
 // no-hallucination contract via PROSE_VOICE.
 function reaskSystemPrompt(targets: GenericProseReaskTarget[]): string {
   const slotLines = targets
-    .map((t) => {
-      const intent =
-        t.slot.intent || "(ej angivet — härled från platshållaren och kontexten)";
-      const budget = t.slot.budgetChars
-        ? ` (håll dig inom ca ${t.slot.budgetChars} tecken)`
-        : "";
-      return `- "${t.slot.placeholder}" (slide ${t.slideSource}): ${intent}${budget}`;
-    })
+    .map((t) => slotLine(t.slot, ` (slide ${t.slideSource})`))
     .join("\n");
   const jsonLines = targets
     .map(
@@ -330,11 +360,13 @@ function reaskSystemPrompt(targets: GenericProseReaskTarget[]): string {
     .join(",\n");
   // "Skriv allt" och PROSE_VOICE:s "hitta inte på" får inte krocka: tunt underlag
   // ska ge KORT källtrogen text, inte utfyllnad — annars maskerar re-asken genuint
-  // omöjliga slots med hallucinerad kundtext (routine-fynd PR #72).
+  // omöjliga slots med hallucinerad kundtext (routine-fynd PR #72). KORTFÄLT-raden
+  // (slotLine) ber redan om tomt-vid-saknad, men "skriv VARJE fält" nedan är en
+  // generell demand — undantaget säger uttryckligen att den inte gäller KORTFÄLT.
   return `Ett tidigare försök lämnade följande sektioner till ett svenskt konsultanbud TOMMA. Skriv
 dem nu — skriv VARJE fält. Om underlaget är tunt för ett fält: skriv kort och källtroget
 (2–3 meningar om det som faktiskt finns i förfrågan/teamkontexten) hellre än utfyllt —
-men lämna det inte tomt.
+men lämna det inte tomt. Undantag: rader märkta KORTFÄLT får lämnas tomma när uppgiften saknas.
 
 Sektioner att fylla (ett element i "sections" per sektion; slide-numret anger var sektionen hör hemma):
 ${slotLines}

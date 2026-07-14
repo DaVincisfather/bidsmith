@@ -6,6 +6,7 @@ import {
   replaceAllTextNodes,
   replaceParagraphTextNodes,
 } from "./_footer";
+import { softCap } from "./_soft-cap";
 
 /**
  * Generic-prose applicator (template-upload slice 4) — fills every generic-prose
@@ -59,6 +60,12 @@ export function buildGenericProseMap(
     );
     if (sec && sec.content?.format === "generic-prose") {
       map[slot.placeholder] = sec.content.text;
+      // Observability only — warn-only, no truncation (budget lives in the
+      // prompt; this just flags overflow risk post-hoc). 1.3x gives the model
+      // some headroom over its budget before we log it as a render risk.
+      if (slot.budgetChars !== undefined) {
+        softCap(ctx.sourceSlide, slot.placeholder, sec.content.text, Math.round(slot.budgetChars * 1.3));
+      }
     }
   }
   return map;
