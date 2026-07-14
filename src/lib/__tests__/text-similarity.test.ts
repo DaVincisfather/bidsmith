@@ -40,4 +40,20 @@ describe("duplicatePairs", () => {
     expect(pairs).toHaveLength(1);
     expect(pairs[0]).toMatchObject({ a: "A", b: "B" });
   });
+
+  it("returns raw similarity — no rounding that could cross a threshold", () => {
+    // Fixture found by trial: raw trigram-Jaccard = 0.675 (in (0.65, 0.7)).
+    // The old implementation rounded to 2 decimals (0.675 → 0.68) before the
+    // CLI compared against FAIL_AT = 0.7, so raw values in [0.695, 0.7) would
+    // round to 0.70 and wrongly fail the gate. Contract: duplicatePairs
+    // returns the raw value; consumers round for display only.
+    const a = { label: "A", text: "Vi är en oberoende rådgivare med lång erfarenhet av offentlig sektor." };
+    const b = { label: "B", text: "Vi är en fristående rådgivare med mångårig erfarenhet av offentlig sektor." };
+    const pairs = duplicatePairs([a, b], 0.5);
+    expect(pairs).toHaveLength(1);
+    expect(pairs[0].similarity).toBeGreaterThan(0.5);
+    expect(pairs[0].similarity).toBeLessThan(0.7);
+    // Exact raw passthrough — fails if any rounding is reintroduced.
+    expect(pairs[0].similarity).toBe(trigramSimilarity(a.text, b.text));
+  });
 });

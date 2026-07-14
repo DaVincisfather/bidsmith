@@ -24,6 +24,7 @@ export function trigramSimilarity(a: string, b: string): number {
 export interface DuplicatePair {
   a: string;
   b: string;
+  /** Raw Jaccard similarity (0–1), unrounded — consumers round for display only. */
   similarity: number;
 }
 
@@ -36,11 +37,7 @@ export function duplicatePairs(
     for (let j = i + 1; j < items.length; j++) {
       const similarity = trigramSimilarity(items[i].text, items[j].text);
       if (similarity >= threshold) {
-        pairs.push({
-          a: items[i].label,
-          b: items[j].label,
-          similarity: Math.round(similarity * 100) / 100,
-        });
+        pairs.push({ a: items[i].label, b: items[j].label, similarity });
       }
     }
   }

@@ -24,7 +24,7 @@ async function main() {
     for (const p of duplicatePairs(items, WARN_AT)) {
       const level = p.similarity >= FAIL_AT ? "FAIL" : "WARN";
       if (p.similarity >= FAIL_AT) failed = true;
-      console.log(`${level} ${p.a} ~ ${p.b}: ${p.similarity}`);
+      console.log(`${level} ${p.a} ~ ${p.b}: ${p.similarity.toFixed(2)}`);
     }
   }
   console.log(failed ? "\nDUBBLETTER ÖVER FAIL-TRÖSKELN." : "\nInga dubbletter över fail-tröskeln.");
