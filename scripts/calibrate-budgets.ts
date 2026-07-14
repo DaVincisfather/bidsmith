@@ -13,6 +13,12 @@ async function main() {
   const write = args.includes("--write");
   const mrIdx = args.indexOf("--max-rounds");
   const maxRounds = mrIdx >= 0 ? Number(args[mrIdx + 1]) : undefined;
+  // NaN would make the round-loop condition (round < NaN) false → a silent
+  // zero-round "calibration" where every slot reports the geometry fallback.
+  if (maxRounds !== undefined && !Number.isFinite(maxRounds)) {
+    console.error("--max-rounds kräver ett numeriskt värde, t.ex. --max-rounds 6");
+    process.exit(1);
+  }
 
   const report = await calibrateTemplate(templateId, { write, maxRounds });
 

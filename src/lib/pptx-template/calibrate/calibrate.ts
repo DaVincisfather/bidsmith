@@ -67,6 +67,33 @@ export function buildCalibrationSections(
   });
 }
 
+/**
+ * Per-target result from a finished (or maxRounds-exhausted) search state.
+ * measured → the shape-level finalBudget is split evenly across the shape's
+ * slots; NOT measured → t.initialGuess is ALREADY per-slot (planTargets divides
+ * geometric capacity by shareCount), so it is used directly — no second division.
+ */
+export function buildSlotResult(
+  t: CalibrationTarget,
+  s: SearchState,
+  measured: boolean,
+): SlotResult {
+  const budget = measured
+    ? Math.max(30, Math.floor(finalBudget(s) / t.shareCount / 10) * 10)
+    : Math.max(30, Math.floor(t.initialGuess / 10) * 10);
+  const warnings: string[] = [];
+  if (!measured) warnings.push("marker never measured — geometry fallback");
+  // alwaysOverflowed is only meaningful once a state has converged (done) —
+  // mid-search / maxRounds-exhausted states are unconverged, not proven-never-fit.
+  if (s.done && s.alwaysOverflowed) warnings.push("overflowed at minimum budget — box likely tiny or decorative");
+  if (t.geometryMissing && !measured) warnings.push("no geometry either — DEFAULT_GUESS used");
+  return {
+    token: t.token, budget, rounds: s.rounds,
+    method: measured ? ("measured" as const) : ("geometry-fallback" as const),
+    shortField: budget <= SHORT_FIELD_MAX_CHARS, warnings,
+  };
+}
+
 /** Immutable budget patch: results keyed by placeholder, skip-slots untouched. */
 export function applyBudgets(profile: TemplateProfile, results: SlotResult[]): TemplateProfile {
   const byToken = new Map(results.map((r) => [r.token, r.budget]));
@@ -99,10 +126,15 @@ export async function calibrateTemplate(
   const targets = planTargets(slides, profile);
   if (targets.length === 0) throw new Error("no calibratable generic-prose slots in profile");
 
-  // The search runs over the SHAPE budget; shareCount slots on one shape share
-  // one state (keyed by the first token) and split the result evenly.
+  // One state per TOKEN, but each state tracks the whole SHAPE's fill:
+  // buildCalibrationSections divides the candidate by shareCount before filling,
+  // and initialGuess is per-slot (planTargets divides capacity by shareCount),
+  // so the seed multiplies it back up to a shape budget. On multi-token shapes
+  // only the FIRST token's marker leads the shape's text (markerOf anchors to
+  // the text start), so 2nd..Nth tokens are never measured — they freeze on the
+  // geometry fallback by design (buildSlotResult uses their per-slot guess).
   const states = new Map<string, SearchState>();
-  for (const t of targets) states.set(t.token, initState(t.initialGuess));
+  for (const t of targets) states.set(t.token, initState(t.initialGuess * t.shareCount));
 
   const master = { companyName: "Kalibrering", clientName: "Kalibrering", bidName: "Kalibrering", diaryNumber: "", bidDate: new Date().toISOString().slice(0, 10) };
   const seen = new Set<string>();
@@ -143,23 +175,9 @@ export async function calibrateTemplate(
     console.log(`round ${round}: ${[...states.values()].filter((s) => s.done).length}/${targets.length} slots converged`);
   }
 
-  const results: SlotResult[] = targets.map((t) => {
-    const s = states.get(t.token)!;
-    const measured = seen.has(t.marker);
-    const shapeBudget = measured ? finalBudget(s) : Math.max(30, t.initialGuess);
-    const budget = Math.max(30, Math.floor(shapeBudget / t.shareCount / 10) * 10);
-    const warnings: string[] = [];
-    if (!measured) warnings.push("marker never measured — geometry fallback");
-    // alwaysOverflowed is only meaningful once a state has converged (done) —
-    // mid-search / maxRounds-exhausted states are unconverged, not proven-never-fit.
-    if (s.done && s.alwaysOverflowed) warnings.push("overflowed at minimum budget — box likely tiny or decorative");
-    if (t.geometryMissing && !measured) warnings.push("no geometry either — DEFAULT_GUESS used");
-    return {
-      token: t.token, budget, rounds: s.rounds,
-      method: measured ? ("measured" as const) : ("geometry-fallback" as const),
-      shortField: budget <= SHORT_FIELD_MAX_CHARS, warnings,
-    };
-  });
+  const results: SlotResult[] = targets.map((t) =>
+    buildSlotResult(t, states.get(t.token)!, seen.has(t.marker)),
+  );
 
   if (opts.write) {
     await saveTemplateProfile(applyBudgets(profile, results));
