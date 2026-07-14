@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { readFontScales } from "../font-scales";
+import { readFontScales, readFontScalesByPrefix } from "../font-scales";
 
 const SLIDE = (body: string) => `<?xml version="1.0"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -39,5 +39,17 @@ describe("readFontScales", () => {
     const buf = await pptxWith(SLIDE(SP("statisk", `<a:normAutofit fontScale="50000"/>`) + SP("«B» text", "")));
     const scales = await readFontScales(buf);
     expect(scales.size).toBe(0);
+  });
+});
+
+describe("readFontScalesByPrefix", () => {
+  it("maps text prefix → applied scale for marker-less decks", async () => {
+    const buf = await pptxWith(SLIDE(SP("Prissättningen utgår från omfattningen", `<a:normAutofit fontScale="75000"/>`)));
+    const scales = await readFontScalesByPrefix(buf, 20);
+    expect(scales.get("Prissättningen utgår".slice(0, 20))).toBe(75);
+  });
+  it("shapes without normAutofit are absent", async () => {
+    const buf = await pptxWith(SLIDE(SP("Vanlig text", "")));
+    expect((await readFontScalesByPrefix(buf)).size).toBe(0);
   });
 });

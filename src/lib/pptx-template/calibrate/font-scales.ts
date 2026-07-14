@@ -6,17 +6,15 @@ import { markerOf } from "../measure/verdicts";
 const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
 const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
 
-/**
- * Reads PowerPoint's APPLIED autofit shrink out of the recalculated copy that
- * measure-overflow.ps1 saved: SaveAs materializes <a:normAutofit fontScale="…">
- * (thousandths of a percent) for every shrunk box. Keyed by the calibration
- * marker in the shape's text — index-free, same trick as the measurement side.
- * Only shapes WITH a normAutofit element appear (others overflow, not shrink).
- */
-export async function readFontScales(recalcPptx: Buffer): Promise<Map<string, number>> {
+/** Shared walk: yields [concatenated shape text, fontScalePct] per normAutofit
+ *  shape in the recalculated copy that measure-overflow.ps1 saved: SaveAs
+ *  materializes <a:normAutofit fontScale="…"> (thousandths of a percent) for
+ *  every shrunk box. Only shapes WITH a normAutofit element appear (others
+ *  overflow, not shrink). */
+async function walkFontScales(recalcPptx: Buffer): Promise<[string, number][]> {
   const zip = await JSZip.loadAsync(recalcPptx);
   const parser = new DOMParser();
-  const scales = new Map<string, number>();
+  const out: [string, number][] = [];
 
   for (const slidePath of await resolveSlidePaths(zip, parser)) {
     const xml = await zip.file(slidePath)?.async("string");
@@ -31,15 +29,37 @@ export async function readFontScales(recalcPptx: Buffer): Promise<Map<string, nu
       const texts = sp.getElementsByTagNameNS(A_NS, "t");
       let joined = "";
       for (let j = 0; j < texts.length; j++) joined += texts[j].textContent ?? "";
-      const marker = markerOf(joined);
-      if (!marker) continue;
       const autofits = sp.getElementsByTagNameNS(A_NS, "normAutofit");
       if (autofits.length === 0) continue;
       const raw = autofits[0].getAttribute("fontScale");
-      // Duplicate markers are last-write-wins (markers are template-unique by
-      // instrumentation, so this is theoretical).
-      scales.set(marker, raw ? Number(raw) / 1000 : 100);
+      out.push([joined, raw ? Number(raw) / 1000 : 100]);
     }
+  }
+  return out;
+}
+
+/**
+ * Reads PowerPoint's APPLIED autofit shrink, keyed by the calibration marker
+ * in the shape's text — index-free, same trick as the measurement side.
+ */
+export async function readFontScales(recalcPptx: Buffer): Promise<Map<string, number>> {
+  const scales = new Map<string, number>();
+  for (const [text, pct] of await walkFontScales(recalcPptx)) {
+    const marker = markerOf(text);
+    // Duplicate markers are last-write-wins (markers are template-unique by
+    // instrumentation, so this is theoretical).
+    if (marker) scales.set(marker, pct);
+  }
+  return scales;
+}
+
+/** Scanner variant: generated decks carry no «markers», so key by text prefix.
+ *  Collisions (identical prefixes) are last-write-wins — acceptable for the
+ *  WARN-level autofit-shrink check. */
+export async function readFontScalesByPrefix(recalcPptx: Buffer, prefixLen = 40): Promise<Map<string, number>> {
+  const scales = new Map<string, number>();
+  for (const [text, pct] of await walkFontScales(recalcPptx)) {
+    scales.set(text.slice(0, prefixLen), pct);
   }
   return scales;
 }
