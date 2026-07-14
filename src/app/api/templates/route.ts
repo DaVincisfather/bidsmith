@@ -6,6 +6,7 @@ import { introspectTemplate } from "@/lib/pptx-template/introspect";
 import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import { readPptxSlides, type SlideShapes } from "@/lib/pptx-template/introspect/read-pptx";
 import { isForeignPptx } from "@/lib/pptx-template/onboarding/detect-foreign";
+import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 import { candidateSlots } from "@/lib/pptx-template/onboarding/propose-injection-plan";
 import { TEMPLATE_BUCKET, clearTemplateCache } from "@/lib/pptx-template/template-store";
 import { manifestToProfile } from "@/lib/pptx-template/manifest-to-profile";
@@ -61,6 +62,19 @@ export async function POST(request: NextRequest) {
     );
   }
   const foreign = isForeignPptx(slides);
+
+  // Lanserings-grind (vägbeslutet 2026-07-14): foreign-vägen är opt-in tills
+  // längdstyrningens v2 är klar. Vägran FÖRE storage/DB-skrivning — ingen rad
+  // eller fil att städa.
+  if (foreign && !foreignTemplatesEnabled()) {
+    return NextResponse.json(
+      {
+        error:
+          "mallen saknar {tokens} (kundmall) — onboarding av kundmallar är avstängd i den här installationen",
+      },
+      { status: 422 },
+    );
+  }
 
   let manifest: TemplateManifest | null = null;
   let warnings: string[] = [];
