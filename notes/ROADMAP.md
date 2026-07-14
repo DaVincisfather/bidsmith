@@ -4,25 +4,21 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-07 em — ⏸️ PAUS med ÖPPET VÄGBESLUT: Stefans smoke visade att onboarding-mekaniken är grön men outputen katastrofal (45,8k tecken/deck, 0 budgetChars, syskondubbletter). **Stefan lutar åt att REVERTA hela wizard-onboardingspåret — alternativet är räddningsförsöket (LÄNGDSTYRNINGS-paketet nedan). Inget beslut fattat; nästa session börjar där.** Stickprovet också klart (78 % relevant → CITAT-TÄCKNINGS-spår)._
+_Senast uppdaterad: 2026-07-14 — ⚖️ VÄGBESLUTET AVGJORT: **env-flagga + iterera.**
+Budget-kalibreringsloopen byggd + utvärderad mot Radrum v4: 45,8k→12,7k tecken,
+8→0 FAIL-slides, 42→1 dubblettpar, kortfält friska. Stefans dom: "kan inte skickas
+till kund efter lätt redigering — men det börjar bli bättre" = underkänt för
+kundleverans, spåret konvergerar. Foreign-vägen grindas bakom env-flagga före lansering;
+loop v2-punkterna nedan. Fullt underlag: `notes/2026-07-14-budget-calibration-evaluation.md`._
 
-## ⚖️ ÖPPET BESLUT vid återupptag: revert eller rädda wizard-onboardingen?
-Underlag för beslutet (mätning: TILLÄGG 3 i `notes/2026-07-06-onboarding-operator-verification.md`):
-- **För rädda:** mekaniken är hel (upload→klassificering→wizard→generering→export,
-  0 failade, 150 s); rotorsakerna är avgränsade (ingen längdbudget, ingen fältkaraktär,
-  ingen syskon-arbetsdelning) och geometrin för budget finns redan i utkastet —
-  räddningsförsöket är verifierbart för ~$1–2 mot befintlig v4-onboarding utan ny
-  klassificering. Risken är att textkvaliteten i 26-rutors-slides ändå inte når
-  användbart även med budget (tabell-byggda slides är egentligen slice 6-terräng).
-- **För revert:** spåret har kostat ~$20 verifiering + 7 PR:er och slutprodukten är
-  oanvändbar; onboardade mallar utan längdstyrning ger sämre intryck än ingen
-  foreign-mall-support alls (lanseringsrisk). Revert = ta bort wizard-UI/foreign-vägen
-  ur upload men BEHÅLL det som är generellt (fast schema #76, re-ask #72, label-skydd,
-  API-lärdomarna gäller all structured output).
-- **Mellanväg (om revert):** grinda foreign-vägen bakom env-flagga i st.f. att riva
-  kod — bevarar arbetet, tar bort ytan ur produkten tills längdstyrningen finns.
-- Beslutet påverkar: PR #70–#76-ytorna, migration 012 (behålls oavsett — additiv),
-  ROADMAP-punkterna LÄNGDSTYRNING + slice 6 + onboarding-residualerna nedan.
+## ⚖️ AVGJORT 2026-07-14: env-flagga + iterera (revert avfärdad)
+Stefans idé (kalibreringsloop vid onboarding istället för binärt revert/rädda) byggdes
+och utvärderades — design `notes/2026-07-14-budget-calibration-loop-design.md`, plan
+`…-loop-plan.md`, utfall `…-evaluation.md`. Loopen: fyll instrumenterad mall med
+deterministisk testtext → COM-mät overflow (BoundHeight + autofit-fontScale) → binärsök
+budgetChars per ruta → vision-slutpass → skriv profilen (`npm run calibrate:budgets`).
+Radrum v4: 6 varv, 137/137 mätta, $0. Beslutet: mergad loop + prompter (generella
+förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger mätluckorna.
 
 ---
 
@@ -33,15 +29,37 @@ Underlag för beslutet (mätning: TILLÄGG 3 i `notes/2026-07-06-onboarding-oper
       en slide, prosa i metadata-fält, preview ogranskbar (137 platta sektioner).
       OBS: varv 5 hade SAMMA volym (46 126 t) — "helgrönt" gällde mekaniken, inte det
       visuella. Mätning + rotorsaker: TILLÄGG 3 i verifieringsdokumentet.
-- [ ] **LÄNGDSTYRNING för foreign-generering (KRITISK — ersätter/utvidgar budgetChars-
-      punkten, smoke-belagd):** (1) budgetChars-kedjan: geometri (utkastets bbox) →
-      teckenbudget i profilen (compute-budgets-matten) + cap i generic-prose-prompt och
-      applikator; (2) kortfälts-heuristik: en-radsfält får VÄRDE, inte meningar, aldrig
-      ursäktsprosa ({Diarienummer}-fallet); (3) syskon-arbetsdelning: same-slide-slots
-      med överlappande intents ska komplettera varandra, inte upprepa (9×"Om oss");
-      (4) [polish] bid-preview grupperas per slide. Verifierbart mot befintlig
-      v4-onboarding + om-generering (~$1–2) + volymmätning (tecken/slide ur DB) +
-      visuell dom på ALLA slides.
+- [x] **LÄNGDSTYRNING för foreign-generering — LEVERERAD 2026-07-14 som
+      BUDGET-KALIBRERINGSLOOPEN** (feat/budget-calibration-loop): (1) budgetChars sätts
+      nu EMPIRISKT per ruta (COM-mätning + binärsökning, inte bara geometri-matte) via
+      `npm run calibrate:budgets -- <templateId> [--write]`; (2) kortfältsregeln
+      (budget ≤80 ⇒ VÄRDE eller tomt, aldrig ursäktsprosa; tomt re-askas aldrig);
+      (3) syskon-arbetsdelning i generic-prose-prompten. Utvärderat mot Radrum v4:
+      45,8k→12,7k tecken, 42→1 dubblettpar. (4) bid-preview-gruppering ersatt av
+      EDITOR-SLIMNINGS-spåret nedan. Kvar = loop v2 (mätluckorna nedan).
+- [ ] **ENV-FLAGGA för foreign-vägen (FÖRST — lanseringsskydd, vägbeslutet 2026-07-14):**
+      dölj foreign-mall-uppladdning/wizard bakom env-flagga (t.ex.
+      `BIDSMITH_FOREIGN_TEMPLATES=on`) tills loop v2 är klar. Egen liten PR.
+- [ ] **KALIBRERINGSLOOP v2 — mätluckorna från utvärderingen** (rotorsaksklasser i
+      `notes/2026-07-14-budget-calibration-evaluation.md`): (1) spAutoFit + slidekant:
+      mät boxens underkant mot slidehöjd (slide 2/9-fallet — text utanför sliden);
+      (2) enrads-semantik: box med ~en radhöjd ⇒ kapa budget till en rads kapacitet
+      (vecka-rutorna, slide 6); (3) no-wrap-detektion: BoundWidth mot boxbredd för
+      kicker-raderna (horisontellt klipp, slide 3/4/7/8/11).
+- [ ] **BID-EDITOR-SLIMNING (Stefan 2026-07-14 — eget spår, brainstormas först):** visa
+      endast uppdragsspecifika rutor (inte kortfält/småboxar); standardslides
+      (referenscase, sekretess, kvalitetssäkring) varken genereras om eller redigeras i
+      editorn; krymp till det som faktiskt genereras ⇒ mindre kod + mindre UI-hassle.
+      Byggstenar: kortfälts-flaggan (≤80) + static-klassningen.
+- [ ] **Radrum-mallfixar (VÅR testmall — håll isär från loop-fixar):** bredda
+      bolagsnamnsboxen (slide 1), flytta upp boxarna (slide 2/3/9), statboxarna slide 4,
+      högerspalten slide 8; byt M365-cloudfonter → installerade (klick-i-textbox ändrar
+      font/storlek = autofit-omräkning med substitutfont, se evaluation-noten).
+- [ ] **deck:dupes-trösklarna för höga för LLM-parafras:** katastrofdecket passerade
+      0,5/0,7-gaten (parafras ≈ 0,3–0,45 trigram). Kalibrera mot fler riktiga deck innan
+      gaten får beslutsvikt; parvis mätning vid 0,3 är tills vidare jämföraren.
+- [ ] **Supabase free-tier-pausen:** dev + drift går ner efter 7 d inaktivitet
+      (~5 min boot efter restore). Betald tier eller veckoping FÖRE publik lansering.
 - [ ] **PR-ROUTINEN triggade inte på #76** — kolla körloggen/återskapa triggern
       (jfr agentic-dealflow-fallet: pull_request.opened, draft=false, base main).
 - [x] **RADRUM-GRÖNT-VARV (KLART 2026-07-07, varv 5):** 117/117 sektioner, 0 failade,

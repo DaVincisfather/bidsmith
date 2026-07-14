@@ -487,6 +487,42 @@ describe("generateSectionsFromProfile — batched re-ask (F6)", () => {
   });
 });
 
+// Short-field rule (design doc 2026-07-14): a short field (budgetChars <=
+// SHORT_FIELD_MAX_CHARS) answered blank is a CORRECT empty answer, not a miss —
+// it must not be re-asked and must not land in failedSections, unlike a prose
+// slot answered blank (which still takes the F6 re-ask path above).
+describe("generateSectionsFromProfile — short fields", () => {
+  it("does not re-ask and does not fail a short field answered empty", async () => {
+    callClaudeMock.mockImplementation(async (opts: CallArg) => {
+      const ph = requestedPlaceholders(opts.system);
+      return sectionsResponse(ph, isReask(opts) ? [] : ph);
+    });
+    const profile = profileWith([
+      {
+        source: 1,
+        capability: "generic-prose",
+        slots: [
+          { ...genericSlot("{Diarienummer}"), budgetChars: 60 },
+          genericSlot("{Omoss}"),
+        ],
+      },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    // 1 slide call + exactly 1 re-ask call (only the prose slot).
+    expect(callClaudeMock).toHaveBeenCalledTimes(2);
+    const idx = reaskCallIndex();
+    expect(idx).toBeGreaterThan(-1);
+    expect(callPlaceholders(idx)).toEqual(["{Omoss}"]);
+    expect(failedSections).toEqual([]);
+    const short = sections.find((s) => s.key === "generic-prose:{Diarienummer}");
+    expect(
+      short?.content && short.content.format === "generic-prose" && short.content.text,
+    ).toBe("");
+  });
+});
+
 // Key-chunking (≤MAX_KEYS_PER_CALL=12 per call): the cap no longer guards schema
 // complexity (the fixed sections-array schema removed that ceiling) but still
 // bounds attention dilution and prompt size, so a slide with 20–30 slots is still

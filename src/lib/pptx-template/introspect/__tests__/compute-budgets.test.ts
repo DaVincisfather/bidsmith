@@ -197,3 +197,28 @@ describe("computeBudgets — syntetiska geometriska grenar", () => {
     expect(budgets["rows[*].referens"]).toBe(70);
   });
 });
+
+import { genericGeometricCapacity } from "../compute-budgets";
+
+describe("genericGeometricCapacity", () => {
+  it("returns null when geometry is missing", () => {
+    expect(
+      genericGeometricCapacity({
+        paragraphs: [], tokens: [], geometry: null,
+        fontSizePt: 18, lineSpacingPct: null, autofit: null, inGroup: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("computes lines × charsPerLine × FILL with the global constants", () => {
+    // 18pt font: charWidth = 18*12700*0.5 = 114300 EMU; lineHeight = 18*12700*1.2 = 274320 EMU.
+    // Box 2286000 × 822960 EMU → 20 chars/line × 3 lines × 0.9 = 54 → rounded to 55.
+    expect(
+      genericGeometricCapacity({
+        paragraphs: [], tokens: [],
+        geometry: { x: 0, y: 0, cx: 2286000, cy: 822960 },
+        fontSizePt: 18, lineSpacingPct: null, autofit: null, inGroup: false,
+      }),
+    ).toBe(55);
+  });
+});

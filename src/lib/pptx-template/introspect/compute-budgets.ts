@@ -271,3 +271,16 @@ function computeDeckPositions(included: ManifestSlide[]): Map<number, number> {
   }
   return positions;
 }
+
+/**
+ * Generic geometric capacity for a FOREIGN slot's shape — the calibration
+ * loop's start guess (design doc 2026-07-14). Same global constants as the
+ * budget model above (per-field fudge factors stay forbidden); no editorial
+ * cap because foreign fields have no field semantics — the measured loop, not
+ * this guess, sets the budget. null when the shape inherits its geometry.
+ */
+export function genericGeometricCapacity(shape: ShapeText): number | null {
+  if (!shape.geometry) return null;
+  const capacity = boxCapacity(shape);
+  return Math.max(ROUND_TO, Math.round(capacity / ROUND_TO) * ROUND_TO);
+}
