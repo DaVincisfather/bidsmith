@@ -19,6 +19,9 @@ if (-not (Test-Path -LiteralPath $absPptx)) { throw "PPTX not found: $absPptx" }
 $absJson   = [System.IO.Path]::GetFullPath($OutJson)
 $absRecalc = [System.IO.Path]::GetFullPath($RecalcOut)
 if (Test-Path -LiteralPath $absRecalc) { Remove-Item -Force -LiteralPath $absRecalc }
+foreach ($dir in @((Split-Path -Parent $absJson), (Split-Path -Parent $absRecalc))) {
+    if ($dir) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+}
 
 # Flatten groups in document order: COM's Slide.Shapes does NOT descend into
 # msoGroup (type 6), but Claude-Design-built templates (Radrum) group freely.
@@ -35,41 +38,47 @@ $pp = New-Object -ComObject PowerPoint.Application
 try {
     # msoFalse=0 window, open read-write (SaveAs needs it): WithWindow:=msoFalse
     $pres = $pp.Presentations.Open($absPptx, 0, 0, 0)
-    $rows = @()
-    foreach ($slide in $pres.Slides) {
-        foreach ($shape in (Get-TextShapes $slide.Shapes)) {
-            $tf = $shape.TextFrame2
-            $text = $tf.TextRange.Text
-            try {
-                $boundHeight = [math]::Round($tf.TextRange.BoundHeight, 2)
-            } catch {
-                Write-Warning "Skipping shape '$($shape.Name)' on slide $($slide.SlideIndex): BoundHeight threw ($($_.Exception.Message))"
-                continue
-            }
-            $rows += [pscustomobject]@{
-                slide          = $slide.SlideIndex
-                name           = $shape.Name
-                heightPt       = [math]::Round($shape.Height, 2)
-                boundHeightPt  = $boundHeight
-                marginTopPt    = [math]::Round($tf.MarginTop, 2)
-                marginBottomPt = [math]::Round($tf.MarginBottom, 2)
-                textPrefix     = $text.Substring(0, [math]::Min(64, $text.Length))
+    try {
+        $rows = @()
+        $slideCount = $pres.Slides.Count
+        foreach ($slide in $pres.Slides) {
+            foreach ($shape in (Get-TextShapes $slide.Shapes)) {
+                $tf = $shape.TextFrame2
+                $text = $tf.TextRange.Text
+                try {
+                    $boundHeight = [math]::Round($tf.TextRange.BoundHeight, 2)
+                } catch {
+                    Write-Warning "Skipping shape '$($shape.Name)' on slide $($slide.SlideIndex): BoundHeight threw ($($_.Exception.Message))"
+                    continue
+                }
+                $rows += [pscustomobject]@{
+                    slide          = $slide.SlideIndex
+                    name           = $shape.Name
+                    heightPt       = [math]::Round($shape.Height, 2)
+                    boundHeightPt  = $boundHeight
+                    marginTopPt    = [math]::Round($tf.MarginTop, 2)
+                    marginBottomPt = [math]::Round($tf.MarginBottom, 2)
+                    textPrefix     = $text.Substring(0, [math]::Min(64, $text.Length))
+                }
             }
         }
-    }
-    # SaveAs (ppSaveAsOpenXMLPresentation = 24) forces a layout pass; PowerPoint
-    # writes normAutofit fontScale for every shrunk box into the saved XML.
-    $pres.SaveAs($absRecalc, 24)
-    $pres.Close()
+        # SaveAs (ppSaveAsOpenXMLPresentation = 24) forces a layout pass; PowerPoint
+        # writes normAutofit fontScale for every shrunk box into the saved XML.
+        $pres.SaveAs($absRecalc, 24)
 
-    $slideCount = ($rows | Select-Object -ExpandProperty slide -Unique | Measure-Object).Count
-    [pscustomobject]@{
-        slideCount = $slideCount
-        shapes     = @($rows)
-    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $absJson -Encoding utf8
-    Write-Host "Measured $($rows.Count) text shapes -> $absJson"
+        [pscustomobject]@{
+            slideCount = $slideCount
+            shapes     = @($rows)
+        } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $absJson -Encoding utf8
+        Write-Host "Measured $($rows.Count) text shapes -> $absJson"
+    } finally {
+        try { $pres.Close() } catch {}
+        [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($pres)
+    }
 }
 finally {
     $pp.Quit()
     [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($pp)
+    [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
 }
