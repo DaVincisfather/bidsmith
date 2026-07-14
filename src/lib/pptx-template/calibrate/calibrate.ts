@@ -11,7 +11,8 @@ import type { TemplateProfile } from "../template-profile";
 import { fillText } from "./test-prose";
 import { planTargets, type CalibrationTarget } from "./plan-targets";
 import { finalBudget, initState, step, type SearchState } from "./binary-search";
-import { markerOf, verdictFor, type ShapeMeasurement } from "./overflow";
+import { calibrationVerdict, markerOf } from "../measure/verdicts";
+import type { MeasurementFile, CheckId } from "../measure/types";
 import { readFontScales } from "./font-scales";
 import { SHORT_FIELD_MAX_CHARS } from "@/lib/bid-generator/bundles/generic-prose";
 
@@ -36,6 +37,7 @@ export interface SlotResult {
   method: "measured" | "geometry-fallback";
   shortField: boolean;
   warnings: string[];
+  signals: CheckId[];
 }
 
 export interface CalibrationReport {
@@ -76,11 +78,16 @@ export function buildSlotResult(
   s: SearchState,
   measured: boolean,
   frozenAtRound?: number,
+  signals: CheckId[] = [],
 ): SlotResult {
-  const budget = measured
+  let budget = measured
     ? Math.max(30, Math.floor(finalBudget(s) / t.shareCount / 10) * 10)
     : Math.max(30, Math.floor(t.initialGuess / 10) * 10);
   const warnings: string[] = [];
+  if (t.singleLine && t.lineCapChars !== null && budget > t.lineCapChars) {
+    budget = Math.max(30, Math.floor(t.lineCapChars / 10) * 10);
+    warnings.push(`single-line box — budget capped at one line (${t.lineCapChars} chars)`);
+  }
   if (!measured) warnings.push("marker never measured — geometry fallback");
   // Hit maxRounds before the bracket converged: the budget below is the last
   // proven-fit candidate, not a settled result — surfaced so the CLI can
@@ -107,7 +114,7 @@ export function buildSlotResult(
   return {
     token: t.token, budget, rounds: s.rounds,
     method: measured ? ("measured" as const) : ("geometry-fallback" as const),
-    shortField: budget <= SHORT_FIELD_MAX_CHARS, warnings,
+    shortField: budget <= SHORT_FIELD_MAX_CHARS, warnings, signals,
   };
 }
 
@@ -160,6 +167,9 @@ export async function calibrateTemplate(
   // (frozen round 1) but report as geometry-fallback, not frozen — see
   // buildSlotResult.
   const frozenAt = new Map<string, number>();
+  // Union of every check signal observed for a marker across all rounds —
+  // shows WHICH check drove the eventual budget, not just that it overflowed.
+  const signalsByMarker = new Map<string, Set<CheckId>>();
   let round = 0;
 
   while (round < maxRounds && [...states.values()].some((s) => !s.done)) {
@@ -175,7 +185,7 @@ export async function calibrateTemplate(
     await execFileAsync("pwsh", ["-NoProfile", "-File", path.resolve("scripts", "measure-overflow.ps1"),
       "-Pptx", deckPath, "-OutJson", jsonPath, "-RecalcOut", recalcPath]);
 
-    const parsed = JSON.parse(await readFile(jsonPath, "utf8")) as { shapes: ShapeMeasurement[] };
+    const parsed = JSON.parse(await readFile(jsonPath, "utf8")) as MeasurementFile;
     const scales = await readFontScales(await readFile(recalcPath));
 
     const verdicts = new Map<string, boolean>();
@@ -183,7 +193,13 @@ export async function calibrateTemplate(
       const marker = markerOf(m.textPrefix);
       if (!marker) continue;
       seen.add(marker);
-      verdicts.set(marker, verdictFor(m, scales.get(marker) ?? null));
+      const v = calibrationVerdict(m, scales.get(marker) ?? null, parsed.slideWidthPt, parsed.slideHeightPt);
+      verdicts.set(marker, v.overBudget);
+      if (v.signals.length > 0) {
+        const acc = signalsByMarker.get(marker) ?? new Set<CheckId>();
+        for (const s of v.signals) acc.add(s);
+        signalsByMarker.set(marker, acc);
+      }
     }
     for (const t of targets) {
       const s = states.get(t.token)!;
@@ -202,7 +218,7 @@ export async function calibrateTemplate(
   }
 
   const results: SlotResult[] = targets.map((t) =>
-    buildSlotResult(t, states.get(t.token)!, seen.has(t.marker), frozenAt.get(t.token)),
+    buildSlotResult(t, states.get(t.token)!, seen.has(t.marker), frozenAt.get(t.token), [...(signalsByMarker.get(t.marker) ?? [])]),
   );
 
   if (opts.write) {

@@ -42,12 +42,18 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       (default AV, fail closed); onboardade mallar renderar oförändrat. OBS:
       sätt flaggan i Vercel-env om foreign-vägen ska vara på i driften, och
       `=on` i dev-worktrees `.env.local`.
-- [ ] **KALIBRERINGSLOOP v2 — mätluckorna från utvärderingen** (rotorsaksklasser i
-      `notes/2026-07-14-budget-calibration-evaluation.md`): (1) spAutoFit + slidekant:
-      mät boxens underkant mot slidehöjd (slide 2/9-fallet — text utanför sliden);
-      (2) enrads-semantik: box med ~en radhöjd ⇒ kapa budget till en rads kapacitet
-      (vecka-rutorna, slide 6); (3) no-wrap-detektion: BoundWidth mot boxbredd för
-      kicker-raderna (horisontellt klipp, slide 3/4/7/8/11).
+- [x] **KALIBRERINGSLOOP v2 + DECK-SCANNERN — LEVERERADE 2026-07-14** (design
+      `notes/2026-07-14-measure-core-design.md`, facit `…-deck-scan-facit.md`):
+      gemensam mätkärna `src/lib/pptx-template/measure/` (7 checkar, com/xml-märkta) +
+      `npm run deck:scan -- <anbud.pptx> [--json]` (exit 0/1/2). Mätluckorna stängda:
+      text-baserad outside-slide (spAuto/slidekant), enrads-cap (64 Radrum-slots
+      kapade vid om-kalibrering), horizontal-clip för no-wrap. Facit-validerad: alla
+      Stefans FAIL-klass-fynd träffas; baslinjens enda FAIL = äkta malldefekt
+      (Radrum slide 9, statisk text 817pt>810 — läggs på mallfix-punkten).
+      Kvar (v2-begränsningar, dokumenterade i facit-noten): kickers med wordWrap
+      detekteras som radbryt-WARN (per-rad-geometri = v3); single-line-break träffar
+      bara spAuto; deadspace okalibrerad tills nästa riktiga generering; --profile
+      budget-checkar deferred till app-spåret (kräver DB-sektioner för shape→slot).
 - [ ] **BID-EDITOR-SLIMNING (Stefan 2026-07-14 — eget spår, brainstormas först):** visa
       endast uppdragsspecifika rutor (inte kortfält/småboxar); standardslides
       (referenscase, sekretess, kvalitetssäkring) varken genereras om eller redigeras i

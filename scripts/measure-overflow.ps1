@@ -5,6 +5,11 @@
 # fontScale into the XML (overflow signal for autofit boxes — parsed on the TS side).
 # Part of the budget-calibration loop (notes/2026-07-14-budget-calibration-loop-design.md).
 #
+# Enriched into a general shape measurer for the shared measurement core: adds
+# per-shape position/size, BoundWidth, wrap/autosize/font-size, plus slide
+# dimensions. Backward-compatible — existing fields unchanged.
+# See notes/2026-07-14-measure-core-design.md.
+#
 # Usage:
 #   pwsh -File scripts/measure-overflow.ps1 -Pptx deck.pptx -OutJson m.json -RecalcOut recalc.pptx
 param(
@@ -41,6 +46,8 @@ try {
     try {
         $rows = @()
         $slideCount = $pres.Slides.Count
+        $slideWidthPt = [math]::Round($pres.PageSetup.SlideWidth, 2)
+        $slideHeightPt = [math]::Round($pres.PageSetup.SlideHeight, 2)
         foreach ($slide in $pres.Slides) {
             foreach ($shape in (Get-TextShapes $slide.Shapes)) {
                 $tf = $shape.TextFrame2
@@ -51,14 +58,34 @@ try {
                     Write-Warning "Skipping shape '$($shape.Name)' on slide $($slide.SlideIndex): BoundHeight threw ($($_.Exception.Message))"
                     continue
                 }
+                try {
+                    $boundWidth = [math]::Round($tf.TextRange.BoundWidth, 2)
+                } catch {
+                    # Same degenerate-shape class as BoundHeight; keep the shape but
+                    # mark width unknown (-1) so TS-side width checks skip it.
+                    $boundWidth = -1
+                }
+                # Font.Size returns a negative sentinel for mixed-size runs — map to null.
+                $fsRaw = $tf.TextRange.Font.Size
+                $fontSize = $(if ($fsRaw -gt 0) { [math]::Round($fsRaw, 1) } else { $null })
                 $rows += [pscustomobject]@{
                     slide          = $slide.SlideIndex
                     name           = $shape.Name
+                    topPt          = [math]::Round($shape.Top, 2)
+                    leftPt         = [math]::Round($shape.Left, 2)
+                    widthPt        = [math]::Round($shape.Width, 2)
                     heightPt       = [math]::Round($shape.Height, 2)
                     boundHeightPt  = $boundHeight
+                    boundWidthPt   = $boundWidth
                     marginTopPt    = [math]::Round($tf.MarginTop, 2)
                     marginBottomPt = [math]::Round($tf.MarginBottom, 2)
+                    marginLeftPt   = [math]::Round($tf.MarginLeft, 2)
+                    marginRightPt  = [math]::Round($tf.MarginRight, 2)
+                    wordWrap       = [bool]($tf.WordWrap -ne 0)   # msoTrue = -1
+                    autoSize       = [int]$tf.AutoSize            # 0 none / 1 spAuto / 2 norm
+                    fontSizePt     = $fontSize
                     textPrefix     = $text.Substring(0, [math]::Min(128, $text.Length))
+                    textLength     = $text.Length
                 }
             }
         }
@@ -67,8 +94,10 @@ try {
         $pres.SaveAs($absRecalc, 24)
 
         [pscustomobject]@{
-            slideCount = $slideCount
-            shapes     = @($rows)
+            slideCount    = $slideCount
+            slideWidthPt  = $slideWidthPt
+            slideHeightPt = $slideHeightPt
+            shapes        = @($rows)
         } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $absJson -Encoding utf8
         Write-Host "Measured $($rows.Count) text shapes -> $absJson"
     } finally {

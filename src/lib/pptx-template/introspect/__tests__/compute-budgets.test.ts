@@ -198,7 +198,7 @@ describe("computeBudgets — syntetiska geometriska grenar", () => {
   });
 });
 
-import { genericGeometricCapacity } from "../compute-budgets";
+import { genericGeometricCapacity, isSingleLineBox, singleLineCapacity } from "../compute-budgets";
 
 describe("genericGeometricCapacity", () => {
   it("returns null when geometry is missing", () => {
@@ -220,5 +220,23 @@ describe("genericGeometricCapacity", () => {
         fontSizePt: 18, lineSpacingPct: null, autofit: null, inGroup: false,
       }),
     ).toBe(55);
+  });
+});
+
+describe("single-line helpers", () => {
+  const shape = (cy: number): Parameters<typeof isSingleLineBox>[0] => ({
+    paragraphs: [], tokens: [], geometry: { x: 0, y: 0, cx: 2286000, cy },
+    fontSizePt: 18, lineSpacingPct: null, autofit: null, inGroup: false,
+  });
+  // lineHeight = 18 × 12700 × 1.2 = 274320 EMU
+  it("detects a one-line box and refuses when geometry is missing", () => {
+    expect(isSingleLineBox(shape(280000))).toBe(true);   // floor(280000/274320) = 1
+    expect(isSingleLineBox(shape(822960))).toBe(false);  // 3 lines
+    expect(isSingleLineBox({ ...shape(280000), geometry: null })).toBe(false);
+  });
+  it("one-line capacity = charsPerLine × FILL rounded to 5", () => {
+    // charsPerLine = floor(2286000/114300) = 20; 20 × 0.9 = 18 → 20
+    expect(singleLineCapacity(shape(280000))).toBe(20);
+    expect(singleLineCapacity({ ...shape(280000), geometry: null })).toBeNull();
   });
 });
