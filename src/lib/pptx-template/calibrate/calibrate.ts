@@ -75,6 +75,7 @@ export function buildSlotResult(
   t: CalibrationTarget,
   s: SearchState,
   measured: boolean,
+  frozenAtRound?: number,
 ): SlotResult {
   const budget = measured
     ? Math.max(30, Math.floor(finalBudget(s) / t.shareCount / 10) * 10)
@@ -85,9 +86,23 @@ export function buildSlotResult(
   // proven-fit candidate, not a settled result — surfaced so the CLI can
   // recommend a --max-rounds bump before --write.
   if (measured && !s.done) warnings.push("did not converge within maxRounds — budget is last proven fit");
-  // alwaysOverflowed is only meaningful once a state has converged (done) —
-  // mid-search / maxRounds-exhausted states are unconverged, not proven-never-fit.
-  if (s.done && s.alwaysOverflowed) warnings.push("overflowed at minimum budget — box likely tiny or decorative");
+  // A slot that WAS measured but whose marker fell out mid-search (e.g. a
+  // BoundHeight throw made the ps1 skip its shape that round) froze with
+  // done: true — it is NOT converged, and its bracket may be wide open in
+  // either direction. Own warning instead of the misleading pair below:
+  // "overflowed at minimum" would lie (it only overflowed at the frozen
+  // candidate), and a fit-only freeze would otherwise stay silent while the
+  // budget may be far under true capacity (PR #79 review finding).
+  const frozen = measured && frozenAtRound !== undefined;
+  if (frozen) {
+    warnings.push(
+      `marker fell out of measurement in round ${frozenAtRound} — budget is last proven fit (may be underestimated)`,
+    );
+  }
+  // alwaysOverflowed is only meaningful once a state has GENUINELY converged —
+  // mid-search / maxRounds-exhausted states are unconverged, and a frozen
+  // state's done: true is a stop signal, not convergence.
+  if (s.done && s.alwaysOverflowed && !frozen) warnings.push("overflowed at minimum budget — box likely tiny or decorative");
   if (t.geometryMissing && !measured) warnings.push("no geometry either — DEFAULT_GUESS used");
   return {
     token: t.token, budget, rounds: s.rounds,
@@ -140,6 +155,11 @@ export async function calibrateTemplate(
 
   const master = { companyName: "Kalibrering", clientName: "Kalibrering", bidName: "Kalibrering", diaryNumber: "", bidDate: new Date().toISOString().slice(0, 10) };
   const seen = new Set<string>();
+  // Tokens frozen because their marker vanished from a round's measurement
+  // (round number recorded for the report). Never-seen tokens also land here
+  // (frozen round 1) but report as geometry-fallback, not frozen — see
+  // buildSlotResult.
+  const frozenAt = new Map<string, number>();
   let round = 0;
 
   while (round < maxRounds && [...states.values()].some((s) => !s.done)) {
@@ -171,14 +191,18 @@ export async function calibrateTemplate(
       const v = verdicts.get(t.marker);
       // Not measured this round (marker truncated/shape dropped): freeze on the
       // geometry guess rather than searching blind.
-      if (v === undefined) states.set(t.token, { ...s, done: true });
-      else states.set(t.token, step(s, v));
+      if (v === undefined) {
+        states.set(t.token, { ...s, done: true });
+        frozenAt.set(t.token, round);
+      } else {
+        states.set(t.token, step(s, v));
+      }
     }
     console.log(`round ${round}: ${[...states.values()].filter((s) => s.done).length}/${targets.length} slots converged`);
   }
 
   const results: SlotResult[] = targets.map((t) =>
-    buildSlotResult(t, states.get(t.token)!, seen.has(t.marker)),
+    buildSlotResult(t, states.get(t.token)!, seen.has(t.marker), frozenAt.get(t.token)),
   );
 
   if (opts.write) {

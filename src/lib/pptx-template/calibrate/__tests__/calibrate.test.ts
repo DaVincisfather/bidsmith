@@ -108,4 +108,42 @@ describe("buildSlotResult", () => {
     const converged = buildSlotResult(target("{A}"), doneState(400), true);
     expect(converged.warnings).not.toContain("did not converge within maxRounds — budget is last proven fit");
   });
+
+  it("frozen measured slot gets the frozen warning, never the min-budget one (PR #79 review)", () => {
+    // Overflow round 1 → marker vanished round 2 → frozen with done: true and
+    // alwaysOverflowed still true. Old code claimed "overflowed at minimum
+    // budget" although only the initial candidate (300) ever overflowed.
+    const frozenAfterOverflow = buildSlotResult(
+      target("{A}"),
+      { lo: 30, hi: 300, candidate: 165, done: true, rounds: 1, alwaysOverflowed: true, everFit: false },
+      true,
+      2,
+    );
+    expect(frozenAfterOverflow.warnings).toContain(
+      "marker fell out of measurement in round 2 — budget is last proven fit (may be underestimated)",
+    );
+    expect(frozenAfterOverflow.warnings).not.toContain(
+      "overflowed at minimum budget — box likely tiny or decorative",
+    );
+  });
+
+  it("frozen after a fit-only history warns instead of staying silent", () => {
+    // Fit at 300 → expanding → marker vanished: budget may be far under true
+    // capacity; old code emitted NO warning at all here.
+    const frozenMidExpansion = buildSlotResult(
+      target("{A}"),
+      { lo: 300, hi: null, candidate: 600, done: true, rounds: 1, alwaysOverflowed: false, everFit: true },
+      true,
+      2,
+    );
+    expect(frozenMidExpansion.warnings).toContain(
+      "marker fell out of measurement in round 2 — budget is last proven fit (may be underestimated)",
+    );
+  });
+
+  it("never-measured slots report geometry fallback, not frozen — even though they also freeze", () => {
+    const neverSeen = buildSlotResult(target("{A}", 2, 200), doneState(400), false, 1);
+    expect(neverSeen.warnings).toContain("marker never measured — geometry fallback");
+    expect(neverSeen.warnings.join()).not.toContain("fell out of measurement");
+  });
 });
