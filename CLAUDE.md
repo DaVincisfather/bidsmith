@@ -23,6 +23,7 @@ npx tsc --noEmit           # typecheck
 npm run eval:bid-generator # m.fl. eval:*-scripts — krävs enligt grind-policyn nedan
 npm run calibrate:budgets -- <templateId> [--write]  # budget-kalibrering av onboardad mall (kräver PowerPoint, dry-run default)
 npm run deck:dupes -- <deck.pptx>                    # syskondubblett-gate på exporterat deck
+npm run deck:scan -- <anbud.pptx> [--json ut.json]   # layout-QA-gate på exporterat deck (kräver PowerPoint); FAIL = text utanför slide/rå token
 ```
 
 Innan "klart": lint + test + typecheck, visa output (se global verifieringsregel).
