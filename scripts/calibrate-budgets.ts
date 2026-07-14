@@ -27,7 +27,8 @@ async function main() {
   for (const r of report.results) {
     console.log(
       r.token.padEnd(42) + String(r.budget).padStart(7) +
-      String(r.rounds).padStart(6) + `  ${r.method.padEnd(18)}` + (r.shortField ? "JA" : ""),
+      String(r.rounds).padStart(6) + `  ${r.method.padEnd(18)}` + (r.shortField ? "JA" : "") +
+      (r.signals.length > 0 ? ` [${r.signals.join(",")}]` : ""),
     );
     for (const w of r.warnings) console.log(`    VARNING: ${w}`);
   }

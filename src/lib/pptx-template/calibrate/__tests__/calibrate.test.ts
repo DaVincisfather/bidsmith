@@ -38,14 +38,14 @@ describe("applyBudgets", () => {
 
   it("sets budgetChars on matching slots and leaves others untouched", () => {
     const out = applyBudgets(profile, [
-      { token: "{A}", budget: 440, rounds: 5, method: "measured", shortField: false, warnings: [] },
+      { token: "{A}", budget: 440, rounds: 5, method: "measured", shortField: false, warnings: [], signals: [] },
     ]);
     expect(out.slides[0].slots[0].budgetChars).toBe(440);
     expect(out.slides[0].slots[1].budgetChars).toBeUndefined();
   });
 
   it("does not mutate the input profile", () => {
-    applyBudgets(profile, [{ token: "{A}", budget: 100, rounds: 1, method: "measured", shortField: false, warnings: [] }]);
+    applyBudgets(profile, [{ token: "{A}", budget: 100, rounds: 1, method: "measured", shortField: false, warnings: [], signals: [] }]);
     expect(profile.slides[0].slots[0].budgetChars).toBeUndefined();
   });
 });
@@ -145,5 +145,18 @@ describe("buildSlotResult", () => {
     const neverSeen = buildSlotResult(target("{A}", 2, 200), doneState(400), false, 1);
     expect(neverSeen.warnings).toContain("marker never measured — geometry fallback");
     expect(neverSeen.warnings.join()).not.toContain("fell out of measurement");
+  });
+
+  it("caps a single-line target's budget at its line capacity and flags short field", () => {
+    const t = { ...target("{A}"), singleLine: true, lineCapChars: 40 };
+    const r = buildSlotResult(t, doneState(400), true); // measured budget would be 400
+    expect(r.budget).toBe(40);
+    expect(r.shortField).toBe(true);
+    expect(r.warnings.join()).toContain("single-line");
+  });
+
+  it("records which signals drove the verdict", () => {
+    const r = buildSlotResult(target("{A}"), doneState(400), true, undefined, ["horizontal-clip"]);
+    expect(r.signals).toEqual(["horizontal-clip"]);
   });
 });

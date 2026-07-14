@@ -1,7 +1,7 @@
 import JSZip from "jszip";
 import { DOMParser } from "@xmldom/xmldom";
 import { resolveSlidePaths } from "../introspect/read-pptx";
-import { markerOf } from "./overflow";
+import { markerOf } from "../measure/verdicts";
 
 const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
 const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
