@@ -22,6 +22,15 @@ describe("testProse", () => {
     const t = testProse(120);
     expect(t).toBe(t.trim());
   });
+
+  it("never produces a double period at inter-sentence cut boundaries", () => {
+    for (const n of [101, 196, 290, 392, 486]) {
+      const t = testProse(n);
+      expect(t).toHaveLength(n);
+      expect(t).not.toMatch(/\.\./);
+      expect(t).toBe(t.trim());
+    }
+  });
 });
 
 describe("fillText", () => {

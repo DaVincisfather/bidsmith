@@ -20,15 +20,17 @@ export function testProse(chars: number): string {
   if (chars <= 0) return "";
   let out = "";
   let i = 0;
-  while (out.length < chars) {
+  while (out.length < chars + 1) {
     out += (out.length > 0 ? " " : "") + SENTENCES[i % SENTENCES.length];
     i++;
   }
-  out = out.slice(0, chars);
-  // No trailing/odd whitespace after the hard cut — a trailing space measures
-  // as nothing on the slide and would make the budget lie by one.
-  if (out.endsWith(" ")) out = `${out.slice(0, -1)}.`;
-  return out;
+  // A cut landing on an inter-sentence space would need end-patching that can
+  // double the period — shifting the window by one keeps exact length with a
+  // letter at the boundary (the corpus has no double spaces, so the char after
+  // a space is a letter, and every sentence starts with a capital letter so
+  // the shifted window's first char is a letter too).
+  if (out[chars - 1] === " ") return out.slice(1, chars + 1);
+  return out.slice(0, chars);
 }
 
 /**
