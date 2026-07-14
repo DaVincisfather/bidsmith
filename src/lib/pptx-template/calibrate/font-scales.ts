@@ -53,13 +53,20 @@ export async function readFontScales(recalcPptx: Buffer): Promise<Map<string, nu
   return scales;
 }
 
+/** COM's TextRange.Text carries \r (paragraph) and \v (soft break) that the
+ *  XML run-join lacks — normalize both sides to whitespace-free before prefix
+ *  keying so multi-paragraph shapes still match (Task 6 review finding). */
+export function prefixKey(text: string, len = 40): string {
+  return text.replace(/\s+/g, "").slice(0, len);
+}
+
 /** Scanner variant: generated decks carry no «markers», so key by text prefix.
  *  Collisions (identical prefixes) are last-write-wins — acceptable for the
  *  WARN-level autofit-shrink check. */
 export async function readFontScalesByPrefix(recalcPptx: Buffer, prefixLen = 40): Promise<Map<string, number>> {
   const scales = new Map<string, number>();
   for (const [text, pct] of await walkFontScales(recalcPptx)) {
-    scales.set(text.slice(0, prefixLen), pct);
+    scales.set(prefixKey(text, prefixLen), pct);
   }
   return scales;
 }

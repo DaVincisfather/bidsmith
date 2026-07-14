@@ -12,7 +12,7 @@ import os from "os";
 import path from "path";
 import { promisify } from "util";
 import { readPptxSlides } from "../src/lib/pptx-template/introspect/read-pptx";
-import { readFontScalesByPrefix } from "../src/lib/pptx-template/calibrate/font-scales";
+import { prefixKey, readFontScalesByPrefix } from "../src/lib/pptx-template/calibrate/font-scales";
 import type { Finding, MeasurementFile } from "../src/lib/pptx-template/measure/types";
 import {
   checkAutofitShrink, checkHorizontalClip, checkOutsideSlide,
@@ -50,7 +50,7 @@ async function main() {
 
     const findings: Finding[] = [];
     for (const m of measured.shapes) {
-      const scale = scales.get(m.textPrefix.slice(0, PREFIX_LEN)) ?? null;
+      const scale = scales.get(prefixKey(m.textPrefix, PREFIX_LEN)) ?? null;
       for (const f of [
         checkVerticalOverflow(m),
         checkOutsideSlide(m, measured.slideWidthPt, measured.slideHeightPt),

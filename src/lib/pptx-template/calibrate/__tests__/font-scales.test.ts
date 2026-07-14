@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { readFontScales, readFontScalesByPrefix } from "../font-scales";
+import { prefixKey, readFontScales, readFontScalesByPrefix } from "../font-scales";
 
 const SLIDE = (body: string) => `<?xml version="1.0"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -46,10 +46,22 @@ describe("readFontScalesByPrefix", () => {
   it("maps text prefix → applied scale for marker-less decks", async () => {
     const buf = await pptxWith(SLIDE(SP("Prissättningen utgår från omfattningen", `<a:normAutofit fontScale="75000"/>`)));
     const scales = await readFontScalesByPrefix(buf, 20);
-    expect(scales.get("Prissättningen utgår".slice(0, 20))).toBe(75);
+    expect(scales.get(prefixKey("Prissättningen utgår från omfattningen", 20))).toBe(75);
   });
   it("shapes without normAutofit are absent", async () => {
     const buf = await pptxWith(SLIDE(SP("Vanlig text", "")));
     expect((await readFontScalesByPrefix(buf)).size).toBe(0);
+  });
+  it("multi-paragraph shapes match COM-style \\r-separated text (whitespace-normalized keys)", async () => {
+    // Two <a:p>: the XML run-join yields "Kort rad" + "Andra stycket fortsätter här"
+    // with NO separator, while COM's TextRange.Text inserts \r at the paragraph
+    // break. Both must land on the SAME map key or the scanner's autofit-shrink
+    // lookup silently misses multi-paragraph shapes (Task 6 review finding).
+    const twoParaSp = `<p:sp><p:txBody><a:bodyPr><a:normAutofit fontScale="70000"/></a:bodyPr><a:p><a:r><a:t>Kort rad</a:t></a:r></a:p><a:p><a:r><a:t>Andra stycket fortsätter här</a:t></a:r></a:p></p:txBody></p:sp>`;
+    const scales = await readFontScalesByPrefix(await pptxWith(SLIDE(twoParaSp)));
+    const key = prefixKey("Kort rad" + "Andra stycket fortsätter här");
+    expect(scales.get(key)).toBe(70);
+    // COM-side textPrefix carries \r — prefixKey must map it to the same key.
+    expect(prefixKey("Kort rad\rAndra stycket fortsätter här")).toBe(key);
   });
 });
