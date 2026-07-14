@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,8 @@ export default async function OnboardingPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  // Lanserings-grind (vägbeslutet 2026-07-14): foreign-onboardingen är opt-in.
+  if (!foreignTemplatesEnabled()) notFound();
   const supabase = await createClient();
   const { data: template } = await supabase
     .from("templates")

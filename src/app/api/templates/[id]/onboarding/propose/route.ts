@@ -9,6 +9,7 @@ import { proposeInjectionPlan } from "@/lib/pptx-template/onboarding/propose-inj
 import { readSlideSize } from "@/lib/pptx-template/onboarding/slide-size";
 import { buildDraft } from "@/lib/pptx-template/onboarding/draft-logic";
 import { extractPrecount } from "@/lib/pptx-template/onboarding/draft";
+import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 
 // 50–100+ klassificeringsanrop (chunkade om 6) överlever inte default-timeouten.
 // Samma mönster och tak som bid-genereringen (Vercel Hobby-taket).
@@ -23,6 +24,11 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   const auth = await requireUser(authed);
   if (!auth.ok) return auth.response;
   const userId = auth.data;
+
+  // Lanserings-grind (vägbeslutet 2026-07-14): foreign-onboardingen är opt-in.
+  if (!foreignTemplatesEnabled()) {
+    return NextResponse.json({ error: "onboarding av kundmallar är avstängd" }, { status: 404 });
+  }
 
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "template id");

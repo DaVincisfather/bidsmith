@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser, parseUuidParam, parseBody } from "@/lib/api-helpers";
 import { OnboardingDecisionSchema } from "@/lib/api-schemas";
 import { parseOnboardingDraft, extractPrecount } from "@/lib/pptx-template/onboarding/draft";
+import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 import { applyDecision } from "@/lib/pptx-template/onboarding/draft-logic";
 
 interface RouteContext {
@@ -71,6 +72,11 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   const auth = await requireUser(authed);
   if (!auth.ok) return auth.response;
 
+  // Lanserings-grind (vägbeslutet 2026-07-14): foreign-onboardingen är opt-in.
+  if (!foreignTemplatesEnabled()) {
+    return NextResponse.json({ error: "onboarding av kundmallar är avstängd" }, { status: 404 });
+  }
+
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "template id");
   if (!idResult.ok) return idResult.response;
@@ -92,6 +98,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const authed = await createClient();
   const auth = await requireUser(authed);
   if (!auth.ok) return auth.response;
+
+  // Lanserings-grind — samma som GET.
+  if (!foreignTemplatesEnabled()) {
+    return NextResponse.json({ error: "onboarding av kundmallar är avstängd" }, { status: 404 });
+  }
 
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "template id");

@@ -21,6 +21,8 @@ npm run test:integration   # kräver .env.local
 npm run lint               # eslint
 npx tsc --noEmit           # typecheck
 npm run eval:bid-generator # m.fl. eval:*-scripts — krävs enligt grind-policyn nedan
+npm run calibrate:budgets -- <templateId> [--write]  # budget-kalibrering av onboardad mall (kräver PowerPoint, dry-run default)
+npm run deck:dupes -- <deck.pptx>                    # syskondubblett-gate på exporterat deck
 ```
 
 Innan "klart": lint + test + typecheck, visa output (se global verifieringsregel).
@@ -77,6 +79,10 @@ Vid ändringar i befintlig kod:
 - DB-migreringar: namnge `NNN_beskrivning.sql`, applicera manuellt via Supabase SQL Editor
 - **Redigera ALDRIG en applicerad migration** — skriv en ny migration med `ALTER` istället. Att ändra historik orsakar drift mellan dev/prod schema.
 - Filstorlek-gräns: 20MB i document-parser
+- **Supabase free-tier pausar efter ~7 d inaktivitet** → NXDOMAIN på projektet (både dev
+  och drift). Restore via dashboard + ~5 min boot; polla REST-API:t innan skript körs.
+- `BIDSMITH_FOREIGN_TEMPLATES=on` aktiverar foreign-mall-onboardingen (upload av
+  tokenlösa kundmallar + wizard) — AV som default sedan vägbeslutet 2026-07-14.
 
 ## Tech-stack
 

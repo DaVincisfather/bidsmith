@@ -13,6 +13,7 @@ import {
 } from "@/lib/pptx-template/onboarding/draft-logic";
 import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
 import type { TokenInjection } from "@/lib/pptx-template/instrument/instrument-template";
+import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -22,6 +23,11 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const authed = await createClient();
   const auth = await requireUser(authed);
   if (!auth.ok) return auth.response;
+
+  // Lanserings-grind (vägbeslutet 2026-07-14): foreign-onboardingen är opt-in.
+  if (!foreignTemplatesEnabled()) {
+    return NextResponse.json({ error: "onboarding av kundmallar är avstängd" }, { status: 404 });
+  }
 
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "template id");
