@@ -24,9 +24,24 @@ describe("checkVerticalOverflow (com)", () => {
 });
 
 describe("checkOutsideSlide (com)", () => {
-  it("flags a box whose bottom or right edge is outside the slide", () => {
-    expect(checkOutsideSlide(m({ topPt: 760, heightPt: 100 }), SLIDE_W, SLIDE_H)?.checkId).toBe("outside-slide"); // 860 > 812
-    expect(checkOutsideSlide(m({ leftPt: 1100, widthPt: 400 }), SLIDE_W, SLIDE_H)?.checkId).toBe("outside-slide"); // 1500 > 1442
+  it("flags when the TEXT crosses the slide bottom edge", () => {
+    // textBottom = 700 + 4 (marginTopPt default) + 120 = 824 > 810 + 2 tolerance
+    expect(checkOutsideSlide(m({ topPt: 700, boundHeightPt: 120 }), SLIDE_W, SLIDE_H)?.checkId).toBe("outside-slide");
+  });
+  it("does NOT flag a box that bleeds past the right edge when the text itself stays inside (the empty-template regression case)", () => {
+    // box: leftPt 1100 + widthPt 400 = 1500, well past slideWidthPt 1440 — but the text is small:
+    // textRight = 1100 + 4 (marginLeftPt) + 200 (boundWidthPt) = 1304 < 1442
+    expect(checkOutsideSlide(m({ leftPt: 1100, widthPt: 400, boundWidthPt: 200, wordWrap: false }), SLIDE_W, SLIDE_H)).toBeNull();
+  });
+  it("flags no-wrap TEXT that itself runs past the right edge", () => {
+    // textRight = 1200 + 4 (marginLeftPt) + 300 = 1504 > 1442
+    expect(checkOutsideSlide(m({ leftPt: 1200, boundWidthPt: 300, wordWrap: false }), SLIDE_W, SLIDE_H)?.checkId).toBe("outside-slide");
+  });
+  it("does not apply the right-edge check to wrapped text, even with a huge bound width", () => {
+    // wrapped/centered text overestimates leftPt + boundWidthPt — not checked in v1
+    expect(checkOutsideSlide(m({ leftPt: 1200, boundWidthPt: 3000, wordWrap: true }), SLIDE_W, SLIDE_H)).toBeNull();
+  });
+  it("clean shape well inside the slide → null", () => {
     expect(checkOutsideSlide(m({}), SLIDE_W, SLIDE_H)).toBeNull();
   });
 });

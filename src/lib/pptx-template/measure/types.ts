@@ -24,7 +24,13 @@ export const CHECK_SOURCES: Record<CheckId, CheckSource> = {
 };
 
 export const SEVERITIES: Record<CheckId, Severity> = {
-  "vertical-overflow": "FAIL",
+  // Within-box overflow is frequently intentional design: PowerPoint renders
+  // text past a box's nominal bounds without clipping, and the empty Radrum
+  // template alone carries 47 such boxes (labels in small nominal boxes with
+  // room left below by design). FAIL-grade signals are reserved for text that
+  // actually leaves the slide (outside-slide) and raw un-rendered tokens
+  // (raw-token) — those are the real problems; this one is a WARN.
+  "vertical-overflow": "WARN",
   "outside-slide": "FAIL",
   "raw-token": "FAIL",
   "horizontal-clip": "WARN",

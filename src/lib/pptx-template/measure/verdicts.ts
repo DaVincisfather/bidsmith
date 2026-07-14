@@ -30,12 +30,25 @@ export function checkVerticalOverflow(m: ShapeMeasurementV2): Finding | null {
   return null;
 }
 
-/** Box (possibly GROWN by spAutoFit — COM reports post-layout size) outside the slide. */
+/** Where the TEXT lands relative to the slide — not the box. Box-based bleed is
+ *  frequently legitimate design (a Radrum kicker/footer box extends ~50pt past
+ *  the slide edge with no text anywhere near there); flagging the box itself
+ *  produces noise with no real overflow. Checks:
+ *  - bottom: always, via textBottom = topPt + marginTopPt + boundHeightPt.
+ *  - right: ONLY for no-wrap text (wordWrap === false && boundWidthPt >= 0), via
+ *    textRight = leftPt + marginLeftPt + boundWidthPt. For wrapped or centered
+ *    text, leftPt + boundWidthPt overestimates where the text actually sits
+ *    (COM's BoundWidth for wrapped text is the wrap width, not the ink extent,
+ *    and centered text is not flush against leftPt) — deliberately not checked
+ *    in v1 to avoid false positives on the common case. */
 export function checkOutsideSlide(m: ShapeMeasurementV2, slideWidthPt: number, slideHeightPt: number): Finding | null {
-  const bottom = m.topPt + m.heightPt;
-  const right = m.leftPt + m.widthPt;
-  if (bottom > slideHeightPt + THRESHOLDS.tolerancePt || right > slideWidthPt + THRESHOLDS.tolerancePt) {
-    return finding("outside-slide", m, `box bottom ${Math.round(bottom)}pt / right ${Math.round(right)}pt vs slide ${slideWidthPt}×${slideHeightPt}pt`);
+  const textBottom = m.topPt + m.marginTopPt + m.boundHeightPt;
+  const bottomOut = textBottom > slideHeightPt + THRESHOLDS.tolerancePt;
+  const checkRight = m.wordWrap === false && m.boundWidthPt >= 0;
+  const textRight = m.leftPt + m.marginLeftPt + m.boundWidthPt;
+  const rightOut = checkRight && textRight > slideWidthPt + THRESHOLDS.tolerancePt;
+  if (bottomOut || rightOut) {
+    return finding("outside-slide", m, `text bottom ${Math.round(textBottom)}pt / right ${checkRight ? Math.round(textRight) : "n/a"}pt vs slide ${slideWidthPt}×${slideHeightPt}pt`);
   }
   return null;
 }
