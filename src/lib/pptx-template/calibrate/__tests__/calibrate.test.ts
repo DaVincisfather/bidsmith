@@ -5,7 +5,7 @@ import type { CalibrationTarget } from "../plan-targets";
 import type { TemplateProfile } from "../../template-profile";
 
 const target = (token: string, shareCount = 1, initialGuess = 300): CalibrationTarget => ({
-  token, marker: token.slice(1, -1), source: 1, shareCount, initialGuess, geometryMissing: false,
+  token, marker: token.slice(1, -1), source: 1, shareCount, initialGuess, geometryMissing: false, singleLine: false, lineCapChars: null,
 });
 
 describe("buildCalibrationSections", () => {

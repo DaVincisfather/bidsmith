@@ -80,4 +80,22 @@ describe("planTargets", () => {
     expect(t.initialGuess).toBe(DEFAULT_GUESS);
     expect(t.geometryMissing).toBe(true);
   });
+
+  it("marks single-line boxes and carries a per-slot line cap", () => {
+    const oneLine = { x: 0, y: 0, cx: 2286000, cy: 280000 };
+    const slides: SlideShapes[] = [
+      { source: 1, shapes: [shape(["{A}"], oneLine)], tokens: ["{A}"], images: { placed: 0, placeholders: 0 } },
+    ];
+    const [t] = planTargets(slides, profileWith([{ placeholder: "{A}" }]));
+    expect(t.singleLine).toBe(true);
+    expect(t.lineCapChars).toBe(20); // singleLineCapacity 20 / shareCount 1
+  });
+
+  it("multi-line and geometry-less boxes are not single-line", () => {
+    const slides: SlideShapes[] = [
+      { source: 1, shapes: [shape(["{A}"], GEO), shape(["{B}"], null)], tokens: ["{A}", "{B}"], images: { placed: 0, placeholders: 0 } },
+    ];
+    const targets = planTargets(slides, profileWith([{ placeholder: "{A}" }, { placeholder: "{B}" }]));
+    expect(targets.every((t) => t.singleLine === false && t.lineCapChars === null)).toBe(true);
+  });
 });

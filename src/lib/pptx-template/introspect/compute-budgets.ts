@@ -284,3 +284,22 @@ export function genericGeometricCapacity(shape: ShapeText): number | null {
   const capacity = boxCapacity(shape);
   return Math.max(ROUND_TO, Math.round(capacity / ROUND_TO) * ROUND_TO);
 }
+
+/** True when the shape's geometry holds exactly ONE text line — the calibration
+ *  loop caps such boxes at one line's capacity (vecka-box class, design doc
+ *  2026-07-14-measure-core-design.md). False when geometry is missing. */
+export function isSingleLineBox(shape: ShapeText): boolean {
+  if (!shape.geometry) return false;
+  return geometricLineCount(shape) === 1;
+}
+
+/** One line's character capacity (charsPerLine × FILL_FACTOR, ROUND_TO-rounded),
+ *  or null when the shape inherits its geometry. */
+export function singleLineCapacity(shape: ShapeText): number | null {
+  if (!shape.geometry) return null;
+  const fontPt = shape.fontSizePt ?? DEFAULT_FONT_PT;
+  const charWidthEmu = fontPt * EMU_PER_PT * CHAR_WIDTH_FACTOR;
+  const charsPerLine = Math.floor(shape.geometry.cx / charWidthEmu);
+  const capacity = charsPerLine * FILL_FACTOR;
+  return Math.max(ROUND_TO, Math.round(capacity / ROUND_TO) * ROUND_TO);
+}
