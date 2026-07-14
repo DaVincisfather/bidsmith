@@ -322,4 +322,38 @@ describe("short-field rule", () => {
     // The intro still demands substantial content for prose targets.
     expect(system).toContain("skriv VARJE fält");
   });
+
+  it("re-ask prompt for an all-prose batch omits the KORTFÄLT exception (byte-identical to the pre-branch prompt)", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
+    await buildGenericProseReaskSections(
+      [{ slot: { placeholder: "{Om oss}", intent: "om oss" }, slideSource: 1 }],
+      baseCtx,
+    );
+
+    const system = vi.mocked(callClaude).mock.calls[0][0].system;
+    expect(system).not.toContain("KORTFÄLT");
+    expect(system).not.toContain("Undantag:");
+  });
+
+  it("re-ask prompt for a mixed batch gates the exception per-slot but keeps the every-field demand", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
+    await buildGenericProseReaskSections(
+      [
+        { slot: { placeholder: "{Om oss}", intent: "om oss" }, slideSource: 1 },
+        {
+          slot: { placeholder: "{Diarienummer}", intent: "diarienummer", budgetChars: 60 },
+          slideSource: 2,
+        },
+      ],
+      baseCtx,
+    );
+
+    const system = vi.mocked(callClaude).mock.calls[0][0].system;
+    const proseLine = system.split("\n").find((l) => l.includes("{Om oss}"))!;
+    const shortLine = system.split("\n").find((l) => l.includes("{Diarienummer}"))!;
+    expect(proseLine).not.toContain("KORTFÄLT");
+    expect(shortLine).toContain("KORTFÄLT");
+    expect(system).toContain("skriv VARJE fält");
+    expect(system).toContain("Undantag: rader märkta KORTFÄLT får lämnas tomma");
+  });
 });

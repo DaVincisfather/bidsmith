@@ -94,4 +94,18 @@ describe("buildSlotResult", () => {
     );
     expect(unconverged.warnings).not.toContain("overflowed at minimum budget — box likely tiny or decorative");
   });
+
+  it("warns when a measured target hits maxRounds without converging", () => {
+    const unconverged = buildSlotResult(
+      target("{A}"),
+      { lo: 30, hi: 200, candidate: 115, done: false, rounds: 8, alwaysOverflowed: false, everFit: true },
+      true,
+    );
+    expect(unconverged.warnings).toContain("did not converge within maxRounds — budget is last proven fit");
+  });
+
+  it("does not warn about non-convergence once the search is done", () => {
+    const converged = buildSlotResult(target("{A}"), doneState(400), true);
+    expect(converged.warnings).not.toContain("did not converge within maxRounds — budget is last proven fit");
+  });
 });

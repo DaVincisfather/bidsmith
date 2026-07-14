@@ -81,6 +81,10 @@ export function buildSlotResult(
     : Math.max(30, Math.floor(t.initialGuess / 10) * 10);
   const warnings: string[] = [];
   if (!measured) warnings.push("marker never measured — geometry fallback");
+  // Hit maxRounds before the bracket converged: the budget below is the last
+  // proven-fit candidate, not a settled result — surfaced so the CLI can
+  // recommend a --max-rounds bump before --write.
+  if (measured && !s.done) warnings.push("did not converge within maxRounds — budget is last proven fit");
   // alwaysOverflowed is only meaningful once a state has converged (done) —
   // mid-search / maxRounds-exhausted states are unconverged, not proven-never-fit.
   if (s.done && s.alwaysOverflowed) warnings.push("overflowed at minimum budget — box likely tiny or decorative");

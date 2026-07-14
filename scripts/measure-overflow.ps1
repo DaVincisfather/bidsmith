@@ -58,7 +58,7 @@ try {
                     boundHeightPt  = $boundHeight
                     marginTopPt    = [math]::Round($tf.MarginTop, 2)
                     marginBottomPt = [math]::Round($tf.MarginBottom, 2)
-                    textPrefix     = $text.Substring(0, [math]::Min(64, $text.Length))
+                    textPrefix     = $text.Substring(0, [math]::Min(128, $text.Length))
                 }
             }
         }

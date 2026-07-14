@@ -363,10 +363,16 @@ function reaskSystemPrompt(targets: GenericProseReaskTarget[]): string {
   // omöjliga slots med hallucinerad kundtext (routine-fynd PR #72). KORTFÄLT-raden
   // (slotLine) ber redan om tomt-vid-saknad, men "skriv VARJE fält" nedan är en
   // generell demand — undantaget säger uttryckligen att den inte gäller KORTFÄLT.
+  // Only stated when the batch actually contains a KORTFÄLT target — an all-prose
+  // re-ask has nothing to except, and the sentence would be dead weight (and
+  // would break byte-identity with the pre-branch prompt for that common case).
+  const exceptionLine = targets.some((t) => isShortField(t.slot))
+    ? " Undantag: rader märkta KORTFÄLT får lämnas tomma när uppgiften saknas."
+    : "";
   return `Ett tidigare försök lämnade följande sektioner till ett svenskt konsultanbud TOMMA. Skriv
 dem nu — skriv VARJE fält. Om underlaget är tunt för ett fält: skriv kort och källtroget
 (2–3 meningar om det som faktiskt finns i förfrågan/teamkontexten) hellre än utfyllt —
-men lämna det inte tomt. Undantag: rader märkta KORTFÄLT får lämnas tomma när uppgiften saknas.
+men lämna det inte tomt.${exceptionLine}
 
 Sektioner att fylla (ett element i "sections" per sektion; slide-numret anger var sektionen hör hemma):
 ${slotLines}

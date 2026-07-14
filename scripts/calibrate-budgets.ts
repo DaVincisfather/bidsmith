@@ -32,6 +32,12 @@ async function main() {
     for (const w of r.warnings) console.log(`    VARNING: ${w}`);
   }
   if (report.unresolved.length > 0) console.log(`\nOmätta (geometri-fallback): ${report.unresolved.join(", ")}`);
+  const unconverged = report.results.filter((r) =>
+    r.warnings.includes("did not converge within maxRounds — budget is last proven fit"),
+  );
+  if (unconverged.length > 0) {
+    console.log(`\nVARNING: ${unconverged.length} slots ej konvergerade — kör om med --max-rounds högre innan --write.`);
+  }
   console.log(write ? "\nProfil SPARAD." : "\nDRY-RUN — inget sparat. Kör med --write för att persistera.");
 }
 
