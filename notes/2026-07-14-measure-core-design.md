@@ -96,9 +96,10 @@ utan renderare. JSON-rapporten är app-kontraktet.
   (`schemaVersion: 1`, per slide: findings `{ checkId, severity, shape, detail }`,
   summering). Exit-koder: 0 rent / 1 WARN / 2 FAIL — grindbar bredvid
   `inspect-pptx` + `deck:dupes`.
-- Severity-mappning v1: outside-slide, vertical-overflow, raw-token = FAIL;
-  horizontal-clip, single-line-break, autofit-shrink = WARN; deadspace = INFO
-  (WARN på slide-aggregat). Justeras vid facit-kalibreringen.
+- Severity-mappning (justerad vid facit-kalibreringen: vertical-overflow →
+  WARN — se 2026-07-14-deck-scan-facit.md): outside-slide, raw-token = FAIL;
+  vertical-overflow, horizontal-clip, single-line-break, autofit-shrink = WARN;
+  deadspace = INFO (WARN på slide-aggregat).
 
 ## Ribban — facit-trion
 

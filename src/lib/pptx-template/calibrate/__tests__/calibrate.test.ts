@@ -155,6 +155,19 @@ describe("buildSlotResult", () => {
     expect(r.warnings.join()).toContain("single-line");
   });
 
+  it("floors a single-line cap smaller than MIN_BUDGET at 30, not at the raw cap (known residual)", () => {
+    // lineCapChars 20 < the 30-char search floor: the cap wins the "cap the
+    // budget" decision but MIN_BUDGET wins the final floor — budget lands on
+    // 30, above the geometric one-line capacity. The warning still quotes the
+    // raw 20-char cap so the discrepancy is visible in the report.
+    const t = { ...target("{A}"), singleLine: true, lineCapChars: 20 };
+    const r = buildSlotResult(t, doneState(400), true); // measured budget would be 400
+    expect(r.budget).toBe(30);
+    expect(r.shortField).toBe(true);
+    expect(r.warnings.join()).toContain("single-line");
+    expect(r.warnings.join()).toContain("20 chars");
+  });
+
   it("records which signals drove the verdict", () => {
     const r = buildSlotResult(target("{A}"), doneState(400), true, undefined, ["horizontal-clip"]);
     expect(r.signals).toEqual(["horizontal-clip"]);

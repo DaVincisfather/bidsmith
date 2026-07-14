@@ -2,8 +2,9 @@
 // CLI: npm run deck:scan -- <anbud.pptx> [--json ut.json]
 // Scans a GENERATED deck for layout ugliness via the shared measurement core:
 // COM-measures every text shape (measure-overflow.ps1), applies the seven
-// checks, prints a per-slide report. Exit 0 clean / 1 WARN / 2 FAIL — a gate
-// beside inspect-pptx and deck:dupes. Design: notes/2026-07-14-measure-core-design.md.
+// checks, prints a per-slide report. Exit contract: 0 clean / 1 WARN /
+// 2 FAIL / 3 crash-or-usage-error — a gate beside inspect-pptx and
+// deck:dupes. Design: notes/2026-07-14-measure-core-design.md.
 // NOTE: --profile budget checks are deferred to the app-surface track (a
 // generated deck has no placeholders left to map shapes to slots).
 import { execFile } from "child_process";
@@ -29,16 +30,17 @@ async function main() {
   const pptxPath = args.find((a) => !a.startsWith("--"));
   if (!pptxPath) {
     console.error("Användning: npm run deck:scan -- <anbud.pptx> [--json ut.json]");
-    process.exit(1);
+    process.exit(3);
   }
   const jsonIdx = args.indexOf("--json");
   const jsonOut = jsonIdx >= 0 ? args[jsonIdx + 1] : null;
   if (jsonIdx >= 0 && !jsonOut) {
     console.error("--json kräver en filsökväg");
-    process.exit(1);
+    process.exit(3);
   }
 
   const workDir = await mkdtemp(path.join(os.tmpdir(), "deck-scan-"));
+  let code: number;
   try {
     const measureJson = path.join(workDir, "measure.json");
     const recalcPath = path.join(workDir, "recalc.pptx");
@@ -78,10 +80,11 @@ async function main() {
       await writeFile(jsonOut, JSON.stringify(report, null, 2) + "\n", "utf8");
       console.log(`JSON: ${jsonOut}`);
     }
-    process.exit(exitCodeFor(report));
+    code = exitCodeFor(report);
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }
+  process.exit(code);
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch((err) => { console.error(err); process.exit(3); });

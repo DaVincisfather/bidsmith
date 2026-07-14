@@ -3,6 +3,7 @@ import {
   calibrationVerdict, checkAutofitShrink, checkHorizontalClip, checkOutsideSlide,
   checkSingleLineBreak, checkVerticalOverflow, deadspaceFindings, markerOf,
 } from "../verdicts";
+import { SEVERITIES } from "../types";
 import type { ShapeMeasurementV2 } from "../types";
 
 const SLIDE_W = 1440, SLIDE_H = 810;
@@ -115,5 +116,17 @@ describe("markerOf", () => {
   it("extracts the leading guillemet marker; null otherwise (unchanged from calibrate)", () => {
     expect(markerOf("«Om oss» Vi genomför")).toBe("Om oss");
     expect(markerOf("Statisk rubrik")).toBeNull();
+  });
+});
+
+describe("SEVERITIES (ground-truth-tuned contract — see notes/2026-07-14-deck-scan-facit.md)", () => {
+  it("pins the tuned mapping: within-box overflow is WARN, FAIL is text-outside-slide + raw-token", () => {
+    expect(SEVERITIES["vertical-overflow"]).toBe("WARN");
+    expect(SEVERITIES["outside-slide"]).toBe("FAIL");
+    expect(SEVERITIES["raw-token"]).toBe("FAIL");
+    expect(SEVERITIES["horizontal-clip"]).toBe("WARN");
+    expect(SEVERITIES["single-line-break"]).toBe("WARN");
+    expect(SEVERITIES["autofit-shrink"]).toBe("WARN");
+    expect(SEVERITIES["deadspace"]).toBe("INFO");
   });
 });

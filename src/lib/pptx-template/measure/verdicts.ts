@@ -40,7 +40,18 @@ export function checkVerticalOverflow(m: ShapeMeasurementV2): Finding | null {
  *    text, leftPt + boundWidthPt overestimates where the text actually sits
  *    (COM's BoundWidth for wrapped text is the wrap width, not the ink extent,
  *    and centered text is not flush against leftPt) — deliberately not checked
- *    in v1 to avoid false positives on the common case. */
+ *    in v1 to avoid false positives on the common case.
+ *
+ *  Top-anchor assumption (bottom check): topPt + marginTopPt + boundHeightPt is
+ *  exact for top-anchored frames, and also exact for spAutoFit-grown boxes
+ *  regardless of anchor (the box itself grows to hug the text, so its top
+ *  already tracks where the text starts). It UNDERESTIMATES the true text
+ *  bottom for middle- or bottom-anchored, NON-growing boxes — PowerPoint
+ *  centers/bottom-aligns the text inside the box's fixed height there, so the
+ *  ink sits lower than this formula implies. measure-overflow.ps1 does not yet
+ *  emit VerticalAnchor, so this check cannot tell that case apart: the failure
+ *  mode is a false NEGATIVE (a real outside-slide bottom overflow goes
+ *  unflagged) on non-growing, non-top-anchored boxes — never a false positive. */
 export function checkOutsideSlide(m: ShapeMeasurementV2, slideWidthPt: number, slideHeightPt: number): Finding | null {
   const textBottom = m.topPt + m.marginTopPt + m.boundHeightPt;
   const bottomOut = textBottom > slideHeightPt + THRESHOLDS.tolerancePt;

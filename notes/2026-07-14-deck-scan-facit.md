@@ -60,3 +60,6 @@ i genererade deck. Läggs på Radrum-mallfix-punkten i ROADMAP.
   mallen är fel referens). Kalibreras mot nästa riktiga generering.
 - Scannerns FAIL-klass är avsiktligt smal (text-utanför-slide + raw-token) —
   hellre få säkra FAIL än varnings-brus; WARN-mängden är granskningslista, inte grind.
+- outside-slide antar topp-ankrad text (exakt för topp-ankrat + spAuto-växta
+  boxar oavsett ankare); mitt-/botten-ankrade icke-växande boxar underskattas —
+  ankarmedveten mätning (PS emitterar VerticalAnchor) är v3-kandidat.
