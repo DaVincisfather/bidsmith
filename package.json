@@ -16,7 +16,8 @@
     "eval:bid-compare": "tsx evals/scripts/run-bid-model-compare.ts",
     "eval:zero-halluc": "tsx evals/scripts/zero-hallucination-loop.ts",
     "eval:gen-cv-fixtures": "tsx evals/scripts/generate-cv-fixtures.ts",
-    "template:introspect": "tsx scripts/introspect-template.ts"
+    "template:introspect": "tsx scripts/introspect-template.ts",
+    "calibrate:budgets": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/calibrate-budgets.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
