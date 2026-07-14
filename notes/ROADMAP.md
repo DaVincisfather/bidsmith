@@ -37,9 +37,11 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       (3) syskon-arbetsdelning i generic-prose-prompten. Utvärderat mot Radrum v4:
       45,8k→12,7k tecken, 42→1 dubblettpar. (4) bid-preview-gruppering ersatt av
       EDITOR-SLIMNINGS-spåret nedan. Kvar = loop v2 (mätluckorna nedan).
-- [ ] **ENV-FLAGGA för foreign-vägen (FÖRST — lanseringsskydd, vägbeslutet 2026-07-14):**
-      dölj foreign-mall-uppladdning/wizard bakom env-flagga (t.ex.
-      `BIDSMITH_FOREIGN_TEMPLATES=on`) tills loop v2 är klar. Egen liten PR.
+- [x] **ENV-FLAGGA för foreign-vägen — LEVERERAD 2026-07-14 (PR #80):**
+      `BIDSMITH_FOREIGN_TEMPLATES=on` krävs för foreign-uppladdning/wizard/API
+      (default AV, fail closed); onboardade mallar renderar oförändrat. OBS:
+      sätt flaggan i Vercel-env om foreign-vägen ska vara på i driften, och
+      `=on` i dev-worktrees `.env.local`.
 - [ ] **KALIBRERINGSLOOP v2 — mätluckorna från utvärderingen** (rotorsaksklasser i
       `notes/2026-07-14-budget-calibration-evaluation.md`): (1) spAutoFit + slidekant:
       mät boxens underkant mot slidehöjd (slide 2/9-fallet — text utanför sliden);
