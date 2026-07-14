@@ -37,7 +37,18 @@ describe("binary search", () => {
     expect(s.alwaysOverflowed).toBe(true);
   });
 
+  it("does NOT set alwaysOverflowed when the minimum budget was tested and fit", () => {
+    const s = converge(30, 30); // candidate 30 fits, everything above overflows
+    expect(s.alwaysOverflowed).toBe(false);
+    expect(finalBudget(s)).toBe(30);
+  });
+
+  it("keeps alwaysOverflowed=true when nothing ever fit (unchanged)", () => {
+    const s = converge(300, 0);
+    expect(s.alwaysOverflowed).toBe(true);
+  });
+
   it("final budget rounds down to nearest 10", () => {
-    expect(finalBudget({ lo: 447, hi: 460, candidate: 450, done: true, rounds: 5, alwaysOverflowed: false })).toBe(440);
+    expect(finalBudget({ lo: 447, hi: 460, candidate: 450, done: true, rounds: 5, alwaysOverflowed: false, everFit: true })).toBe(440);
   });
 });

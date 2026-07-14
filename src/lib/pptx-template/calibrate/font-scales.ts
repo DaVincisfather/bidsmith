@@ -20,6 +20,9 @@ export async function readFontScales(recalcPptx: Buffer): Promise<Map<string, nu
 
   for (const slidePath of await resolveSlidePaths(zip, parser)) {
     const xml = await zip.file(slidePath)?.async("string");
+    // Missing slide entry is skipped deliberately: resolveSlidePaths only lists
+    // entries from presentation.xml, so absence = corrupt zip — calibration
+    // degrades to the geometry fallback rather than aborting the round.
     if (!xml) continue;
     const doc = parser.parseFromString(xml, "application/xml");
     const spNodes = doc.getElementsByTagNameNS(P_NS, "sp");
@@ -33,6 +36,8 @@ export async function readFontScales(recalcPptx: Buffer): Promise<Map<string, nu
       const autofits = sp.getElementsByTagNameNS(A_NS, "normAutofit");
       if (autofits.length === 0) continue;
       const raw = autofits[0].getAttribute("fontScale");
+      // Duplicate markers are last-write-wins (markers are template-unique by
+      // instrumentation, so this is theoretical).
       scales.set(marker, raw ? Number(raw) / 1000 : 100);
     }
   }
