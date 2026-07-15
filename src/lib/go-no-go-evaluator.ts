@@ -1,20 +1,22 @@
 import {
   RfpAnalysis,
+  RfpRequirement,
   Consultant,
   ScoredConsultant,
   GoNoGoResult,
+  MustRequirementCheck,
 } from "./types";
-import { GoNoGoResultSchema } from "./ai-schemas";
+import { GoNoGoAiResponseSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
 import { MODELS } from "./models";
 import { qualificationRequirements } from "./requirement-kind";
 import { groundedConsultantClaims } from "./grounded-claims";
 
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
-Du får en RFP-analys, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
+Du får en RFP-analys, en numrerad kravlista, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
 
 Din uppgift:
-1. Kontrollera varje SKA-KRAV (priority: "must") mot teamets kompetenser och referensuppdrag. Binärt: uppfyllt eller ej.
+1. Kontrollera varje SKA-KRAV (priority: "must") i den numrerade kravlistan mot teamets kompetenser och referensuppdrag. Binärt: uppfyllt eller ej.
 2. Om NÅGOT ska-krav INTE uppfylls → winProbability = 0. Inga undantag.
 3. Bedöm bör-krav (should) och önskemål (nice-to-have) för sannolikhetsbedömningen.
 4. Vikta utvärderingskriterierna som anges i RFP:en.
@@ -26,7 +28,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 {
   "mustRequirements": [
     {
-      "requirement": "Beskrivning av ska-kravet",
+      "index": 1,
       "met": true,
       "coveredBy": "Konsultens namn, eller null om ej uppfyllt"
     }
@@ -48,6 +50,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 }
 
 Regler:
+- mustRequirements: "index" är numret på kravet i listan "## Kvalifikationskrav (numrerade)" nedan — INTE kravtexten. Använd bara nummer som finns i listan, ett per ska-krav (priority: must).
 - winProbability: 0-100. ALLTID 0 om något ska-krav saknas.
 - improvements: sortera efter estimatedImpact (högst först). Du får BARA referera till konsulter som finns i listan "Övriga tillgängliga konsulter" nedan. Använd EXAKT namn och ID från den listan. Hitta INTE PÅ konsulter. Om inga tillgängliga konsulter förbättrar teamet, returnera en tom improvements-lista.
 - improvements MÅSTE ha reell positiv impact. Om ett byte INTE löser ett ouppfyllt ska-krav och winProbability redan är 0, kommer bytet fortfarande resultera i 0% — ta INTE med det som förbättringsförslag. Varje förslag ska vara ett byte som faktiskt höjer winProbability. Inkludera ALDRIG förslag med +0% impact.
@@ -122,7 +125,17 @@ export async function evaluateGoNoGo(
     requirements: qualificationRequirements(analysis.requirements),
   };
 
-  const result = await callClaude({
+  // Numrerad kravlista (1-baserad): modellen svarar med index i stället för att
+  // återge varje kravs fulla text i mustRequirements — output-generering
+  // dominerar go/no-go-latensen (23–36s), och en full kravtext per krav är dyr
+  // att upprepa. Samma filtrering (kvalifikationskrav, inte leverabler) som
+  // analysisForGonogo.requirements ovan.
+  const numberedRequirements = analysisForGonogo.requirements;
+  const requirementsList = numberedRequirements
+    .map((r, i) => `${i + 1}. [${r.priority}/${r.kind ?? "qualification"}] ${r.description}`)
+    .join("\n");
+
+  const aiResult = await callClaude({
     model: MODELS.gonogo,
     maxTokens: 4000,
     system: SYSTEM_PROMPT,
@@ -131,15 +144,25 @@ export async function evaluateGoNoGo(
 ## RFP-analys
 ${JSON.stringify(analysisForGonogo, null, 2)}
 
+## Kvalifikationskrav (numrerade)
+${requirementsList}
+
 ## Låst team
 ${teamText}
 
 ## Övriga tillgängliga konsulter (för förbättringsförslag)
 ${poolText}`,
-    schema: GoNoGoResultSchema,
+    schema: GoNoGoAiResponseSchema,
     label: "Go/No-Go evaluation",
     userId,
   });
+
+  // Hydrera AI-svarets index tillbaka till det publika GoNoGoResult-formatet
+  // (requirement = kravtext) — UI/persistens/GoNoGoResultSchema är orörda.
+  const result: GoNoGoResult = {
+    ...aiResult,
+    mustRequirements: hydrateMustRequirements(aiResult.mustRequirements, numberedRequirements),
+  };
 
   // Enforce hard rule: if any must-requirement is unmet, winProbability must be 0.
   // The prompt states this but the LLM occasionally fudges it.
@@ -167,4 +190,27 @@ function parseImpactPct(s: string): number {
   const cleaned = s.replace(/[%\s]/g, "").replace(",", ".");
   const n = parseFloat(cleaned);
   return Number.isFinite(n) ? n : NaN;
+}
+
+// Modellen svarar med index in i den numrerade kravlistan (## Kvalifikationskrav)
+// i stället för att återge varje kravs text — hydrerar tillbaka till det
+// publika GoNoGoResult-formatet. Ogiltigt index (utanför listans intervall)
+// droppas defensivt med en varning: modellen instrueras använda giltiga index,
+// men en AI-drift ska inte krascha bedömningen.
+function hydrateMustRequirements(
+  aiMustRequirements: { index: number; met: boolean; coveredBy: string | null }[],
+  numberedRequirements: RfpRequirement[],
+): MustRequirementCheck[] {
+  const hydrated: MustRequirementCheck[] = [];
+  for (const r of aiMustRequirements) {
+    const requirement = numberedRequirements[r.index - 1];
+    if (!requirement) {
+      console.warn(
+        `Go/No-Go evaluation: ogiltigt kravindex ${r.index} (giltigt intervall 1-${numberedRequirements.length}) — droppar raden`,
+      );
+      continue;
+    }
+    hydrated.push({ requirement: requirement.description, met: r.met, coveredBy: r.coveredBy });
+  }
+  return hydrated;
 }

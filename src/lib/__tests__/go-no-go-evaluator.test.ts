@@ -71,7 +71,7 @@ describe("evaluateGoNoGo post-processing", () => {
   it("forces winProbability to 0 when any must-requirement is unmet", async () => {
     mockResponse({
       mustRequirements: [
-        { requirement: "Projektledning", met: false, coveredBy: null },
+        { index: 1, met: false, coveredBy: null },
       ],
       winProbability: 42,
       winProbabilityReasoning: "LLM fudged it",
@@ -117,7 +117,7 @@ describe("evaluateGoNoGo post-processing", () => {
   it("leaves winProbability untouched when all must-requirements are met", async () => {
     mockResponse({
       mustRequirements: [
-        { requirement: "Projektledning", met: true, coveredBy: "Anna" },
+        { index: 1, met: true, coveredBy: "Anna" },
       ],
       winProbability: 72,
       winProbabilityReasoning: "Bra team",
@@ -136,7 +136,7 @@ describe("evaluateGoNoGo post-processing", () => {
   it("does not override when LLM already returned 0", async () => {
     mockResponse({
       mustRequirements: [
-        { requirement: "Projektledning", met: false, coveredBy: null },
+        { index: 1, met: false, coveredBy: null },
       ],
       winProbability: 0,
       winProbabilityReasoning: "Saknar ska-krav",
@@ -155,7 +155,7 @@ describe("evaluateGoNoGo post-processing", () => {
   it("suppresses improvements with non-positive estimatedImpact", async () => {
     mockResponse({
       mustRequirements: [
-        { requirement: "Projektledning", met: true, coveredBy: "Anna" },
+        { index: 1, met: true, coveredBy: "Anna" },
       ],
       winProbability: 65,
       winProbabilityReasoning: "Bra team",
@@ -189,5 +189,78 @@ describe("evaluateGoNoGo post-processing", () => {
     const result = await evaluateGoNoGo(analysis, team, scored);
     expect(result.improvements).toHaveLength(1);
     expect(result.improvements[0].estimatedImpact).toBe("+10%");
+  });
+});
+
+describe("evaluateGoNoGo — index-hydrering av mustRequirements", () => {
+  beforeEach(() => {
+    mockCreate.mockReset();
+  });
+
+  it("hydrerar ett giltigt index till kravtexten ur den numrerade listan", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 80,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [],
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, team, scored);
+    expect(result.mustRequirements).toEqual([
+      { requirement: "Projektledning", met: true, coveredBy: "Anna" },
+    ]);
+  });
+
+  it("droppar rader med ogiltigt index och varnar, behåller giltiga rader", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockResponse({
+      mustRequirements: [
+        { index: 1, met: true, coveredBy: "Anna" },
+        // Fixturen har bara ett krav (index 1) — index 99 finns inte.
+        { index: 99, met: false, coveredBy: null },
+      ],
+      winProbability: 80,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [],
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, team, scored);
+    expect(result.mustRequirements).toEqual([
+      { requirement: "Projektledning", met: true, coveredBy: "Anna" },
+    ]);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("ogiltigt kravindex"));
+    warnSpy.mockRestore();
+  });
+
+  it("met=false-vägen hydreras korrekt (ingen coveredBy)", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: false, coveredBy: null }],
+      winProbability: 30,
+      winProbabilityReasoning: "Saknar ska-krav",
+      strengths: [],
+      gaps: ["Saknar projektledning"],
+      improvements: [],
+      recommendation: "no-go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, team, scored);
+    expect(result.mustRequirements).toEqual([
+      { requirement: "Projektledning", met: false, coveredBy: null },
+    ]);
+    // winProbability-0-regeln (oförändrad från tidigare fix) gäller fortfarande
+    // ovanpå den hydrerade listan.
+    expect(result.winProbability).toBe(0);
   });
 });
