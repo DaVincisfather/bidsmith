@@ -173,8 +173,11 @@ ${poolText}`,
   };
 
   // Enforce hard rule: if any must-requirement is unmet, winProbability must be 0.
-  // The prompt states this but the LLM occasionally fudges it.
-  const anyUnmet = result.mustRequirements.some((r) => !r.met);
+  // The prompt states this but the LLM occasionally fudges it. Gate on the
+  // PRE-hydration rows: hydration drops invalid-index rows, and a dropped
+  // met:false must still count as unmet — otherwise the shrunken list can
+  // read as "all met" downstream while the model actually flagged a gap.
+  const anyUnmet = aiResult.mustRequirements.some((r) => !r.met);
   if (anyUnmet && result.winProbability !== 0) {
     result.winProbability = 0;
   }

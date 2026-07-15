@@ -274,6 +274,33 @@ describe("callClaude — max_tokens-trunkering (härdning)", () => {
     expect((mockCreate.mock.calls[1][0] as { max_tokens: number }).max_tokens).toBe(16384);
   });
 
+  it("trunkering på sista tillåtna attempt (efter två formatfel): terminalfelet lovar ingen retry", async () => {
+    // Intermediärfelet blir terminalt när retry-budgeten redan är förbrukad —
+    // texten ska konstatera trunkeringen neutralt, inte säga "försöker igen".
+    mockCreate
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: "ingen json" }],
+        usage: { output_tokens: 10 },
+        stop_reason: "end_turn",
+      }))
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: "ingen json" }],
+        usage: { output_tokens: 10 },
+        stop_reason: "end_turn",
+      }))
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: '{"a": 1' }],
+        usage: { output_tokens: 100 },
+        stop_reason: "max_tokens",
+      }));
+
+    const err = await callClaude({ ...baseArgs }).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toMatch(/test: output trunkerad \(max_tokens 100\)/);
+    expect((err as Error).message).not.toMatch(/försöker igen|höjer till/);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+  });
+
   it("regression: formatfel utan stop_reason max_tokens beter sig som tidigare (identisk retry)", async () => {
     mockCreate.mockReturnValue(streamOf({
       content: [{ type: "text", text: "ingen json" }],

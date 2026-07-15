@@ -243,15 +243,18 @@ export async function callClaude<T>({
           throw maxTokensTruncatedError(label, currentMaxTokens, maxTokensWasRaised);
         }
         maxTokensRetried = true;
+        // Meddelandet lovar ingen retry: om trunkeringen landar på sista
+        // tillåtna attempt (t.ex. efter två formatfel) eller kostnadstaket är
+        // slut blir detta det terminala felet — då vore "försöker igen" en
+        // lögn. Neutralt konstaterande av trunkeringen + maxTokens som gällde
+        // (currentMaxTokens är ännu inte höjd här — första trunkeringen kör
+        // alltid på anroparens värde).
         if (currentMaxTokens < MAX_TOKENS_RETRY_CAP) {
           currentMaxTokens = Math.min(currentMaxTokens * 2, MAX_TOKENS_RETRY_CAP);
           maxTokensWasRaised = true;
-          throw new MaxTokensTruncatedError(
-            `${label}: output trunkerad (max_tokens ${maxTokens}) — höjer till ${currentMaxTokens} och försöker igen`,
-          );
         }
         throw new MaxTokensTruncatedError(
-          `${label}: output trunkerad (max_tokens ${currentMaxTokens}) — försöker igen med samma maxTokens`,
+          `${label}: output trunkerad (max_tokens ${maxTokens})`,
         );
       }
 

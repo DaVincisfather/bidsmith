@@ -242,6 +242,34 @@ describe("evaluateGoNoGo — index-hydrering av mustRequirements", () => {
     warnSpy.mockRestore();
   });
 
+  it("droppad met=false-rad (ogiltigt index) kringgår inte vinstgrinden — winProbability tvingas till 0", async () => {
+    // Grinden ska räkna på PRE-hydrerings-datat: den hydrerade listan
+    // innehåller bara den uppfyllda raden, men modellen flaggade ett
+    // ouppfyllt ska-krav — det får inte försvinna med den droppade raden.
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockResponse({
+      mustRequirements: [
+        { index: 1, met: true, coveredBy: "Anna" },
+        { index: 99, met: false, coveredBy: null },
+      ],
+      winProbability: 80,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [],
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, team, scored);
+    expect(result.mustRequirements).toEqual([
+      { requirement: "Projektledning", met: true, coveredBy: "Anna" },
+    ]);
+    expect(result.winProbability).toBe(0);
+    warnSpy.mockRestore();
+  });
+
   it("met=false-vägen hydreras korrekt (ingen coveredBy)", async () => {
     mockResponse({
       mustRequirements: [{ index: 1, met: false, coveredBy: null }],
