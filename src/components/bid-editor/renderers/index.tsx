@@ -164,7 +164,8 @@ export function SectionRenderer({ section, style, onSectionChange, budgets, meta
     case "generic-prose": {
       // Fallback prose for a non-specialised slot (template-upload slice 4).
       // With meta (profile-driven bids): intent label + char counter vs budget.
-      const label = meta?.intent.trim() ? meta.intent : content.placeholder;
+      const intent = meta?.intent.trim();
+      const label = intent ? intent : content.placeholder;
       const over =
         meta?.budgetChars !== undefined && content.text.length > meta.budgetChars;
       return (

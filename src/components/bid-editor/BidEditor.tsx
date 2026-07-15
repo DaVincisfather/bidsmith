@@ -388,15 +388,18 @@ export function BidEditor({
         )}
       </main>
 
-      {/* Right panel — pre-export overflow checklist (OverflowChecklist owns its own aside + styling) */}
-      <div className="shrink-0 p-4">
-        <OverflowChecklist
-          flags={overflowFlags}
-          onJumpToField={onJumpToField}
-          onShorten={onShorten}
-          shorteningKey={shorteningKey}
-        />
-      </div>
+      {/* Right panel — pre-export overflow checklist (OverflowChecklist owns its own aside + styling).
+          Döljs när grouped: fieldPath-checklistan är inert för profil-drivna anbud; räknarna är deras signal. */}
+      {!grouped && (
+        <div className="shrink-0 p-4">
+          <OverflowChecklist
+            flags={overflowFlags}
+            onJumpToField={onJumpToField}
+            onShorten={onShorten}
+            shorteningKey={shorteningKey}
+          />
+        </div>
+      )}
     </div>
   );
 }

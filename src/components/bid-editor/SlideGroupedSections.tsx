@@ -9,6 +9,7 @@ import { SectionRenderer } from "./renderers";
  *  sektioner utan profil-träff visas synligt sist — aldrig tyst dolda. */
 interface SlideGroupedSectionsProps {
   grouped: GroupedSections;
+  /** Måste vara samma meta-objekt som genererade `grouped` — BidEditor garanterar detta via ett gemensamt useMemo. */
   slotMeta: SlotMeta;
   style: StyleGuide;
   onSectionChange: (key: string, updated: BidSection) => void;

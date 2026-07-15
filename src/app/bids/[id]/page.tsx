@@ -58,22 +58,25 @@ export default async function BidEditorPage({ params }: PageProps) {
   // overflow hints match what generation/export used; legacy bids fall back
   // to bundled anbudsmall-v2 v1.
   const templateId = (bid.template_id as string | null) ?? null;
-  const template = await loadTemplateForBid(templateId);
 
   // Profil-join för onboardade mallar: editorn får slide/kortfält/intent per
   // placeholder (design 2026-07-15). Saknad/ej-generic profil eller läsfel ⇒
   // null ⇒ dagens platta editor — fallbacken är alltid den synliga vägen.
-  let slotMeta: SlotMeta | null = null;
-  if (templateId) {
-    try {
-      const profile = await loadTemplateProfile(templateId);
-      if (profile && isAllGenericProfile(profile)) {
-        slotMeta = buildSlotMeta(profile);
-      }
-    } catch (err) {
-      console.error("slotMeta: kunde inte läsa mallprofilen", err);
-    }
-  }
+  // Två oberoende Supabase-anrop — körs parallellt istället för sekventiellt.
+  const templatePromise = loadTemplateForBid(templateId);
+  const slotMetaPromise: Promise<SlotMeta | null> = templateId
+    ? (async () => {
+        try {
+          const profile = await loadTemplateProfile(templateId);
+          return profile && isAllGenericProfile(profile) ? buildSlotMeta(profile) : null;
+        } catch (err) {
+          console.error("slotMeta: kunde inte läsa mallprofilen", err);
+          return null;
+        }
+      })()
+    : Promise.resolve(null);
+
+  const [template, slotMeta] = await Promise.all([templatePromise, slotMetaPromise]);
 
   return (
     <BidEditor
