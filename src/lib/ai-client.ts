@@ -22,6 +22,12 @@ const OVERLOAD_BASE_DELAY_MS = 5000;
 // retries (429/5xx) consume no output tokens and are NOT gated by this.
 const RETRY_OUTPUT_BUDGET_MULTIPLE = 2.5;
 
+// Tak för hur högt maxTokens får höjas vid en max_tokens-trunkering (se
+// stop_reason-kollen nedan). Kodbasen har ingen per-modell-registrerad
+// output-gräns i dag (bara call-site-satta maxTokens i bundlarna) — 16384 är
+// en konservativ, modelloberoende gräns tills en sådan tabell finns.
+const MAX_TOKENS_RETRY_CAP = 16384;
+
 // Modeller där API:t avvisar `temperature` (400 "deprecated for this model").
 // Verifierat empiriskt 2026-07-03 (claude-sonnet-5). Se översättningen i
 // callClaude — temperature-avsikten blir thinking: disabled på dessa.
@@ -37,6 +43,19 @@ function isOverloaded(error: unknown): boolean {
 // (a stray enum alias, an extra field, a truncated array) is almost always
 // fixed by a fresh generation rather than hard-failing an expensive call.
 class ResponseFormatError extends Error {}
+
+// Kastas när svaret klipptes av stop_reason "max_tokens" och vi just höjt
+// maxTokens för ett omförsök. Ärver ResponseFormatError så den befintliga
+// retry-gatingen (isRetryable, kostnadstaket) gäller oförändrad — skillnaden
+// mot ett vanligt formatfel är att nästa försök MÅSTE använda den höjda
+// maxTokens (satt av anroparen innan den kastas), inte identisk maxTokens.
+class MaxTokensTruncatedError extends ResponseFormatError {}
+
+function maxTokensTruncatedError(label: string, n: number): Error {
+  return new Error(
+    `${label}: output trunkerad (max_tokens ${n}) även efter höjning — öka maxTokens eller minska outputen`,
+  );
+}
 
 function isRetryable(error: unknown): boolean {
   if (error instanceof ResponseFormatError) {
@@ -99,6 +118,10 @@ export async function callClaude<T>({
   let lastError: unknown;
   // Output tokens burned across (format-error) retries, for the cost cap below.
   let retryOutputTokens = 0;
+  // maxTokens som skickas i nästa försök — höjs EN gång vid en
+  // max_tokens-trunkering (se stop_reason-kollen nedan), annars oförändrad.
+  let currentMaxTokens = maxTokens;
+  let maxTokensBumped = false;
 
   // API:t avvisar temperature ≠ 1 när adaptive thinking är aktivt (400, ej
   // retrybar) — fånga konfigurationsfelet här istället för i drift.
@@ -149,7 +172,7 @@ export async function callClaude<T>({
       // and removes the ceiling uniformly.
       const stream = getClient().messages.stream({
         model,
-        max_tokens: maxTokens,
+        max_tokens: currentMaxTokens,
         system: cachedContext
           ? [
               {
@@ -190,6 +213,28 @@ export async function callClaude<T>({
         latencyMs: Date.now() - startedAt,
       });
       retryOutputTokens += u.output_tokens ?? 0;
+
+      // Trunkerat svar. Ett vanligt formatfel (extractJson/Zod-miss längre ner)
+      // skulle re-prompta med IDENTISK maxTokens och trunkera likadant igen på
+      // varje försök ("alla bundles re-trunkerar identiskt"). Höj taket EN gång
+      // i stället — trunkering efter höjningen är inte längre en modellnyck
+      // utan ett för lågt maxTokens för uppgiften, så det ska hårdfaila.
+      if (message.stop_reason === "max_tokens") {
+        if (maxTokensBumped) {
+          throw maxTokensTruncatedError(label, currentMaxTokens);
+        }
+        const bumped = Math.min(currentMaxTokens * 2, MAX_TOKENS_RETRY_CAP);
+        if (bumped <= currentMaxTokens) {
+          // Redan vid/över taket — en fördubbling ger ingen ytterligare
+          // marginal, så det finns inget omförsök värt att göra.
+          throw maxTokensTruncatedError(label, currentMaxTokens);
+        }
+        currentMaxTokens = bumped;
+        maxTokensBumped = true;
+        throw new MaxTokensTruncatedError(
+          `${label}: output trunkerad (max_tokens ${maxTokens}) — höjer till ${currentMaxTokens} och försöker igen`,
+        );
+      }
 
       // With adaptive thinking the first block is "thinking"; the text
       // block follows. Find the first text block rather than indexing.

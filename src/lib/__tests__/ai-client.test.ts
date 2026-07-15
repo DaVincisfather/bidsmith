@@ -175,6 +175,91 @@ describe("callClaude — retry-kostnadstak", () => {
   });
 });
 
+describe("callClaude — max_tokens-trunkering (härdning)", () => {
+  const schema = z.object({ a: z.number() });
+  const baseArgs = {
+    maxTokens: 100, system: "sys", userContent: "user",
+    label: "test", model: "claude-sonnet-4-6", schema,
+  };
+
+  it("stop_reason max_tokens: EN retry med fördubblad maxTokens, sedan lyckas", async () => {
+    mockCreate
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: '{"a": 1' }], // trunkerad mitt i
+        usage: { output_tokens: 100 },
+        stop_reason: "max_tokens",
+      }))
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: '{"a": 1}' }],
+        usage: { output_tokens: 50 },
+        stop_reason: "end_turn",
+      }));
+
+    const result = await callClaude({ ...baseArgs });
+    expect(result).toEqual({ a: 1 });
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect((mockCreate.mock.calls[0][0] as { max_tokens: number }).max_tokens).toBe(100);
+    expect((mockCreate.mock.calls[1][0] as { max_tokens: number }).max_tokens).toBe(200);
+  });
+
+  it("trunkerad även efter höjning: kastar beskrivande fel, inga fler försök", async () => {
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: '{"a": 1' }],
+      usage: { output_tokens: 100 },
+      stop_reason: "max_tokens",
+    }));
+
+    const err = await callClaude({ ...baseArgs }).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toMatch(
+      /test: output trunkerad \(max_tokens 200\) även efter höjning — öka maxTokens eller minska outputen/
+    );
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+  });
+
+  it("maxTokens redan vid/över taket (16384): hard-failar direkt utan bump-försök", async () => {
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: '{"a": 1' }],
+      usage: { output_tokens: 20000 },
+      stop_reason: "max_tokens",
+    }));
+
+    const err = await callClaude({ ...baseArgs, maxTokens: 20000 }).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toMatch(/output trunkerad \(max_tokens 20000\) även efter höjning/);
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("fördubbling klipps vid taket (16384) — inte 2×maxTokens rakt av", async () => {
+    mockCreate
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: '{"a": 1' }],
+        usage: { output_tokens: 10000 },
+        stop_reason: "max_tokens",
+      }))
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: '{"a": 1}' }],
+        usage: { output_tokens: 50 },
+        stop_reason: "end_turn",
+      }));
+
+    const result = await callClaude({ ...baseArgs, maxTokens: 10000 });
+    expect(result).toEqual({ a: 1 });
+    expect((mockCreate.mock.calls[1][0] as { max_tokens: number }).max_tokens).toBe(16384);
+  });
+
+  it("regression: formatfel utan stop_reason max_tokens beter sig som tidigare (identisk retry)", async () => {
+    mockCreate.mockReturnValue(streamOf({
+      content: [{ type: "text", text: "ingen json" }],
+      usage: { output_tokens: 10 },
+      stop_reason: "end_turn",
+    }));
+    const err = await callClaude({ ...baseArgs }).catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+  });
+});
+
 describe("callClaude — temperature passthrough", () => {
   const schema = z.object({ a: z.number() });
   const baseArgs = {
