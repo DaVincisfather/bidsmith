@@ -217,7 +217,31 @@ describe("callClaude — max_tokens-trunkering (härdning)", () => {
     expect(mockCreate).toHaveBeenCalledTimes(2);
   });
 
-  it("maxTokens redan vid/över taket (16384): hard-failar direkt utan bump-försök", async () => {
+  it("maxTokens redan vid/över taket (16384): EN omförsök med SAMMA maxTokens, sedan lyckas", async () => {
+    // Stora bundles (phases/understanding/generic-prose på 32000, quality på
+    // 16000) ligger redan vid/över taket — ingen per-modell-output-gräns finns
+    // att höja mot, så omförsöket kör med IDENTISK maxTokens (inte hårdfail
+    // direkt, det skulle regressa dessa bundlar mot fas 0-beteendet).
+    mockCreate
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: '{"a": 1' }],
+        usage: { output_tokens: 20000 },
+        stop_reason: "max_tokens",
+      }))
+      .mockReturnValueOnce(streamOf({
+        content: [{ type: "text", text: '{"a": 1}' }],
+        usage: { output_tokens: 500 },
+        stop_reason: "end_turn",
+      }));
+
+    const result = await callClaude({ ...baseArgs, maxTokens: 20000 });
+    expect(result).toEqual({ a: 1 });
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect((mockCreate.mock.calls[0][0] as { max_tokens: number }).max_tokens).toBe(20000);
+    expect((mockCreate.mock.calls[1][0] as { max_tokens: number }).max_tokens).toBe(20000);
+  });
+
+  it("maxTokens redan vid/över taket: trunkerad även efter omförsöket — kastar beskrivande fel, inga fler försök", async () => {
     mockCreate.mockReturnValue(streamOf({
       content: [{ type: "text", text: '{"a": 1' }],
       usage: { output_tokens: 20000 },
@@ -226,8 +250,10 @@ describe("callClaude — max_tokens-trunkering (härdning)", () => {
 
     const err = await callClaude({ ...baseArgs, maxTokens: 20000 }).catch((e) => e);
     expect(err).toBeInstanceOf(Error);
-    expect((err as Error).message).toMatch(/output trunkerad \(max_tokens 20000\) även efter höjning/);
-    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect((err as Error).message).toMatch(
+      /test: output trunkerad \(max_tokens 20000\) även efter omförsök med samma maxTokens — öka maxTokens eller minska outputen/
+    );
+    expect(mockCreate).toHaveBeenCalledTimes(2);
   });
 
   it("fördubbling klipps vid taket (16384) — inte 2×maxTokens rakt av", async () => {

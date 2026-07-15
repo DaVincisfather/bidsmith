@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   RfpAnalysis,
   RfpRequirement,
@@ -224,7 +225,7 @@ function stripEvidenceFields<T>(value: T): T {
 // droppas defensivt med en varning: modellen instrueras använda giltiga index,
 // men en AI-drift ska inte krascha bedömningen.
 function hydrateMustRequirements(
-  aiMustRequirements: { index: number; met: boolean; coveredBy: string | null }[],
+  aiMustRequirements: z.infer<typeof GoNoGoAiResponseSchema>["mustRequirements"],
   numberedRequirements: RfpRequirement[],
 ): MustRequirementCheck[] {
   const hydrated: MustRequirementCheck[] = [];

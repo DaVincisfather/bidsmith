@@ -44,17 +44,24 @@ function isOverloaded(error: unknown): boolean {
 // fixed by a fresh generation rather than hard-failing an expensive call.
 class ResponseFormatError extends Error {}
 
-// Kastas när svaret klipptes av stop_reason "max_tokens" och vi just höjt
-// maxTokens för ett omförsök. Ärver ResponseFormatError så den befintliga
-// retry-gatingen (isRetryable, kostnadstaket) gäller oförändrad — skillnaden
-// mot ett vanligt formatfel är att nästa försök MÅSTE använda den höjda
-// maxTokens (satt av anroparen innan den kastas), inte identisk maxTokens.
+// Kastas när svaret klipptes av stop_reason "max_tokens" och vi just gjort
+// EN max_tokens-retry (höjt maxTokens om under taket, annars omkörning på
+// SAMMA maxTokens — se stop_reason-kollen nedan). Ärver ResponseFormatError
+// så den befintliga retry-gatingen (isRetryable, kostnadstaket) gäller
+// oförändrad.
 class MaxTokensTruncatedError extends ResponseFormatError {}
 
-function maxTokensTruncatedError(label: string, n: number): Error {
-  return new Error(
-    `${label}: output trunkerad (max_tokens ${n}) även efter höjning — öka maxTokens eller minska outputen`,
-  );
+// wasRaised skiljer på de två retry-varianterna så felmeddelandet är ärligt:
+// en höjning som ändå trunkerar är ett annat fel än en omkörning på
+// identisk maxTokens som trunkerar likadant igen.
+function maxTokensTruncatedError(label: string, n: number, wasRaised: boolean): Error {
+  return wasRaised
+    ? new Error(
+        `${label}: output trunkerad (max_tokens ${n}) även efter höjning — öka maxTokens eller minska outputen`,
+      )
+    : new Error(
+        `${label}: output trunkerad (max_tokens ${n}) även efter omförsök med samma maxTokens — öka maxTokens eller minska outputen`,
+      );
 }
 
 function isRetryable(error: unknown): boolean {
@@ -118,10 +125,17 @@ export async function callClaude<T>({
   let lastError: unknown;
   // Output tokens burned across (format-error) retries, for the cost cap below.
   let retryOutputTokens = 0;
-  // maxTokens som skickas i nästa försök — höjs EN gång vid en
-  // max_tokens-trunkering (se stop_reason-kollen nedan), annars oförändrad.
+  // maxTokens som skickas i nästa försök — vid en max_tokens-trunkering görs
+  // EN retry (se stop_reason-kollen nedan): höjd om currentMaxTokens är under
+  // taket, annars identisk (omkörning). Annars oförändrad.
   let currentMaxTokens = maxTokens;
-  let maxTokensBumped = false;
+  // true efter att den enda tillåtna max_tokens-retryn konsumerats — oavsett
+  // om den höjde eller körde om på samma maxTokens (se maxTokensWasRaised).
+  let maxTokensRetried = false;
+  // true om retryn i maxTokensRetried höjde currentMaxTokens; false om den
+  // var en omkörning på samma maxTokens (redan vid/över taket) — styr vilket
+  // ärligt felmeddelande som kastas vid en andra trunkering.
+  let maxTokensWasRaised = false;
 
   // API:t avvisar temperature ≠ 1 när adaptive thinking är aktivt (400, ej
   // retrybar) — fånga konfigurationsfelet här istället för i drift.
@@ -216,23 +230,28 @@ export async function callClaude<T>({
 
       // Trunkerat svar. Ett vanligt formatfel (extractJson/Zod-miss längre ner)
       // skulle re-prompta med IDENTISK maxTokens och trunkera likadant igen på
-      // varje försök ("alla bundles re-trunkerar identiskt"). Höj taket EN gång
-      // i stället — trunkering efter höjningen är inte längre en modellnyck
-      // utan ett för lågt maxTokens för uppgiften, så det ska hårdfaila.
+      // varje försök ("alla bundles re-trunkerar identiskt"). Gör EN
+      // max_tokens-retry i stället: höj om currentMaxTokens är under taket
+      // (för lågt maxTokens för uppgiften). Stora bundles (phases/
+      // understanding/generic-prose på 32000, quality på 16000) ligger redan
+      // vid/över taket och har ingen per-modell-output-gräns att höja mot —
+      // kör då om på SAMMA maxTokens i stället: outputlängd är stokastisk, så
+      // en enda omkörning är billig jämfört med att hårdfaila hela bundlen på
+      // FÖRSTA trunkeringen. Trunkering efter denna enda retry hårdfailar.
       if (message.stop_reason === "max_tokens") {
-        if (maxTokensBumped) {
-          throw maxTokensTruncatedError(label, currentMaxTokens);
+        if (maxTokensRetried) {
+          throw maxTokensTruncatedError(label, currentMaxTokens, maxTokensWasRaised);
         }
-        const bumped = Math.min(currentMaxTokens * 2, MAX_TOKENS_RETRY_CAP);
-        if (bumped <= currentMaxTokens) {
-          // Redan vid/över taket — en fördubbling ger ingen ytterligare
-          // marginal, så det finns inget omförsök värt att göra.
-          throw maxTokensTruncatedError(label, currentMaxTokens);
+        maxTokensRetried = true;
+        if (currentMaxTokens < MAX_TOKENS_RETRY_CAP) {
+          currentMaxTokens = Math.min(currentMaxTokens * 2, MAX_TOKENS_RETRY_CAP);
+          maxTokensWasRaised = true;
+          throw new MaxTokensTruncatedError(
+            `${label}: output trunkerad (max_tokens ${maxTokens}) — höjer till ${currentMaxTokens} och försöker igen`,
+          );
         }
-        currentMaxTokens = bumped;
-        maxTokensBumped = true;
         throw new MaxTokensTruncatedError(
-          `${label}: output trunkerad (max_tokens ${maxTokens}) — höjer till ${currentMaxTokens} och försöker igen`,
+          `${label}: output trunkerad (max_tokens ${currentMaxTokens}) — försöker igen med samma maxTokens`,
         );
       }
 
