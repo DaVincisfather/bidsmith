@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser, parseUuidParam, parseBody } from "@/lib/api-helpers";
-import { OnboardingDecisionSchema } from "@/lib/api-schemas";
+import { OnboardingPatchSchema } from "@/lib/api-schemas";
 import { parseOnboardingDraft, extractPrecount } from "@/lib/pptx-template/onboarding/draft";
 import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
-import { applyDecision } from "@/lib/pptx-template/onboarding/draft-logic";
+import { applyDecision, applySlideDecision } from "@/lib/pptx-template/onboarding/draft-logic";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -108,7 +108,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const idResult = parseUuidParam(rawId, "template id");
   if (!idResult.ok) return idResult.response;
 
-  const parsed = await parseBody(request, OnboardingDecisionSchema);
+  const parsed = await parseBody(request, OnboardingPatchSchema);
   if (!parsed.ok) return parsed.response;
 
   const loaded = await loadOnboardingRow(idResult.data);
@@ -128,7 +128,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: draftError ?? "utkast saknas" }, { status: 409 });
   }
 
-  const result = applyDecision(draft, parsed.data);
+  const result =
+    "slide" in parsed.data
+      ? applySlideDecision(draft, parsed.data.slide, parsed.data.decision)
+      : applyDecision(draft, parsed.data);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 422 });
 
   const supabase = createServiceClient();
