@@ -120,20 +120,27 @@ export async function evaluateGoNoGo(
   // Go/No-Go gatar hårt på ouppfyllda must-KRAV. Leverabler (kind=deliverable) är
   // uppdragets output, inte kvalifikationskrav — de får aldrig räknas som ska-krav
   // (annars kan en oproducerad leverans tvinga winProbability = 0). Filtrera bort dem.
-  const analysisForGonogo: RfpAnalysis = {
-    ...analysis,
-    requirements: qualificationRequirements(analysis.requirements),
-  };
-
+  //
   // Numrerad kravlista (1-baserad): modellen svarar med index i stället för att
   // återge varje kravs fulla text i mustRequirements — output-generering
   // dominerar go/no-go-latensen (23–36s), och en full kravtext per krav är dyr
-  // att upprepa. Samma filtrering (kvalifikationskrav, inte leverabler) som
-  // analysisForGonogo.requirements ovan.
-  const numberedRequirements = analysisForGonogo.requirements;
+  // att upprepa.
+  const numberedRequirements = qualificationRequirements(analysis.requirements);
   const requirementsList = numberedRequirements
     .map((r, i) => `${i + 1}. [${r.priority}/${r.kind ?? "qualification"}] ${r.description}`)
     .join("\n");
+
+  // Kraven bärs nu av den numrerade listan ovan — dumpa inte requirements i
+  // JSON-blobben också. Käll-citaten (evidence, se RfpRequirement.evidence/
+  // ConsultantCompetency.evidence/ConsultantReference.evidence i types.ts) är
+  // till för det mekaniska nollhallucinationsspåret (verify-evidence.ts), inte
+  // för go/no-go-bedömningen, och drog input-tokens 1 627 → 8 262 när de
+  // började följa med analysen — strippa dem rekursivt. Kompakt JSON.stringify
+  // (ingen null, 2) sparar ytterligare formatterings-tokens.
+  const analysisWithoutRequirements = Object.fromEntries(
+    Object.entries(analysis).filter(([key]) => key !== "requirements"),
+  ) as Omit<RfpAnalysis, "requirements">;
+  const compactAnalysis = stripEvidenceFields(analysisWithoutRequirements);
 
   const aiResult = await callClaude({
     model: MODELS.gonogo,
@@ -142,7 +149,7 @@ export async function evaluateGoNoGo(
     userContent: `Bedöm detta teams chanser att vinna följande upphandling.
 
 ## RFP-analys
-${JSON.stringify(analysisForGonogo, null, 2)}
+${JSON.stringify(compactAnalysis)}
 
 ## Kvalifikationskrav (numrerade)
 ${requirementsList}
@@ -190,6 +197,25 @@ function parseImpactPct(s: string): number {
   const cleaned = s.replace(/[%\s]/g, "").replace(",", ".");
   const n = parseFloat(cleaned);
   return Number.isFinite(n) ? n : NaN;
+}
+
+// Strippar rekursivt fält med namnet "evidence" — käll-citaten (se
+// RfpRequirement.evidence/ConsultantCompetency.evidence/
+// ConsultantReference.evidence i types.ts) är till för det mekaniska
+// nollhallucinationsspåret (verify-evidence.ts), inte för AI-bedömningen.
+// Generisk på fältnamn (inte bara requirements, som redan är borttaget ovan)
+// så framtida evidence-bärande fält i RfpAnalysis fångas automatiskt.
+function stripEvidenceFields<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripEvidenceFields(item)) as unknown as T;
+  }
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => key !== "evidence")
+      .map(([key, val]) => [key, stripEvidenceFields(val)] as const);
+    return Object.fromEntries(entries) as T;
+  }
+  return value;
 }
 
 // Modellen svarar med index in i den numrerade kravlistan (## Kvalifikationskrav)

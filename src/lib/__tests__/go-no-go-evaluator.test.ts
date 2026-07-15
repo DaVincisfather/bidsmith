@@ -264,3 +264,83 @@ describe("evaluateGoNoGo — index-hydrering av mustRequirements", () => {
     expect(result.winProbability).toBe(0);
   });
 });
+
+describe("evaluateGoNoGo — bantad prompt (kostnad/latens)", () => {
+  beforeEach(() => {
+    mockCreate.mockReset();
+  });
+
+  function lastSentContent(): string {
+    const call = mockStream.mock.calls.at(-1)![0] as {
+      messages: Array<{ content: string }>;
+    };
+    return call.messages[0].content;
+  }
+
+  it("JSON-dumpen saknar requirements-nyckeln — kraven bärs av den numrerade listan", async () => {
+    mockResponse({
+      mustRequirements: [],
+      winProbability: 50,
+      winProbabilityReasoning: "",
+      strengths: [],
+      gaps: [],
+      improvements: [],
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    await evaluateGoNoGo(analysis, team, scored);
+    const content = lastSentContent();
+    const rfpAnalysSection = content.split("## RFP-analys\n")[1].split("\n\n## Kvalifikationskrav")[0];
+    expect(rfpAnalysSection).not.toContain('"requirements"');
+    // Kravet ska fortfarande nå modellen, men bara via den numrerade listan.
+    expect(content).toContain("Projektledning");
+  });
+
+  it("JSON-dumpen är kompakt (ingen null,2-indentering)", async () => {
+    mockResponse({
+      mustRequirements: [],
+      winProbability: 50,
+      winProbabilityReasoning: "",
+      strengths: [],
+      gaps: [],
+      improvements: [],
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    await evaluateGoNoGo(analysis, team, scored);
+    const content = lastSentContent();
+    const rfpAnalysSection = content.split("## RFP-analys\n")[1].split("\n\n## Kvalifikationskrav")[0];
+    expect(rfpAnalysSection.includes("\n")).toBe(false);
+  });
+
+  it("strippar evidence-fält rekursivt ur JSON-dumpen (källcitat är inte till för AI-prompten)", async () => {
+    mockResponse({
+      mustRequirements: [],
+      winProbability: 50,
+      winProbabilityReasoning: "",
+      strengths: [],
+      gaps: [],
+      improvements: [],
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    // Simulerar ett framtida/nested evidence-fält utanför requirements (som
+    // redan tas bort helt) — stripEvidenceFields ska fånga det generiskt.
+    const analysisWithEvidence = {
+      ...analysis,
+      secrecyRows: [
+        { reference: "Bilaga 2", scope: "s", justification: "j", evidence: "SHOULD_NOT_LEAK" },
+      ],
+    } as unknown as RfpAnalysis;
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    await evaluateGoNoGo(analysisWithEvidence, team, scored);
+    const content = lastSentContent();
+    expect(content).not.toContain("SHOULD_NOT_LEAK");
+  });
+});
