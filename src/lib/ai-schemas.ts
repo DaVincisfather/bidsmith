@@ -145,6 +145,21 @@ export const GoNoGoResultSchema = z.object({
   reasoning: z.string(),
 });
 
+// AI-svarsformatet för go/no-go (latensfix): modellen återger inte varje
+// ska-kravs text — den svarar med index in i den numrerade kravlistan
+// evaluatorn bygger i userContent. Evaluatorn hydrerar tillbaka till
+// GoNoGoResultSchema (requirement = kravtext) efter parse. Se
+// go-no-go-evaluator.ts.
+export const GoNoGoAiResponseSchema = GoNoGoResultSchema.extend({
+  mustRequirements: z.array(
+    z.object({
+      index: z.number().int().positive(),
+      met: z.boolean(),
+      coveredBy: z.string().nullable(),
+    })
+  ),
+});
+
 // --- Bid Generator: phases schema (v2) ---
 
 export const PhasesV2Schema = z.object({

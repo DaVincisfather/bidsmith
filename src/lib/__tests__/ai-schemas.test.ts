@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { PrioritySchema, RfpAnalysisSchema, RfpRequirementSchema } from "@/lib/ai-schemas";
+import {
+  PrioritySchema,
+  RfpAnalysisSchema,
+  RfpRequirementSchema,
+  GoNoGoAiResponseSchema,
+} from "@/lib/ai-schemas";
 
 describe("RfpRequirementSchema — kind (qualification vs deliverable)", () => {
   it("defaultar kind till qualification när fältet saknas (bakåtkompatibelt)", () => {
@@ -205,5 +210,52 @@ describe("RfpAnalysisSchema — evaluationCriteria weight", () => {
     const parsed = RfpAnalysisSchema.parse(raw);
     expect(parsed.evaluationCriteria[0].weight).toBeNull();
     expect(parsed.evaluationCriteria[1].weight).toBe(50);
+  });
+});
+
+describe("GoNoGoAiResponseSchema — mustRequirements bär index, inte kravtext", () => {
+  const base = {
+    winProbability: 72,
+    winProbabilityReasoning: "r",
+    strengths: [],
+    gaps: [],
+    improvements: [],
+    recommendation: "go" as const,
+    reasoning: "r",
+  };
+
+  it("accepterar en giltig rad: index 1, met true, coveredBy null", () => {
+    const parsed = GoNoGoAiResponseSchema.parse({
+      ...base,
+      mustRequirements: [{ index: 1, met: true, coveredBy: null }],
+    });
+    expect(parsed.mustRequirements).toEqual([{ index: 1, met: true, coveredBy: null }]);
+  });
+
+  it("avvisar index: 0 (kravlistan är 1-baserad)", () => {
+    expect(() =>
+      GoNoGoAiResponseSchema.parse({
+        ...base,
+        mustRequirements: [{ index: 0, met: true, coveredBy: null }],
+      }),
+    ).toThrow();
+  });
+
+  it("avvisar negativt index", () => {
+    expect(() =>
+      GoNoGoAiResponseSchema.parse({
+        ...base,
+        mustRequirements: [{ index: -1, met: false, coveredBy: null }],
+      }),
+    ).toThrow();
+  });
+
+  it("avvisar den gamla formen { requirement: \"...\" } (latensfixen bytte ut kravtext mot index)", () => {
+    expect(() =>
+      GoNoGoAiResponseSchema.parse({
+        ...base,
+        mustRequirements: [{ requirement: "Minst 5 års erfarenhet", met: true, coveredBy: null }],
+      }),
+    ).toThrow();
   });
 });
