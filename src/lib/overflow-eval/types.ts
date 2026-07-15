@@ -1,4 +1,4 @@
-import type { Finding, MeasurementFile, ShapeMeasurementV2 } from "@/lib/pptx-template/measure/types";
+import type { Finding, MeasurementFile } from "@/lib/pptx-template/measure/types";
 
 export interface OverflowFixture {
   id: string;

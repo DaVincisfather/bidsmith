@@ -35,7 +35,9 @@ export function applyGates(bid: BidMeasurement, knownDefects: KnownDefect[]): Ga
   if (gross.length > 0) {
     breaches.push({
       gate: "gross-overflow",
-      detail: gross.map((s) => `slide ${s.slide} ${s.name}: ${s.boundHeightPt}pt i ${s.heightPt}pt-box`).join("; "),
+      detail: gross
+        .map((s) => `slide ${s.slide} ${s.name}: ${s.boundHeightPt}pt i ${s.heightPt - s.marginTopPt - s.marginBottomPt}pt inre box`)
+        .join("; "),
     });
   }
 
