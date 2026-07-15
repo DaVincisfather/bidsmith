@@ -32,6 +32,14 @@ sessionen faktiskt följer — avvikelser från designen är inte tillåtna._
 - `src/lib/bid-generator/generate-from-profile.ts` — ENDAST om en mekanisk
   enforcement-regel motiveras av mätdata (t.ex. tvingande re-ask av budgetbrytare)
 
+**OBS (känd interaktion, Goodhart-vakten):** `effectiveBudget`-faktor <1 kan flippa slots
+över kortfältsgränsen (80 tecken, `short-field.ts`) i PROMPTEN (`isShortBudget` körs på
+den justerade budgeten i `generic-prose.ts`) medan gates (`collectFill`, `text-metrics.ts`)
+mäter fyllnadsgrad mot mallprofilens RÅA, ojusterade budgetar — en ratt-ändring kan alltså
+tysta ett fält i prompten (kortfält, inga prosaförväntningar) men gates ändå fäller
+min-fill-grinden på det gamla (högre) taket. Håll koll på detta om `effectiveBudget`
+skalas ned.
+
 **Fryst (får aldrig röras av loopen):** `src/lib/overflow-eval/**` (gates/trösklar),
 `src/lib/pptx-template/measure/**`, `evals/overflow/fixtures.json`,
 `evals/overflow/known-template-defects.json`, `src/lib/models.ts`, mallprofiler i DB,
@@ -47,13 +55,21 @@ sessionen faktiskt följer — avvikelser från designen är inte tillåtna._
 
 ## Kända fakta vid start (varv 0-baslinje, 2026-07-15)
 
-- Provkörning styrmodell-fixturen: 3 FAIL (innehållsdrivna, slide 2/4/8 — mallens boxar
-  växer under slidekanten med verkligt innehåll), 10 grova overflow post-exklusion,
-  2 dubblettpar, 10 243 tecken, $0,53/anbud.
-- Malldefekt-listan (29 poster) exkluderar det statiska; slide 2/4/8-FAIL:en är
-  loopens att fixa (mindre/tightare text), slide 9 är exkluderad malldefekt.
+- Provkörning styrmodell-fixturen (körd med `--only`, se `rapport.partial.json` —
+  räknas INTE som ett fullt varv, ger ingen delta-baslinje): 3 FAIL (innehållsdrivna,
+  **slide 2/8/10, shapes Text 34/16/21** — mallens boxar växer under slidekanten med
+  verkligt innehåll), 10 grova overflow post-exklusion, 2 dubblettpar, 10 243 tecken,
+  $0,53/anbud.
+- Malldefekt-listan (29 poster) exkluderar det statiska; slide 2/8/10-FAIL:en (Text
+  34/16/21) är loopens att fixa (mindre/tightare text), slide 9 är exkluderad malldefekt.
 - Kortfältsregeln + syskon-arbetsdelning finns redan i prompten (loop v1, 2026-07-14) —
   börja inte om från noll, läs prompthistoriken i git.
+- **Kostnadsbokföring efter städning:** `bids`-raderna raderas efter varje varv (om
+  inte `--keep-bids`), och `ai_call_logs.bid_id` nollas då av FK:n (`on delete set
+  null`, migration 003) — per-varvskostnaden går alltså inte att räkna fram i
+  efterhand ur `ai_call_logs`. Den finns bara i `rapport.json` (`costUsdRun`) för
+  fullbordade varv, respektive `abort-cost.json` för varv som avbröts innan en
+  rapport kunde byggas (summerat FÖRE städningen raderar bud-raderna).
 
 ## Avslut
 

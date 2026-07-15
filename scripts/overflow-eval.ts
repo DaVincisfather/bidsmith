@@ -21,6 +21,7 @@ import type { BidContext } from "../src/lib/bid-generator";
 import { loadTemplate } from "../src/lib/pptx-template/template-store";
 import { loadActiveProfile } from "../src/lib/org-profile";
 import { loadTemplateProfile } from "../src/lib/pptx-template/profile-store";
+import { isAllGenericProfile } from "../src/lib/pptx-template/template-profile";
 import { renderFromProfile } from "../src/lib/pptx-template/render-from-profile";
 import { buildMasterContext } from "../src/app/api/bids/[id]/export/build-master-context";
 import { buildSlotMeta } from "../src/lib/bid-editor/slot-meta";
@@ -84,10 +85,21 @@ async function gitCommit(): Promise<string> {
   }
 }
 
+interface AbortCost {
+  costUsd: number;
+}
+
 /** Sums costUsdRun over every varv-NN directory strictly before `varv`, plus
  *  finds the immediately preceding varv's report (for delta). rapport.json is
  *  the harness's own cost ledger — cheaper and more precise than re-scanning
- *  ai_call_logs across the whole table's history. */
+ *  ai_call_logs across the whole table's history. A varv that threw mid-round
+ *  (partial generation, transport error) never reaches rapport.json but DID
+ *  spend real money before it aborted — abort-cost.json (written in the catch
+ *  block below, before insertedBidIds are deleted and ai_call_logs.bid_id is
+ *  nulled by the FK) is that varv's cost ledger instead. rapport.partial.json
+ *  (a --only run) is deliberately NOT read here — it must not seed `previous`
+ *  (poisoned delta baseline) nor double-count against a later full rapport.json
+ *  for the same varv. */
 async function accumulatedCostBefore(varv: number): Promise<{ sum: number; previous: RunReport | null }> {
   let names: string[];
   try {
@@ -111,8 +123,16 @@ async function accumulatedCostBefore(varv: number): Promise<{ sum: number; previ
       const report = JSON.parse(await readFile(path.join(runDirFor(n), "rapport.json"), "utf8")) as RunReport;
       sum += report.costUsdRun;
       previous = report; // last iteration (highest n < varv) wins → immediately preceding varv
+      continue;
     } catch {
-      // varv dir exists without a report (an earlier aborted run) — contributes no cost.
+      // no rapport.json — either the varv never completed (aborted) or it was a
+      // --only partial run (rapport.partial.json). Fall through to abort-cost.json.
+    }
+    try {
+      const abort = JSON.parse(await readFile(path.join(runDirFor(n), "abort-cost.json"), "utf8")) as AbortCost;
+      sum += abort.costUsd;
+    } catch {
+      // neither file present — contributes no cost.
     }
   }
   return { sum, previous };
@@ -138,7 +158,7 @@ async function measureBid(
     await execFileAsync("pwsh", [
       "-NoProfile", "-File", path.resolve("scripts", "measure-overflow.ps1"),
       "-Pptx", pptxPath, "-OutJson", measureJson, "-RecalcOut", recalcPath,
-    ]);
+    ], { timeout: 300_000 });
 
     const measured = JSON.parse(await readFile(measureJson, "utf8")) as MeasurementFile;
     const scales = await readFontScalesByPrefix(await readFile(recalcPath), PREFIX_LEN);
@@ -210,6 +230,16 @@ async function main() {
       `onboarda/kalibrera mallen innan overflow:eval körs.`,
     );
   }
+  // Fail loud: renderFromProfile below assumes the foreign-template profile path
+  // (isAllGenericProfile true — see run-bid-generation.ts's own routing check).
+  // A non-generic profile silently renders wrong; catching it here beats a
+  // confusing measurement-time failure deep in the fixture loop.
+  if (!isAllGenericProfile(storedProfile)) {
+    throw new Error(
+      `mall ${fixturesFile.templateId}s profil är inte all-generic-prose (isAllGenericProfile=false) — ` +
+      `overflow:eval förutsätter foreign-mall-vägen (profile-driven generation + renderFromProfile).`,
+    );
+  }
   const slotMeta = buildSlotMeta(storedProfile);
   const orgProfile = await loadActiveProfile();
 
@@ -276,7 +306,7 @@ async function main() {
 
       const { data: finishedBid, error: readBackError } = await supabase
         .from("bids")
-        .select("status, sections, generation_error")
+        .select("status, sections, generation_error, failed_bundles")
         .eq("id", bidId)
         .single();
       if (readBackError || !finishedBid) {
@@ -286,6 +316,18 @@ async function main() {
         throw new Error(
           `bid ${bidId} (fixtur ${fixture.id}) blev inte 'draft' (status='${finishedBid.status}') — ` +
           `${finishedBid.generation_error ?? "inget felmeddelande"}. Varvet avbryts (INTE räknat som "ingen förbättring").`,
+        );
+      }
+      // A partial generation (some slots/bundles failed but enough succeeded to
+      // reach 'draft') must not be measured as if it were a clean bid — the
+      // missing content would masquerade as content-driven gate failures.
+      // Protocol rule 4: API-/transportfel fäller varvet utan att räknas som
+      // stagnation, so this aborts the round the same way a hard error does.
+      const failedBundles = (finishedBid.failed_bundles as unknown[] | null) ?? [];
+      if (failedBundles.length > 0) {
+        throw new Error(
+          `bid ${bidId} (fixtur ${fixture.id}) genererades delvis — ${failedBundles.length} misslyckad(e) ` +
+          `enhet(er) i failed_bundles. Varvet avbryts (protokollregel 4 — API-/transportfel räknas inte som stagnation).`,
         );
       }
       const sections = finishedBid.sections as BidSection[];
@@ -342,12 +384,39 @@ async function main() {
     });
     const md = renderMarkdown(report);
 
-    await writeFile(path.join(runDir, "rapport.json"), JSON.stringify(report, null, 2) + "\n", "utf8");
-    await writeFile(path.join(runDir, "rapport.md"), md + "\n", "utf8");
+    // --only measures a single fixture, not all 5 — its aggregate is not
+    // comparable to a full round and must never seed the next full round's
+    // delta baseline (accumulatedCostBefore only ever reads "rapport.json").
+    const reportBase = only ? "rapport.partial" : "rapport";
+    await writeFile(path.join(runDir, `${reportBase}.json`), JSON.stringify(report, null, 2) + "\n", "utf8");
+    await writeFile(path.join(runDir, `${reportBase}.md`), md + "\n", "utf8");
+    if (only) {
+      console.log(`\n--only ${only}: rapporten skrevs som ${reportBase}.json/.md (räknas inte som fullt varv).`);
+    }
 
     console.log("\n" + md);
 
     exitCode = report.aggregate.passed === report.aggregate.total ? 0 : 1;
+  } catch (err) {
+    // The round aborted (transport error, partial generation, ...) before a
+    // report could be built. Bids already exist and were already billed — sum
+    // their ai_call_logs cost NOW, before the finally-block below deletes them
+    // (the FK sets ai_call_logs.bid_id to null on delete, so this is the last
+    // moment that link is queryable). accumulatedCostBefore reads this file for
+    // varvs that never produced a rapport.json.
+    if (insertedBidIds.length > 0) {
+      const costUsd = await sumBidCosts(supabase, insertedBidIds);
+      await writeFile(
+        path.join(runDir, "abort-cost.json"),
+        JSON.stringify({ costUsd }, null, 2) + "\n",
+        "utf8",
+      );
+      console.error(
+        `\nVarvet avbröts — $${costUsd.toFixed(2)} redan spenderat på ${insertedBidIds.length} bud ` +
+        `(skrivet till abort-cost.json innan städningen).`,
+      );
+    }
+    throw err;
   } finally {
     if (insertedBidIds.length > 0) {
       if (keepBids) {

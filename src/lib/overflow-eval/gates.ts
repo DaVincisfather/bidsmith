@@ -9,26 +9,63 @@ export const DUP_PAIR_THRESHOLD = 0.3;
 export const MIN_FILL_RATIO = 0.5;
 export const VOLUME_MIN = 8000;
 export const VOLUME_MAX = 14000;
+/** Magnitude cap on the gross-overflow defect exclusion: a defect-listed
+ *  shape rides the exclusion only while its measured boundHeightPt stays
+ *  within this many points of the empty-substrate baseline
+ *  (KnownDefect.baselineBoundHeightPt) — so generated content overflowing far
+ *  past the template's own static defect still breaches the gate instead of
+ *  escaping for free (findings review 2026-07-15). */
+export const DEFECT_BASELINE_TOLERANCE_PT = 5;
 
 function isKnownDefect(f: Finding, defects: KnownDefect[]): boolean {
   return defects.some((d) => d.slide === f.slide && d.checkId === f.checkId && d.shape === f.shape);
 }
 
-function isKnownGrossOverflow(s: ShapeMeasurementV2, defects: KnownDefect[]): boolean {
-  return defects.some((d) => d.checkId === "gross-overflow" && d.slide === s.slide && d.shape === s.name);
+interface GrossClassification {
+  breaching: ShapeMeasurementV2[];
+  excluded: ShapeMeasurementV2[];
 }
 
-/** Gross-overflow shapes, minus shapes that match a known template-static
- *  defect (evals/overflow/known-template-defects.json) — those overflow even
- *  in the empty template and would otherwise breach every varv. Shared with
- *  report.ts so gate and report counts never diverge. */
-export function grossOverflowShapes(measurement: MeasurementFile, knownDefects: KnownDefect[]): ShapeMeasurementV2[] {
-  return measurement.shapes.filter((s) => {
+/** Classifies every shape crossing the raw gross-overflow magnitude
+ *  threshold into shapes that breach the gate vs. shapes excluded by a
+ *  matching known template defect. A defect-listed shape is excluded ONLY
+ *  while it hasn't grown past baseline + DEFECT_BASELINE_TOLERANCE_PT;
+ *  defects with no recorded baseline (only FAIL-class entries lack one —
+ *  see KnownDefect) keep the unconditional exclusion this gate had before
+ *  the magnitude cap. */
+function classifyGrossOverflow(measurement: MeasurementFile, knownDefects: KnownDefect[]): GrossClassification {
+  const breaching: ShapeMeasurementV2[] = [];
+  const excluded: ShapeMeasurementV2[] = [];
+  for (const s of measurement.shapes) {
     const innerHeight = s.heightPt - s.marginTopPt - s.marginBottomPt;
     const over = s.boundHeightPt - innerHeight;
     const isGross = s.boundHeightPt > GROSS_OVERFLOW_RATIO * innerHeight || over > GROSS_OVERFLOW_ABS_PT;
-    return isGross && !isKnownGrossOverflow(s, knownDefects);
-  });
+    if (!isGross) continue;
+
+    const defect = knownDefects.find((d) => d.checkId === "gross-overflow" && d.slide === s.slide && d.shape === s.name);
+    if (!defect) {
+      breaching.push(s);
+      continue;
+    }
+    const withinBaseline =
+      defect.baselineBoundHeightPt === undefined ||
+      s.boundHeightPt <= defect.baselineBoundHeightPt + DEFECT_BASELINE_TOLERANCE_PT;
+    if (withinBaseline) {
+      excluded.push(s);
+    } else {
+      breaching.push(s);
+    }
+  }
+  return { breaching, excluded };
+}
+
+/** Gross-overflow shapes, minus shapes that match a known template-static
+ *  defect (evals/overflow/known-template-defects.json) and stay within its
+ *  magnitude-cap tolerance — those overflow even in the empty template and
+ *  would otherwise breach every varv. Shared with report.ts so gate and
+ *  report counts never diverge. */
+export function grossOverflowShapes(measurement: MeasurementFile, knownDefects: KnownDefect[]): ShapeMeasurementV2[] {
+  return classifyGrossOverflow(measurement, knownDefects).breaching;
 }
 
 export function applyGates(bid: BidMeasurement, knownDefects: KnownDefect[]): GateResult {
@@ -43,7 +80,7 @@ export function applyGates(bid: BidMeasurement, knownDefects: KnownDefect[]): Ga
     });
   }
 
-  const gross = grossOverflowShapes(bid.measurement, knownDefects);
+  const { breaching: gross, excluded: excludedGross } = classifyGrossOverflow(bid.measurement, knownDefects);
 
   if (gross.length > 0) {
     breaches.push({
@@ -83,5 +120,6 @@ export function applyGates(bid: BidMeasurement, knownDefects: KnownDefect[]): Ga
     pass: breaches.length === 0,
     breaches,
     excludedDefects,
+    excludedGross,
   };
 }

@@ -49,7 +49,7 @@ function bidMeasurement(over: Partial<BidMeasurement>): BidMeasurement {
 }
 
 function gateResult(over: Partial<GateResult>): GateResult {
-  return { fixtureId: "f1", label: "test", pass: true, breaches: [], excludedDefects: [], ...over };
+  return { fixtureId: "f1", label: "test", pass: true, breaches: [], excludedDefects: [], excludedGross: [], ...over };
 }
 
 /** 5 fixtures, 3 PASS: f1/f2 clean, f3 passes with one excluded (known-defect)
@@ -218,6 +218,32 @@ describe("buildRunReport", () => {
     expect(f5?.grossOverflowCount).toBe(0);
     expect(report.aggregate.grossOverflows).toBe(0);
   });
+
+  it("trär igenom gate.excludedGross med baseline från knownDefects (audit trail)", () => {
+    const excludedShape = shape({ slide: 1, name: "Text 1", heightPt: 26, boundHeightPt: 216 });
+    const knownDefects: KnownDefect[] = [
+      { slide: 1, checkId: "gross-overflow", shape: "Text 1", note: "tom originalmall", baselineBoundHeightPt: 200 },
+    ];
+
+    const report = buildRunReport({
+      varv: 1,
+      branchCommit: "abc123",
+      results: [
+        {
+          bid: bidMeasurement({ fixtureId: "f1", bidId: "b1" }),
+          gate: gateResult({ fixtureId: "f1", pass: true, excludedGross: [excludedShape] }),
+        },
+      ],
+      previous: null,
+      knownDefects,
+      costUsdRun: 1,
+      costUsdAccumulated: 1,
+    });
+
+    const f1 = report.bids.find((b) => b.fixtureId === "f1");
+    expect(f1?.excludedGrossCount).toBe(1);
+    expect(f1?.excludedGross).toEqual([{ slide: 1, shape: "Text 1", boundHeightPt: 216, baselineBoundHeightPt: 200 }]);
+  });
 });
 
 describe("renderMarkdown", () => {
@@ -239,6 +265,32 @@ describe("renderMarkdown", () => {
     expect(md).toContain("Inget föregående varv — ingen delta.");
     expect(md).toContain("$12.34 detta varv · $12.34 ack. av $50 tak.");
     expect(md).toContain("- [f3] slide 9 Text 5 (outside-slide): known template gap");
+    expect(md).toContain("Inga exkluderade grova overflow.");
+  });
+
+  it("listar exkluderade grova overflow med boundHeight och baseline", () => {
+    const excludedShape = shape({ slide: 1, name: "Text 1", heightPt: 26, boundHeightPt: 216 });
+    const knownDefects: KnownDefect[] = [
+      { slide: 1, checkId: "gross-overflow", shape: "Text 1", note: "tom originalmall", baselineBoundHeightPt: 200 },
+    ];
+
+    const report = buildRunReport({
+      varv: 1,
+      branchCommit: "abc123",
+      results: [
+        {
+          bid: bidMeasurement({ fixtureId: "f1", bidId: "b1" }),
+          gate: gateResult({ fixtureId: "f1", pass: true, excludedGross: [excludedShape] }),
+        },
+      ],
+      previous: null,
+      knownDefects,
+      costUsdRun: 1,
+      costUsdAccumulated: 1,
+    });
+    const md = renderMarkdown(report);
+
+    expect(md).toContain("- [f1] slide 1 Text 1: 216pt (baseline 200pt)");
   });
 
   it("varv 2: delta-sektion med tecken och pilar, uppdaterad kostnad", () => {

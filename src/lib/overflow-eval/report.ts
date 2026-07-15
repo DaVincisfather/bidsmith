@@ -1,6 +1,16 @@
 import { grossOverflowShapes } from "./gates";
 import type { BidMeasurement, GateResult, KnownDefect } from "./types";
 
+/** Per-bid audit-trail entry for a gross-overflow shape excluded by a known
+ *  template defect (GateResult.excludedGross), enriched with the defect's
+ *  recorded baseline for display — findings review 2026-07-15. */
+export interface ExcludedGrossShape {
+  slide: number;
+  shape: string;
+  boundHeightPt: number;
+  baselineBoundHeightPt: number | null;
+}
+
 /** Cost ceiling for the whole overflow-loop research run (frozen, see
  *  notes/2026-07-15-overflow-loop-design.md) — display only, not enforced here. */
 const COST_CAP_USD = 50;
@@ -16,6 +26,8 @@ export interface RunReport {
     gate: GateResult;
     failCount: number;
     grossOverflowCount: number;
+    excludedGrossCount: number;
+    excludedGross: ExcludedGrossShape[];
     dupCount: number;
     totalChars: number;
   }[];
@@ -36,20 +48,36 @@ export interface BuildRunReportInput {
 }
 
 export function buildRunReport(input: BuildRunReportInput): RunReport {
-  const bids = input.results.map(({ bid, gate }) => ({
-    fixtureId: bid.fixtureId,
-    label: bid.label,
-    bidId: bid.bidId,
-    gate,
-    // excludedDefects are FAIL findings already carved out of the breach — subtract
-    // them from the raw FAIL count to get the count that actually failed the gate.
-    failCount: bid.findings.filter((f) => f.severity === "FAIL").length - gate.excludedDefects.length,
-    // Same shared predicate applyGates uses (gates.ts) — gate and report counts
-    // never diverge, and known-defect-matched shapes are excluded from both.
-    grossOverflowCount: grossOverflowShapes(bid.measurement, input.knownDefects).length,
-    dupCount: bid.duplicates.length,
-    totalChars: bid.totalChars,
-  }));
+  const bids = input.results.map(({ bid, gate }) => {
+    // gate.excludedGross already carries the shapes classifyGrossOverflow (gates.ts)
+    // excluded for THIS bid — reuse it rather than reclassifying, and attach each
+    // shape's recorded baseline (from the same knownDefects list) for display.
+    const excludedGross: ExcludedGrossShape[] = gate.excludedGross.map((s) => ({
+      slide: s.slide,
+      shape: s.name,
+      boundHeightPt: s.boundHeightPt,
+      baselineBoundHeightPt:
+        input.knownDefects.find((d) => d.checkId === "gross-overflow" && d.slide === s.slide && d.shape === s.name)
+          ?.baselineBoundHeightPt ?? null,
+    }));
+
+    return {
+      fixtureId: bid.fixtureId,
+      label: bid.label,
+      bidId: bid.bidId,
+      gate,
+      // excludedDefects are FAIL findings already carved out of the breach — subtract
+      // them from the raw FAIL count to get the count that actually failed the gate.
+      failCount: bid.findings.filter((f) => f.severity === "FAIL").length - gate.excludedDefects.length,
+      // Same shared predicate applyGates uses (gates.ts) — gate and report counts
+      // never diverge, and known-defect-matched shapes are excluded from both.
+      grossOverflowCount: grossOverflowShapes(bid.measurement, input.knownDefects).length,
+      excludedGrossCount: excludedGross.length,
+      excludedGross,
+      dupCount: bid.duplicates.length,
+      totalChars: bid.totalChars,
+    };
+  });
 
   const aggregate = {
     passed: bids.filter((b) => b.gate.pass).length,
@@ -140,6 +168,19 @@ export function renderMarkdown(report: RunReport): string {
   } else {
     for (const { b, f } of excluded) {
       lines.push(`- [${b.fixtureId}] slide ${f.slide} ${f.shape} (${f.checkId}): ${f.detail}`);
+    }
+  }
+  lines.push("");
+
+  lines.push("## Exkluderade grova overflow (malldefekt inom baseline-toleransen)");
+  lines.push("");
+  const excludedGross = report.bids.flatMap((b) => b.excludedGross.map((s) => ({ b, s })));
+  if (excludedGross.length === 0) {
+    lines.push("Inga exkluderade grova overflow.");
+  } else {
+    for (const { b, s } of excludedGross) {
+      const baseline = s.baselineBoundHeightPt !== null ? `${s.baselineBoundHeightPt}pt` : "okänd";
+      lines.push(`- [${b.fixtureId}] slide ${s.slide} ${s.shape}: ${s.boundHeightPt}pt (baseline ${baseline})`);
     }
   }
 

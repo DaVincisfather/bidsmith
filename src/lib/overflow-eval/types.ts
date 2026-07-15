@@ -1,4 +1,4 @@
-import type { Finding, MeasurementFile } from "@/lib/pptx-template/measure/types";
+import type { Finding, MeasurementFile, ShapeMeasurementV2 } from "@/lib/pptx-template/measure/types";
 
 export interface OverflowFixture {
   id: string;
@@ -17,6 +17,13 @@ export interface KnownDefect {
   checkId: string;
   shape: string;
   note: string;
+  /** Empty-substrate measured boundHeightPt, recorded for gross-overflow
+   *  entries only (scripts/overflow-bootstrap.ts) — the magnitude-cap
+   *  baseline a listed shape may not grow past (gates.ts
+   *  DEFECT_BASELINE_TOLERANCE_PT) and still ride the exclusion. Absent for
+   *  FAIL-class entries (e.g. outside-slide), which keep the unconditional
+   *  exclusion on the FAIL gate. */
+  baselineBoundHeightPt?: number;
 }
 
 export interface DuplicatePair {
@@ -57,4 +64,8 @@ export interface GateResult {
   pass: boolean;
   breaches: GateBreach[];
   excludedDefects: Finding[];
+  /** Gross-overflow shapes that matched a known template defect and stayed
+   *  within its magnitude-cap tolerance — the audit trail for the exclusion
+   *  gates.ts applies before it ever silently drops a shape. */
+  excludedGross: ShapeMeasurementV2[];
 }

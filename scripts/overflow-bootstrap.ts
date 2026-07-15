@@ -21,7 +21,7 @@ import {
   checkSingleLineBreak, checkVerticalOverflow, deadspaceFindings,
 } from "../src/lib/pptx-template/measure/verdicts";
 import type { Finding, MeasurementFile } from "../src/lib/pptx-template/measure/types";
-import { GROSS_OVERFLOW_ABS_PT, GROSS_OVERFLOW_RATIO } from "../src/lib/overflow-eval/gates";
+import { grossOverflowShapes } from "../src/lib/overflow-eval/gates";
 import type { FixturesFile, KnownDefect, OverflowFixture } from "../src/lib/overflow-eval/types";
 import type { RfpAnalysis, ScoredConsultant } from "../src/lib/types";
 
@@ -234,7 +234,7 @@ async function scanEmptyTemplate(supabase: SupabaseClient, target: ScanTarget): 
     await execFileAsync("pwsh", [
       "-NoProfile", "-File", path.resolve("scripts", "measure-overflow.ps1"),
       "-Pptx", pptxPath, "-OutJson", measureJson, "-RecalcOut", recalcPath,
-    ]);
+    ], { timeout: 300_000 });
 
     const measured = JSON.parse(await readFile(measureJson, "utf8")) as MeasurementFile;
     const scales = await readFontScalesByPrefix(await readFile(recalcPath), PREFIX_LEN);
@@ -258,15 +258,17 @@ async function scanEmptyTemplate(supabase: SupabaseClient, target: ScanTarget): 
       .filter((f) => f.severity === "FAIL")
       .map((f) => ({ slide: f.slide, checkId: f.checkId, shape: f.shape, note: target.note }));
 
-    // Gross-overflow mirrors gates.ts's own filter (same frozen constants) —
-    // it is not a "check" in verdicts.ts, it reads shape geometry directly.
-    const gross = measured.shapes.filter((s) => {
-      const innerHeight = s.heightPt - s.marginTopPt - s.marginBottomPt;
-      const over = s.boundHeightPt - innerHeight;
-      return s.boundHeightPt > GROSS_OVERFLOW_RATIO * innerHeight || over > GROSS_OVERFLOW_ABS_PT;
-    });
+    // Gross-overflow uses gates.ts's own shared predicate (same frozen constants,
+    // no known defects yet — this scan is what BUILDS the defect list) — it is not
+    // a "check" in verdicts.ts, it reads shape geometry directly.
+    const gross = grossOverflowShapes(measured, []);
+    // baselineBoundHeightPt records THIS empty-substrate scan's measured value —
+    // the magnitude-cap baseline grossOverflowShapes checks generated content
+    // against (gates.ts DEFECT_BASELINE_TOLERANCE_PT) so a listed shape only
+    // rides the exclusion up to baseline + tolerance, not unconditionally.
     const grossDefects: KnownDefect[] = gross.map((s) => ({
       slide: s.slide, checkId: "gross-overflow", shape: s.name, note: target.note,
+      baselineBoundHeightPt: s.boundHeightPt,
     }));
 
     console.log(

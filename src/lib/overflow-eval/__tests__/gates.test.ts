@@ -77,6 +77,8 @@ describe("applyGates", () => {
   it("känd gross-overflow-defekt (slide+shape+checkId) exkluderas — samma värden på annat shape-namn fäller ändå", () => {
     const knownShape = shape({ heightPt: 26, boundHeightPt: 216, name: "Text 1" });
     const otherShape = shape({ heightPt: 26, boundHeightPt: 216, name: "Text 2" });
+    // No baselineBoundHeightPt on the defect — legacy/FAIL-class entries keep the
+    // unconditional exclusion behavior the gate had before the magnitude cap.
     const defects: KnownDefect[] = [{ slide: 1, checkId: "gross-overflow", shape: "Text 1", note: "tom originalmall" }];
 
     const r1 = applyGates(
@@ -85,12 +87,49 @@ describe("applyGates", () => {
     );
     expect(r1.pass).toBe(true);
     expect(r1.breaches).toEqual([]);
+    expect(r1.excludedGross).toHaveLength(1);
+    expect(r1.excludedGross[0].name).toBe("Text 1");
 
     const r2 = applyGates(
       bid({ measurement: { slideCount: 1, slideWidthPt: 1440, slideHeightPt: 810, shapes: [otherShape] } }),
       defects,
     );
     expect(r2.breaches.map((b) => b.gate)).toContain("gross-overflow");
+    expect(r2.excludedGross).toEqual([]);
+  });
+
+  it("magnitude-kapad exkludering: shape vid baseline exkluderas, långt över baseline+tolerans fäller", () => {
+    // Defect's recorded baseline (empty-substrate measurement) is 216pt.
+    const defects: KnownDefect[] = [
+      { slide: 1, checkId: "gross-overflow", shape: "Text 1", note: "tom originalmall", baselineBoundHeightPt: 216 },
+    ];
+
+    const atBaseline = shape({ heightPt: 26, boundHeightPt: 216, name: "Text 1" });
+    const rAtBaseline = applyGates(
+      bid({ measurement: { slideCount: 1, slideWidthPt: 1440, slideHeightPt: 810, shapes: [atBaseline] } }),
+      defects,
+    );
+    expect(rAtBaseline.pass).toBe(true);
+    expect(rAtBaseline.excludedGross).toHaveLength(1);
+
+    // Inside tolerance (+5pt): still excluded.
+    const atTolerance = shape({ heightPt: 26, boundHeightPt: 221, name: "Text 1" });
+    const rAtTolerance = applyGates(
+      bid({ measurement: { slideCount: 1, slideWidthPt: 1440, slideHeightPt: 810, shapes: [atTolerance] } }),
+      defects,
+    );
+    expect(rAtTolerance.pass).toBe(true);
+    expect(rAtTolerance.excludedGross).toHaveLength(1);
+
+    // 50pt past baseline — generated content overflowing far beyond the template's
+    // own static defect must breach, not ride the exclusion.
+    const farOverBaseline = shape({ heightPt: 26, boundHeightPt: 266, name: "Text 1" });
+    const rFarOver = applyGates(
+      bid({ measurement: { slideCount: 1, slideWidthPt: 1440, slideHeightPt: 810, shapes: [farOverBaseline] } }),
+      defects,
+    );
+    expect(rFarOver.breaches.map((b) => b.gate)).toContain("gross-overflow");
+    expect(rFarOver.excludedGross).toEqual([]);
   });
 
   it("dubblettpar, undermålig fyllnad och volym utanför korridoren fäller", () => {
