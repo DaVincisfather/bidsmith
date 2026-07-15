@@ -63,6 +63,26 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       grupperad vy. Wizarden: "Markera hela sliden som fast"-knapp (bulk-skip,
       originaltext behålls) + fasta slides i sammanfattningen.
       Design: notes/2026-07-15-bid-editor-slim-design.md, plan: …-plan.md.
+- [x] **STEFANS SMOKE 2 (KLAR 2026-07-15) = loop v2-utvärderingens sista steg.** Ny
+      generering (anbud a400c2ca) mot om-kalibrerade Radrum v4, jämförd mot 14/7-baslinjen
+      (c993fa7a) med samma grindar: FAIL 5→3, WARN 48→42, volym 12 705→11 804, dubbletter 0.
+      Stefans dom: "nästan samtliga fel kvar, marginellt bättre" — BEKRÄFTAD av siffrorna.
+      Kvarvarande fel i tre högar: (1) 3 outside-slide-FAIL (slide 2/4/8, botten 817–839pt)
+      = MALLDEFEKT-klassen → mallfix-punkten nedan; (2) grova overflow-WARN (t.ex. 216pt
+      text i 26pt-box, slide 8) = budgetar är rådgivande utan mekanisk enforcement +
+      MAX-slot-mätluckan; (3) små WARN = kicker/radbryt-mätbegränsningen (v3).
+      Slutsats: volymkriget vunnet (46k→12k), layoutkriget kräver enforcement + mallfix —
+      → OVERFLOW-LOOP-spåret nedan.
+- [ ] **OVERFLOW-LOOP (Stefans idé 2026-07-15 — brainstormas):** autoresearch-loop med
+      binärt mål: 0 text-overflow, 0 trasiga radbryt, ingen visuell död yta. deck:scan-JSON
+      = fitness-funktionen. Trolig ordning: mekanisk enforcement (soft-cap + scan-driven
+      reparationsvända per anbud) före yttre research-loop (prompter/budgetar över många
+      anbud). Design-doc kommer efter brainstorm.
+- [ ] **GO/NO-GO-LATENS (pågår, branch feat/gonogo-latency):** evidens ur ai_call_logs:
+      23–36 s, output 1,3–1,7k tokens = väntetiden; input 1,6k→8,3k sedan källcitaten.
+      Fixar: index-refererade ska-krav (server-hydrering, publikt format orört),
+      strippa citat + kompakt JSON ur prompten, max_tokens-detektering i ai-client
+      (härdning — inga retries observerade). Subagent bygger.
 - [ ] **Radrum-mallfixar (VÅR testmall — håll isär från loop-fixar):** bredda
       bolagsnamnsboxen (slide 1), flytta upp boxarna (slide 2/3/9), statboxarna slide 4,
       högerspalten slide 8; byt M365-cloudfonter → installerade (klick-i-textbox ändrar
