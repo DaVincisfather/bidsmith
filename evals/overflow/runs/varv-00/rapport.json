@@ -1,0 +1,50 @@
+{
+  "varv": 0,
+  "timestamp": "2026-07-15T21:06:16.699Z",
+  "branchCommit": "4fc980c",
+  "bids": [
+    {
+      "fixtureId": "styrmodell",
+      "label": "Styrmodell — RetailTech",
+      "bidId": "9c4d927b-55e8-422e-a5c5-b721dc29bd15",
+      "gate": {
+        "fixtureId": "styrmodell",
+        "label": "Styrmodell — RetailTech",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "fail-findings",
+            "detail": "slide 2 Text 34: text bottom 1027pt / right n/apt vs slide 1440×810pt; slide 8 Text 16: text bottom 839pt / right n/apt vs slide 1440×810pt; slide 10 Text 21: text bottom 817pt / right n/apt vs slide 1440×810pt"
+          },
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 1 Text 1: 43.2pt i 22.25pt inre box; slide 2 Text 34: 786.2pt i 451.55pt inre box; slide 2 Text 36: 43.2pt i 26pt inre box; slide 3 Text 0: 43.2pt i 22.25pt inre box; slide 3 Text 5: 447.92pt i 392.3pt inre box; slide 3 Text 11: 447.92pt i 392.3pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box; slide 6 Text 0: 43.2pt i 22.25pt inre box; slide 8 Text 0: 43.2pt i 22.25pt inre box; slide 11 Text 0: 43.2pt i 22.25pt inre box"
+          },
+          {
+            "gate": "duplicates",
+            "detail": "slide 5: 0.31; slide 5: 0.31"
+          },
+          {
+            "gate": "min-fill",
+            "detail": "{Sektionsnummer 3}: 25/110"
+          }
+        ],
+        "excludedDefects": []
+      },
+      "failCount": 3,
+      "grossOverflowCount": 10,
+      "dupCount": 2,
+      "totalChars": 10243
+    }
+  ],
+  "aggregate": {
+    "passed": 0,
+    "total": 1,
+    "failFindings": 3,
+    "grossOverflows": 10,
+    "dupPairs": 2
+  },
+  "delta": null,
+  "costUsdRun": 0.526797,
+  "costUsdAccumulated": 0.526797
+}
