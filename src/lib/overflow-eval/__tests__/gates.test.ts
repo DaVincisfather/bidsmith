@@ -74,6 +74,25 @@ describe("applyGates", () => {
     expect(r.breaches.map((b) => b.gate)).toContain("gross-overflow");
   });
 
+  it("känd gross-overflow-defekt (slide+shape+checkId) exkluderas — samma värden på annat shape-namn fäller ändå", () => {
+    const knownShape = shape({ heightPt: 26, boundHeightPt: 216, name: "Text 1" });
+    const otherShape = shape({ heightPt: 26, boundHeightPt: 216, name: "Text 2" });
+    const defects: KnownDefect[] = [{ slide: 1, checkId: "gross-overflow", shape: "Text 1", note: "tom originalmall" }];
+
+    const r1 = applyGates(
+      bid({ measurement: { slideCount: 1, slideWidthPt: 1440, slideHeightPt: 810, shapes: [knownShape] } }),
+      defects,
+    );
+    expect(r1.pass).toBe(true);
+    expect(r1.breaches).toEqual([]);
+
+    const r2 = applyGates(
+      bid({ measurement: { slideCount: 1, slideWidthPt: 1440, slideHeightPt: 810, shapes: [otherShape] } }),
+      defects,
+    );
+    expect(r2.breaches.map((b) => b.gate)).toContain("gross-overflow");
+  });
+
   it("dubblettpar, undermålig fyllnad och volym utanför korridoren fäller", () => {
     const r = applyGates(
       bid({

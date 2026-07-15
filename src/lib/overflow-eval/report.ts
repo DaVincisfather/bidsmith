@@ -1,5 +1,5 @@
-import { GROSS_OVERFLOW_ABS_PT, GROSS_OVERFLOW_RATIO } from "./gates";
-import type { BidMeasurement, GateResult } from "./types";
+import { grossOverflowShapes } from "./gates";
+import type { BidMeasurement, GateResult, KnownDefect } from "./types";
 
 /** Cost ceiling for the whole overflow-loop research run (frozen, see
  *  notes/2026-07-15-overflow-loop-design.md) — display only, not enforced here. */
@@ -30,18 +30,9 @@ export interface BuildRunReportInput {
   branchCommit: string;
   results: { bid: BidMeasurement; gate: GateResult }[];
   previous: RunReport | null;
+  knownDefects: KnownDefect[];
   costUsdRun: number;
   costUsdAccumulated: number;
-}
-
-/** Mirrors gates.ts's gross-overflow filter (same frozen constants) — there is
- *  no pre-filtered field on BidMeasurement to read the count from directly. */
-function countGrossOverflow(bid: BidMeasurement): number {
-  return bid.measurement.shapes.filter((s) => {
-    const innerHeight = s.heightPt - s.marginTopPt - s.marginBottomPt;
-    const over = s.boundHeightPt - innerHeight;
-    return s.boundHeightPt > GROSS_OVERFLOW_RATIO * innerHeight || over > GROSS_OVERFLOW_ABS_PT;
-  }).length;
 }
 
 export function buildRunReport(input: BuildRunReportInput): RunReport {
@@ -53,7 +44,9 @@ export function buildRunReport(input: BuildRunReportInput): RunReport {
     // excludedDefects are FAIL findings already carved out of the breach — subtract
     // them from the raw FAIL count to get the count that actually failed the gate.
     failCount: bid.findings.filter((f) => f.severity === "FAIL").length - gate.excludedDefects.length,
-    grossOverflowCount: countGrossOverflow(bid),
+    // Same shared predicate applyGates uses (gates.ts) — gate and report counts
+    // never diverge, and known-defect-matched shapes are excluded from both.
+    grossOverflowCount: grossOverflowShapes(bid.measurement, input.knownDefects).length,
     dupCount: bid.duplicates.length,
     totalChars: bid.totalChars,
   }));

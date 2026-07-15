@@ -1,4 +1,4 @@
-import type { Finding } from "@/lib/pptx-template/measure/types";
+import type { Finding, MeasurementFile, ShapeMeasurementV2 } from "@/lib/pptx-template/measure/types";
 import type { BidMeasurement, GateBreach, GateResult, KnownDefect } from "./types";
 
 /** Fitness v1 — FRYST under en forskningskörning (design 2026-07-15).
@@ -14,6 +14,23 @@ function isKnownDefect(f: Finding, defects: KnownDefect[]): boolean {
   return defects.some((d) => d.slide === f.slide && d.checkId === f.checkId && d.shape === f.shape);
 }
 
+function isKnownGrossOverflow(s: ShapeMeasurementV2, defects: KnownDefect[]): boolean {
+  return defects.some((d) => d.checkId === "gross-overflow" && d.slide === s.slide && d.shape === s.name);
+}
+
+/** Gross-overflow shapes, minus shapes that match a known template-static
+ *  defect (evals/overflow/known-template-defects.json) — those overflow even
+ *  in the empty template and would otherwise breach every varv. Shared with
+ *  report.ts so gate and report counts never diverge. */
+export function grossOverflowShapes(measurement: MeasurementFile, knownDefects: KnownDefect[]): ShapeMeasurementV2[] {
+  return measurement.shapes.filter((s) => {
+    const innerHeight = s.heightPt - s.marginTopPt - s.marginBottomPt;
+    const over = s.boundHeightPt - innerHeight;
+    const isGross = s.boundHeightPt > GROSS_OVERFLOW_RATIO * innerHeight || over > GROSS_OVERFLOW_ABS_PT;
+    return isGross && !isKnownGrossOverflow(s, knownDefects);
+  });
+}
+
 export function applyGates(bid: BidMeasurement, knownDefects: KnownDefect[]): GateResult {
   const breaches: GateBreach[] = [];
   const excludedDefects = bid.findings.filter((f) => f.severity === "FAIL" && isKnownDefect(f, knownDefects));
@@ -26,11 +43,7 @@ export function applyGates(bid: BidMeasurement, knownDefects: KnownDefect[]): Ga
     });
   }
 
-  const gross = bid.measurement.shapes.filter((s) => {
-    const innerHeight = s.heightPt - s.marginTopPt - s.marginBottomPt;
-    const over = s.boundHeightPt - innerHeight;
-    return s.boundHeightPt > GROSS_OVERFLOW_RATIO * innerHeight || over > GROSS_OVERFLOW_ABS_PT;
-  });
+  const gross = grossOverflowShapes(bid.measurement, knownDefects);
 
   if (gross.length > 0) {
     breaches.push({

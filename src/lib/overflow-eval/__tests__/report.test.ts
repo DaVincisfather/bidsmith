@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildRunReport, renderMarkdown } from "../report";
 import type { RunReport } from "../report";
-import type { BidMeasurement, GateResult } from "../types";
+import type { BidMeasurement, GateResult, KnownDefect } from "../types";
 import type { Finding, ShapeMeasurementV2 } from "@/lib/pptx-template/measure/types";
 
 function shape(over: Partial<ShapeMeasurementV2>): ShapeMeasurementV2 {
@@ -158,6 +158,7 @@ describe("buildRunReport", () => {
       branchCommit: "abc123",
       results: varv1Results(),
       previous: null,
+      knownDefects: [],
       costUsdRun: 12.34,
       costUsdAccumulated: 12.34,
     });
@@ -191,12 +192,31 @@ describe("buildRunReport", () => {
       branchCommit: "def456",
       results: varv2Results(),
       previous,
+      knownDefects: [],
       costUsdRun: 8,
       costUsdAccumulated: 18,
     });
 
     expect(report.aggregate).toEqual({ passed: 3, total: 5, failFindings: 3, grossOverflows: 1, dupPairs: 2 });
     expect(report.delta).toEqual({ failFindings: -2, grossOverflows: -1, dupPairs: 1, passed: 1 });
+  });
+
+  it("känd gross-overflow-defekt exkluderas ur grossOverflowCount (samma prediktor som gates.ts)", () => {
+    const knownDefects: KnownDefect[] = [{ slide: 1, checkId: "gross-overflow", shape: "Text 1", note: "tom originalmall" }];
+
+    const report = buildRunReport({
+      varv: 1,
+      branchCommit: "abc123",
+      results: varv1Results(),
+      previous: null,
+      knownDefects,
+      costUsdRun: 12.34,
+      costUsdAccumulated: 12.34,
+    });
+
+    const f5 = report.bids.find((b) => b.fixtureId === "f5");
+    expect(f5?.grossOverflowCount).toBe(0);
+    expect(report.aggregate.grossOverflows).toBe(0);
   });
 });
 
@@ -207,6 +227,7 @@ describe("renderMarkdown", () => {
       branchCommit: "abc123",
       results: varv1Results(),
       previous: null,
+      knownDefects: [],
       costUsdRun: 12.34,
       costUsdAccumulated: 12.34,
     });
@@ -237,6 +258,7 @@ describe("renderMarkdown", () => {
       branchCommit: "def456",
       results: varv2Results(),
       previous,
+      knownDefects: [],
       costUsdRun: 8,
       costUsdAccumulated: 18,
     });
