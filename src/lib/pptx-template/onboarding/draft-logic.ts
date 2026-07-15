@@ -119,6 +119,35 @@ export function applyDecision(
   return { ok: true, draft: { ...draft, slots } };
 }
 
+/**
+ * Slide-nivå-bulk: alla slidens slots får samma beslut (fast-slide-knappen i
+ * wizarden). "skipped" = markera sliden fast (originaltexten behålls —
+ * buildInjections instrumenterar bara confirmed); "pending" = ångra, rutorna
+ * kräver nytt ställningstagande (tidigare beslut återskapas inte). Ren
+ * funktion, återanvänder applyDecision per slot så validering delas.
+ */
+export function applySlideDecision(
+  draft: OnboardingDraft,
+  source: number,
+  decision: "skipped" | "pending",
+): ApplyResult {
+  const slideSlots = draft.slots.filter((s) => s.source === source);
+  if (slideSlots.length === 0) {
+    return { ok: false, error: `slide ${source} har inga textrutor` };
+  }
+  let current = draft;
+  for (const slot of slideSlots) {
+    const result = applyDecision(current, {
+      source: slot.source,
+      shapeIndex: slot.shapeIndex,
+      decision,
+    });
+    if (!result.ok) return result;
+    current = result.draft;
+  }
+  return { ok: true, draft: current };
+}
+
 /** Endast bekräftade slots instrumenteras — skippade lämnas orörda i kopian. */
 export function buildInjections(draft: OnboardingDraft): TokenInjection[] {
   return draft.slots

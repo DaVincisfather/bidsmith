@@ -8,7 +8,9 @@ import {
   buildInjections,
   buildFinalProfile,
   buildForeignManifest,
+  applySlideDecision,
 } from "../draft-logic";
+import { parseOnboardingDraft } from "../draft";
 
 const SIZE = { cx: 12192000, cy: 6858000 };
 
@@ -215,5 +217,58 @@ describe("buildInjections + buildFinalProfile", () => {
     expect(() =>
       buildFinalProfile(allSkipped, { templateId: "t-1", name: "kundmall", version: 1 }),
     ).toThrow("minst en textruta måste bekräftas");
+  });
+});
+
+describe("applySlideDecision", () => {
+  const draft = parseOnboardingDraft({
+    draftVersion: 1,
+    slideSize: { cx: 12192000, cy: 6858000 },
+    slots: [
+      { source: 2, shapeIndex: 0, shapeText: "Metod", token: "{Metod}", capability: "understanding", intent: "Metod", confidence: "high", decision: "confirmed" },
+      { source: 2, shapeIndex: 1, shapeText: "Tidplan", token: "{Tidplan}", capability: "understanding", intent: "Tidplan", confidence: "low", decision: "pending" },
+      { source: 3, shapeIndex: 0, shapeText: "Referens", token: "{Referens}", capability: "understanding", intent: "Referens", confidence: "high", decision: "confirmed" },
+    ],
+    wireframe: [
+      { source: 2, shapes: [
+        { shapeIndex: 0, geometry: { x: 0, y: 0, cx: 100, cy: 100 }, text: "Metod", candidate: true },
+        { shapeIndex: 1, geometry: { x: 0, y: 200, cx: 100, cy: 100 }, text: "Tidplan", candidate: true },
+      ] },
+      { source: 3, shapes: [
+        { shapeIndex: 0, geometry: { x: 0, y: 0, cx: 100, cy: 100 }, text: "Referens", candidate: true },
+      ] },
+    ],
+  });
+
+  it("skippar ALLA slots på sliden och rör inte andra slides", () => {
+    const result = applySlideDecision(draft, 2, "skipped");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const bySlide2 = result.draft.slots.filter((s) => s.source === 2);
+    expect(bySlide2.every((s) => s.decision === "skipped")).toBe(true);
+    const slide3 = result.draft.slots.find((s) => s.source === 3);
+    expect(slide3?.decision).toBe("confirmed");
+  });
+
+  it("pending återställer sliden till obeslutad (ångra)", () => {
+    const skipped = applySlideDecision(draft, 2, "skipped");
+    if (!skipped.ok) throw new Error(skipped.error);
+    const restored = applySlideDecision(skipped.draft, 2, "pending");
+    expect(restored.ok).toBe(true);
+    if (!restored.ok) return;
+    expect(restored.draft.slots.filter((s) => s.source === 2).every((s) => s.decision === "pending")).toBe(true);
+  });
+
+  it("okänd slide → fel", () => {
+    const result = applySlideDecision(draft, 99, "skipped");
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatch(/99/);
+  });
+
+  it("muterar inte input-utkastet", () => {
+    const before = JSON.stringify(draft);
+    applySlideDecision(draft, 2, "skipped");
+    expect(JSON.stringify(draft)).toBe(before);
   });
 });
