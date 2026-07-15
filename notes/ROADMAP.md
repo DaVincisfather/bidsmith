@@ -78,11 +78,7 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       (riktiga team), COM-mäter, fitness v1-gates (0 FAIL exkl. 29 malldefekter ur tomma
       instrumenterade mallen, grov overflow >1,25×/+30pt, dubbletter ≥0,3, min-fyllnad,
       volymkorridor), varvrapport med delta + kostnad, städar eval-anbuden. Provkörning:
-      0/1 PASS (3 innehållsdrivna FAIL slide 2/4/8 = loopens byte), - [ ] **OVERFLOW-LOOP (Stefans idé 2026-07-15 — brainstormas):** autoresearch-loop med
-      binärt mål: 0 text-overflow, 0 trasiga radbryt, ingen visuell död yta. deck:scan-JSON
-      = fitness-funktionen. Trolig ordning: mekanisk enforcement (soft-cap + scan-driven
-      reparationsvända per anbud) före yttre research-loop (prompter/budgetar över många
-      anbud). Design-doc kommer efter brainstorm.,53/anbud.
+      0/1 PASS (3 innehållsdrivna FAIL slide 2/4/8 = loopens byte), $0,53/anbud.
       Körregler: `notes/overflow-loop-protokoll.md`; design + plan i
       `notes/2026-07-15-overflow-loop-{design,plan}.md`. Loopen körs på
       `feat/overflow-loop` efter merge — rapport till Stefan efter VARJE varv, $50-tak.
