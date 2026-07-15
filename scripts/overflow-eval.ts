@@ -89,6 +89,18 @@ interface AbortCost {
   costUsd: number;
 }
 
+/** Reads a round's abort-cost.json, returning 0 if absent/unreadable. Shared
+ *  by accumulatedCostBefore (reading past rounds' ledgers) and the abort
+ *  handler in main() (accumulating a repeated abort onto the same round). */
+async function readAbortCost(dir: string): Promise<number> {
+  try {
+    const abort = JSON.parse(await readFile(path.join(dir, "abort-cost.json"), "utf8")) as AbortCost;
+    return abort.costUsd;
+  } catch {
+    return 0;
+  }
+}
+
 /** Sums costUsdRun over every varv-NN directory strictly before `varv`, plus
  *  finds the immediately preceding varv's report (for delta). rapport.json is
  *  the harness's own cost ledger — cheaper and more precise than re-scanning
@@ -96,7 +108,11 @@ interface AbortCost {
  *  (partial generation, transport error) never reaches rapport.json but DID
  *  spend real money before it aborted — abort-cost.json (written in the catch
  *  block below, before insertedBidIds are deleted and ai_call_logs.bid_id is
- *  nulled by the FK) is that varv's cost ledger instead. rapport.partial.json
+ *  nulled by the FK) is that varv's cost ledger instead. An aborted attempt
+ *  and its successful re-run of the SAME varv are both real, separate spends,
+ *  so a round with a rapport.json is never skipped past — its abort-cost.json
+ *  (if any, from an earlier aborted attempt before the re-run succeeded) is
+ *  added on top, not treated as mutually exclusive. rapport.partial.json
  *  (a --only run) is deliberately NOT read here — it must not seed `previous`
  *  (poisoned delta baseline) nor double-count against a later full rapport.json
  *  for the same varv. */
@@ -123,18 +139,22 @@ async function accumulatedCostBefore(varv: number): Promise<{ sum: number; previ
       const report = JSON.parse(await readFile(path.join(runDirFor(n), "rapport.json"), "utf8")) as RunReport;
       sum += report.costUsdRun;
       previous = report; // last iteration (highest n < varv) wins → immediately preceding varv
-      continue;
     } catch {
       // no rapport.json — either the varv never completed (aborted) or it was a
-      // --only partial run (rapport.partial.json). Fall through to abort-cost.json.
+      // --only partial run (rapport.partial.json).
     }
-    try {
-      const abort = JSON.parse(await readFile(path.join(runDirFor(n), "abort-cost.json"), "utf8")) as AbortCost;
-      sum += abort.costUsd;
-    } catch {
-      // neither file present — contributes no cost.
-    }
+    // Not an else-branch of the try above: a round can have BOTH a rapport.json
+    // (the successful re-run) and an abort-cost.json (an earlier aborted
+    // attempt of the same varv) — both spent real money.
+    sum += await readAbortCost(runDirFor(n));
   }
+
+  // The CURRENT round's own directory may already hold an abort-cost.json from
+  // a previous aborted attempt of this same varv (retried after a transport
+  // error) — that spend is real and must be counted even though the loop above
+  // only ever considers n < varv.
+  sum += await readAbortCost(runDirFor(varv));
+
   return { sum, previous };
 }
 
@@ -403,18 +423,28 @@ async function main() {
     // their ai_call_logs cost NOW, before the finally-block below deletes them
     // (the FK sets ai_call_logs.bid_id to null on delete, so this is the last
     // moment that link is queryable). accumulatedCostBefore reads this file for
-    // varvs that never produced a rapport.json.
+    // varvs that never produced a rapport.json. Cost capture is best-effort and
+    // must never mask the original error (e.g. the same Supabase transport
+    // failure that caused the abort can also break sumBidCosts here) — the
+    // original `err` is always rethrown below regardless of what happens in
+    // this block.
     if (insertedBidIds.length > 0) {
-      const costUsd = await sumBidCosts(supabase, insertedBidIds);
-      await writeFile(
-        path.join(runDir, "abort-cost.json"),
-        JSON.stringify({ costUsd }, null, 2) + "\n",
-        "utf8",
-      );
-      console.error(
-        `\nVarvet avbröts — $${costUsd.toFixed(2)} redan spenderat på ${insertedBidIds.length} bud ` +
-        `(skrivet till abort-cost.json innan städningen).`,
-      );
+      try {
+        const priorCostUsd = await readAbortCost(runDir);
+        const costUsd = await sumBidCosts(supabase, insertedBidIds);
+        const totalCostUsd = priorCostUsd + costUsd;
+        await writeFile(
+          path.join(runDir, "abort-cost.json"),
+          JSON.stringify({ costUsd: totalCostUsd }, null, 2) + "\n",
+          "utf8",
+        );
+        console.error(
+          `\nVarvet avbröts — $${costUsd.toFixed(2)} redan spenderat på ${insertedBidIds.length} bud ` +
+          `(skrivet till abort-cost.json innan städningen; $${totalCostUsd.toFixed(2)} ackumulerat för detta varv).`,
+        );
+      } catch (costErr) {
+        console.error(`VARNING: kunde inte fånga avbrottskostnad för varvet: ${String(costErr)}`);
+      }
     }
     throw err;
   } finally {

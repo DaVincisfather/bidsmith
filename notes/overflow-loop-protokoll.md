@@ -60,6 +60,12 @@ skalas ned.
   **slide 2/8/10, shapes Text 34/16/21** — mallens boxar växer under slidekanten med
   verkligt innehåll), 10 grova overflow post-exklusion, 2 dubblettpar, 10 243 tecken,
   $0,53/anbud.
+  **OBS (gammal exkluderingsregel):** de "10 grova overflow post-exklusion" mättes
+  under den DÅVARANDE ovillkorliga malldefekt-exkluderingen, innan magnitude-caket
+  (`758d2a1`). Med magnitude-caket räknas samma deck till **~15 grova** — Text
+  8/11/13/16/21 på slide 8/10 passerar nu inte längre exkluderingen (de växer förbi
+  sin baseline-tolerans). Varv 1:s startsiffror kommer alltså se "sämre" ut än
+  provkörningens 10 — det är väntat, INTE en regression.
 - Malldefekt-listan (29 poster) exkluderar det statiska; slide 2/8/10-FAIL:en (Text
   34/16/21) är loopens att fixa (mindre/tightare text), slide 9 är exkluderad malldefekt.
 - Kortfältsregeln + syskon-arbetsdelning finns redan i prompten (loop v1, 2026-07-14) —
@@ -70,6 +76,12 @@ skalas ned.
   efterhand ur `ai_call_logs`. Den finns bara i `rapport.json` (`costUsdRun`) för
   fullbordade varv, respektive `abort-cost.json` för varv som avbröts innan en
   rapport kunde byggas (summerat FÖRE städningen raderar bud-raderna).
+- **`--only`-körningars kostnad bokförs inte automatiskt:** en lyckad `--only`-körning
+  skriver `rapport.partial.json`, som `accumulatedCostBefore` medvetet INTE läser
+  (den får varken seeda delta-baslinjen eller dubbelräknas mot en senare fullständig
+  `rapport.json` för samma varv) — kostnaden syns alltså ingenstans i
+  `costUsdAccumulated`. Blir debug-körningar med `--only` många, bokför deras
+  kostnad manuellt mot $50-taket.
 
 ## Avslut
 
