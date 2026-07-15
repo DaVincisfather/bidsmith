@@ -82,11 +82,15 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       Körregler: `notes/overflow-loop-protokoll.md`; design + plan i
       `notes/2026-07-15-overflow-loop-{design,plan}.md`. Loopen körs på
       `feat/overflow-loop` efter merge — rapport till Stefan efter VARJE varv, $50-tak.
-- [ ] **GO/NO-GO-LATENS (pågår, branch feat/gonogo-latency):** evidens ur ai_call_logs:
-      23–36 s, output 1,3–1,7k tokens = väntetiden; input 1,6k→8,3k sedan källcitaten.
-      Fixar: index-refererade ska-krav (server-hydrering, publikt format orört),
-      strippa citat + kompakt JSON ur prompten, max_tokens-detektering i ai-client
-      (härdning — inga retries observerade). Subagent bygger.
+- [x] **GO/NO-GO-LATENS — LEVERERAD 2026-07-15 (ärligt utfall: måttlig latensvinst,
+      värdet är härdningen):** index-refererade ska-krav (server-hydrering, publikt
+      format orört, live-verifierad mot RetailTech: hydreringen håller med riktig
+      modell-output), krav+citat ur JSON-dumpen + kompakt serialisering,
+      max_tokens-detektering i ai-client (höjning <16 384, annars EN re-roll på samma
+      storlek — bevarar 32k-bundlarnas motståndskraft; branch-ärliga fel). UPPMÄTT:
+      36→25 s, input 8 262→7 780, output 1 285→1 238. Promptvikten sitter i TEAM-texten
+      (5k tecken belagda claims — beslutsrelevant, bantas ej) + systemprompt; vidare
+      latensjakt = UX-spår (streaming/progress i UI:t), inte prompt-bantning.
 - [ ] **Radrum-mallfixar (VÅR testmall — håll isär från loop-fixar):** bredda
       bolagsnamnsboxen (slide 1), flytta upp boxarna (slide 2/3/9), statboxarna slide 4,
       högerspalten slide 8; byt M365-cloudfonter → installerade (klick-i-textbox ändrar

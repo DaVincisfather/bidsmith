@@ -1,20 +1,23 @@
+import { z } from "zod";
 import {
   RfpAnalysis,
+  RfpRequirement,
   Consultant,
   ScoredConsultant,
   GoNoGoResult,
+  MustRequirementCheck,
 } from "./types";
-import { GoNoGoResultSchema } from "./ai-schemas";
+import { GoNoGoAiResponseSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
 import { MODELS } from "./models";
 import { qualificationRequirements } from "./requirement-kind";
 import { groundedConsultantClaims } from "./grounded-claims";
 
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
-Du får en RFP-analys, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
+Du får en RFP-analys, en numrerad kravlista, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
 
 Din uppgift:
-1. Kontrollera varje SKA-KRAV (priority: "must") mot teamets kompetenser och referensuppdrag. Binärt: uppfyllt eller ej.
+1. Kontrollera varje SKA-KRAV (priority: "must") i den numrerade kravlistan mot teamets kompetenser och referensuppdrag. Binärt: uppfyllt eller ej.
 2. Om NÅGOT ska-krav INTE uppfylls → winProbability = 0. Inga undantag.
 3. Bedöm bör-krav (should) och önskemål (nice-to-have) för sannolikhetsbedömningen.
 4. Vikta utvärderingskriterierna som anges i RFP:en.
@@ -26,7 +29,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 {
   "mustRequirements": [
     {
-      "requirement": "Beskrivning av ska-kravet",
+      "index": 1,
       "met": true,
       "coveredBy": "Konsultens namn, eller null om ej uppfyllt"
     }
@@ -48,6 +51,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 }
 
 Regler:
+- mustRequirements: "index" är numret på kravet i listan "## Kvalifikationskrav (numrerade)" nedan — INTE kravtexten. Använd bara nummer som finns i listan, ett per ska-krav (priority: must).
 - winProbability: 0-100. ALLTID 0 om något ska-krav saknas.
 - improvements: sortera efter estimatedImpact (högst först). Du får BARA referera till konsulter som finns i listan "Övriga tillgängliga konsulter" nedan. Använd EXAKT namn och ID från den listan. Hitta INTE PÅ konsulter. Om inga tillgängliga konsulter förbättrar teamet, returnera en tom improvements-lista.
 - improvements MÅSTE ha reell positiv impact. Om ett byte INTE löser ett ouppfyllt ska-krav och winProbability redan är 0, kommer bytet fortfarande resultera i 0% — ta INTE med det som förbättringsförslag. Varje förslag ska vara ett byte som faktiskt höjer winProbability. Inkludera ALDRIG förslag med +0% impact.
@@ -117,33 +121,63 @@ export async function evaluateGoNoGo(
   // Go/No-Go gatar hårt på ouppfyllda must-KRAV. Leverabler (kind=deliverable) är
   // uppdragets output, inte kvalifikationskrav — de får aldrig räknas som ska-krav
   // (annars kan en oproducerad leverans tvinga winProbability = 0). Filtrera bort dem.
-  const analysisForGonogo: RfpAnalysis = {
-    ...analysis,
-    requirements: qualificationRequirements(analysis.requirements),
-  };
+  //
+  // Numrerad kravlista (1-baserad): modellen svarar med index i stället för att
+  // återge varje kravs fulla text i mustRequirements — output-generering
+  // dominerar go/no-go-latensen (23–36s), och en full kravtext per krav är dyr
+  // att upprepa.
+  const numberedRequirements = qualificationRequirements(analysis.requirements);
+  const requirementsList = numberedRequirements
+    .map((r, i) => `${i + 1}. [${r.priority}/${r.kind ?? "qualification"}] ${r.description}`)
+    .join("\n");
 
-  const result = await callClaude({
+  // Kraven bärs nu av den numrerade listan ovan — dumpa inte requirements i
+  // JSON-blobben också. Käll-citaten (evidence, se RfpRequirement.evidence/
+  // ConsultantCompetency.evidence/ConsultantReference.evidence i types.ts) är
+  // till för det mekaniska nollhallucinationsspåret (verify-evidence.ts), inte
+  // för go/no-go-bedömningen, och drog input-tokens 1 627 → 8 262 när de
+  // började följa med analysen — strippa dem rekursivt. Kompakt JSON.stringify
+  // (ingen null, 2) sparar ytterligare formatterings-tokens.
+  const analysisWithoutRequirements = Object.fromEntries(
+    Object.entries(analysis).filter(([key]) => key !== "requirements"),
+  ) as Omit<RfpAnalysis, "requirements">;
+  const compactAnalysis = stripEvidenceFields(analysisWithoutRequirements);
+
+  const aiResult = await callClaude({
     model: MODELS.gonogo,
     maxTokens: 4000,
     system: SYSTEM_PROMPT,
     userContent: `Bedöm detta teams chanser att vinna följande upphandling.
 
 ## RFP-analys
-${JSON.stringify(analysisForGonogo, null, 2)}
+${JSON.stringify(compactAnalysis)}
+
+## Kvalifikationskrav (numrerade)
+${requirementsList}
 
 ## Låst team
 ${teamText}
 
 ## Övriga tillgängliga konsulter (för förbättringsförslag)
 ${poolText}`,
-    schema: GoNoGoResultSchema,
+    schema: GoNoGoAiResponseSchema,
     label: "Go/No-Go evaluation",
     userId,
   });
 
+  // Hydrera AI-svarets index tillbaka till det publika GoNoGoResult-formatet
+  // (requirement = kravtext) — UI/persistens/GoNoGoResultSchema är orörda.
+  const result: GoNoGoResult = {
+    ...aiResult,
+    mustRequirements: hydrateMustRequirements(aiResult.mustRequirements, numberedRequirements),
+  };
+
   // Enforce hard rule: if any must-requirement is unmet, winProbability must be 0.
-  // The prompt states this but the LLM occasionally fudges it.
-  const anyUnmet = result.mustRequirements.some((r) => !r.met);
+  // The prompt states this but the LLM occasionally fudges it. Gate on the
+  // PRE-hydration rows: hydration drops invalid-index rows, and a dropped
+  // met:false must still count as unmet — otherwise the shrunken list can
+  // read as "all met" downstream while the model actually flagged a gap.
+  const anyUnmet = aiResult.mustRequirements.some((r) => !r.met);
   if (anyUnmet && result.winProbability !== 0) {
     result.winProbability = 0;
   }
@@ -167,4 +201,46 @@ function parseImpactPct(s: string): number {
   const cleaned = s.replace(/[%\s]/g, "").replace(",", ".");
   const n = parseFloat(cleaned);
   return Number.isFinite(n) ? n : NaN;
+}
+
+// Strippar rekursivt fält med namnet "evidence" — käll-citaten (se
+// RfpRequirement.evidence/ConsultantCompetency.evidence/
+// ConsultantReference.evidence i types.ts) är till för det mekaniska
+// nollhallucinationsspåret (verify-evidence.ts), inte för AI-bedömningen.
+// Generisk på fältnamn (inte bara requirements, som redan är borttaget ovan)
+// så framtida evidence-bärande fält i RfpAnalysis fångas automatiskt.
+function stripEvidenceFields<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripEvidenceFields(item)) as unknown as T;
+  }
+  if (value !== null && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => key !== "evidence")
+      .map(([key, val]) => [key, stripEvidenceFields(val)] as const);
+    return Object.fromEntries(entries) as T;
+  }
+  return value;
+}
+
+// Modellen svarar med index in i den numrerade kravlistan (## Kvalifikationskrav)
+// i stället för att återge varje kravs text — hydrerar tillbaka till det
+// publika GoNoGoResult-formatet. Ogiltigt index (utanför listans intervall)
+// droppas defensivt med en varning: modellen instrueras använda giltiga index,
+// men en AI-drift ska inte krascha bedömningen.
+function hydrateMustRequirements(
+  aiMustRequirements: z.infer<typeof GoNoGoAiResponseSchema>["mustRequirements"],
+  numberedRequirements: RfpRequirement[],
+): MustRequirementCheck[] {
+  const hydrated: MustRequirementCheck[] = [];
+  for (const r of aiMustRequirements) {
+    const requirement = numberedRequirements[r.index - 1];
+    if (!requirement) {
+      console.warn(
+        `Go/No-Go evaluation: ogiltigt kravindex ${r.index} (giltigt intervall 1-${numberedRequirements.length}) — droppar raden`,
+      );
+      continue;
+    }
+    hydrated.push({ requirement: requirement.description, met: r.met, coveredBy: r.coveredBy });
+  }
+  return hydrated;
 }
