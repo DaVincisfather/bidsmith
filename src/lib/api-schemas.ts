@@ -137,3 +137,17 @@ export const OnboardingDecisionSchema = z.object({
   token: z.string().max(80).optional(),
   intent: z.string().max(500).optional(),
 });
+
+/** Slide-nivå-beslut (fast slide-knappen): alla slidens rutor får samma beslut.
+ *  Bara skipped/pending — confirmed kräver ställningstagande per ruta. */
+export const OnboardingSlideDecisionSchema = z.object({
+  slide: z.number().int().positive(),
+  decision: z.enum(["skipped", "pending"]),
+});
+
+/** PATCH-body: ett slot-beslut ELLER ett slide-beslut. Slot-formen först —
+ *  den är den vanliga och har disjunkta obligatoriska nycklar. */
+export const OnboardingPatchSchema = z.union([
+  OnboardingDecisionSchema,
+  OnboardingSlideDecisionSchema,
+]);

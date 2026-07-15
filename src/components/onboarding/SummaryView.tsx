@@ -1,6 +1,7 @@
 "use client";
 
 import type { DraftSlot } from "@/lib/pptx-template/onboarding/draft";
+import { fastSlideSources } from "@/lib/pptx-template/onboarding/draft-logic";
 
 interface SummaryViewProps {
   slots: DraftSlot[];
@@ -19,6 +20,8 @@ function decisionLabel(decision: DraftSlot["decision"]): string {
 
 export function SummaryView({ slots, confirmed, saving, uiError, onBack, onComplete }: SummaryViewProps) {
   const pending = slots.filter((s) => s.decision === "pending").length;
+  // Visas explicit så fast-beslutet syns innan onboardingen låses.
+  const fastSlides = fastSlideSources(slots);
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-display">Sammanfattning</h2>
@@ -28,6 +31,11 @@ export function SummaryView({ slots, confirmed, saving, uiError, onBack, onCompl
             ? "1 textruta är ej beslutad — den lämnas orörd i mallen (samma som Skippa)."
             : `${pending} textrutor är ej beslutade — de lämnas orörda i mallen (samma som Skippa).`}
         </div>
+      )}
+      {fastSlides.length > 0 && (
+        <p className="text-sm text-ink-soft">
+          Fasta slides (originaltexten behålls i alla anbud): {fastSlides.map((n) => `#${n}`).join(", ")}
+        </p>
       )}
       <table className="w-full text-sm border border-rule rounded-lg overflow-hidden">
         <thead className="bg-paper-2">

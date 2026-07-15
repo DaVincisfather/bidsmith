@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { OnboardingWizard } from "../OnboardingWizard";
 import type { OnboardingDraft } from "@/lib/pptx-template/onboarding/draft";
 
@@ -98,5 +98,33 @@ describe("OnboardingWizard", () => {
       expect(screen.getByText(/utkastet är korrupt/i)).toBeInTheDocument(),
     );
     expect(screen.getByRole("button", { name: /kör om klassificeringen/i })).toBeInTheDocument();
+  });
+
+  it("fast slide-knappen bulk-skippar slidens rutor och visar ångra-läget", async () => {
+    const skippedDraft: OnboardingDraft = {
+      ...draft,
+      slots: draft.slots.map((s) => ({ ...s, decision: "skipped" as const })),
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ status: "draft", name: "kundmall", version: 1, draft }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ draft: skippedDraft }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<OnboardingWizard templateId="t-1" />);
+    const btn = await screen.findByRole("button", { name: /markera hela sliden som fast/i });
+    fireEvent.click(btn);
+
+    await waitFor(() =>
+      expect(screen.getByText(/sliden är markerad som fast/i)).toBeInTheDocument(),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/templates/t-1/onboarding",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ slide: 2, decision: "skipped" }),
+      }),
+    );
+    expect(screen.getByRole("button", { name: /ångra/i })).toBeInTheDocument();
   });
 });

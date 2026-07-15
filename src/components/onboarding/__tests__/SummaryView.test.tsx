@@ -39,4 +39,25 @@ describe("SummaryView", () => {
     );
     expect(screen.queryByText(/ej beslutad/)).not.toBeInTheDocument();
   });
+
+  it("listar slides där alla rutor är skippade som fasta", () => {
+    const slots = [
+      makeSlot({ source: 2, shapeIndex: 1, decision: "confirmed", token: "{A}" }),
+      makeSlot({ source: 3, shapeIndex: 1, decision: "skipped", token: "{B}" }),
+      makeSlot({ source: 3, shapeIndex: 2, decision: "skipped", token: "{C}" }),
+    ];
+    render(
+      <SummaryView slots={slots} confirmed={1} saving={false} uiError={null} onBack={vi.fn()} onComplete={vi.fn()} />,
+    );
+    expect(screen.getByText(/fasta slides/i)).toHaveTextContent("#3");
+    expect(screen.getByText(/fasta slides/i)).not.toHaveTextContent("#2");
+  });
+
+  it("visar ingen fasta slides-rad när ingen slide är helt skippad", () => {
+    const slots = [makeSlot({ source: 2, shapeIndex: 1, decision: "confirmed" })];
+    render(
+      <SummaryView slots={slots} confirmed={1} saving={false} uiError={null} onBack={vi.fn()} onComplete={vi.fn()} />,
+    );
+    expect(screen.queryByText(/fasta slides/i)).not.toBeInTheDocument();
+  });
 });

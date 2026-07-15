@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { BidSection, StyleGuide } from "@/lib/types";
 import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
@@ -12,6 +12,9 @@ import { SectionRenderer } from "./renderers";
 import { StructureEvalBadge } from "./StructureEvalBadge";
 import { OverflowChecklist } from "./OverflowChecklist";
 import { getFieldValue, setFieldValue, findOverflowSection } from "@/lib/bid-editor/field-path";
+import { groupSectionsBySlide, type SlotMeta } from "@/lib/bid-editor/slot-meta";
+import { SlideNav } from "./SlideNav";
+import { SlideGroupedSections } from "./SlideGroupedSections";
 import { ForgeLoader } from "../ForgeLoader";
 
 interface BidEditorProps {
@@ -28,6 +31,9 @@ interface BidEditorProps {
   initialOverflowFlags: OverflowFlag[];
   initialFailedBundles: FailedUnit[];
   initialGenerationError: string | null;
+  /** Slot-metadata från mallprofilen (onboardade mallar) — null för inbyggda
+   *  mallens anbud ⇒ dagens platta sektionsvy. */
+  slotMeta: SlotMeta | null;
 }
 
 export function BidEditor({
@@ -42,6 +48,7 @@ export function BidEditor({
   initialOverflowFlags,
   initialFailedBundles,
   initialGenerationError,
+  slotMeta,
 }: BidEditorProps) {
   const [sections, setSections] = useState<BidSection[]>(initialSections);
   const [status, setStatus] = useState(initialStatus);
@@ -50,6 +57,18 @@ export function BidEditor({
   const [failedBundles, setFailedBundles] = useState<FailedUnit[]>(initialFailedBundles);
   const [generationError, setGenerationError] = useState<string | null>(initialGenerationError);
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
+  const [activeSlide, setActiveSlide] = useState<number | "other" | null>(null);
+  const slideRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const grouped = useMemo(
+    () => (slotMeta ? groupSectionsBySlide(sections, slotMeta) : null),
+    [sections, slotMeta],
+  );
+
+  function scrollToSlide(source: number | "other") {
+    setActiveSlide(source);
+    slideRefs.current[String(source)]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   const [shorteningKey, setShorteningKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -245,17 +264,26 @@ export function BidEditor({
         <div className="mb-3 space-y-2">
           <StructureEvalBadge eval={structureEval} />
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-mono font-bold uppercase tracking-wide text-ink-mute">Sektioner</h2>
-            <span className="text-[10px] text-ink-mute">{sections.length}</span>
+            <h2 className="text-xs font-mono font-bold uppercase tracking-wide text-ink-mute">{grouped ? "Slides" : "Sektioner"}</h2>
+            <span className="text-[10px] text-ink-mute">{grouped ? grouped.slides.length : sections.length}</span>
           </div>
         </div>
-        <SectionNav
-          sections={sections}
-          activeSectionKey={activeSectionKey}
-          onSectionClick={scrollToSection}
-          onReorder={handleReorder}
-          onRemoveSection={handleRemoveSection}
-        />
+        {grouped ? (
+          <SlideNav
+            groups={grouped.slides}
+            otherCount={grouped.other.length}
+            activeSlide={activeSlide}
+            onSlideClick={scrollToSlide}
+          />
+        ) : (
+          <SectionNav
+            sections={sections}
+            activeSectionKey={activeSectionKey}
+            onSectionClick={scrollToSection}
+            onReorder={handleReorder}
+            onRemoveSection={handleRemoveSection}
+          />
+        )}
       </aside>
 
       {/* Center panel — document view */}
@@ -310,21 +338,32 @@ export function BidEditor({
             </div>
           )}
 
-          {sections.map((section) => (
-            <div
-              key={section.key}
-              ref={(el) => { sectionRefs.current[section.key] = el; }}
-              className="group relative"
-              onClick={() => setActiveSectionKey(section.key)}
-            >
-              <SectionRenderer
-                section={section}
-                style={styleGuide}
-                onSectionChange={(updated) => handleSectionChange(section.key, updated)}
-                budgets={budgets}
-              />
-            </div>
-          ))}
+          {grouped && slotMeta ? (
+            <SlideGroupedSections
+              grouped={grouped}
+              slotMeta={slotMeta}
+              style={styleGuide}
+              onSectionChange={handleSectionChange}
+              registerSlideRef={(source, el) => { slideRefs.current[String(source)] = el; }}
+              onActivate={setActiveSlide}
+            />
+          ) : (
+            sections.map((section) => (
+              <div
+                key={section.key}
+                ref={(el) => { sectionRefs.current[section.key] = el; }}
+                className="group relative"
+                onClick={() => setActiveSectionKey(section.key)}
+              >
+                <SectionRenderer
+                  section={section}
+                  style={styleGuide}
+                  onSectionChange={(updated) => handleSectionChange(section.key, updated)}
+                  budgets={budgets}
+                />
+              </div>
+            ))
+          )}
 
           {/* Footer actions */}
           {isReady && (
@@ -349,15 +388,18 @@ export function BidEditor({
         )}
       </main>
 
-      {/* Right panel — pre-export overflow checklist (OverflowChecklist owns its own aside + styling) */}
-      <div className="shrink-0 p-4">
-        <OverflowChecklist
-          flags={overflowFlags}
-          onJumpToField={onJumpToField}
-          onShorten={onShorten}
-          shorteningKey={shorteningKey}
-        />
-      </div>
+      {/* Right panel — pre-export overflow checklist (OverflowChecklist owns its own aside + styling).
+          Döljs när grouped: fieldPath-checklistan är inert för profil-drivna anbud; räknarna är deras signal. */}
+      {!grouped && (
+        <div className="shrink-0 p-4">
+          <OverflowChecklist
+            flags={overflowFlags}
+            onJumpToField={onJumpToField}
+            onShorten={onShorten}
+            shorteningKey={shorteningKey}
+          />
+        </div>
+      )}
     </div>
   );
 }

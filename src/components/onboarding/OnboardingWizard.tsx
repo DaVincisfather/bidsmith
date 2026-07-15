@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { OnboardingDraft } from "@/lib/pptx-template/onboarding/draft";
+import { fastSlideSources } from "@/lib/pptx-template/onboarding/draft-logic";
 import { SlideWireframe, type SlotDecision } from "./SlideWireframe";
 import { SlotPanel } from "./SlotPanel";
 import { SummaryView } from "./SummaryView";
@@ -96,6 +97,28 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
     } catch {
       // Fetch-reject: beslutet sparades INTE — säg det, annars tror användaren
       // att det gick igenom (optimistisk setData körs aldrig i denna gren).
+      setUiError("nätverksfel — försök igen");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Fast slide = alla rutor skippade → originaltexten behålls i alla anbud.
+  // Ångra sätter pending (tidigare beslut återskapas inte — utkastet minns dem inte).
+  async function decideSlide(decision: "skipped" | "pending") {
+    if (!slide) return;
+    setSaving(true);
+    setUiError(null);
+    try {
+      const res = await fetch(`/api/templates/${templateId}/onboarding`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slide: slide.source, decision }),
+      });
+      const body = await res.json();
+      if (!res.ok) { setUiError(body.error ?? "kunde inte spara beslutet"); return; }
+      setData((d) => (d ? { ...d, draft: body.draft } : d));
+    } catch {
       setUiError("nätverksfel — försök igen");
     } finally {
       setSaving(false);
@@ -215,6 +238,9 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
   const confirmed = data.draft.slots.filter((s) => s.decision === "confirmed").length;
   const pending = data.draft.slots.filter((s) => s.decision === "pending").length;
 
+  const slideIsFast =
+    slide !== null && fastSlideSources(data.draft.slots).includes(slide.source);
+
   if (showSummary) {
     return (
       <SummaryView
@@ -244,6 +270,26 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
         <span className="ml-auto text-xs text-ink-mute">
           {confirmed} bekräftade · {pending} kvar att besluta
         </span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        {slideIsFast ? (
+          <>
+            <span className="text-xs text-ink-soft">
+              Sliden är markerad som fast — originaltexten behålls i alla anbud.
+            </span>
+            <button type="button" disabled={saving} onClick={() => decideSlide("pending")}
+              className="text-xs underline text-ink-mute hover:text-ink disabled:opacity-50">
+              Ångra (rutorna blir obeslutade)
+            </button>
+          </>
+        ) : (
+          <button type="button" disabled={saving} onClick={() => decideSlide("skipped")}
+            title="Alla rutor på sliden skippas — slidens originaltext behålls oförändrad i varje anbud"
+            className="border border-rule py-1.5 px-3 rounded text-xs font-medium hover:border-accent disabled:opacity-50">
+            Markera hela sliden som fast
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_20rem] gap-4">

@@ -3,6 +3,7 @@ import { callClaude } from "@/lib/ai-client";
 import { MODELS } from "@/lib/models";
 import type { BidSection } from "@/lib/types";
 import { formatContext, type BidContext } from "../context";
+import { isShortBudget, SHORT_FIELD_MAX_CHARS } from "../short-field";
 
 /**
  * Generic-prose bundle (template-upload slice 4) — the fallback generator for a
@@ -59,13 +60,10 @@ export interface GenericProseSlot {
   budgetChars?: number;
 }
 
-/** Fields at or under this budget are VALUES (a name, a date, a number), not
- *  prose. The calibration loop marks them via budgetChars; empty is a correct
- *  answer for them (no apology prose, no re-ask). Design doc 2026-07-14. */
-export const SHORT_FIELD_MAX_CHARS = 80;
+export { SHORT_FIELD_MAX_CHARS };
 
 export function isShortField(slot: GenericProseSlot): boolean {
-  return slot.budgetChars !== undefined && slot.budgetChars <= SHORT_FIELD_MAX_CHARS;
+  return isShortBudget(slot.budgetChars);
 }
 
 // Shared voice + source-fidelity contract — identical for the per-slot fallback

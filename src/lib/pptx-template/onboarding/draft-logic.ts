@@ -119,6 +119,51 @@ export function applyDecision(
   return { ok: true, draft: { ...draft, slots } };
 }
 
+/**
+ * Slide-nivå-bulk: alla slidens slots får samma beslut (fast-slide-knappen i
+ * wizarden). "skipped" = markera sliden fast (originaltexten behålls —
+ * buildInjections instrumenterar bara confirmed); "pending" = ångra, rutorna
+ * kräver nytt ställningstagande (tidigare beslut återskapas inte). Ren
+ * funktion, återanvänder applyDecision per slot så validering delas.
+ */
+export function applySlideDecision(
+  draft: OnboardingDraft,
+  source: number,
+  decision: "skipped" | "pending",
+): ApplyResult {
+  const slideSlots = draft.slots.filter((s) => s.source === source);
+  if (slideSlots.length === 0) {
+    return { ok: false, error: `slide ${source} har inga textrutor` };
+  }
+  let current = draft;
+  for (const slot of slideSlots) {
+    const result = applyDecision(current, {
+      source: slot.source,
+      shapeIndex: slot.shapeIndex,
+      decision,
+    });
+    if (!result.ok) return result;
+    current = result.draft;
+  }
+  return { ok: true, draft: current };
+}
+
+/** Slides där ALLA rutor är skippade = fasta (originaltexten behålls).
+ *  Delad av wizarden (fast-knappens läge) och sammanfattningen så regeln
+ *  inte driftar mellan ytorna. Stigande ordning. */
+export function fastSlideSources(slots: DraftSlot[]): number[] {
+  const bySlide = new Map<number, DraftSlot[]>();
+  for (const s of slots) {
+    const list = bySlide.get(s.source) ?? [];
+    list.push(s);
+    bySlide.set(s.source, list);
+  }
+  return [...bySlide.entries()]
+    .filter(([, list]) => list.every((s) => s.decision === "skipped"))
+    .map(([source]) => source)
+    .sort((a, b) => a - b);
+}
+
 /** Endast bekräftade slots instrumenteras — skippade lämnas orörda i kopian. */
 export function buildInjections(draft: OnboardingDraft): TokenInjection[] {
   return draft.slots
