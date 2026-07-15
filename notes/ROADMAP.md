@@ -166,6 +166,13 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Editor-slimningens follow-ups (PR #82, routine + slutreview 2026-07-15 — polish om
+  inte annat anges):** (1) enrads-notis "N kortfält döljs — genereras och exporteras
+  ändå" i grupperade vyn (`hiddenShortFields` finns redan i `GroupedSections`);
+  (2) BidEditor.tsx 403 rader — extrahera flat/grupperad-branchen + branchtest;
+  (3) `decideSlide`/`decide` delar fetch-boilerplate — gemensam `patchOnboarding`;
+  (4) a11y-pass SectionNav/SlideNav (aria-current) + wizardens statusrad (aria-live);
+  (5) hus-token-pass på räknaren (`text-neutral-400` → `text-ink-mute`)
 - **Re-ask-residualer (F6, PR #72-routinen):**
   - chunka re-asken vid stora tomt-set (>30 targets -> flera batchar) sa F6-monstret skalar med bredare mallar
   - stickprovsrutinen bor marka re-ask-fyllda sektioner i underlaget (hallucinationsrisken koncentrerad dit)
