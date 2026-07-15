@@ -143,16 +143,27 @@ interface TemplateRow {
   storage_path: string | null;
 }
 
+interface ScanTarget {
+  storagePath: string;
+  /** KnownDefect.note for findings this scan produced. */
+  note: string;
+}
+
 /** Radrum v4 goes through the same instrument+calibrate flow as onboarded
  *  templates (ROADMAP: "Radrum v4: 6 varv, 137/137 mätta") — the templates
  *  row's storage_path was rewritten to the INSTRUMENTED copy
  *  ({name}/v{n}-instrumented.pptx) once calibration completed
  *  (onboarding/complete/route.ts:97-132), while the true original stays at
  *  its own upload path ({name}/v{n}.pptx, templates/route.ts:106) untouched.
- *  loadTemplate() from template-store.ts blindly follows the row's CURRENT
- *  storage_path, so it would fetch the instrumented copy — wrong for this
- *  script. Resolve + verify directly against storage instead. */
-async function resolveOriginalPptx(supabase: SupabaseClient): Promise<{ buffer: Buffer; chosenPath: string }> {
+ *
+ *  BOTH are scanned (decision 2026-07-15, coordinator): generated decks render
+ *  from the INSTRUMENTED copy, so it is the actual empty render substrate —
+ *  its {token} label texts surface defects (Radrum slide 9's 817pt statisk
+ *  text) that the original's shorter labels never trigger. The original still
+ *  contributes its own content-independent gross-overflows. The defect list is
+ *  the UNION of both scans; both files are contentless, so content-driven
+ *  FAILs (real generated prose) stay out by construction. */
+async function resolveScanTargets(supabase: SupabaseClient): Promise<ScanTarget[]> {
   const { data: row, error } = await supabase
     .from("templates")
     .select("id, name, version, storage_path")
@@ -168,25 +179,25 @@ async function resolveOriginalPptx(supabase: SupabaseClient): Promise<{ buffer: 
   console.log(`templates-radens aktuella storage_path: ${tpl.storage_path}`);
 
   const isInstrumented = tpl.storage_path.endsWith("-instrumented.pptx");
-  const originalPath = isInstrumented
-    ? tpl.storage_path.replace(/-instrumented\.pptx$/, ".pptx")
-    : tpl.storage_path;
-  const exists = (listing ?? []).some((f) => `${tpl.name}/${f.name}` === originalPath);
-  if (!exists) {
+  if (!isInstrumented) {
     throw new Error(
-      `hittar inte den ointrumenterade originalfilen (${originalPath}) i storage-mappen '${tpl.name}/' — verifiera manuellt innan defektlistan byggs`,
+      `storage_path (${tpl.storage_path}) pekar inte på en -instrumented.pptx — Radrum v4 förväntas vara onboardad; verifiera manuellt innan defektlistan byggs`,
     );
   }
-  console.log(
-    isInstrumented
-      ? `→ storage_path pekar på den INSTRUMENTERADE kopian; ORIGINAL vald för känd-defekt-scan: ${originalPath}`
-      : `→ storage_path är redan originalet (ingen instrumenterad kopia registrerad på raden): ${originalPath}`,
-  );
+  const instrumentedPath = tpl.storage_path;
+  const originalPath = tpl.storage_path.replace(/-instrumented\.pptx$/, ".pptx");
+  for (const p of [originalPath, instrumentedPath]) {
+    const exists = (listing ?? []).some((f) => `${tpl.name}/${f.name}` === p);
+    if (!exists) {
+      throw new Error(`hittar inte ${p} i storage-mappen '${tpl.name}/' — verifiera manuellt innan defektlistan byggs`);
+    }
+  }
+  console.log(`→ scannar BÅDA: original ${originalPath} + instrumenterad ${instrumentedPath} (union)`);
 
-  const { data: fileBlob, error: dlErr } = await supabase.storage.from(TEMPLATE_BUCKET).download(originalPath);
-  if (dlErr || !fileBlob) throw new Error(`kunde inte ladda ner ${originalPath}: ${dlErr?.message ?? "tom respons"}`);
-  const buffer = Buffer.from(await fileBlob.arrayBuffer());
-  return { buffer, chosenPath: originalPath };
+  return [
+    { storagePath: originalPath, note: "tom originalmall" },
+    { storagePath: instrumentedPath, note: "tom instrumenterad mall" },
+  ];
 }
 
 function dedupeDefects(defects: KnownDefect[]): KnownDefect[] {
@@ -201,12 +212,22 @@ function dedupeDefects(defects: KnownDefect[]): KnownDefect[] {
   return out;
 }
 
-async function buildKnownDefects(supabase: SupabaseClient): Promise<KnownDefect[]> {
-  const { buffer, chosenPath } = await resolveOriginalPptx(supabase);
+/** One empty-template scan: same per-shape loop as scan-deck.ts's
+ *  verdicts-checkarna — deliberately WITHOUT scan-deck.ts's separate raw-token
+ *  xml scan: both scan targets carry unfilled {tokens} by definition (bare
+ *  template resp. instrumented substrate), so raw-token findings here are the
+ *  normal empty state, not defects (notes/2026-07-14-deck-scan-facit.md: 137
+ *  raw-token on the instrumented baseline, explicitly excluded there too). */
+async function scanEmptyTemplate(supabase: SupabaseClient, target: ScanTarget): Promise<KnownDefect[]> {
+  const { data: fileBlob, error: dlErr } = await supabase.storage
+    .from(TEMPLATE_BUCKET)
+    .download(target.storagePath);
+  if (dlErr || !fileBlob) throw new Error(`kunde inte ladda ner ${target.storagePath}: ${dlErr?.message ?? "tom respons"}`);
+  const buffer = Buffer.from(await fileBlob.arrayBuffer());
 
   const workDir = await mkdtemp(path.join(os.tmpdir(), "overflow-bootstrap-"));
   try {
-    const pptxPath = path.join(workDir, "original.pptx");
+    const pptxPath = path.join(workDir, "scan.pptx");
     await writeFile(pptxPath, buffer);
     const measureJson = path.join(workDir, "measure.json");
     const recalcPath = path.join(workDir, "recalc.pptx");
@@ -218,12 +239,6 @@ async function buildKnownDefects(supabase: SupabaseClient): Promise<KnownDefect[
     const measured = JSON.parse(await readFile(measureJson, "utf8")) as MeasurementFile;
     const scales = await readFontScalesByPrefix(await readFile(recalcPath), PREFIX_LEN);
 
-    // Same per-shape loop as scan-deck.ts's verdicts-checkarna — deliberately
-    // WITHOUT scan-deck.ts's separate raw-token xml scan: the original file's
-    // {tokens} are ALL unfilled by definition (it's the bare template), so
-    // raw-token findings here are the template's normal empty state, not a
-    // defect (notes/2026-07-14-deck-scan-facit.md: 137 raw-token on the
-    // baseline scan, explicitly excluded from that comparison too).
     const findings: Finding[] = [];
     for (const m of measured.shapes) {
       const scale = scales.get(prefixKey(m.textPrefix, PREFIX_LEN)) ?? null;
@@ -241,7 +256,7 @@ async function buildKnownDefects(supabase: SupabaseClient): Promise<KnownDefect[
 
     const failDefects: KnownDefect[] = findings
       .filter((f) => f.severity === "FAIL")
-      .map((f) => ({ slide: f.slide, checkId: f.checkId, shape: f.shape, note: "tom mall — statisk defekt" }));
+      .map((f) => ({ slide: f.slide, checkId: f.checkId, shape: f.shape, note: target.note }));
 
     // Gross-overflow mirrors gates.ts's own filter (same frozen constants) —
     // it is not a "check" in verdicts.ts, it reads shape geometry directly.
@@ -251,19 +266,37 @@ async function buildKnownDefects(supabase: SupabaseClient): Promise<KnownDefect[
       return s.boundHeightPt > GROSS_OVERFLOW_RATIO * innerHeight || over > GROSS_OVERFLOW_ABS_PT;
     });
     const grossDefects: KnownDefect[] = gross.map((s) => ({
-      slide: s.slide, checkId: "gross-overflow", shape: s.name, note: "tom mall — statisk defekt",
+      slide: s.slide, checkId: "gross-overflow", shape: s.name, note: target.note,
     }));
 
-    const defects = dedupeDefects([...failDefects, ...grossDefects]);
-    console.log(`\nKänd-defekt-scan (${chosenPath}): ${failDefects.length} FAIL-fynd, ${grossDefects.length} grov-overflow, ${defects.length} unika efter dedupe.`);
-    for (const d of defects) {
-      console.log(`  slide ${d.slide}  ${d.checkId.padEnd(16)} ${d.shape}`);
-    }
-
-    return defects;
+    console.log(
+      `\nScan ${target.storagePath}: ${failDefects.length} FAIL-fynd, ${grossDefects.length} grov-overflow.`,
+    );
+    return [...failDefects, ...grossDefects];
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }
+}
+
+async function buildKnownDefects(supabase: SupabaseClient): Promise<KnownDefect[]> {
+  const targets = await resolveScanTargets(supabase);
+
+  // Original first: a defect present in BOTH scans keeps "tom originalmall"
+  // (dedupeDefects is first-wins on slide+checkId+shape) — the more
+  // conservative provenance, since it needs no substrate text to manifest.
+  const all: KnownDefect[] = [];
+  for (const target of targets) {
+    all.push(...await scanEmptyTemplate(supabase, target));
+  }
+
+  const defects = dedupeDefects(all).sort(
+    (a, b) => a.slide - b.slide || a.checkId.localeCompare(b.checkId) || a.shape.localeCompare(b.shape),
+  );
+  console.log(`\nUnion: ${defects.length} unika defekter efter dedupe.`);
+  for (const d of defects) {
+    console.log(`  slide ${String(d.slide).padStart(2)}  ${d.checkId.padEnd(16)} ${d.shape.padEnd(10)} (${d.note})`);
+  }
+  return defects;
 }
 
 async function main() {

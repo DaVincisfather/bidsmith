@@ -3,30 +3,174 @@
     "slide": 1,
     "checkId": "gross-overflow",
     "shape": "Text 0",
-    "note": "tom mall — statisk defekt"
+    "note": "tom originalmall"
   },
   {
     "slide": 1,
     "checkId": "gross-overflow",
     "shape": "Text 4",
-    "note": "tom mall — statisk defekt"
+    "note": "tom originalmall"
+  },
+  {
+    "slide": 3,
+    "checkId": "gross-overflow",
+    "shape": "Text 13",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 4,
+    "checkId": "gross-overflow",
+    "shape": "Text 21",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 5,
+    "checkId": "gross-overflow",
+    "shape": "Text 19",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 6,
+    "checkId": "gross-overflow",
+    "shape": "Text 2",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 6,
+    "checkId": "gross-overflow",
+    "shape": "Text 23",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 6,
+    "checkId": "gross-overflow",
+    "shape": "Text 3",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 6,
+    "checkId": "gross-overflow",
+    "shape": "Text 4",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 6,
+    "checkId": "gross-overflow",
+    "shape": "Text 5",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 6,
+    "checkId": "gross-overflow",
+    "shape": "Text 6",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 7,
+    "checkId": "gross-overflow",
+    "shape": "Text 17",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 7,
+    "checkId": "gross-overflow",
+    "shape": "Text 53",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 8,
+    "checkId": "gross-overflow",
+    "shape": "Text 11",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 8,
+    "checkId": "gross-overflow",
+    "shape": "Text 13",
+    "note": "tom instrumenterad mall"
   },
   {
     "slide": 8,
     "checkId": "gross-overflow",
     "shape": "Text 16",
-    "note": "tom mall — statisk defekt"
+    "note": "tom originalmall"
+  },
+  {
+    "slide": 8,
+    "checkId": "gross-overflow",
+    "shape": "Text 8",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 9,
+    "checkId": "gross-overflow",
+    "shape": "Text 13",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 9,
+    "checkId": "outside-slide",
+    "shape": "Text 13",
+    "note": "tom instrumenterad mall"
   },
   {
     "slide": 10,
     "checkId": "gross-overflow",
     "shape": "Text 21",
-    "note": "tom mall — statisk defekt"
+    "note": "tom originalmall"
+  },
+  {
+    "slide": 11,
+    "checkId": "gross-overflow",
+    "shape": "Text 17",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 11,
+    "checkId": "gross-overflow",
+    "shape": "Text 24",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 11,
+    "checkId": "gross-overflow",
+    "shape": "Text 26",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 11,
+    "checkId": "gross-overflow",
+    "shape": "Text 30",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 11,
+    "checkId": "gross-overflow",
+    "shape": "Text 32",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 11,
+    "checkId": "gross-overflow",
+    "shape": "Text 34",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 11,
+    "checkId": "gross-overflow",
+    "shape": "Text 5",
+    "note": "tom instrumenterad mall"
+  },
+  {
+    "slide": 11,
+    "checkId": "gross-overflow",
+    "shape": "Text 55",
+    "note": "tom instrumenterad mall"
   },
   {
     "slide": 12,
     "checkId": "gross-overflow",
     "shape": "Text 0",
-    "note": "tom mall — statisk defekt"
+    "note": "tom originalmall"
   }
 ]
