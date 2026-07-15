@@ -148,6 +148,22 @@ export function applySlideDecision(
   return { ok: true, draft: current };
 }
 
+/** Slides där ALLA rutor är skippade = fasta (originaltexten behålls).
+ *  Delad av wizarden (fast-knappens läge) och sammanfattningen så regeln
+ *  inte driftar mellan ytorna. Stigande ordning. */
+export function fastSlideSources(slots: DraftSlot[]): number[] {
+  const bySlide = new Map<number, DraftSlot[]>();
+  for (const s of slots) {
+    const list = bySlide.get(s.source) ?? [];
+    list.push(s);
+    bySlide.set(s.source, list);
+  }
+  return [...bySlide.entries()]
+    .filter(([, list]) => list.every((s) => s.decision === "skipped"))
+    .map(([source]) => source)
+    .sort((a, b) => a - b);
+}
+
 /** Endast bekräftade slots instrumenteras — skippade lämnas orörda i kopian. */
 export function buildInjections(draft: OnboardingDraft): TokenInjection[] {
   return draft.slots

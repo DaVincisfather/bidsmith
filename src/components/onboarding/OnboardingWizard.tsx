@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { OnboardingDraft } from "@/lib/pptx-template/onboarding/draft";
+import { fastSlideSources } from "@/lib/pptx-template/onboarding/draft-logic";
 import { SlideWireframe, type SlotDecision } from "./SlideWireframe";
 import { SlotPanel } from "./SlotPanel";
 import { SummaryView } from "./SummaryView";
@@ -238,7 +239,7 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
   const pending = data.draft.slots.filter((s) => s.decision === "pending").length;
 
   const slideIsFast =
-    slotsOnSlide.length > 0 && slotsOnSlide.every((s) => s.decision === "skipped");
+    slide !== null && fastSlideSources(data.draft.slots).includes(slide.source);
 
   if (showSummary) {
     return (

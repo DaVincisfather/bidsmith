@@ -9,6 +9,7 @@ import {
   buildFinalProfile,
   buildForeignManifest,
   applySlideDecision,
+  fastSlideSources,
 } from "../draft-logic";
 import { parseOnboardingDraft } from "../draft";
 
@@ -270,5 +271,34 @@ describe("applySlideDecision", () => {
     const before = JSON.stringify(draft);
     applySlideDecision(draft, 2, "skipped");
     expect(JSON.stringify(draft)).toBe(before);
+  });
+});
+
+describe("fastSlideSources", () => {
+  function slot(source: number, shapeIndex: number, decision: "confirmed" | "skipped" | "pending") {
+    return {
+      source, shapeIndex, shapeText: "Text", token: `{T${source}${shapeIndex}}`,
+      capability: "understanding" as const, intent: "Text", confidence: "high" as const, decision,
+    };
+  }
+
+  it("listar en slide där ALLA rutor är skippade", () => {
+    const slots = [slot(1, 0, "skipped"), slot(1, 1, "skipped")];
+    expect(fastSlideSources(slots)).toEqual([1]);
+  });
+
+  it("utesluter en slide där bara vissa rutor är skippade", () => {
+    const slots = [slot(1, 0, "skipped"), slot(1, 1, "confirmed")];
+    expect(fastSlideSources(slots)).toEqual([]);
+  });
+
+  it("sorterar stigande när flera slides kvalar in", () => {
+    const slots = [
+      slot(3, 0, "skipped"),
+      slot(1, 0, "skipped"),
+      slot(2, 0, "skipped"),
+      slot(2, 1, "confirmed"), // slide 2 blir inte fast — en bekräftad ruta räcker
+    ];
+    expect(fastSlideSources(slots)).toEqual([1, 3]);
   });
 });

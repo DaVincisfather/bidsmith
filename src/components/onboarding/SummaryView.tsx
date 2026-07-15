@@ -1,6 +1,7 @@
 "use client";
 
 import type { DraftSlot } from "@/lib/pptx-template/onboarding/draft";
+import { fastSlideSources } from "@/lib/pptx-template/onboarding/draft-logic";
 
 interface SummaryViewProps {
   slots: DraftSlot[];
@@ -19,18 +20,8 @@ function decisionLabel(decision: DraftSlot["decision"]): string {
 
 export function SummaryView({ slots, confirmed, saving, uiError, onBack, onComplete }: SummaryViewProps) {
   const pending = slots.filter((s) => s.decision === "pending").length;
-  // Slides där ALLA rutor är skippade = fasta (originaltext behålls) — visas
-  // explicit så beslutet syns innan onboardingen låses.
-  const bySlide = new Map<number, DraftSlot[]>();
-  for (const s of slots) {
-    const list = bySlide.get(s.source) ?? [];
-    list.push(s);
-    bySlide.set(s.source, list);
-  }
-  const fastSlides = [...bySlide.entries()]
-    .filter(([, list]) => list.every((s) => s.decision === "skipped"))
-    .map(([source]) => source)
-    .sort((a, b) => a - b);
+  // Visas explicit så fast-beslutet syns innan onboardingen låses.
+  const fastSlides = fastSlideSources(slots);
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-display">Sammanfattning</h2>
