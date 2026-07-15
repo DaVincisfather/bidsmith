@@ -19,7 +19,8 @@
     "template:introspect": "tsx scripts/introspect-template.ts",
     "calibrate:budgets": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/calibrate-budgets.ts",
     "deck:dupes": "tsx scripts/check-deck-duplication.ts",
-    "deck:scan": "tsx scripts/scan-deck.ts"
+    "deck:scan": "tsx scripts/scan-deck.ts",
+    "overflow:bootstrap": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/overflow-bootstrap.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

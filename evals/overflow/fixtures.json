@@ -1,0 +1,55 @@
+{
+  "templateId": "25f9d500-911f-4afb-8fc0-a30f8220c477",
+  "fixtures": [
+    {
+      "id": "styrmodell",
+      "label": "Styrmodell — RetailTech",
+      "analysisId": "930bc471-9670-4cbf-95e4-5a05e8052f6c",
+      "teamConsultantIds": [
+        "efcfd2eb-49b2-4bef-836c-241c787701b4",
+        "2f4ceca5-7d35-4aee-ba75-471f9c6c18b7",
+        "bf4466de-3df8-4cfc-90e8-0d1e5b3bbb17"
+      ]
+    },
+    {
+      "id": "bemanning",
+      "label": "Bemanning — Göteborgs stad",
+      "analysisId": "bce02d12-2cce-4854-9fd8-6096f26a6a6c",
+      "teamConsultantIds": [
+        "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
+        "16ef3cb3-f2dd-4715-92fa-a4055c558df9",
+        "efcfd2eb-49b2-4bef-836c-241c787701b4"
+      ]
+    },
+    {
+      "id": "dataplattform",
+      "label": "Dataplattform — Region Sörmland",
+      "analysisId": "1b348e9f-a728-4148-ac9d-a0ee32fcb32c",
+      "teamConsultantIds": [
+        "99127520-8a4a-48fa-9769-85f7963f33ba",
+        "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
+        "16ef3cb3-f2dd-4715-92fa-a4055c558df9"
+      ]
+    },
+    {
+      "id": "strategi-nic",
+      "label": "Strategiutveckling — NIC",
+      "analysisId": "032aab8f-0bff-43d1-976d-1206e62bfdf6",
+      "teamConsultantIds": [
+        "bf4466de-3df8-4cfc-90e8-0d1e5b3bbb17",
+        "f2326b0c-64a7-4c8e-b5dd-342d3e1d6470",
+        "79d1b713-a44c-4520-a87a-7cc0154991a1"
+      ]
+    },
+    {
+      "id": "organisationsoversyn",
+      "label": "Organisationsöversyn — Mellansvenska",
+      "analysisId": "0e9e635b-9059-4b26-a2c9-414e930a091e",
+      "teamConsultantIds": [
+        "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
+        "efcfd2eb-49b2-4bef-836c-241c787701b4",
+        "2f4ceca5-7d35-4aee-ba75-471f9c6c18b7"
+      ]
+    }
+  ]
+}

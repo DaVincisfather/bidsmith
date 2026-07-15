@@ -1,0 +1,32 @@
+[
+  {
+    "slide": 1,
+    "checkId": "gross-overflow",
+    "shape": "Text 0",
+    "note": "tom mall — statisk defekt"
+  },
+  {
+    "slide": 1,
+    "checkId": "gross-overflow",
+    "shape": "Text 4",
+    "note": "tom mall — statisk defekt"
+  },
+  {
+    "slide": 8,
+    "checkId": "gross-overflow",
+    "shape": "Text 16",
+    "note": "tom mall — statisk defekt"
+  },
+  {
+    "slide": 10,
+    "checkId": "gross-overflow",
+    "shape": "Text 21",
+    "note": "tom mall — statisk defekt"
+  },
+  {
+    "slide": 12,
+    "checkId": "gross-overflow",
+    "shape": "Text 0",
+    "note": "tom mall — statisk defekt"
+  }
+]
