@@ -76,12 +76,13 @@ skalas ned.
   efterhand ur `ai_call_logs`. Den finns bara i `rapport.json` (`costUsdRun`) för
   fullbordade varv, respektive `abort-cost.json` för varv som avbröts innan en
   rapport kunde byggas (summerat FÖRE städningen raderar bud-raderna).
-- **`--only`-körningars kostnad bokförs inte automatiskt:** en lyckad `--only`-körning
-  skriver `rapport.partial.json`, som `accumulatedCostBefore` medvetet INTE läser
-  (den får varken seeda delta-baslinjen eller dubbelräknas mot en senare fullständig
-  `rapport.json` för samma varv) — kostnaden syns alltså ingenstans i
-  `costUsdAccumulated`. Blir debug-körningar med `--only` många, bokför deras
-  kostnad manuellt mot $50-taket.
+- **`--only`-körningars kostnad bokförs automatiskt i `abort-cost.json`** (sedan
+  PR #84-reviewfixen): en lyckad `--only`-körning skriver `rapport.partial.json`,
+  som `accumulatedCostBefore` medvetet INTE läser (den får inte seeda
+  delta-baslinjen) — men kostnaden bokförs additivt i varvets `abort-cost.json`
+  (samma ledger som abort-vägen, trots namnet = varvets off-report-spend), så den
+  räknas mot $50-taket utan manuell bokföring. Bootstrap-partialens $0,53 ligger
+  i `varv-00/abort-cost.json`.
 
 ## Avslut
 

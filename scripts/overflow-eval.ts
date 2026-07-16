@@ -101,6 +101,21 @@ async function readAbortCost(dir: string): Promise<number> {
   }
 }
 
+/** Books a spend into the round's abort-cost.json, additively across calls.
+ *  Despite the file name (kept from the abort path that introduced it), this is
+ *  the round's general off-report spend ledger: every spend that never reaches a
+ *  rapport.json — aborted attempts AND successful --only partials — lands here,
+ *  so accumulatedCostBefore counts it toward the $50 cap. Returns the new total. */
+async function addToCostLedger(dir: string, costUsd: number): Promise<number> {
+  const total = (await readAbortCost(dir)) + costUsd;
+  await writeFile(
+    path.join(dir, "abort-cost.json"),
+    JSON.stringify({ costUsd: total }, null, 2) + "\n",
+    "utf8",
+  );
+  return total;
+}
+
 /** Sums costUsdRun over every varv-NN directory strictly before `varv`, plus
  *  finds the immediately preceding varv's report (for delta). rapport.json is
  *  the harness's own cost ledger — cheaper and more precise than re-scanning
@@ -114,8 +129,10 @@ async function readAbortCost(dir: string): Promise<number> {
  *  (if any, from an earlier aborted attempt before the re-run succeeded) is
  *  added on top, not treated as mutually exclusive. rapport.partial.json
  *  (a --only run) is deliberately NOT read here — it must not seed `previous`
- *  (poisoned delta baseline) nor double-count against a later full rapport.json
- *  for the same varv. */
+ *  (poisoned delta baseline). Its spend still counts: the --only success path
+ *  books its costUsdRun into the same abort-cost.json ledger (addToCostLedger),
+ *  which IS read here — a partial's bids and a later full re-run's bids are
+ *  separate real spends, so counting both is correct bookkeeping. */
 async function accumulatedCostBefore(varv: number): Promise<{ sum: number; previous: RunReport | null }> {
   let names: string[];
   try {
@@ -411,7 +428,15 @@ async function main() {
     await writeFile(path.join(runDir, `${reportBase}.json`), JSON.stringify(report, null, 2) + "\n", "utf8");
     await writeFile(path.join(runDir, `${reportBase}.md`), md + "\n", "utf8");
     if (only) {
-      console.log(`\n--only ${only}: rapporten skrevs som ${reportBase}.json/.md (räknas inte som fullt varv).`);
+      // rapport.partial.json is never read by accumulatedCostBefore, so without
+      // this the --only run's spend would vanish from the $50-cap accounting.
+      // Booked AFTER the report above — its own costUsdAccumulated already
+      // includes this run via `+ costUsdRun`, so booking first would double it.
+      const ledgerTotal = await addToCostLedger(runDir, costUsdRun);
+      console.log(
+        `\n--only ${only}: rapporten skrevs som ${reportBase}.json/.md (räknas inte som fullt varv); ` +
+        `$${costUsdRun.toFixed(2)} bokfört i abort-cost.json ($${ledgerTotal.toFixed(2)} off-report ackumulerat för varvet).`,
+      );
     }
 
     console.log("\n" + md);
@@ -430,14 +455,8 @@ async function main() {
     // this block.
     if (insertedBidIds.length > 0) {
       try {
-        const priorCostUsd = await readAbortCost(runDir);
         const costUsd = await sumBidCosts(supabase, insertedBidIds);
-        const totalCostUsd = priorCostUsd + costUsd;
-        await writeFile(
-          path.join(runDir, "abort-cost.json"),
-          JSON.stringify({ costUsd: totalCostUsd }, null, 2) + "\n",
-          "utf8",
-        );
+        const totalCostUsd = await addToCostLedger(runDir, costUsd);
         console.error(
           `\nVarvet avbröts — $${costUsd.toFixed(2)} redan spenderat på ${insertedBidIds.length} bud ` +
           `(skrivet till abort-cost.json innan städningen; $${totalCostUsd.toFixed(2)} ackumulerat för detta varv).`,
