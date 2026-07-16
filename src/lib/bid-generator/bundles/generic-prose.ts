@@ -75,7 +75,12 @@ markdown-formatering och upprepade parallella strukturer. Variera meningslängd.
 KÄLLMATERIAL-TROHET (HÅRD REGEL):
 Skriv ENDAST baserat på vad som faktiskt står i RFP:n och teamkontexten. Hitta INTE på siffror,
 organisationsdetaljer, historik eller åtaganden som inte finns i källmaterialet. Om underlaget är
-tunt — skriv kortare istället för att fylla ut.`;
+tunt — skriv kortare istället för att fylla ut.
+
+ETT STYCKE (HÅRD REGEL):
+Varje sektion skrivs som ETT sammanhängande stycke — inga radbrytningar, inga tomma rader,
+inga punktlistor. Textrutorna är kalibrerade för löpande text: varje radbrytning kostar
+höjd som inte finns och trycker texten utanför rutan.`;
 
 function systemPrompt(slot: GenericProseSlot): string {
   const budgetLine = slot.budgetChars
@@ -89,7 +94,7 @@ ${PROSE_VOICE}${budgetLine}
 
 Svara med giltig JSON:
 {
-  "text": "sammanhängande prosa i ett eller flera stycken (\\n\\n mellan stycken)"
+  "text": "sammanhängande prosa i ETT stycke, utan radbrytningar"
 }`;
 }
 
@@ -147,7 +152,7 @@ function slideSystemPrompt(
   const jsonLines = slots
     .map(
       (s) =>
-        `    { "placeholder": "${s.placeholder}", "text": "sammanhängande prosa (\\n\\n mellan stycken)" }`,
+        `    { "placeholder": "${s.placeholder}", "text": "sammanhängande prosa i ETT stycke, utan radbrytningar" }`,
     )
     .join(",\n");
   // Empty when the slide fits one chunk → prompt is byte-identical to before.
@@ -353,7 +358,7 @@ function reaskSystemPrompt(targets: GenericProseReaskTarget[]): string {
   const jsonLines = targets
     .map(
       (t) =>
-        `    { "placeholder": "${t.slot.placeholder}", "text": "sammanhängande prosa (\\n\\n mellan stycken)" }`,
+        `    { "placeholder": "${t.slot.placeholder}", "text": "sammanhängande prosa i ETT stycke, utan radbrytningar" }`,
     )
     .join(",\n");
   // "Skriv allt" och PROSE_VOICE:s "hitta inte på" får inte krocka: tunt underlag

@@ -1,0 +1,932 @@
+{
+  "varv": 1,
+  "timestamp": "2026-07-16T07:39:58.218Z",
+  "branchCommit": "0f97668",
+  "bids": [
+    {
+      "fixtureId": "styrmodell",
+      "label": "Styrmodell — RetailTech",
+      "bidId": "a27311f3-af9f-48a9-ada6-ccd0ca59f540",
+      "gate": {
+        "fixtureId": "styrmodell",
+        "label": "Styrmodell — RetailTech",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "fail-findings",
+            "detail": "slide 2 Text 34: text bottom 989pt / right n/apt vs slide 1440×810pt; slide 10 Text 21: text bottom 817pt / right n/apt vs slide 1440×810pt"
+          },
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 2 Text 34: 748.53pt i 451.55pt inre box; slide 2 Text 36: 43.2pt i 26pt inre box; slide 3 Text 0: 43.2pt i 22.25pt inre box; slide 4 Text 4: 485.58pt i 363.8pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box; slide 6 Text 0: 43.2pt i 22.25pt inre box; slide 6 Text 19: 43.2pt i 22.25pt inre box; slide 6 Text 23: 64.8pt i 26pt inre box; slide 8 Text 0: 43.2pt i 22.25pt inre box; slide 8 Text 8: 172.8pt i 26pt inre box; slide 8 Text 11: 129.6pt i 26pt inre box; slide 8 Text 13: 194.4pt i 26pt inre box; slide 8 Text 16: 64.8pt i 26pt inre box; slide 10 Text 21: 86.4pt i 26pt inre box; slide 11 Text 0: 43.2pt i 22.25pt inre box"
+          },
+          {
+            "gate": "duplicates",
+            "detail": "slide 5: 0.33; slide 9: 0.31; slide 10: 0.32"
+          },
+          {
+            "gate": "min-fill",
+            "detail": "{Sektionsnummer 3}: 15/110"
+          }
+        ],
+        "excludedDefects": [],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          },
+          {
+            "slide": 3,
+            "name": "Text 13",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 43.2,
+            "boundWidthPt": 55.38,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "2026-01-31",
+            "textLength": 10
+          },
+          {
+            "slide": 4,
+            "name": "Text 21",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 64.8,
+            "boundWidthPt": 63.52,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "Ca 85 konsulter",
+            "textLength": 15
+          },
+          {
+            "slide": 6,
+            "name": "Text 2",
+            "topPt": 181.95,
+            "leftPt": 81,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 62.1,
+            "boundWidthPt": 33,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 1–4",
+            "textLength": 9
+          },
+          {
+            "slide": 6,
+            "name": "Text 3",
+            "topPt": 181.95,
+            "leftPt": 387.73,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 62.1,
+            "boundWidthPt": 32.13,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 4",
+            "textLength": 7
+          },
+          {
+            "slide": 6,
+            "name": "Text 4",
+            "topPt": 181.95,
+            "leftPt": 694.45,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 62.1,
+            "boundWidthPt": 32.13,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 8",
+            "textLength": 7
+          },
+          {
+            "slide": 6,
+            "name": "Text 5",
+            "topPt": 181.95,
+            "leftPt": 1001.18,
+            "widthPt": 46.69,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 37.25,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 12",
+            "textLength": 8
+          },
+          {
+            "slide": 6,
+            "name": "Text 6",
+            "topPt": 181.95,
+            "leftPt": 1318.31,
+            "widthPt": 46.69,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 37.25,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 16",
+            "textLength": 8
+          }
+        ]
+      },
+      "failCount": 2,
+      "grossOverflowCount": 15,
+      "excludedGrossCount": 8,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        },
+        {
+          "slide": 3,
+          "shape": "Text 13",
+          "boundHeightPt": 43.2,
+          "baselineBoundHeightPt": 64.8
+        },
+        {
+          "slide": 4,
+          "shape": "Text 21",
+          "boundHeightPt": 64.8,
+          "baselineBoundHeightPt": 64.8
+        },
+        {
+          "slide": 6,
+          "shape": "Text 2",
+          "boundHeightPt": 62.1,
+          "baselineBoundHeightPt": 124.2
+        },
+        {
+          "slide": 6,
+          "shape": "Text 3",
+          "boundHeightPt": 62.1,
+          "baselineBoundHeightPt": 165.6
+        },
+        {
+          "slide": 6,
+          "shape": "Text 4",
+          "boundHeightPt": 62.1,
+          "baselineBoundHeightPt": 103.5
+        },
+        {
+          "slide": 6,
+          "shape": "Text 5",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 103.5
+        },
+        {
+          "slide": 6,
+          "shape": "Text 6",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 41.4
+        }
+      ],
+      "dupCount": 3,
+      "totalChars": 9990
+    },
+    {
+      "fixtureId": "bemanning",
+      "label": "Bemanning — Göteborgs stad",
+      "bidId": "9777ee2c-b6e0-4ad4-9562-304d957abf11",
+      "gate": {
+        "fixtureId": "bemanning",
+        "label": "Bemanning — Göteborgs stad",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "fail-findings",
+            "detail": "slide 2 Text 34: text bottom 839pt / right n/apt vs slide 1440×810pt; slide 8 Text 16: text bottom 817pt / right n/apt vs slide 1440×810pt"
+          },
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 1 Text 2: 46.8pt i 24.5pt inre box; slide 2 Text 34: 597.87pt i 451.55pt inre box; slide 2 Text 36: 43.2pt i 26pt inre box; slide 3 Text 0: 43.2pt i 22.25pt inre box; slide 3 Text 5: 447.92pt i 392.3pt inre box; slide 3 Text 11: 447.92pt i 392.3pt inre box; slide 4 Text 0: 43.2pt i 22.25pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box; slide 8 Text 0: 43.2pt i 22.25pt inre box; slide 8 Text 8: 151.2pt i 26pt inre box; slide 8 Text 11: 216pt i 26pt inre box; slide 8 Text 13: 151.2pt i 26pt inre box; slide 8 Text 16: 86.4pt i 26pt inre box; slide 10 Text 21: 64.8pt i 26pt inre box; slide 11 Text 0: 43.2pt i 22.25pt inre box"
+          },
+          {
+            "gate": "duplicates",
+            "detail": "slide 5: 0.35; slide 6: 0.30"
+          },
+          {
+            "gate": "min-fill",
+            "detail": "{Sektionsnummer 3}: 15/110"
+          }
+        ],
+        "excludedDefects": [],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          },
+          {
+            "slide": 4,
+            "name": "Text 21",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 64.8,
+            "boundWidthPt": 67.36,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "40 år i branschen",
+            "textLength": 17
+          },
+          {
+            "slide": 6,
+            "name": "Text 23",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 43.2,
+            "boundWidthPt": 61.88,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "3 faser, dec-dec",
+            "textLength": 16
+          }
+        ]
+      },
+      "failCount": 2,
+      "grossOverflowCount": 15,
+      "excludedGrossCount": 3,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        },
+        {
+          "slide": 4,
+          "shape": "Text 21",
+          "boundHeightPt": 64.8,
+          "baselineBoundHeightPt": 64.8
+        },
+        {
+          "slide": 6,
+          "shape": "Text 23",
+          "boundHeightPt": 43.2,
+          "baselineBoundHeightPt": 43.2
+        }
+      ],
+      "dupCount": 2,
+      "totalChars": 10122
+    },
+    {
+      "fixtureId": "dataplattform",
+      "label": "Dataplattform — Region Sörmland",
+      "bidId": "797cbeb9-3835-4d03-8b77-1bfdea70b63e",
+      "gate": {
+        "fixtureId": "dataplattform",
+        "label": "Dataplattform — Region Sörmland",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "fail-findings",
+            "detail": "slide 2 Text 34: text bottom 952pt / right n/apt vs slide 1440×810pt; slide 8 Text 16: text bottom 817pt / right n/apt vs slide 1440×810pt; slide 10 Text 21: text bottom 817pt / right n/apt vs slide 1440×810pt"
+          },
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 2 Text 34: 710.87pt i 451.55pt inre box; slide 2 Text 36: 43.2pt i 26pt inre box; slide 3 Text 5: 484.88pt i 392.3pt inre box; slide 3 Text 11: 447.92pt i 392.3pt inre box; slide 4 Text 4: 410.25pt i 363.8pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box; slide 6 Text 0: 43.2pt i 22.25pt inre box; slide 6 Text 19: 43.2pt i 22.25pt inre box; slide 8 Text 4: 576.4pt i 459.05pt inre box; slide 8 Text 8: 302.4pt i 26pt inre box; slide 8 Text 11: 216pt i 26pt inre box; slide 8 Text 13: 172.8pt i 26pt inre box; slide 8 Text 16: 86.4pt i 26pt inre box; slide 10 Text 21: 86.4pt i 26pt inre box; slide 11 Text 50: 50.4pt i 30.5pt inre box; slide 11 Text 53: 535.87pt i 465.05pt inre box"
+          },
+          {
+            "gate": "duplicates",
+            "detail": "slide 5: 0.30"
+          }
+        ],
+        "excludedDefects": [],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          },
+          {
+            "slide": 4,
+            "name": "Text 21",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 64.8,
+            "boundWidthPt": 67.43,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "40 år, 85 konsulter",
+            "textLength": 19
+          },
+          {
+            "slide": 5,
+            "name": "Text 19",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 43.2,
+            "boundWidthPt": 55.36,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "Vecka 1–10",
+            "textLength": 10
+          },
+          {
+            "slide": 6,
+            "name": "Text 2",
+            "topPt": 181.95,
+            "leftPt": 81,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 62.1,
+            "boundWidthPt": 32.13,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 1",
+            "textLength": 7
+          },
+          {
+            "slide": 6,
+            "name": "Text 3",
+            "topPt": 181.95,
+            "leftPt": 387.73,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 36.38,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 4",
+            "textLength": 7
+          },
+          {
+            "slide": 6,
+            "name": "Text 4",
+            "topPt": 181.95,
+            "leftPt": 694.45,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 36.38,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 7",
+            "textLength": 7
+          },
+          {
+            "slide": 6,
+            "name": "Text 5",
+            "topPt": 181.95,
+            "leftPt": 1001.18,
+            "widthPt": 46.69,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 42,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 8",
+            "textLength": 7
+          },
+          {
+            "slide": 6,
+            "name": "Text 23",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 43.2,
+            "boundWidthPt": 53.08,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "10 veckor",
+            "textLength": 9
+          }
+        ]
+      },
+      "failCount": 3,
+      "grossOverflowCount": 16,
+      "excludedGrossCount": 8,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        },
+        {
+          "slide": 4,
+          "shape": "Text 21",
+          "boundHeightPt": 64.8,
+          "baselineBoundHeightPt": 64.8
+        },
+        {
+          "slide": 5,
+          "shape": "Text 19",
+          "boundHeightPt": 43.2,
+          "baselineBoundHeightPt": 64.8
+        },
+        {
+          "slide": 6,
+          "shape": "Text 2",
+          "boundHeightPt": 62.1,
+          "baselineBoundHeightPt": 124.2
+        },
+        {
+          "slide": 6,
+          "shape": "Text 3",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 165.6
+        },
+        {
+          "slide": 6,
+          "shape": "Text 4",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 103.5
+        },
+        {
+          "slide": 6,
+          "shape": "Text 5",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 103.5
+        },
+        {
+          "slide": 6,
+          "shape": "Text 23",
+          "boundHeightPt": 43.2,
+          "baselineBoundHeightPt": 43.2
+        }
+      ],
+      "dupCount": 1,
+      "totalChars": 10335
+    },
+    {
+      "fixtureId": "strategi-nic",
+      "label": "Strategiutveckling — NIC",
+      "bidId": "73971887-eadf-4487-9e48-f688439cf5f1",
+      "gate": {
+        "fixtureId": "strategi-nic",
+        "label": "Strategiutveckling — NIC",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "fail-findings",
+            "detail": "slide 2 Text 34: text bottom 989pt / right n/apt vs slide 1440×810pt; slide 8 Text 16: text bottom 817pt / right n/apt vs slide 1440×810pt; slide 10 Text 21: text bottom 817pt / right n/apt vs slide 1440×810pt"
+          },
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 2 Text 34: 748.53pt i 451.55pt inre box; slide 2 Text 36: 43.2pt i 26pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box; slide 5 Text 0: 43.2pt i 22.25pt inre box; slide 6 Text 6: 62.1pt i 21.5pt inre box; slide 6 Text 23: 64.8pt i 26pt inre box; slide 8 Text 4: 540.13pt i 459.05pt inre box; slide 8 Text 8: 259.2pt i 26pt inre box; slide 8 Text 11: 216pt i 26pt inre box; slide 8 Text 13: 172.8pt i 26pt inre box; slide 8 Text 16: 86.4pt i 26pt inre box; slide 9 Text 13: 108pt i 26pt inre box; slide 10 Text 21: 86.4pt i 26pt inre box"
+          },
+          {
+            "gate": "min-fill",
+            "detail": "{Sektionsnummer 3}: 39/110"
+          }
+        ],
+        "excludedDefects": [
+          {
+            "checkId": "outside-slide",
+            "severity": "FAIL",
+            "slide": 9,
+            "shape": "Text 13",
+            "detail": "text bottom 839pt / right n/apt vs slide 1440×810pt"
+          }
+        ],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          },
+          {
+            "slide": 3,
+            "name": "Text 13",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 64.8,
+            "boundWidthPt": 68,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "Linköping, Gdańsk",
+            "textLength": 17
+          },
+          {
+            "slide": 4,
+            "name": "Text 21",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 64.8,
+            "boundWidthPt": 67.36,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "40 år i branschen",
+            "textLength": 17
+          },
+          {
+            "slide": 6,
+            "name": "Text 2",
+            "topPt": 181.95,
+            "leftPt": 81,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 62.1,
+            "boundWidthPt": 32.13,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 1",
+            "textLength": 7
+          },
+          {
+            "slide": 6,
+            "name": "Text 3",
+            "topPt": 181.95,
+            "leftPt": 387.73,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 62.1,
+            "boundWidthPt": 32.13,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 16",
+            "textLength": 8
+          },
+          {
+            "slide": 6,
+            "name": "Text 4",
+            "topPt": 181.95,
+            "leftPt": 694.45,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 36.38,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 8",
+            "textLength": 7
+          },
+          {
+            "slide": 6,
+            "name": "Text 5",
+            "topPt": 181.95,
+            "leftPt": 1001.18,
+            "widthPt": 46.69,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 37.25,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "Vecka 12",
+            "textLength": 8
+          }
+        ]
+      },
+      "failCount": 3,
+      "grossOverflowCount": 13,
+      "excludedGrossCount": 7,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        },
+        {
+          "slide": 3,
+          "shape": "Text 13",
+          "boundHeightPt": 64.8,
+          "baselineBoundHeightPt": 64.8
+        },
+        {
+          "slide": 4,
+          "shape": "Text 21",
+          "boundHeightPt": 64.8,
+          "baselineBoundHeightPt": 64.8
+        },
+        {
+          "slide": 6,
+          "shape": "Text 2",
+          "boundHeightPt": 62.1,
+          "baselineBoundHeightPt": 124.2
+        },
+        {
+          "slide": 6,
+          "shape": "Text 3",
+          "boundHeightPt": 62.1,
+          "baselineBoundHeightPt": 165.6
+        },
+        {
+          "slide": 6,
+          "shape": "Text 4",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 103.5
+        },
+        {
+          "slide": 6,
+          "shape": "Text 5",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 103.5
+        }
+      ],
+      "dupCount": 0,
+      "totalChars": 9982
+    },
+    {
+      "fixtureId": "organisationsoversyn",
+      "label": "Organisationsöversyn — Mellansvenska",
+      "bidId": "226f0854-cbf8-49fd-9761-144120e6badf",
+      "gate": {
+        "fixtureId": "organisationsoversyn",
+        "label": "Organisationsöversyn — Mellansvenska",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "fail-findings",
+            "detail": "slide 2 Text 34: text bottom 952pt / right n/apt vs slide 1440×810pt; slide 8 Text 16: text bottom 839pt / right n/apt vs slide 1440×810pt"
+          },
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 1 Text 2: 46.8pt i 24.5pt inre box; slide 2 Text 34: 710.87pt i 451.55pt inre box; slide 2 Text 36: 43.2pt i 26pt inre box; slide 3 Text 0: 43.2pt i 22.25pt inre box; slide 3 Text 5: 485.58pt i 392.3pt inre box; slide 4 Text 0: 43.2pt i 22.25pt inre box; slide 4 Text 4: 447.92pt i 363.8pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box; slide 6 Text 0: 43.2pt i 22.25pt inre box; slide 8 Text 0: 43.2pt i 22.25pt inre box; slide 8 Text 4: 540.13pt i 459.05pt inre box; slide 8 Text 8: 237.6pt i 26pt inre box; slide 8 Text 11: 216pt i 26pt inre box; slide 8 Text 13: 216pt i 26pt inre box; slide 8 Text 16: 108pt i 26pt inre box; slide 9 Text 11: 400.87pt i 351.05pt inre box; slide 10 Text 11: 435.27pt i 373.71pt inre box; slide 10 Text 21: 64.8pt i 26pt inre box; slide 11 Text 0: 43.2pt i 22.25pt inre box"
+          },
+          {
+            "gate": "duplicates",
+            "detail": "slide 3: 0.36"
+          },
+          {
+            "gate": "min-fill",
+            "detail": "{Sektionsnummer 3}: 40/110"
+          }
+        ],
+        "excludedDefects": [],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          },
+          {
+            "slide": 4,
+            "name": "Text 21",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 64.8,
+            "boundWidthPt": 63.52,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "Ca 85 konsulter",
+            "textLength": 15
+          },
+          {
+            "slide": 6,
+            "name": "Text 23",
+            "topPt": 729,
+            "leftPt": 78,
+            "widthPt": 71.85,
+            "heightPt": 30,
+            "boundHeightPt": 43.2,
+            "boundWidthPt": 70.5,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 18,
+            "textPrefix": "Mars–sep 2025",
+            "textLength": 13
+          }
+        ]
+      },
+      "failCount": 2,
+      "grossOverflowCount": 19,
+      "excludedGrossCount": 3,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        },
+        {
+          "slide": 4,
+          "shape": "Text 21",
+          "boundHeightPt": 64.8,
+          "baselineBoundHeightPt": 64.8
+        },
+        {
+          "slide": 6,
+          "shape": "Text 23",
+          "boundHeightPt": 43.2,
+          "baselineBoundHeightPt": 43.2
+        }
+      ],
+      "dupCount": 1,
+      "totalChars": 10294
+    }
+  ],
+  "aggregate": {
+    "passed": 0,
+    "total": 5,
+    "failFindings": 12,
+    "grossOverflows": 78,
+    "dupPairs": 7
+  },
+  "delta": null,
+  "costUsdRun": 3.392782,
+  "costUsdAccumulated": 3.9195789999999997
+}
