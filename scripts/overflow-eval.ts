@@ -36,12 +36,13 @@ import { SEVERITIES } from "../src/lib/pptx-template/measure/types";
 import type { Finding, MeasurementFile } from "../src/lib/pptx-template/measure/types";
 import { collectDuplicates, collectFill, totalProseChars } from "../src/lib/overflow-eval/text-metrics";
 import { applyGates } from "../src/lib/overflow-eval/gates";
+import { loadFixturesFile } from "../src/lib/overflow-eval/fixtures";
 import { buildRunReport, renderMarkdown } from "../src/lib/overflow-eval/report";
 import type { RunReport } from "../src/lib/overflow-eval/report";
 import type {
-  BidMeasurement, FixturesFile, GateResult, KnownDefect, OverflowFixture,
+  BidMeasurement, GateResult, KnownDefect, OverflowFixture,
 } from "../src/lib/overflow-eval/types";
-import type { BidSection, RfpAnalysis, ScoredConsultant } from "../src/lib/types";
+import type { BidSection, RfpAnalysis } from "../src/lib/types";
 
 const execFileAsync = promisify(execFile);
 const PREFIX_LEN = 40;
@@ -236,7 +237,7 @@ async function measureBid(
 async function main() {
   const { varv, only, keepBids } = parseArgs(process.argv.slice(2));
 
-  const fixturesFile = JSON.parse(await readFile(FIXTURES_PATH, "utf8")) as FixturesFile;
+  const fixturesFile = await loadFixturesFile(FIXTURES_PATH);
   const knownDefects = JSON.parse(await readFile(DEFECTS_PATH, "utf8")) as KnownDefect[];
 
   let targets: OverflowFixture[] = fixturesFile.fixtures;
@@ -304,14 +305,12 @@ async function main() {
 
       const teamConsultants = await fetchConsultantsByIds(supabase, fixture.teamConsultantIds);
 
-      const { data: matchRows, error: matchError } = await supabase
-        .from("matches")
-        .select("team_proposal")
-        .eq("analysis_id", fixture.analysisId)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (matchError) throw new Error(`matches-fråga för ${fixture.analysisId} misslyckades: ${matchError.message}`);
-      const scoredConsultants = (matchRows?.[0]?.team_proposal as ScoredConsultant[]) ?? [];
+      // Frozen at bootstrap — NEVER looked up live: score/reasoning go verbatim
+      // into the writing prompt (formatContext), so a new matching run between
+      // rounds would silently change the eval's input and poison the delta.
+      // Shape is enforced by loadFixturesFile — a pre-freeze fixtures.json
+      // fails at load with a remediation hint.
+      const scoredConsultants = fixture.teamProposal;
 
       const { data: bidRow, error: bidInsertError } = await supabase
         .from("bids")

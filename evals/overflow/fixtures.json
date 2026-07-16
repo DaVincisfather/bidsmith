@@ -9,6 +9,85 @@
         "efcfd2eb-49b2-4bef-836c-241c787701b4",
         "2f4ceca5-7d35-4aee-ba75-471f9c6c18b7",
         "bf4466de-3df8-4cfc-90e8-0d1e5b3bbb17"
+      ],
+      "teamProposal": [
+        {
+          "level": "expert",
+          "score": 72,
+          "reasoning": "Anna har gedigen erfarenhet av strategiutveckling, organisationsdesign och målstyrning på ledningsgrupps- och styrelsenivå, vilket matchar kraven på förmåga att arbeta nära koncernledning väl. Hon saknar dock specifik dokumenterad erfarenhet av Beyond Budgeting eller liknande moderna styrmodeller och har inte lika tydlig koppling till multi-bolagsstyrning som efterfrågas som must-krav. Hennes breda strategiska kompetens och erfarenhet av att leda konsultteam gör henne ändå till en stark kandidat, särskilt som uppdragsansvarig i ett team.",
+          "consultantId": "bf4466de-3df8-4cfc-90e8-0d1e5b3bbb17",
+          "consultantName": "Anna Berg"
+        },
+        {
+          "level": "senior",
+          "score": 68,
+          "reasoning": "Magnus har relevant metodkompetens inom Balanced Scorecard och OKR samt stark förändringsledningsbakgrund och vana att arbeta på strategisk ledningsnivå, vilket är positivt för implementeringsdelen av uppdraget. Hans erfarenhet är dock uteslutande från offentlig sektor och hälso- och sjukvård, utan dokumenterad erfarenhet av multi-bolagsstyrning i en privat, förvärvsdriven koncernmiljö som RetailTech Nordic, vilket är ett tydligt must-krav han inte fullt uppfyller.",
+          "consultantId": "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
+          "consultantName": "Magnus Holmqvist"
+        },
+        {
+          "level": "senior",
+          "score": 75,
+          "reasoning": "Elin har stark förändringsledningskompetens och vana att arbeta med C-suite och styrelse, vilket är relevant för implementeringsdelen av uppdraget. Hennes erfarenhet är dock primärt fokuserad på bank- och försäkringssektorn med tonvikt på regulatorisk anpassning och IT-transformation snarare än styrmodellsutveckling eller Beyond Budgeting-metodik, vilket gör att hon inte täcker de centrala must-kraven fullt ut. Hon kan komplettera ett team som förändringsledningsspecialist men matchar inte kärnkompetensen för styrmodelldesign.",
+          "consultantId": "2f4ceca5-7d35-4aee-ba75-471f9c6c18b7",
+          "consultantName": "Elin Wallén"
+        },
+        {
+          "level": "senior",
+          "score": 62,
+          "reasoning": "Henriks djupa erfarenhet av post-merger integration och att navigera organisatoriska utmaningar efter förvärv är relevant givet RetailTechs bakgrund som förvärvsdriven koncern med fyra bolag. Han saknar dock specifik erfarenhet av styrmodellsutveckling, KPI-design eller Beyond Budgeting-metodik, vilket är kärnkraven i uppdraget, och hans fokus ligger mer på transaktionsrådgivning och synergirealisering än på löpande styrning och rapportering. Kan bidra med värdefull insikt om integrationsutmaningar men täcker inte de centrala leveranserna.",
+          "consultantId": "79d1b713-a44c-4520-a87a-7cc0154991a1",
+          "consultantName": "Henrik Ödman"
+        },
+        {
+          "level": "senior",
+          "score": 58,
+          "reasoning": "Sara har god kompetens inom verksamhetsutveckling, KPI-uppföljning och förändringsledning, men hennes profil är starkt inriktad mot Lean-transformation och operativ effektivisering i tillverkning och logistik snarare än strategisk styrmodellsutveckling på koncernnivå. Hon saknar erfarenhet av Beyond Budgeting eller motsvarande moderna styrmodeller samt arbete direkt mot koncernledning och styrelse, vilket gör henne mindre lämpad för detta specifika uppdrag trots stark generell processkompetens.",
+          "consultantId": "16ef3cb3-f2dd-4715-92fa-a4055c558df9",
+          "consultantName": "Sara Norén"
+        },
+        {
+          "level": "senior",
+          "score": 42,
+          "reasoning": "Johans specialisering inom strategiskt inköp, sourcing och leverantörsutveckling har mycket begränsad direkt koppling till uppdragets kärnbehov kring styrmodellsutveckling, KPI-design och koncernstyrning. Han saknar erfarenhet av Beyond Budgeting, prestationsstyrning och arbete med koncernledning i det sammanhang som efterfrågas, vilket gör honom till en svag matchning för detta specifika uppdrag trots god generell konsultkompetens.",
+          "consultantId": "44c8f82b-0b91-4174-9dee-91d74c84338a",
+          "consultantName": "Johan Frisk"
+        },
+        {
+          "level": "senior",
+          "score": 35,
+          "reasoning": "",
+          "consultantId": "6abcbe99-44bf-43ab-9ef8-53e5dc97deac",
+          "consultantName": "Linnea Bergqvist"
+        },
+        {
+          "level": "intermediate",
+          "score": 56,
+          "reasoning": "Aram har relevant kompetens inom KPI-design, dashboards och beslutsstöd som kan vara värdefull i det praktiska genomförandet av en gemensam rapporteringsstruktur, men hans erfarenhet är begränsad till fyra år och fokuserad på offentlig sektor och hälso- och sjukvård snarare än koncernstyrning i en privat multi-bolagsstruktur. Han saknar erfarenhet av Beyond Budgeting och arbete direkt med koncernledning, vilket gör honom mer lämpad som stödresurs än huvudkonsult i detta uppdrag.",
+          "consultantId": "99127520-8a4a-48fa-9769-85f7963f33ba",
+          "consultantName": "Aram Tahbaz"
+        },
+        {
+          "level": "intermediate",
+          "score": 68,
+          "reasoning": "Mira har relevant kompetens inom Balanced Scorecard, OKR och verksamhetsstyrning samt erfarenhet av att implementera OKR-baserad målstyrning, vilket är direkt kopplat till uppdragets metodbehov. Med endast tre års erfarenhet och utan tidigare uppdrag i multi-bolagsstrukturer eller direkt rådgivning till koncernledning uppfyller hon dock inte de seniora must-kraven för detta uppdrag, men kan vara ett värdefullt analytiskt tillskott i ett större team.",
+          "consultantId": "4b81dd02-3ac0-41e0-81ec-7ffcfb800676",
+          "consultantName": "Mira Söderlund"
+        },
+        {
+          "level": "junior",
+          "score": 28,
+          "reasoning": "Filip har endast två års erfarenhet och en profil inriktad mot marknadsanalys och go-to-market-strategi inom tech och life science, vilket har mycket liten koppling till uppdragets krav på styrmodellsutveckling, koncernstyrning och Beyond Budgeting. Han uppfyller inte några av de centrala must-kraven och saknar erfarenhet av arbete med koncernledning eller styrelser, vilket gör honom olämplig för detta specifika uppdrag.",
+          "consultantId": "f2326b0c-64a7-4c8e-b5dd-342d3e1d6470",
+          "consultantName": "Filip Stenberg"
+        },
+        {
+          "level": "expert",
+          "score": 92,
+          "reasoning": "Karl är en nästan perfekt matchning då han är specialiserad expert på just Beyond Budgeting och dynamisk styrning, med 18 års erfarenhet som rådgivare till koncernledningar i Norden. Hans referensuppdrag med införande av dynamisk styrmodell hos Telia samt strategisk styrmodell för Göteborgs stad visar direkt relevant erfarenhet av att designa koncerngemensamma styrmodeller med KPI:er och governance i komplexa organisationer. Han uppfyller samtliga must-krav gällande metodkompetens, arbete nära ledning och multi-bolagserfarenhet genom sitt arbete med post-merger organisationsdesign i en industrikoncern.",
+          "consultantId": "efcfd2eb-49b2-4bef-836c-241c787701b4",
+          "consultantName": "Karl Svensson"
+        }
       ]
     },
     {
@@ -19,6 +98,85 @@
         "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
         "16ef3cb3-f2dd-4715-92fa-a4055c558df9",
         "efcfd2eb-49b2-4bef-836c-241c787701b4"
+      ],
+      "teamProposal": [
+        {
+          "level": "expert",
+          "score": 62,
+          "reasoning": "Anna Berg har stark strategi- och organisationsdesignkompetens men hennes profil är primärt inriktad mot privat sektor, M&A och affärsutveckling snarare än operativ bemanningsplanering och schemaoptimering inom offentlig idrottsverksamhet. Hon saknar dokumenterad erfarenhet av facklig samverkan, kollektivavtal och schemasystem som Timecare, vilket är centrala krav i uppdraget. Hennes seniora profil och pris riskerar dessutom att inte matcha den snäva kostnadsramen på 500 000 SEK.",
+          "consultantId": "bf4466de-3df8-4cfc-90e8-0d1e5b3bbb17",
+          "consultantName": "Anna Berg"
+        },
+        {
+          "level": "senior",
+          "score": 82,
+          "reasoning": "Magnus Holmqvist har mycket stark matchning mot uppdraget tack vare 14 års erfarenhet av förändringsledning och organisationsutveckling i offentlig sektor, inklusive HR-transformation och kompetensförsörjningsstrategi i kommunal verksamhet. Hans metodkompetens inom GAP-analys, nulägesanalys, workshopfacilitering och styrningsmodeller för offentlig förvaltning passar väl med uppdragets tre faser och krav på pedagogisk presentation till ledning. Erfarenheten från komplexa intressentmiljöer och politiskt styrda organisationer stärker matchningen ytterligare, även om specifik erfarenhet av bemanningsschemaläggning och Timecare inte framgår explicit.",
+          "consultantId": "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
+          "consultantName": "Magnus Holmqvist"
+        },
+        {
+          "level": "senior",
+          "score": 68,
+          "reasoning": "Elin Wallén har djup metodkompetens inom förändringsledning och organisationstransformation men hennes erfarenhet är nästan uteslutande från bank- och försäkringssektorn i privat regi, vilket ger begränsad relevans för politiskt styrd offentlig förvaltning och kommunal verksamhet. Hon saknar dokumenterad erfarenhet av bemanningsplanering, schemasystem och facklig samverkan enligt kollektivavtal, vilket är centrala krav i denna RFP. Hennes starka faciliterings- och kommunikationsförmåga är dock relevant för slutpresentationen till avdelningsledningen.",
+          "consultantId": "2f4ceca5-7d35-4aee-ba75-471f9c6c18b7",
+          "consultantName": "Elin Wallén"
+        },
+        {
+          "level": "senior",
+          "score": 52,
+          "reasoning": "Henrik Ödmans expertis inom M&A, post-merger integration och transaktionsrådgivning har mycket liten koppling till uppdragets kärnbehov av bemanningsplanering och schemaoptimering inom offentlig idrottsförvaltning. Han saknar erfarenhet av facklig samverkan, kollektivavtal, politiskt styrda organisationer och verktygsutveckling för bemanningsstöd, vilket gör honom till en svag matchning trots stark generell analytisk och projektledningskompetens.",
+          "consultantId": "79d1b713-a44c-4520-a87a-7cc0154991a1",
+          "consultantName": "Henrik Ödman"
+        },
+        {
+          "level": "senior",
+          "score": 76,
+          "reasoning": "Sara Norén har relevant erfarenhet av verksamhetsutveckling och processledning i offentlig sektor, inklusive kommunal teknisk förvaltning och nulägesanalys av drift- och underhållsprocesser, vilket ger god grund för kartläggnings- och analysfaserna. Hennes kompetens inom KPI-uppföljning, dashboardutveckling och dataanalys matchar väl kravet på ett användarvänligt verktygsstöd för bemanningsmatchning, även om hon saknar specifik erfarenhet av schemaplanering, Timecare och facklig samverkan i kollektivavtalsmiljöer.",
+          "consultantId": "16ef3cb3-f2dd-4715-92fa-a4055c558df9",
+          "consultantName": "Sara Norén"
+        },
+        {
+          "level": "senior",
+          "score": 48,
+          "reasoning": "Johan Frisks specialisering inom strategisk inköp, sourcing och leverantörsutveckling har begränsad relevans för uppdragets fokus på bemanningsplanering, schemaläggning och organisationsutveckling inom offentlig idrottsverksamhet. Han saknar erfarenhet av HR-relaterade processer, facklig samverkan och politiskt styrda organisationers bemanningsfrågor, vilket gör honom till en svag kandidat för detta specifika uppdrag.",
+          "consultantId": "44c8f82b-0b91-4174-9dee-91d74c84338a",
+          "consultantName": "Johan Frisk"
+        },
+        {
+          "level": "senior",
+          "score": 35,
+          "reasoning": "",
+          "consultantId": "6abcbe99-44bf-43ab-9ef8-53e5dc97deac",
+          "consultantName": "Linnea Bergqvist"
+        },
+        {
+          "level": "intermediate",
+          "score": 71,
+          "reasoning": "Aram Tahbaz har stark teknisk kompetens inom dataanalys, KPI-design och dashboardutveckling som passar väl med kravet på ett Excel-baserat verktygsstöd för matchning mellan kompetens, bemanningsbehov och ekonomi. Hans erfarenhet av resursplanering och beslutsstöd inom offentlig sektor och hälso- och sjukvård är relevant, men han saknar specifik erfarenhet av bemanningsschemaläggning, facklig samverkan och kollektivavtal som efterfrågas i uppdraget. Som intermediate konsult ligger han också under den rekommenderade seniora uppdragsansvarsnivån.",
+          "consultantId": "99127520-8a4a-48fa-9769-85f7963f33ba",
+          "consultantName": "Aram Tahbaz"
+        },
+        {
+          "level": "intermediate",
+          "score": 68,
+          "reasoning": "Mira Söderlund har relevant erfarenhet av processkartläggning, verksamhetsstyrning och KPI-design från kommunal förvaltning, vilket är användbart för kartläggnings- och analysfaserna i uppdraget. Hon saknar dock specifik erfarenhet av bemanningsplanering, schemaläggning och facklig samverkan, samt har endast tre års erfarenhet vilket gör henne mindre lämpad för det seniora uppdragsansvar som efterfrågas.",
+          "consultantId": "4b81dd02-3ac0-41e0-81ec-7ffcfb800676",
+          "consultantName": "Mira Söderlund"
+        },
+        {
+          "level": "junior",
+          "score": 28,
+          "reasoning": "Filip Stenbergs erfarenhet är fokuserad på marknadsanalys och strategiunderlag inom tech- och life science-sektorerna i privat regi, med mycket begränsad koppling till bemanningsplanering, offentlig förvaltning eller facklig samverkan. Hans juniora profil och avsaknad av relevant sektorserfarenhet gör honom till en mycket svag matchning för detta uppdrag som kräver senior uppdragsansvarig med djup kunskap om politiskt styrda organisationer.",
+          "consultantId": "f2326b0c-64a7-4c8e-b5dd-342d3e1d6470",
+          "consultantName": "Filip Stenberg"
+        },
+        {
+          "level": "expert",
+          "score": 75,
+          "reasoning": "Karl Svensson har relevant erfarenhet av strategisk styrmodell hos just Göteborgs stad (2023) samt gedigen kompetens inom governance och organisationsdesign i offentlig sektor, vilket ger god förståelse för politiskt styrda organisationer. Han saknar dock specifik erfarenhet av bemanningsplanering, schemaläggning och Timecare-liknande system, samt facklig samverkan, vilket gör att kärnkompetensen för uppdragets operativa delar inte är fullt matchad. Hans expertnivå och sannolika prisnivå kan även vara en utmaning mot den begränsade budgeten.",
+          "consultantId": "efcfd2eb-49b2-4bef-836c-241c787701b4",
+          "consultantName": "Karl Svensson"
+        }
       ]
     },
     {
@@ -29,6 +187,78 @@
         "99127520-8a4a-48fa-9769-85f7963f33ba",
         "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
         "16ef3cb3-f2dd-4715-92fa-a4055c558df9"
+      ],
+      "teamProposal": [
+        {
+          "level": "expert",
+          "score": 28,
+          "reasoning": "Anna Berg har bred strategisk kompetens och erfarenhet av komplexa transformationsprogram, men hennes bakgrund är primärt inom finans, life science och energi – inte inom data/BI eller offentlig sektors IT-infrastruktur. RFP:n kräver specifikt en senior projektledare med 8+ års BI/data-erfarenhet och erfarenhet av molnbaserade dataplattformar, vilket Anna saknar dokumenterat. Hennes workshopfacilitering och förändringsledningskompetens är meriterande men täcker inte uppdragens tekniska kärna kring dataarkitektur, BI-strategi och plattformsutvärdering.",
+          "consultantId": "bf4466de-3df8-4cfc-90e8-0d1e5b3bbb17",
+          "consultantName": "Anna Berg"
+        },
+        {
+          "level": "senior",
+          "score": 72,
+          "reasoning": "Magnus Holmqvist har 14 års erfarenhet av komplexa uppdrag i offentlig sektor och hälso- och sjukvård, vilket matchar RFP:ns meriterande krav på branscherfarenhet och beställarorganisationens kontext. Hans kompetens inom nulägesanalys, workshopdesign, intervjustudier och intressenthantering är relevant för faserna nulägesanalys och behovsinventering. Däremot saknar han dokumenterad erfarenhet av BI/data-projekt, dataarkitektur och molnbaserade dataplattformar, vilket är ett kärnkrav (must) för projektledarrollen i detta uppdrag.",
+          "consultantId": "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
+          "consultantName": "Magnus Holmqvist"
+        },
+        {
+          "level": "senior",
+          "score": 55,
+          "reasoning": "Elin Wallén är en stark förändringsledare med gedigen erfarenhet av transformationsprogram, men hennes bakgrund är helt inriktad på finansiell sektor (bank och försäkring) och saknar koppling till data/BI-projekt, dataarkitektur eller offentlig sektor. RFP:ns must-krav på projektledare med BI/data-erfarenhet och dataarkitekt med molnkompetens matchar inte Elins profil, och hennes kompetens i datadrivet förhållningssätt är för generell för att täcka uppdragets tekniska leveranskrav.",
+          "consultantId": "2f4ceca5-7d35-4aee-ba75-471f9c6c18b7",
+          "consultantName": "Elin Wallén"
+        },
+        {
+          "level": "senior",
+          "score": 38,
+          "reasoning": "Henrik Ödmans specialisering inom M&A, post-merger integration och transaktionsrådgivning har ingen tydlig koppling till RFP:ns krav på BI/data-kompetens, dataarkitektur eller offentlig sektors dataplattformar. Hans erfarenhet av IT-konsolidering och ERP-migrering är marginellt relevant men täcker inte de specifika must-krav som ställs på projektledare, dataarkitekt eller BI-specialist i uppdraget. Uppdraget kräver djup teknisk och analytisk BI/data-kompetens som saknas i Henrik profil.",
+          "consultantId": "79d1b713-a44c-4520-a87a-7cc0154991a1",
+          "consultantName": "Henrik Ödman"
+        },
+        {
+          "level": "senior",
+          "score": 64,
+          "reasoning": "Sara Norén har erfarenhet från offentlig sektor och hälso- och sjukvård, inklusive nulägesanalys och processkartläggning vid statliga myndigheter och kommunal förvaltning, vilket är relevant för förstudiens struktur och metodik. Hennes kompetens inom dataanalys, KPI-uppföljning och dashboard-utveckling bidrar marginellt, men hon saknar djup erfarenhet av BI-plattformar, dataarkitektur och molnbaserade dataplattformar som krävs för uppdragets tekniska leveranser. Hennes workshopledning och förändringsledningskompetens kan vara ett komplement i ett team men täcker inte de centrala must-kraven.",
+          "consultantId": "16ef3cb3-f2dd-4715-92fa-a4055c558df9",
+          "consultantName": "Sara Norén"
+        },
+        {
+          "level": "senior",
+          "score": 42,
+          "reasoning": "Johan Frisk har relevant erfarenhet av offentlig upphandling (LOU) och Power BI, vilket matchar RFP:ns meriterande krav på upphandlingskompetens, men hans kärnkompetens är strategiskt inköp och sourcing – inte BI/data eller dataarkitektur. Erfarenheten av upphandlingsprocesser i offentlig sektor kan vara ett sidovärde, men täcker inte must-kraven på projektledning med BI-erfarenhet, dataarkitektur med molnkompetens eller BI-specialist med Power BI för ledningsrapportering i detta specifika uppdrag.",
+          "consultantId": "44c8f82b-0b91-4174-9dee-91d74c84338a",
+          "consultantName": "Johan Frisk"
+        },
+        {
+          "level": "senior",
+          "score": 25,
+          "reasoning": "",
+          "consultantId": "6abcbe99-44bf-43ab-9ef8-53e5dc97deac",
+          "consultantName": "Linnea Bergqvist"
+        },
+        {
+          "level": "intermediate",
+          "score": 78,
+          "reasoning": "Aram Tahbaz matchar RFP:ns krav på BI-specialist (mellannivå) mycket väl med dokumenterad kompetens i Power BI, Tableau, SQL, Python och dashboardutveckling för ledningsgrupper i offentlig sektor och hälso- och sjukvård. Hans erfarenhet av KPI-design, datagovernance, behovsanalys och workshopledning täcker centrala leveranskrav i samtliga tre faser av förstudien, och han har direkt erfarenhet av integrerade beslutsstödssystem för regionledning. Kompetens inom prediktiv modellering och hälsoekonomisk analys stärker dessutom uppdragets krav på kartläggning av AI/ML-behov.",
+          "consultantId": "99127520-8a4a-48fa-9769-85f7963f33ba",
+          "consultantName": "Aram Tahbaz"
+        },
+        {
+          "level": "intermediate",
+          "score": 61,
+          "reasoning": "Mira Söderlund har relevant kompetens inom processkartläggning, krav- och behovsanalys, workshopledning och intressenthantering som kan bidra i nulägesanalys- och behovsinventeringsfaserna. Hon har erfarenhet från kommunal förvaltning och systemupphandling (kravspecifikation inför systemupphandling), vilket delvis matchar uppdragets offentliga kontext. Däremot saknar hon djup BI- och dataarkitekturkompetens samt erfarenhet av molnbaserade dataplattformar, vilket begränsar hennes bidrag till uppdragets tekniska kärna.",
+          "consultantId": "4b81dd02-3ac0-41e0-81ec-7ffcfb800676",
+          "consultantName": "Mira Söderlund"
+        },
+        {
+          "level": "junior",
+          "score": 32,
+          "reasoning": "Filip Stenberg har grundläggande analytisk kompetens och viss erfarenhet av Power BI och Tableau, men hans bakgrund är primärt inriktad på marknadsanalys och strategiunderlag inom tech och life science – inte på BI-lösningar, dataarkitektur eller offentlig sektor. RFP:n kräver minst tre konsulter på senior/mellanseniornivå, och Filip saknar den erfarenhet och de certifieringar som krävs för att självständigt driva någon av de tre definierade rollerna. Han kan möjligen bidra som stödresurs i ett team men är inte dimensionerad för uppdragets krav.",
+          "consultantId": "f2326b0c-64a7-4c8e-b5dd-342d3e1d6470",
+          "consultantName": "Filip Stenberg"
+        }
       ]
     },
     {
@@ -39,6 +269,78 @@
         "bf4466de-3df8-4cfc-90e8-0d1e5b3bbb17",
         "f2326b0c-64a7-4c8e-b5dd-342d3e1d6470",
         "79d1b713-a44c-4520-a87a-7cc0154991a1"
+      ],
+      "teamProposal": [
+        {
+          "level": "expert",
+          "score": 72,
+          "reasoning": "Anna har 18 års erfarenhet av strategiutveckling, tillväxtstrategier och workshopfacilitering, och har genomfört treåriga tillväxtstrategier för B2B-bolag inom life science och energi vilket delvis matchar RFP:ens scope. Däremot saknas tydlig erfarenhet av tillverkningsindustri, precisionstillverkning, fordons- eller försvarsindustri – de mest centrala branscherna för NIC AB – och hennes referensuppdrag är primärt inom finans, life science och energi snarare än industriell B2B-tillverkning. Hon uppfyller kravet på projektledarerfarenhet (>8 år) och workshopfacilitering men branschgapet mot tillverkningsindustrin är ett påtagligt minus.",
+          "consultantId": "bf4466de-3df8-4cfc-90e8-0d1e5b3bbb17",
+          "consultantName": "Anna Berg"
+        },
+        {
+          "level": "senior",
+          "score": 22,
+          "reasoning": "Magnus har bred kompetens inom förändringsledning, organisationsdesign och workshopfacilitering, men all erfarenhet är koncentrerad till offentlig sektor och hälso- och sjukvård – ingen koppling till industriell B2B, tillverkningsindustri eller strategiutveckling för kommersiella bolag. RFP:en kräver specifikt strategiuppdrag för industriella B2B-bolag med omsättning över 200 MSEK, vilket Magnus saknar dokumentation för, och hans profil matchar inte de primära kompetensbehoven kring marknadsanalys, konkurrensbedömning och tillväxtplanering för tillverkande industri.",
+          "consultantId": "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
+          "consultantName": "Magnus Holmqvist"
+        },
+        {
+          "level": "senior",
+          "score": 18,
+          "reasoning": "Elin är specialiserad på förändringsledning och organisationstransformation inom bank och försäkring, vilket är mycket långt från RFP:ens krav på strategiutveckling och tillväxtplanering för industriell B2B-tillverkning. Hon saknar helt dokumenterad erfarenhet av tillverkningsindustrin, marknadsanalys, konkurrensbedömning eller affärsutveckling för industriella bolag, och hennes referensuppdrag handlar uteslutande om finansiell sektor och regulatorisk anpassning.",
+          "consultantId": "2f4ceca5-7d35-4aee-ba75-471f9c6c18b7",
+          "consultantName": "Elin Wallén"
+        },
+        {
+          "level": "senior",
+          "score": 52,
+          "reasoning": "Henrik har relevant erfarenhet av industriell kontext (tillverkning, PMI av europeisk tillverkningsenhet) och finansiell modellering/affärsplanering som tangerar RFP:ens krav. Dock är hans specialisering primärt M&A och post-merger integration snarare än organisk strategiutveckling och tillväxtplanering, och han saknar dokumenterade erfarenheter av extern marknadsanalys, segmentstrategi (försvar, medicinteknik, grön energi) eller workshopfacilitering för ledningsgrupper i strategikontext – vilket utgör kärnan i detta uppdrag.",
+          "consultantId": "79d1b713-a44c-4520-a87a-7cc0154991a1",
+          "consultantName": "Henrik Ödman"
+        },
+        {
+          "level": "senior",
+          "score": 58,
+          "reasoning": "Sara har direkt erfarenhet av fordonsindustrin (Lean-transformation av produktionslinjer), tillverkningsindustri och operativ effektivisering, vilket svarar mot RFP:ens should-krav på operativ industrierfarenhet och branschkännedom. Hennes profil är dock primärt operativt/processinriktad (Lean, Kaizen, processkartläggning) snarare än strategiutveckling och extern marknadsanalys, och hon uppfyller troligen inte must-kravet på minst 8 års erfarenhet av strategiarbete och affärsutveckling specifikt.",
+          "consultantId": "16ef3cb3-f2dd-4715-92fa-a4055c558df9",
+          "consultantName": "Sara Norén"
+        },
+        {
+          "level": "senior",
+          "score": 35,
+          "reasoning": "Johan har erfarenhet från fordonsindustrin och energisektorn samt kompetens inom marknadsanalys och benchmarking, men hans specialisering är strategisk inköp och sourcing snarare än övergripande affärsstrategi och tillväxtplanering. RFP:en efterfrågar strategiutveckling och extern marknadsanalys för att identifiera tillväxt i nya segment, vilket inte är Johans kärnkompetens, och han saknar dokumenterade strategiuppdrag för industriella B2B-bolag av NIC ABs storlek.",
+          "consultantId": "44c8f82b-0b91-4174-9dee-91d74c84338a",
+          "consultantName": "Johan Frisk"
+        },
+        {
+          "level": "senior",
+          "score": 20,
+          "reasoning": "Linneas expertis ligger helt inom ESG, hållbarhetsrapportering och EU-regulatoriska ramverk (CSRD, taxonomi, SFDR), vilket inte matchar RFP:ens kärna om strategiutveckling och tillväxtplanering för industriell B2B-tillverkning. Hennes referensuppdrag är uteslutande inom fastighet, finans och retail, och hon saknar dokumenterad erfarenhet av tillverkningsindustrin eller strategisk affärsutveckling i den form NIC AB söker.",
+          "consultantId": "6abcbe99-44bf-43ab-9ef8-53e5dc97deac",
+          "consultantName": "Linnea Bergqvist"
+        },
+        {
+          "level": "intermediate",
+          "score": 25,
+          "reasoning": "Aram har teknisk kompetens inom dataanalys, KPI-design och beslutsstöd men all erfarenhet är från offentlig sektor och hälso- och sjukvård, utan koppling till industriell B2B, tillverkningsindustri eller strategiutveckling för kommersiella bolag. Hans profil kan i teorin bidra som analytisk resurs i ett team men uppfyller inte RFP:ens centrala krav på strategikompetens och branscherfarenhet.",
+          "consultantId": "99127520-8a4a-48fa-9769-85f7963f33ba",
+          "consultantName": "Aram Tahbaz"
+        },
+        {
+          "level": "intermediate",
+          "score": 22,
+          "reasoning": "Mira har kompetens inom processkartläggning, målstyrning (BSC, OKR) och workshopledning men saknar erfarenhet av industriell B2B, tillverkningsindustri och strategisk affärsutveckling. Hennes referensuppdrag är från bank, kommunal förvaltning och fastighet, och hennes erfarenhetsnivå (3 år) och inriktning matchar inte RFP:ens krav på strategiuppdrag för tillverkande industri.",
+          "consultantId": "4b81dd02-3ac0-41e0-81ec-7ffcfb800676",
+          "consultantName": "Mira Söderlund"
+        },
+        {
+          "level": "junior",
+          "score": 48,
+          "reasoning": "Filip har relevant kompetens inom marknadsanalys, segmentering, konkurrensutvärdering, scenarioplanering och strategiunderlag som direkt kopplar till delar av RFP:ens leveransinnehåll, och hans erfarenhet av medtech/life science är relevant för NIC ABs målsegment. Som junior konsult kan han inte axla rollen som projektledare (must-krav: 8 års erfarenhet) men representerar ett rimligt stödelement i ett team, dock begränsas matchningen av kort erfarenhet och avsaknad av industriell tillverkningsbakgrund.",
+          "consultantId": "f2326b0c-64a7-4c8e-b5dd-342d3e1d6470",
+          "consultantName": "Filip Stenberg"
+        }
       ]
     },
     {
@@ -49,6 +351,85 @@
         "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
         "efcfd2eb-49b2-4bef-836c-241c787701b4",
         "2f4ceca5-7d35-4aee-ba75-471f9c6c18b7"
+      ],
+      "teamProposal": [
+        {
+          "level": "expert",
+          "score": 62,
+          "reasoning": "Anna Berg har gedigen erfarenhet av strategiutveckling, organisationsdesign och scenarioplanering samt ett visst inslag av offentlig-privat samverkan, men hennes profil är starkt förankrad i näringsliv, finans och life science snarare än politiskt styrda organisationer eller regional förvaltning. Hon saknar dokumenterad erfarenhet av organisationsöversyner i kommunal eller regional förvaltning enligt kravet på minst tre liknande referensuppdrag, vilket gör henne mindre träffsäker för detta specifika uppdrag trots hög generell kompetensnivå.",
+          "consultantId": "bf4466de-3df8-4cfc-90e8-0d1e5b3bbb17",
+          "consultantName": "Anna Berg"
+        },
+        {
+          "level": "senior",
+          "score": 87,
+          "reasoning": "Magnus Holmqvist matchar uppdraget mycket väl med 14 års erfarenhet av förändrings- och organisationsutveckling specifikt inom offentlig sektor, inklusive flera direkt jämförbara uppdrag såsom översyn av ledningsstruktur vid statlig myndighet och omstrukturering efter sjukhussammanslagning. Hans kompetens inom intressentanalys, GAP-analys, styrningsmodeller för offentlig förvaltning och workshopfacilitering täcker kärnkraven i uppdraget, och hans certifieringar och akademiska bakgrund stärker ytterligare hans lämplighet som uppdragsledare.",
+          "consultantId": "d0975fc1-ce81-4c4f-8f68-4e6a874db58b",
+          "consultantName": "Magnus Holmqvist"
+        },
+        {
+          "level": "senior",
+          "score": 71,
+          "reasoning": "Elin Wallén har stark metodkompetens inom förändringsledning, Prosci/ADKAR och Kotter samt erfarenhet av att driva komplexa transformationsprogram och kulturförändring, men hela hennes uppdragshistorik är förlagd till bank- och försäkringssektorn utan dokumenterad erfarenhet av offentlig förvaltning eller politiskt styrda organisationer. Detta gör att hon inte uppfyller kravet på referensuppdrag inom regional eller kommunal förvaltning, vilket begränsar hennes relevans trots hög generell förändringsledningskompetens.",
+          "consultantId": "2f4ceca5-7d35-4aee-ba75-471f9c6c18b7",
+          "consultantName": "Elin Wallén"
+        },
+        {
+          "level": "senior",
+          "score": 58,
+          "reasoning": "Henrik Ödmans profil är starkt inriktad mot M&A, post-merger integration och transaktionsrådgivning inom privat sektor som industri, retail och telekom, vilket har begränsad direkt relevans för en organisationsöversyn av offentlig regional förvaltning. Han saknar erfarenhet av politiskt styrda organisationer och offentlig sektor helt, vilket gör honom till en svag matchning mot kravprofilen trots stark analytisk och ledarskapsförmåga.",
+          "consultantId": "79d1b713-a44c-4520-a87a-7cc0154991a1",
+          "consultantName": "Henrik Ödman"
+        },
+        {
+          "level": "senior",
+          "score": 65,
+          "reasoning": "Sara Norén har relevant erfarenhet av verksamhetsutveckling och processledning i offentlig sektor, inklusive uppdrag inom regional sjukvårdsförvaltning, statlig myndighet och kommunal teknisk förvaltning, vilket ger henne god förståelse för offentlig förvaltningskontext. Hennes fokus på Lean, nulägesanalys och medarbetarinvolvering matchar delvis kraven på medarbetarengagemang, men hon saknar den strategiska organisationsöversyns- och scenarioplaneringserfarenhet på ledningsnivå som uppdraget primärt efterfrågar.",
+          "consultantId": "16ef3cb3-f2dd-4715-92fa-a4055c558df9",
+          "consultantName": "Sara Norén"
+        },
+        {
+          "level": "senior",
+          "score": 48,
+          "reasoning": "Johan Frisks kompetensprofil är centrerad kring strategisk inköp, sourcing och leverantörsutveckling, vilket har mycket begränsad koppling till uppdragets krav på organisationsöversyn, styrmodellsanalys och politiskt styrda organisationer. Trots erfarenhet av LOU och ett visst inslag av offentlig sektor genom ett regionalt energidistributionsbolag är hans profil inte anpassad för den typ av organisationsutvecklingsuppdrag som RFP:n avser.",
+          "consultantId": "44c8f82b-0b91-4174-9dee-91d74c84338a",
+          "consultantName": "Johan Frisk"
+        },
+        {
+          "level": "senior",
+          "score": 35,
+          "reasoning": "",
+          "consultantId": "6abcbe99-44bf-43ab-9ef8-53e5dc97deac",
+          "consultantName": "Linnea Bergqvist"
+        },
+        {
+          "level": "intermediate",
+          "score": 54,
+          "reasoning": "Aram Tahbaz har relevant erfarenhet av offentlig sektor och beslutsstöd, inklusive uppdrag för regionledning och kommunförbund, samt kompetens inom KPI-design och verksamhetsanalys som kan stödja nulägesanalys-delen av uppdraget. Han saknar dock den seniora erfarenheten och det strategiska organisationsutvecklingsperspektiv som krävs för uppdragsledarrollen, och hans profil är mer tekniskt/analytiskt inriktad än organisationsöversyn-fokuserad.",
+          "consultantId": "99127520-8a4a-48fa-9769-85f7963f33ba",
+          "consultantName": "Aram Tahbaz"
+        },
+        {
+          "level": "intermediate",
+          "score": 61,
+          "reasoning": "Mira Söderlund har viss relevant erfarenhet av processkartläggning och verksamhetsstyrning inom kommunal förvaltning, inklusive socialförvaltning och budgetprocesser, vilket ger henne en grundläggande förståelse för offentlig sektor. Med endast tre års erfarenhet uppfyller hon dock inte kraven på uppdragsledarens tio års erfarenhet, och hennes uppdragshistorik saknar den strategiska bredd och komplexitet som en fullständig organisationsöversyn av en regional förvaltning kräver.",
+          "consultantId": "4b81dd02-3ac0-41e0-81ec-7ffcfb800676",
+          "consultantName": "Mira Söderlund"
+        },
+        {
+          "level": "junior",
+          "score": 28,
+          "reasoning": "Filip Stenberg är en junior konsult med två års erfarenhet inriktad mot marknadsanalys och strategiunderlag inom tech- och life science-sektorerna i privat sektor, utan någon dokumenterad erfarenhet av offentlig förvaltning eller organisationsöversyner. Hans profil matchar inte uppdragets krav på erfaren uppdragsledare eller teammedlemmar med erfarenhet av politiskt styrda organisationer, vilket gör honom olämplig för detta uppdrag.",
+          "consultantId": "f2326b0c-64a7-4c8e-b5dd-342d3e1d6470",
+          "consultantName": "Filip Stenberg"
+        },
+        {
+          "level": "expert",
+          "score": 78,
+          "reasoning": "Karl Svensson har relevant erfarenhet av strategisk styrmodell och organisationsdesign i offentlig sektor, bland annat med Göteborgs stad, vilket ger honom viss trovärdighet mot kravet på erfarenhet av politiskt styrda organisationer. Hans 18 år som managementkonsult och fokus på governance och ledningsgrupputveckling matchar väl uppdragsledarkravet på tio års erfarenhet, men uppdragshistoriken visar begränsat antal renodlade organisationsöversyner av den omfattning och karaktär som RFP:n efterfrågar.",
+          "consultantId": "efcfd2eb-49b2-4bef-836c-241c787701b4",
+          "consultantName": "Karl Svensson"
+        }
       ]
     }
   ]
