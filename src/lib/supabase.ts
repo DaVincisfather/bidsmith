@@ -5,6 +5,7 @@ import {
   Sector,
   GoNoGoResult,
   ConsultantExtraction,
+  ScoredConsultant,
 } from "./types";
 import { CONSULTANT_SELECT } from "./constants";
 import { EXTRACTION_VERSION } from "./extraction-version";
@@ -89,6 +90,28 @@ export async function fetchConsultantsByIds(
   }
 
   return data.map((row: Record<string, unknown>) => mapConsultantRow(row));
+}
+
+/** Latest matches.team_proposal for an analysis (created_at desc), [] when no
+ *  matching run exists. The same query also lives inline (pre-existing) in
+ *  api/go-no-go, api/bids and analysis/[id]/page.tsx — new callers use this
+ *  helper so "latest proposal" semantics have one home to converge on. */
+export async function fetchLatestTeamProposal(
+  supabase: SupabaseClient,
+  analysisId: string
+): Promise<ScoredConsultant[]> {
+  const { data, error } = await supabase
+    .from("matches")
+    .select("team_proposal, created_at")
+    .eq("analysis_id", analysisId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Could not fetch latest team proposal for ${analysisId}: ${error.message}`);
+  }
+  return ((data?.team_proposal as ScoredConsultant[] | null) ?? []);
 }
 
 /**

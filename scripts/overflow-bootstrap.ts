@@ -16,7 +16,8 @@ import os from "os";
 import path from "path";
 import { promisify } from "util";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createServiceClient } from "../src/lib/supabase";
+import { createServiceClient, fetchLatestTeamProposal } from "../src/lib/supabase";
+import { loadFixturesFileForRefreeze, saveFixturesFile } from "../src/lib/overflow-eval/fixtures";
 import { TEMPLATE_BUCKET } from "../src/lib/pptx-template/template-store";
 import { prefixKey, readFontScalesByPrefix } from "../src/lib/pptx-template/calibrate/font-scales";
 import {
@@ -70,19 +71,29 @@ interface AnalysisRow {
   created_at: string;
 }
 
-/** Latest matches.team_proposal for the analysis — the snapshot frozen into
- *  fixtures.json (OverflowFixture.teamProposal): score/reasoning feed the
- *  writing prompt verbatim, so the eval must never look this up live. */
-async function fetchLatestProposal(supabase: SupabaseClient, analysisId: string): Promise<ScoredConsultant[]> {
-  const { data: matchRow, error: matchErr } = await supabase
-    .from("matches")
-    .select("team_proposal, created_at")
-    .eq("analysis_id", analysisId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (matchErr) throw new Error(`kunde inte läsa matches för ${analysisId}: ${matchErr.message}`);
-  return (matchRow?.team_proposal ?? []) as ScoredConsultant[];
+/** Shared snapshot logging for both freeze paths (full bootstrap + refreeze).
+ *  The missing-ids warning guards refreezes specifically: teamConsultantIds is
+ *  frozen while the proposal snapshot is re-fetched LATEST, so a newer matching
+ *  run can lack rows for old team members — that passes silently and becomes
+ *  "score: N/A" in the writing prompt (formatContext), shifting eval input
+ *  without being visible. */
+function logProposalSnapshot(
+  fixtureId: string,
+  analysisId: string,
+  teamConsultantIds: string[],
+  proposal: ScoredConsultant[],
+): void {
+  console.log(`  Fixtur ${fixtureId}: proposal-snapshot ${proposal.length} konsulter`);
+  if (proposal.length === 0) {
+    console.warn(`  VARNING: ingen matchning för ${analysisId} — teamProposal fryses TOM (skrivprompten får inga scores).`);
+    return;
+  }
+  const missing = teamConsultantIds.filter(
+    (id) => !proposal.some((c) => c.consultantId === id),
+  );
+  if (missing.length > 0) {
+    console.warn(`  VARNING: team-id utan proposal-rad (score blir N/A i prompten): ${missing.join(", ")}`);
+  }
 }
 
 /** Latest bids.team_consultant_ids for the analysis if a bid exists; else the
@@ -141,13 +152,10 @@ async function buildFixtures(supabase: SupabaseClient): Promise<FixturesFile> {
       );
     }
 
-    const teamProposal = await fetchLatestProposal(supabase, chosen.id);
+    const teamProposal = await fetchLatestTeamProposal(supabase, chosen.id);
     const teamConsultantIds = await resolveTeam(supabase, chosen.id, teamProposal);
     console.log(`  Team: ${teamConsultantIds.join(", ") || "(tomt)"}`);
-    console.log(`  Proposal-snapshot: ${teamProposal.length} konsulter`);
-    if (teamProposal.length === 0) {
-      console.warn(`  VARNING: ingen matchning för ${chosen.id} — teamProposal fryses TOM (skrivprompten får inga scores).`);
-    }
+    logProposalSnapshot(target.id, chosen.id, teamConsultantIds, teamProposal);
     fixtures.push({ id: target.id, label: target.label, analysisId: chosen.id, teamConsultantIds, teamProposal });
   }
 
@@ -325,15 +333,12 @@ async function buildKnownDefects(supabase: SupabaseClient): Promise<KnownDefect[
  *  against the live DB and could silently swap a fixture to a newer analysis
  *  variant, unfreezing what this file exists to freeze. */
 async function freezeProposalsOnly(supabase: SupabaseClient): Promise<void> {
-  const fixturesFile = JSON.parse(await readFile(FIXTURES_OUT, "utf8")) as FixturesFile;
+  const fixturesFile = await loadFixturesFileForRefreeze(FIXTURES_OUT);
   for (const fixture of fixturesFile.fixtures) {
-    fixture.teamProposal = await fetchLatestProposal(supabase, fixture.analysisId);
-    console.log(`Fixtur ${fixture.id}: proposal-snapshot ${fixture.teamProposal.length} konsulter`);
-    if (fixture.teamProposal.length === 0) {
-      console.warn(`  VARNING: ingen matchning för ${fixture.analysisId} — teamProposal fryses TOM.`);
-    }
+    fixture.teamProposal = await fetchLatestTeamProposal(supabase, fixture.analysisId);
+    logProposalSnapshot(fixture.id, fixture.analysisId, fixture.teamConsultantIds, fixture.teamProposal);
   }
-  await writeFile(FIXTURES_OUT, JSON.stringify(fixturesFile, null, 2) + "\n", "utf8");
+  await saveFixturesFile(FIXTURES_OUT, fixturesFile);
   console.log(`\nSkrev ${FIXTURES_OUT} (${fixturesFile.fixtures.length} fixturer, endast teamProposal ändrad).`);
 }
 
@@ -349,7 +354,7 @@ async function main() {
   console.log("=== Bygger evals/overflow/fixtures.json ===");
   const fixturesFile = await buildFixtures(supabase);
   await mkdir(path.dirname(FIXTURES_OUT), { recursive: true });
-  await writeFile(FIXTURES_OUT, JSON.stringify(fixturesFile, null, 2) + "\n", "utf8");
+  await saveFixturesFile(FIXTURES_OUT, fixturesFile);
   console.log(`\nSkrev ${FIXTURES_OUT} (${fixturesFile.fixtures.length} fixturer).`);
 
   console.log("\n=== Bygger evals/overflow/known-template-defects.json ===");
