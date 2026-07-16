@@ -59,6 +59,9 @@ docs/tech-stack.png
 /evals/runs
 .gstack/
 
+# overflow-eval decks are large and reproducible — reports (json/md) stay committed
+evals/overflow/runs/**/*.pptx
+
 # Claude Code local settings
 .claude/
 

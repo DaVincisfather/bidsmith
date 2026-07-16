@@ -8,6 +8,7 @@ import {
   type GenericProseReaskTarget,
 } from "./bundles/generic-prose";
 import type { BidContext } from "./context";
+import { effectiveBudget } from "./budget-rules";
 
 export type { BidContext } from "./context";
 
@@ -120,10 +121,11 @@ export async function generateSectionsFromProfile(
     for (const slot of slide.slots) {
       if (slot.capability !== "generic-prose") continue;
       if (slot.status === "skip") continue;
+      const budget = effectiveBudget(slot.budgetChars);
       slots.push({
         placeholder: slot.placeholder,
         intent: slot.intent,
-        ...(slot.budgetChars !== undefined ? { budgetChars: slot.budgetChars } : {}),
+        ...(budget !== undefined ? { budgetChars: budget } : {}),
       });
     }
     if (slots.length === 0) continue;
