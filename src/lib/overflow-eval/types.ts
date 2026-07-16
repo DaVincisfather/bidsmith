@@ -1,10 +1,16 @@
 import type { Finding, MeasurementFile, ShapeMeasurementV2 } from "@/lib/pptx-template/measure/types";
+import type { ScoredConsultant } from "@/lib/types";
 
 export interface OverflowFixture {
   id: string;
   label: string;
   analysisId: string;
   teamConsultantIds: string[];
+  /** Latest matches.team_proposal snapshotted at bootstrap time — frozen with
+   *  the fixture because score/reasoning feed the writing prompt verbatim
+   *  (formatContext in bid-generator/context.ts); a live lookup would let a
+   *  new matching run between rounds silently change the eval's input. */
+  teamProposal: ScoredConsultant[];
 }
 
 export interface FixturesFile {

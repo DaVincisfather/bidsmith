@@ -1,12 +1,15 @@
 // scripts/overflow-bootstrap.ts
-// CLI: npm run overflow:bootstrap
+// CLI: npm run overflow:bootstrap [-- --proposals-only]
 // One-off bootstrap for the overflow-eval harness (Task 5, design doc
 // notes/2026-07-15-overflow-loop-design.md). Writes the two frozen inputs
 // every varv of the harness consumes:
-//   evals/overflow/fixtures.json               — 5 analyses + teams + templateId
+//   evals/overflow/fixtures.json               — 5 analyses + teams + proposals + templateId
 //   evals/overflow/known-template-defects.json  — Radrum v4's own static defects
 // Run ONCE, hand-reviewed, then committed. The loop never regenerates these —
 // "Listan uppdateras ENDAST av människa" (design doc).
+// --proposals-only: re-freeze ONLY the teamProposal snapshots into the existing
+// fixtures.json (no re-resolution of analyses/teams, no defect-list rebuild, no
+// COM) — the migration path for fixtures written before teamProposal existed.
 import { execFile } from "child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "fs/promises";
 import os from "os";
@@ -67,9 +70,28 @@ interface AnalysisRow {
   created_at: string;
 }
 
+/** Latest matches.team_proposal for the analysis — the snapshot frozen into
+ *  fixtures.json (OverflowFixture.teamProposal): score/reasoning feed the
+ *  writing prompt verbatim, so the eval must never look this up live. */
+async function fetchLatestProposal(supabase: SupabaseClient, analysisId: string): Promise<ScoredConsultant[]> {
+  const { data: matchRow, error: matchErr } = await supabase
+    .from("matches")
+    .select("team_proposal, created_at")
+    .eq("analysis_id", analysisId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (matchErr) throw new Error(`kunde inte läsa matches för ${analysisId}: ${matchErr.message}`);
+  return (matchRow?.team_proposal ?? []) as ScoredConsultant[];
+}
+
 /** Latest bids.team_consultant_ids for the analysis if a bid exists; else the
- *  top-3-by-score consultantId from the latest matches.team_proposal. */
-async function resolveTeam(supabase: SupabaseClient, analysisId: string): Promise<string[]> {
+ *  top-3-by-score consultantId from the already-fetched proposal snapshot. */
+async function resolveTeam(
+  supabase: SupabaseClient,
+  analysisId: string,
+  proposal: ScoredConsultant[],
+): Promise<string[]> {
   const { data: bidRow, error: bidErr } = await supabase
     .from("bids")
     .select("team_consultant_ids, created_at")
@@ -81,15 +103,6 @@ async function resolveTeam(supabase: SupabaseClient, analysisId: string): Promis
   const bidTeam = (bidRow?.team_consultant_ids ?? []) as string[];
   if (bidTeam.length > 0) return bidTeam;
 
-  const { data: matchRow, error: matchErr } = await supabase
-    .from("matches")
-    .select("team_proposal, created_at")
-    .eq("analysis_id", analysisId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (matchErr) throw new Error(`kunde inte läsa matches för ${analysisId}: ${matchErr.message}`);
-  const proposal = (matchRow?.team_proposal ?? []) as ScoredConsultant[];
   if (proposal.length === 0) {
     throw new Error(`analys ${analysisId} har varken anbud eller matchning — kan inte bygga ett team`);
   }
@@ -128,9 +141,14 @@ async function buildFixtures(supabase: SupabaseClient): Promise<FixturesFile> {
       );
     }
 
-    const teamConsultantIds = await resolveTeam(supabase, chosen.id);
+    const teamProposal = await fetchLatestProposal(supabase, chosen.id);
+    const teamConsultantIds = await resolveTeam(supabase, chosen.id, teamProposal);
     console.log(`  Team: ${teamConsultantIds.join(", ") || "(tomt)"}`);
-    fixtures.push({ id: target.id, label: target.label, analysisId: chosen.id, teamConsultantIds });
+    console.log(`  Proposal-snapshot: ${teamProposal.length} konsulter`);
+    if (teamProposal.length === 0) {
+      console.warn(`  VARNING: ingen matchning för ${chosen.id} — teamProposal fryses TOM (skrivprompten får inga scores).`);
+    }
+    fixtures.push({ id: target.id, label: target.label, analysisId: chosen.id, teamConsultantIds, teamProposal });
   }
 
   return { templateId: TEMPLATE_ID, fixtures };
@@ -301,8 +319,32 @@ async function buildKnownDefects(supabase: SupabaseClient): Promise<KnownDefect[
   return defects;
 }
 
+/** Re-freezes ONLY teamProposal into the existing fixtures.json — everything
+ *  else (analysis resolution, teams, defect list) stays exactly as committed.
+ *  Deliberately does NOT re-run buildFixtures: that would re-resolve titles
+ *  against the live DB and could silently swap a fixture to a newer analysis
+ *  variant, unfreezing what this file exists to freeze. */
+async function freezeProposalsOnly(supabase: SupabaseClient): Promise<void> {
+  const fixturesFile = JSON.parse(await readFile(FIXTURES_OUT, "utf8")) as FixturesFile;
+  for (const fixture of fixturesFile.fixtures) {
+    fixture.teamProposal = await fetchLatestProposal(supabase, fixture.analysisId);
+    console.log(`Fixtur ${fixture.id}: proposal-snapshot ${fixture.teamProposal.length} konsulter`);
+    if (fixture.teamProposal.length === 0) {
+      console.warn(`  VARNING: ingen matchning för ${fixture.analysisId} — teamProposal fryses TOM.`);
+    }
+  }
+  await writeFile(FIXTURES_OUT, JSON.stringify(fixturesFile, null, 2) + "\n", "utf8");
+  console.log(`\nSkrev ${FIXTURES_OUT} (${fixturesFile.fixtures.length} fixturer, endast teamProposal ändrad).`);
+}
+
 async function main() {
   const supabase = createServiceClient();
+
+  if (process.argv.includes("--proposals-only")) {
+    console.log("=== Fryser teamProposal i befintlig evals/overflow/fixtures.json ===");
+    await freezeProposalsOnly(supabase);
+    return;
+  }
 
   console.log("=== Bygger evals/overflow/fixtures.json ===");
   const fixturesFile = await buildFixtures(supabase);

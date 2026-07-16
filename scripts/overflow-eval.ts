@@ -41,7 +41,7 @@ import type { RunReport } from "../src/lib/overflow-eval/report";
 import type {
   BidMeasurement, FixturesFile, GateResult, KnownDefect, OverflowFixture,
 } from "../src/lib/overflow-eval/types";
-import type { BidSection, RfpAnalysis, ScoredConsultant } from "../src/lib/types";
+import type { BidSection, RfpAnalysis } from "../src/lib/types";
 
 const execFileAsync = promisify(execFile);
 const PREFIX_LEN = 40;
@@ -304,14 +304,16 @@ async function main() {
 
       const teamConsultants = await fetchConsultantsByIds(supabase, fixture.teamConsultantIds);
 
-      const { data: matchRows, error: matchError } = await supabase
-        .from("matches")
-        .select("team_proposal")
-        .eq("analysis_id", fixture.analysisId)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (matchError) throw new Error(`matches-fråga för ${fixture.analysisId} misslyckades: ${matchError.message}`);
-      const scoredConsultants = (matchRows?.[0]?.team_proposal as ScoredConsultant[]) ?? [];
+      // Frozen at bootstrap — NEVER looked up live: score/reasoning go verbatim
+      // into the writing prompt (formatContext), so a new matching run between
+      // rounds would silently change the eval's input and poison the delta.
+      const scoredConsultants = fixture.teamProposal;
+      if (!Array.isArray(scoredConsultants)) {
+        throw new Error(
+          `fixtur ${fixture.id} saknar teamProposal (äldre fixtures.json) — ` +
+          `kör npm run overflow:bootstrap -- --proposals-only och committa om filen.`,
+        );
+      }
 
       const { data: bidRow, error: bidInsertError } = await supabase
         .from("bids")
