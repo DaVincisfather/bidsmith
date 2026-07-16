@@ -82,3 +82,41 @@ Fler varv utan nya hypoteser hade bara bränt budget mot stagnationsvillkoret.
 2. Beslut A (omkalibreringsgolvet) och B (min-fill-undantaget).
 3. Efter A: nytt kort loop-pass (2–3 varv) för att verifiera 0-FAIL-räckvidd;
    $38 kvar av budgeten.
+
+---
+
+## ADDENDUM 2026-07-16 (senare samma dag): A + B genomförda, varv 5 verifierat
+
+Stefans dom på varv 4-decken: godkänd för rattarna (PR #86 mergad), och
+"fixa dem också" för beslut A + B — genomfört:
+
+- **A:** `roundBudget` ersätter de tre `Math.max(30, …)`-golven i
+  `buildSlotResult`; Radrum v4 omkalibrerad (6 varv, 137/137, `--write`).
+  Effekt på profilen: 85→22 slots på 30-värdet, 63 slots fick ärliga budgetar
+  under gamla golvet (riskchipsen 30→5), budgetsumma 12 640→11 460.
+  Rollback-snapshot: `tmp/profile-backup-pre-recalib-2026-07-16.json`.
+- **B:** `collectFill` undantar slots vars intent matchar /lämnas tom/i
+  ({Sektionsnummer 3} — profilens eget språk).
+
+**Varv 5 (verifiering, $14,61 ack.): FAIL 9 → 0 i ALLA fem anbud.**
+Grova 60 → 20, min-fill 4/5 → 0/5, dubbletter 1, volym 8 256–8 782
+(korridoren höll). Chip-hypotesen bekräftad fullt ut.
+
+### Svansen: 20 grova i tre klasser (5/5 PASS kräver dessa)
+
+1. **Kicker-överdrag (~11/20, knob-nåbar via ENFORCEMENT-spinoffen):** breda
+   enradskickers ({Tidplan och leveranser} 120, {Kvalitet & risk} 140,
+   {Pris och team} 140) där modellen skrev 129–160 tecken mot skalad ask ~110
+   → wrappar till 2 rader (43,2 pt i 22,25 pt-box, ratio 1,94). OBS: slide
+   11-fallet (129 ≤ 140) visar att glyfbredd-varians wrappar även inom full
+   budget — enforcement bör sikta på den SKALADE asken, inte full budget.
+   Mekanisk re-ask/trim i generate-from-profile = designens spinoff-beslut.
+2. **Rådrum-boxen slide 2 Text 36 (5/5):** companyName ("Rådrum", 6 tecken,
+   master-slot — okalibrerad) mäter 43,2 pt i 26 pt-box. Generations-
+   invariant → kandidat till känd-defekt-listan (din lista).
+3. **Statboxarna slide 4 Text 5 (4/5):** "2009" (4 tecken) mäter 82,8 pt i
+   51,5 pt-box — statbox-geometrin, står REDAN på Radrum-mallfix-punkten.
+
+Klass 2+3 är onåbara för varje generationsratt → 5/5 PASS kräver
+defektlist-uppdatering/mallfix utöver enforcement. Loopens eval-del stoppas
+här; enforcement är ett byggbeslut, inte ett varv.

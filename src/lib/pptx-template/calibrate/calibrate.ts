@@ -68,6 +68,21 @@ export function buildCalibrationSections(
 }
 
 /**
+ * Honest low-budget rounding. Tens-rounding is presentation sugar for real
+ * prose budgets, but below 10 it rounds to 0 — and the old Math.max(30, …)
+ * floor then LIED about narrow boxes: a ~3-char label chip got budget 30, the
+ * model obediently wrote ~25 chars, and the text letter-stacked through the
+ * slide edge (overflow-loop finding A, notes/2026-07-16-overflow-loop-
+ * slutrapport.md — 85/137 slots sat at exactly the floor value 30, and the
+ * chip subset owned 100 % of the loop's residual FAILs). Small budgets keep
+ * their honest value; SHORT_FIELD classification then gives the model
+ * "max N tecken: skriv ENDAST värdet" which is exactly right for a chip.
+ */
+function roundBudget(chars: number): number {
+  return chars >= 10 ? Math.floor(chars / 10) * 10 : Math.max(1, Math.round(chars));
+}
+
+/**
  * Per-target result from a finished (or maxRounds-exhausted) search state.
  * measured → the shape-level finalBudget is split evenly across the shape's
  * slots; NOT measured → t.initialGuess is ALREADY per-slot (planTargets divides
@@ -81,11 +96,11 @@ export function buildSlotResult(
   signals: CheckId[] = [],
 ): SlotResult {
   let budget = measured
-    ? Math.max(30, Math.floor(finalBudget(s) / t.shareCount / 10) * 10)
-    : Math.max(30, Math.floor(t.initialGuess / 10) * 10);
+    ? roundBudget(finalBudget(s) / t.shareCount)
+    : roundBudget(t.initialGuess);
   const warnings: string[] = [];
   if (t.singleLine && t.lineCapChars !== null && budget > t.lineCapChars) {
-    budget = Math.max(30, Math.floor(t.lineCapChars / 10) * 10);
+    budget = roundBudget(t.lineCapChars);
     warnings.push(`single-line box — budget capped at one line (${t.lineCapChars} chars)`);
   }
   if (!measured) warnings.push("marker never measured — geometry fallback");

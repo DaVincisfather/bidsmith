@@ -34,9 +34,24 @@ export function collectDuplicates(sections: BidSection[], meta: SlotMeta): Dupli
   return pairs;
 }
 
+/** Slots whose intent explicitly sanctions emptiness are exempt from fill
+ *  measurement: near-empty is the slot's CORRECT state per the profile's own
+ *  declaration, not loop-starved text (beslut B,
+ *  notes/2026-07-16-overflow-loop-slutrapport.md — {Sektionsnummer 3}:
+ *  "Lämnas tom för generation, vi fyller på med referensuppdrag" min-fill-bröt
+ *  4–5/5 per varv trots att tomhet är avsett). Matchar profilens eget språk,
+ *  men ENDAST meningsinitialt: en substräng-match hade även träffat negerade
+ *  intents ("får inte lämnas tomt" innehåller "lämnas tom" — routine-fynd
+ *  PR #87) och tyst undantagit slots som ska vara fyllda. Negationer står
+ *  aldrig meningsinitialt på svenska ("Får inte lämnas tomt" har "lämnas"
+ *  mitt i satsen), så ankaret felar åt det konservativa hållet — sloten
+ *  förblir mätt. */
+export const EMPTY_SANCTIONED_INTENT = /(^|[.!?]\s+)lämnas tomt?\b/i;
+
 /** Fill ratio (text/budget) for prose boxes only — short fields (e.g. a
- *  diary number) and slots with no meaningful budget (<= 80 chars) are
- *  excluded, matching the bid-editor's own short-field filtering. */
+ *  diary number), slots with no meaningful budget (<= 80 chars) and slots
+ *  whose intent sanctions emptiness are excluded, matching the bid-editor's
+ *  own short-field filtering. */
 export function collectFill(sections: BidSection[], meta: SlotMeta): FillEntry[] {
   const entries: FillEntry[] = [];
   for (const section of sections) {
@@ -44,6 +59,7 @@ export function collectFill(sections: BidSection[], meta: SlotMeta): FillEntry[]
     if (!content || content.format !== "generic-prose") continue;
     const entry = meta[content.placeholder];
     if (!entry || entry.shortField) continue;
+    if (EMPTY_SANCTIONED_INTENT.test(entry.intent)) continue;
     const budgetChars = entry.budgetChars;
     if (budgetChars === undefined || budgetChars <= 80) continue;
     const textChars = content.text.length;

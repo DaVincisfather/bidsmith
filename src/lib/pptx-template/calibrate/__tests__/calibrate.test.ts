@@ -155,17 +155,32 @@ describe("buildSlotResult", () => {
     expect(r.warnings.join()).toContain("single-line");
   });
 
-  it("floors a single-line cap smaller than MIN_BUDGET at 30, not at the raw cap (known residual)", () => {
-    // lineCapChars 20 < the 30-char search floor: the cap wins the "cap the
-    // budget" decision but MIN_BUDGET wins the final floor — budget lands on
-    // 30, above the geometric one-line capacity. The warning still quotes the
-    // raw 20-char cap so the discrepancy is visible in the report.
+  it("keeps a single-line cap smaller than the old 30-floor HONEST (loop finding A)", () => {
+    // lineCapChars 20: the old Math.max(30, …) floor lied the budget up to 30
+    // — the model then wrote ~25 chars into a box that fits one 20-char line.
+    // Honest cap: 20 (tens-rounded).
     const t = { ...target("{A}"), singleLine: true, lineCapChars: 20 };
     const r = buildSlotResult(t, doneState(400), true); // measured budget would be 400
-    expect(r.budget).toBe(30);
+    expect(r.budget).toBe(20);
     expect(r.shortField).toBe(true);
     expect(r.warnings.join()).toContain("single-line");
     expect(r.warnings.join()).toContain("20 chars");
+  });
+
+  it("keeps a chip-narrow single-line cap honest below 10 — no tens-rounding to 0, no floor", () => {
+    // The varv 1-4 chip class: ~3-char label chips. floor(3/10)*10 = 0 would
+    // erase the budget; the honest value 3 survives, and shortField gives the
+    // model "max 3 tecken: skriv ENDAST värdet".
+    const t = { ...target("{A}"), singleLine: true, lineCapChars: 3 };
+    const r = buildSlotResult(t, doneState(400), true);
+    expect(r.budget).toBe(3);
+    expect(r.shortField).toBe(true);
+  });
+
+  it("splits multi-token shape budgets honestly below 30 (no per-slot floor)", () => {
+    // finalBudget 60 across 3 slots = 20/slot — the old floor lied this up to 30.
+    const r = buildSlotResult(target("{A}", 3), doneState(60), true);
+    expect(r.budget).toBe(20);
   });
 
   it("records which signals drove the verdict", () => {

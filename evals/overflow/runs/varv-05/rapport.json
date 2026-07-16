@@ -1,0 +1,356 @@
+{
+  "varv": 5,
+  "timestamp": "2026-07-16T15:45:55.254Z",
+  "branchCommit": "db53601",
+  "bids": [
+    {
+      "fixtureId": "styrmodell",
+      "label": "Styrmodell — RetailTech",
+      "bidId": "dc1893b7-88e1-46dc-ac5b-c46fe8f05dc8",
+      "gate": {
+        "fixtureId": "styrmodell",
+        "label": "Styrmodell — RetailTech",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 2 Text 36: 43.2pt i 26pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box; slide 6 Text 0: 43.2pt i 22.25pt inre box; slide 8 Text 0: 43.2pt i 22.25pt inre box; slide 11 Text 0: 43.2pt i 22.25pt inre box"
+          }
+        ],
+        "excludedDefects": [],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          }
+        ]
+      },
+      "failCount": 0,
+      "grossOverflowCount": 5,
+      "excludedGrossCount": 1,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        }
+      ],
+      "dupCount": 0,
+      "totalChars": 8256
+    },
+    {
+      "fixtureId": "bemanning",
+      "label": "Bemanning — Göteborgs stad",
+      "bidId": "776995aa-b552-46de-8dc9-389efe312655",
+      "gate": {
+        "fixtureId": "bemanning",
+        "label": "Bemanning — Göteborgs stad",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 1 Text 2: 46.8pt i 24.5pt inre box; slide 2 Text 36: 43.2pt i 26pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box; slide 6 Text 0: 43.2pt i 22.25pt inre box; slide 7 Text 0: 43.2pt i 22.25pt inre box"
+          }
+        ],
+        "excludedDefects": [],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          }
+        ]
+      },
+      "failCount": 0,
+      "grossOverflowCount": 5,
+      "excludedGrossCount": 1,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        }
+      ],
+      "dupCount": 0,
+      "totalChars": 8524
+    },
+    {
+      "fixtureId": "dataplattform",
+      "label": "Dataplattform — Region Sörmland",
+      "bidId": "ba5eeedc-39da-464b-b9b7-0fb9c4422620",
+      "gate": {
+        "fixtureId": "dataplattform",
+        "label": "Dataplattform — Region Sörmland",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 1 Text 2: 46.8pt i 24.5pt inre box; slide 2 Text 36: 43.2pt i 26pt inre box; slide 3 Text 5: 484.88pt i 392.3pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box; slide 11 Text 0: 43.2pt i 22.25pt inre box"
+          },
+          {
+            "gate": "duplicates",
+            "detail": "slide 5: 0.31"
+          }
+        ],
+        "excludedDefects": [],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          }
+        ]
+      },
+      "failCount": 0,
+      "grossOverflowCount": 5,
+      "excludedGrossCount": 1,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        }
+      ],
+      "dupCount": 1,
+      "totalChars": 8555
+    },
+    {
+      "fixtureId": "strategi-nic",
+      "label": "Strategiutveckling — NIC",
+      "bidId": "6ef4efd9-900d-417b-8576-69c9a6ceaae6",
+      "gate": {
+        "fixtureId": "strategi-nic",
+        "label": "Strategiutveckling — NIC",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 2 Text 36: 43.2pt i 26pt inre box; slide 4 Text 5: 82.8pt i 51.5pt inre box"
+          }
+        ],
+        "excludedDefects": [],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          }
+        ]
+      },
+      "failCount": 0,
+      "grossOverflowCount": 2,
+      "excludedGrossCount": 1,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        }
+      ],
+      "dupCount": 0,
+      "totalChars": 8443
+    },
+    {
+      "fixtureId": "organisationsoversyn",
+      "label": "Organisationsöversyn — Mellansvenska",
+      "bidId": "f371ce73-2606-4212-8a8c-4c612f6c84a0",
+      "gate": {
+        "fixtureId": "organisationsoversyn",
+        "label": "Organisationsöversyn — Mellansvenska",
+        "pass": false,
+        "breaches": [
+          {
+            "gate": "gross-overflow",
+            "detail": "slide 1 Text 2: 46.8pt i 24.5pt inre box; slide 2 Text 36: 43.2pt i 26pt inre box; slide 5 Text 0: 43.2pt i 22.25pt inre box"
+          }
+        ],
+        "excludedDefects": [],
+        "excludedGross": [
+          {
+            "slide": 1,
+            "name": "Text 0",
+            "topPt": 66,
+            "leftPt": 78,
+            "widthPt": 117.16,
+            "heightPt": 46.5,
+            "boundHeightPt": 68.4,
+            "boundWidthPt": 110.66,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 28.5,
+            "textPrefix": "Testbolaget",
+            "textLength": 11
+          },
+          {
+            "slide": 6,
+            "name": "Text 2",
+            "topPt": 181.95,
+            "leftPt": 81,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 27.75,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "V.11",
+            "textLength": 4
+          },
+          {
+            "slide": 6,
+            "name": "Text 3",
+            "topPt": 181.95,
+            "leftPt": 387.73,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 25.13,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "V.20",
+            "textLength": 4
+          },
+          {
+            "slide": 6,
+            "name": "Text 4",
+            "topPt": 181.95,
+            "leftPt": 694.45,
+            "widthPt": 36.28,
+            "heightPt": 25.5,
+            "boundHeightPt": 41.4,
+            "boundWidthPt": 25.13,
+            "marginTopPt": 2,
+            "marginBottomPt": 2,
+            "marginLeftPt": 2,
+            "marginRightPt": 2,
+            "wordWrap": true,
+            "autoSize": 2,
+            "fontSizePt": 17.2,
+            "textPrefix": "V.14",
+            "textLength": 4
+          }
+        ]
+      },
+      "failCount": 0,
+      "grossOverflowCount": 3,
+      "excludedGrossCount": 4,
+      "excludedGross": [
+        {
+          "slide": 1,
+          "shape": "Text 0",
+          "boundHeightPt": 68.4,
+          "baselineBoundHeightPt": 68.4
+        },
+        {
+          "slide": 6,
+          "shape": "Text 2",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 124.2
+        },
+        {
+          "slide": 6,
+          "shape": "Text 3",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 165.6
+        },
+        {
+          "slide": 6,
+          "shape": "Text 4",
+          "boundHeightPt": 41.4,
+          "baselineBoundHeightPt": 103.5
+        }
+      ],
+      "dupCount": 0,
+      "totalChars": 8782
+    }
+  ],
+  "aggregate": {
+    "passed": 0,
+    "total": 5,
+    "failFindings": 0,
+    "grossOverflows": 20,
+    "dupPairs": 1
+  },
+  "delta": {
+    "failFindings": -9,
+    "grossOverflows": -40,
+    "dupPairs": 0,
+    "passed": 0
+  },
+  "costUsdRun": 2.615352,
+  "costUsdAccumulated": 14.614178999999998
+}
