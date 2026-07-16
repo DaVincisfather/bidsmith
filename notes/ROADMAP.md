@@ -89,15 +89,26 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       0,85 — variansen nuddar redan min-fill underifrån). 0/5 PASS: kvarvarande
       FAIL-mängd är 100 % chip-klass. Slutrapport:
       `notes/2026-07-16-overflow-loop-slutrapport.md`.
-- [ ] **BESLUT A (Stefan): ärligt enrads-golv + omkalibrering.** MIN_BUDGET=30
-      (calibrate/binary-search + enrads-cap-golvet i calibrate.ts) ljuger om
-      ~3-tecken breda etikettchips — 85/137 slots på golvet 30; äger 100 % av
-      kvarvarande FAIL (småboxarnas konstiga radbryt i Stefans dom). Efter fix:
-      omkalibrera Radrum v4 + kort loop-pass (2–3 varv, $38 kvar) mot 0 FAIL.
-- [ ] **BESLUT B (Stefan): min-fill-undantag för intent-tomma slots.**
-      {Sektionsnummer 3} har intent "lämnas tom" men prosa-klass + budget 110 gör
-      tomhet till gate-brott (4–5/5 per varv). Undanta i gaten eller omklassa vid
-      omkalibreringen. Medvetet EJ prompt-hackat (Goodhart-vakten).
+- [x] **BESLUT A+B GENOMFÖRDA 2026-07-16 (PR #87, routine COMMENT→fyndet fixat):
+      FAIL 9→0 i ALLA anbud.** A: roundBudget ersätter 30-golven i buildSlotResult;
+      Radrum v4 omkalibrerad (6 varv, 137/137, --write): 85→22 slots på 30-värdet,
+      riskchipsen 30→5, budgetsumma 12 640→11 460. B: collectFill undantar
+      meningsinitial "lämnas tom(t)"-intent (negations-säkrad regex efter
+      routine-fyndet). Varv 5-verifiering: grova 60→20, min-fill 0/5, korridoren
+      höll. $14,61 av $50. Addendum i notes/2026-07-16-overflow-loop-slutrapport.md.
+- [ ] **KICKER-ENFORCEMENT (spinoff, byggbeslut):** ~11/20 kvarvarande grova =
+      breda enradskickers där modellen skriver 129–160 tecken mot skalad ask ~110
+      → 2-raders wrap. Mekanisk re-ask/trim i generate-from-profile mot den
+      SKALADE asken (slide 11-fallet: 129 ≤ 140 wrappade ändå — full budget
+      räcker inte som gräns).
+- [ ] **Defektlist-kandidat (Stefans lista):** Rådrum-boxen slide 2 Text 36
+      (companyName i liten master-ruta, 5/5 anbud, generations-invariant).
+      Statboxarna slide 4 ligger redan på mallfix-punkten nedan.
+- [ ] **Skip-generation för intent-tomma slots (routine-förslag PR #87, polish):**
+      generationssidan motarbetar fortfarande "lämnas tom"-slots — re-asken
+      kräver "lämna inte tomt" och bränner ett betalt anrop. Flytta
+      EMPTY_SANCTIONED_INTENT till delad modul + hoppa över sloten i wave-1
+      och re-ask.
 - [x] **GO/NO-GO-LATENS — LEVERERAD 2026-07-15 (ärligt utfall: måttlig latensvinst,
       värdet är härdningen):** index-refererade ska-krav (server-hydrering, publikt
       format orört, live-verifierad mot RetailTech: hydreringen håller med riktig
