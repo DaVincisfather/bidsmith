@@ -82,6 +82,22 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       Körregler: `notes/overflow-loop-protokoll.md`; design + plan i
       `notes/2026-07-15-overflow-loop-{design,plan}.md`. Loopen körs på
       `feat/overflow-loop` efter merge — rapport till Stefan efter VARJE varv, $50-tak.
+- [x] **OVERFLOW-LOOP: FORSKNINGSKÖRNING KLAR 2026-07-16 (varv 1–4, $12 av $50,
+      PR #86 mergad efter Stefans visuella dom + routine APPROVE).** Två rattar
+      bevisade: enstyckes-regeln (generic-prose; monstret {Läsanvisning 2} släckt,
+      dupes 7→1) + prosa-budgetfaktor 0,85 (budget-rules; grova 84→60, faktorgolv
+      0,85 — variansen nuddar redan min-fill underifrån). 0/5 PASS: kvarvarande
+      FAIL-mängd är 100 % chip-klass. Slutrapport:
+      `notes/2026-07-16-overflow-loop-slutrapport.md`.
+- [ ] **BESLUT A (Stefan): ärligt enrads-golv + omkalibrering.** MIN_BUDGET=30
+      (calibrate/binary-search + enrads-cap-golvet i calibrate.ts) ljuger om
+      ~3-tecken breda etikettchips — 85/137 slots på golvet 30; äger 100 % av
+      kvarvarande FAIL (småboxarnas konstiga radbryt i Stefans dom). Efter fix:
+      omkalibrera Radrum v4 + kort loop-pass (2–3 varv, $38 kvar) mot 0 FAIL.
+- [ ] **BESLUT B (Stefan): min-fill-undantag för intent-tomma slots.**
+      {Sektionsnummer 3} har intent "lämnas tom" men prosa-klass + budget 110 gör
+      tomhet till gate-brott (4–5/5 per varv). Undanta i gaten eller omklassa vid
+      omkalibreringen. Medvetet EJ prompt-hackat (Goodhart-vakten).
 - [x] **GO/NO-GO-LATENS — LEVERERAD 2026-07-15 (ärligt utfall: måttlig latensvinst,
       värdet är härdningen):** index-refererade ska-krav (server-hydrering, publikt
       format orört, live-verifierad mot RetailTech: hydreringen håller med riktig
