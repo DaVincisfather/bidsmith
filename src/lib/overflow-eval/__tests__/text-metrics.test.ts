@@ -44,6 +44,24 @@ describe("text-metrics", () => {
     expect(f.map((e) => e.placeholder)).toEqual(["{A}"]);
   });
 
+  it("undantar INTE negerade intents (routine-fynd PR #87: substräng-fällan)", () => {
+    const m: SlotMeta = {
+      ...meta,
+      "{Krav}": { slide: 4, shortField: false, budgetChars: 200, intent: "Fältet får inte lämnas tomt — fyll alltid i kravlistan" },
+      "{Krav 2}": { slide: 4, shortField: false, budgetChars: 200, intent: "Får inte lämnas tomt. Beskriv kraven." },
+    };
+    const f = collectFill([sec("{Krav}", "x"), sec("{Krav 2}", "y")], m);
+    expect(f.map((e) => e.placeholder).sort()).toEqual(["{Krav 2}", "{Krav}"]);
+  });
+
+  it("matchar meningsinitial sanktion även i neutrum och gemener", () => {
+    const m: SlotMeta = {
+      ...meta,
+      "{Etikett}": { slide: 2, shortField: false, budgetChars: 120, intent: "lämnas tomt vid generering" },
+    };
+    expect(collectFill([sec("{Etikett}", "x")], m)).toEqual([]);
+  });
+
   it("totalvolym summerar generic-prose-text", () => {
     expect(totalProseChars([sec("{A}", "abc"), sec("{C}", "de")])).toBe(5);
   });

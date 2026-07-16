@@ -39,8 +39,14 @@ export function collectDuplicates(sections: BidSection[], meta: SlotMeta): Dupli
  *  declaration, not loop-starved text (beslut B,
  *  notes/2026-07-16-overflow-loop-slutrapport.md — {Sektionsnummer 3}:
  *  "Lämnas tom för generation, vi fyller på med referensuppdrag" min-fill-bröt
- *  4–5/5 per varv trots att tomhet är avsett). Matchar profilens eget språk. */
-export const EMPTY_SANCTIONED_INTENT = /lämnas tom/i;
+ *  4–5/5 per varv trots att tomhet är avsett). Matchar profilens eget språk,
+ *  men ENDAST meningsinitialt: en substräng-match hade även träffat negerade
+ *  intents ("får inte lämnas tomt" innehåller "lämnas tom" — routine-fynd
+ *  PR #87) och tyst undantagit slots som ska vara fyllda. Negationer står
+ *  aldrig meningsinitialt på svenska ("Får inte lämnas tomt" har "lämnas"
+ *  mitt i satsen), så ankaret felar åt det konservativa hållet — sloten
+ *  förblir mätt. */
+export const EMPTY_SANCTIONED_INTENT = /(^|[.!?]\s+)lämnas tomt?\b/i;
 
 /** Fill ratio (text/budget) for prose boxes only — short fields (e.g. a
  *  diary number), slots with no meaningful budget (<= 80 chars) and slots
