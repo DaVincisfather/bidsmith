@@ -12,7 +12,9 @@ import { SHORT_FIELD_MAX_CHARS } from "./short-field";
  * box-exakta (binärsökta till precis-får-plats) — varje överdrag blir alltså
  * overflow. Faktorn sänker BEGÄRAN så att leveransen landar inom den uppmätta
  * budgeten; min-fill-gaten mäter mot profilens fulla budget och går fortfarande
- * fritt (0,85 × även 0,7 leverans = 0,6 > 0,5-golvet).
+ * fritt i regel — men variansbandet NUDDAR golvet: varv 3 såg 283/600 (0,47 <
+ * 0,5) på {Läsanvisning 2}. Faktorn får därför INTE sänkas under 0,85 utan ny
+ * mätserie; overflow-svansen ägs av enforcement-spåret, inte mer nedskalning.
  *
  * Kortfält (<= SHORT_FIELD_MAX_CHARS) rörs INTE: de är värdefält utan
  * överdragsproblem (chip-klustret på slide 8 är ett kalibreringsgolv-fel —
