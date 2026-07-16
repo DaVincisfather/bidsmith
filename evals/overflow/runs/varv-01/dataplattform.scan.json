@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "deck": "dataplattform.pptx",
+  "scannedAt": "2026-07-16T07:34:56.073Z",
+  "slideCount": 12,
+  "slides": [
+    {
+      "slide": 1,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 1,
+          "shape": "Text 0",
+          "detail": "text 68.4pt > box 43pt"
+        }
+      ]
+    },
+    {
+      "slide": 2,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 2,
+          "shape": "Text 1",
+          "detail": "text 54.81pt > box 47pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 2,
+          "shape": "Text 34",
+          "detail": "text 710.87pt > box 452pt"
+        },
+        {
+          "checkId": "outside-slide",
+          "severity": "FAIL",
+          "slide": 2,
+          "shape": "Text 34",
+          "detail": "text bottom 952pt / right n/apt vs slide 1440×810pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 2,
+          "shape": "Text 36",
+          "detail": "text 43.2pt > box 26pt"
+        }
+      ]
+    },
+    {
+      "slide": 3,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 3,
+          "shape": "Text 5",
+          "detail": "text 484.88pt > box 392pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 3,
+          "shape": "Text 11",
+          "detail": "text 447.92pt > box 392pt"
+        }
+      ]
+    },
+    {
+      "slide": 4,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 4,
+          "shape": "Text 1",
+          "detail": "text 54.81pt > box 47pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 4,
+          "shape": "Text 4",
+          "detail": "text 410.25pt > box 364pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 4,
+          "shape": "Text 5",
+          "detail": "text 82.8pt > box 52pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 4,
+          "shape": "Text 16",
+          "detail": "text 64.53pt > box 56pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 4,
+          "shape": "Text 21",
+          "detail": "text 64.8pt > box 26pt"
+        }
+      ]
+    },
+    {
+      "slide": 5,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 5,
+          "shape": "Text 1",
+          "detail": "text 54.81pt > box 47pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 5,
+          "shape": "Text 3",
+          "detail": "text 46.8pt > box 38pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 5,
+          "shape": "Text 7",
+          "detail": "text 46.8pt > box 38pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 5,
+          "shape": "Text 11",
+          "detail": "text 46.8pt > box 38pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 5,
+          "shape": "Text 15",
+          "detail": "text 46.8pt > box 38pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 5,
+          "shape": "Text 19",
+          "detail": "text 43.2pt > box 26pt"
+        }
+      ]
+    },
+    {
+      "slide": 6,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 6,
+          "shape": "Text 0",
+          "detail": "text 43.2pt > box 22pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 6,
+          "shape": "Text 1",
+          "detail": "text 54.81pt > box 47pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 6,
+          "shape": "Text 2",
+          "detail": "text 62.1pt > box 22pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 6,
+          "shape": "Text 3",
+          "detail": "text 41.4pt > box 22pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 6,
+          "shape": "Text 4",
+          "detail": "text 41.4pt > box 22pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 6,
+          "shape": "Text 5",
+          "detail": "text 41.4pt > box 22pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 6,
+          "shape": "Text 19",
+          "detail": "text 43.2pt > box 22pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 6,
+          "shape": "Text 21",
+          "detail": "text 65.9pt > box 58pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 6,
+          "shape": "Text 23",
+          "detail": "text 43.2pt > box 26pt"
+        }
+      ]
+    },
+    {
+      "slide": 7,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 7,
+          "shape": "Text 1",
+          "detail": "text 54.81pt > box 47pt"
+        }
+      ]
+    },
+    {
+      "slide": 8,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 8,
+          "shape": "Text 1",
+          "detail": "text 53.26pt > box 47pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 8,
+          "shape": "Text 4",
+          "detail": "text 576.4pt > box 459pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 8,
+          "shape": "Text 8",
+          "detail": "text 302.4pt > box 26pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 8,
+          "shape": "Text 11",
+          "detail": "text 216pt > box 26pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 8,
+          "shape": "Text 12",
+          "detail": "text 29.42pt > box 26pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 8,
+          "shape": "Text 13",
+          "detail": "text 172.8pt > box 26pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 8,
+          "shape": "Text 16",
+          "detail": "text 86.4pt > box 26pt"
+        },
+        {
+          "checkId": "outside-slide",
+          "severity": "FAIL",
+          "slide": 8,
+          "shape": "Text 16",
+          "detail": "text bottom 817pt / right n/apt vs slide 1440×810pt"
+        }
+      ]
+    },
+    {
+      "slide": 10,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 10,
+          "shape": "Text 1",
+          "detail": "text 54.81pt > box 47pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 10,
+          "shape": "Text 4",
+          "detail": "text 28.49pt > box 25pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 10,
+          "shape": "Text 10",
+          "detail": "text 29.23pt > box 25pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 10,
+          "shape": "Text 16",
+          "detail": "text 29.23pt > box 25pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 10,
+          "shape": "Text 17",
+          "detail": "text 400.87pt > box 374pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 10,
+          "shape": "Text 21",
+          "detail": "text 86.4pt > box 26pt"
+        },
+        {
+          "checkId": "outside-slide",
+          "severity": "FAIL",
+          "slide": 10,
+          "shape": "Text 21",
+          "detail": "text bottom 817pt / right n/apt vs slide 1440×810pt"
+        }
+      ]
+    },
+    {
+      "slide": 11,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 11,
+          "shape": "Text 1",
+          "detail": "text 54.81pt > box 47pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 11,
+          "shape": "Text 50",
+          "detail": "text 50.4pt > box 31pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 11,
+          "shape": "Text 53",
+          "detail": "text 535.87pt > box 465pt"
+        }
+      ]
+    },
+    {
+      "slide": 12,
+      "findings": [
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 12,
+          "shape": "Text 2",
+          "detail": "text 86.4pt > box 71pt"
+        },
+        {
+          "checkId": "vertical-overflow",
+          "severity": "WARN",
+          "slide": 12,
+          "shape": "Text 3",
+          "detail": "text 76.72pt > box 66pt"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "fail": 3,
+    "warn": 45,
+    "info": 0
+  }
+}
