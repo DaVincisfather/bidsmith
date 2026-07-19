@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import type { SlideShapes } from "../../introspect/read-pptx";
+import type { SlideShapes, TableShape } from "../../introspect/read-pptx";
 import type { ProposedSlot } from "../propose-injection-plan";
+import type { TableColumnRole } from "../../template-profile";
 import { TemplateManifestSchema } from "../../manifest-types";
 import {
   buildDraft,
@@ -10,6 +11,7 @@ import {
   buildForeignManifest,
   applySlideDecision,
   fastSlideSources,
+  applyTableDecision,
 } from "../draft-logic";
 import { parseOnboardingDraft } from "../draft";
 
@@ -35,6 +37,45 @@ const slides: SlideShapes[] = [
   { source: 1, shapes: [shape("Rubrik"), shape("Beskriv er metod")], tokens: [], images: { placed: 0, placeholders: 0 }, tables: [] },
   { source: 2, shapes: [shape("Statisk footer")], tokens: [], images: { placed: 0, placeholders: 0 }, tables: [] },
 ];
+
+function table(
+  frameIndex: number,
+  gridColsEmu: number[],
+  rows: { heightEmu: number; cells: string[] }[],
+  geometry: { xEmu: number; yEmu: number; cxEmu: number; cyEmu: number } | null = {
+    xEmu: 0, yEmu: 0, cxEmu: 100, cyEmu: 100,
+  },
+): TableShape {
+  return {
+    frameIndex,
+    geometry,
+    gridColsEmu,
+    rows: rows.map((r) => ({ heightEmu: r.heightEmu, cells: r.cells.map((text) => ({ text })) })),
+  };
+}
+
+// Slide 3: en kravmatris-kandidat — inga p:sp-textrutor alls (bara ett a:tbl),
+// vilket är exakt hur Task 3-fixturens tabellslide ser ut.
+const tableSlide: SlideShapes = {
+  source: 3,
+  shapes: [],
+  tokens: [],
+  images: { placed: 0, placeholders: 0 },
+  tables: [
+    table(0, [400, 300], [
+      { heightEmu: 10, cells: ["Krav", "Uppfyllnad"] },
+      { heightEmu: 10, cells: ["Exempel krav", "Ja — se referens"] },
+    ]),
+  ],
+};
+
+const VALID_TABLE_INPUT: {
+  source: number; frameIndex: number; headerRows: number; templateRowIndex: number;
+  columns: TableColumnRole[];
+} = {
+  source: 3, frameIndex: 0, headerRows: 1, templateRowIndex: 1,
+  columns: ["krav", "uppfyllnad"],
+};
 
 const proposal: ProposedSlot[] = [
   {
@@ -132,6 +173,36 @@ describe("buildDraft", () => {
   });
 });
 
+describe("buildDraft — tabeller", () => {
+  const slidesWithTable = [...slides, tableSlide];
+
+  it("kopierar SlideShapes.tables in i utkastet (normaliserad geometri, cellTexts)", () => {
+    const draft = buildDraft(proposal, slidesWithTable, SIZE);
+    expect(draft.tables).toHaveLength(1);
+    const t = draft.tables![0];
+    expect(t.source).toBe(3);
+    expect(t.frameIndex).toBe(0);
+    expect(t.gridColsEmu).toEqual([400, 300]);
+    expect(t.geometry).toEqual({ x: 0, y: 0, cx: 100, cy: 100 });
+    expect(t.rows).toEqual([
+      { heightEmu: 10, cellTexts: ["Krav", "Uppfyllnad"] },
+      { heightEmu: 10, cellTexts: ["Exempel krav", "Ja — se referens"] },
+    ]);
+    expect(t.decision).toBeUndefined();
+  });
+
+  it("mallar utan tabeller ger en tom tables-array (inte undefined)", () => {
+    const draft = buildDraft(proposal, slides, SIZE);
+    expect(draft.tables).toEqual([]);
+  });
+
+  it("null-geometri (ärvd/saknad xfrm) bärs igenom som null", () => {
+    const noGeom: SlideShapes = { ...tableSlide, tables: [table(0, [100], [{ heightEmu: 5, cells: ["x"] }], null)] };
+    const draft = buildDraft(proposal, [...slides, noGeom], SIZE);
+    expect(draft.tables![0].geometry).toBeNull();
+  });
+});
+
 describe("buildForeignManifest", () => {
   it("bygger ett schemagiltigt minimalt manifest — en static-slide per wireframe-slide", () => {
     const draft = buildDraft(proposal, slides, SIZE);
@@ -189,6 +260,66 @@ describe("applyDecision", () => {
   });
 });
 
+describe("applyTableDecision", () => {
+  const draft = buildDraft(proposal, [...slides, tableSlide], SIZE);
+
+  it("bekräftar en giltig kolumnkarta — sätter confirmed=true", () => {
+    const res = applyTableDecision(draft, VALID_TABLE_INPUT);
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.draft.tables![0].decision).toEqual({
+        headerRows: 1, templateRowIndex: 1, columns: ["krav", "uppfyllnad"], confirmed: true,
+      });
+    }
+  });
+
+  it("avvisar okänd tabell (fel source/frameIndex)", () => {
+    const res = applyTableDecision(draft, { ...VALID_TABLE_INPUT, frameIndex: 9 });
+    expect(res.ok).toBe(false);
+  });
+
+  it("avvisar noll krav-kolumner", () => {
+    const res = applyTableDecision(draft, { ...VALID_TABLE_INPUT, columns: ["uppfyllnad", "uppfyllnad"] });
+    expect(res.ok).toBe(false);
+  });
+
+  it("avvisar två krav-kolumner", () => {
+    const res = applyTableDecision(draft, { ...VALID_TABLE_INPUT, columns: ["krav", "krav"] });
+    expect(res.ok).toBe(false);
+  });
+
+  it("avvisar avsaknad av uppfyllnad/status-kolumn", () => {
+    const res = applyTableDecision(draft, { ...VALID_TABLE_INPUT, columns: ["krav", "referens"] });
+    expect(res.ok).toBe(false);
+  });
+
+  it("uppfyllnad ELLER status räcker — status ensam är giltigt", () => {
+    const res = applyTableDecision(draft, { ...VALID_TABLE_INPUT, columns: ["krav", "status"] });
+    expect(res.ok).toBe(true);
+  });
+
+  it("avvisar mallrad som ligger i rubrikraderna (templateRowIndex < headerRows)", () => {
+    const res = applyTableDecision(draft, { ...VALID_TABLE_INPUT, headerRows: 2, templateRowIndex: 1 });
+    expect(res.ok).toBe(false);
+  });
+
+  it("avvisar mallradsindex utanför tabellens radantal", () => {
+    const res = applyTableDecision(draft, { ...VALID_TABLE_INPUT, templateRowIndex: 5 });
+    expect(res.ok).toBe(false);
+  });
+
+  it("avvisar kolumnantal som inte matchar gridColsEmu", () => {
+    const res = applyTableDecision(draft, { ...VALID_TABLE_INPUT, columns: ["krav"] });
+    expect(res.ok).toBe(false);
+  });
+
+  it("muterar inte input-utkastet", () => {
+    const before = structuredClone(draft);
+    applyTableDecision(draft, VALID_TABLE_INPUT);
+    expect(draft).toEqual(before);
+  });
+});
+
 describe("buildInjections + buildFinalProfile", () => {
   it("endast bekräftade slots blir injektioner", () => {
     const draft = buildDraft(proposal, slides, SIZE); // slot 1 confirmed, slot 2 pending
@@ -218,6 +349,41 @@ describe("buildInjections + buildFinalProfile", () => {
     expect(() =>
       buildFinalProfile(allSkipped, { templateId: "t-1", name: "kundmall", version: 1 }),
     ).toThrow("minst en textruta måste bekräftas");
+  });
+});
+
+describe("buildFinalProfile — tabeller", () => {
+  it("bekräftad tabell blir requirement-matrix + tableMap på rätt slide", () => {
+    const draft = buildDraft(proposal, [...slides, tableSlide], SIZE);
+    const decided = applyTableDecision(draft, VALID_TABLE_INPUT);
+    if (!decided.ok) throw new Error(decided.error);
+    const profile = buildFinalProfile(decided.draft, { templateId: "t-1", name: "kundmall", version: 1 });
+    const tableProfileSlide = profile.slides.find((s) => s.source === 3)!;
+    expect(tableProfileSlide.capability).toBe("requirement-matrix");
+    expect(tableProfileSlide.slots).toEqual([]);
+    expect(tableProfileSlide.tableMap).toEqual({
+      frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: ["krav", "uppfyllnad"],
+    });
+    // Övriga slides oberörda — samma static/generic-prose-beteende som förut.
+    expect(profile.slides.find((s) => s.source === 1)!.capability).toBe("generic-prose");
+    expect(profile.slides.find((s) => s.source === 2)!.capability).toBe("static");
+  });
+
+  it("obekräftad tabell (ingen decision) → sliden förblir static — dagens beteende", () => {
+    const draft = buildDraft(proposal, [...slides, tableSlide], SIZE);
+    const profile = buildFinalProfile(draft, { templateId: "t-1", name: "kundmall", version: 1 });
+    const tableProfileSlide = profile.slides.find((s) => s.source === 3)!;
+    expect(tableProfileSlide.capability).toBe("static");
+    expect(tableProfileSlide.tableMap).toBeUndefined();
+  });
+
+  it("en bekräftad tabell räcker för att bygga profilen — inga bekräftade textrutor behövs", () => {
+    const draft = buildDraft([], [...slides, tableSlide], SIZE); // inga slots alls
+    const decided = applyTableDecision(draft, VALID_TABLE_INPUT);
+    if (!decided.ok) throw new Error(decided.error);
+    expect(() =>
+      buildFinalProfile(decided.draft, { templateId: "t-1", name: "kundmall", version: 1 }),
+    ).not.toThrow();
   });
 });
 

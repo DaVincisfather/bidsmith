@@ -55,6 +55,72 @@ describe("OnboardingDraftSchema", () => {
   });
 });
 
+describe("OnboardingDraftSchema — tables (optional, additiv)", () => {
+  it("gamla utkast utan tables-fält parsar fortfarande oförändrat", () => {
+    expect("tables" in validDraft).toBe(false);
+    expect(() => parseOnboardingDraft(validDraft)).not.toThrow();
+    expect(parseOnboardingDraft(validDraft).tables).toBeUndefined();
+  });
+
+  it("accepterar ett utkast med en obeslutad tabell", () => {
+    const withTable = {
+      ...validDraft,
+      tables: [
+        {
+          source: 1,
+          frameIndex: 0,
+          geometry: { x: 1000, y: 1000, cx: 500000, cy: 200000 },
+          gridColsEmu: [100, 200],
+          rows: [
+            { heightEmu: 10, cellTexts: ["Krav", "Uppfyllnad"] },
+            { heightEmu: 10, cellTexts: ["Exempel", "Ja"] },
+          ],
+        },
+      ],
+    };
+    const parsed = parseOnboardingDraft(withTable);
+    expect(parsed.tables?.[0].decision).toBeUndefined();
+    expect(parsed.tables?.[0].rows[1].cellTexts).toEqual(["Exempel", "Ja"]);
+  });
+
+  it("accepterar ett utkast med en bekräftad tabellkarta", () => {
+    const withDecision = {
+      ...validDraft,
+      tables: [
+        {
+          source: 1,
+          frameIndex: 0,
+          geometry: null,
+          gridColsEmu: [100, 200],
+          rows: [
+            { heightEmu: 10, cellTexts: ["Krav", "Uppfyllnad"] },
+            { heightEmu: 10, cellTexts: ["Exempel", "Ja"] },
+          ],
+          decision: { headerRows: 1, templateRowIndex: 1, columns: ["krav", "uppfyllnad"], confirmed: true },
+        },
+      ],
+    };
+    expect(parseOnboardingDraft(withDecision).tables?.[0].decision?.confirmed).toBe(true);
+  });
+
+  it("avvisar en okänd kolumnroll i tabellbeslutet", () => {
+    const bad = {
+      ...validDraft,
+      tables: [
+        {
+          source: 1,
+          frameIndex: 0,
+          geometry: null,
+          gridColsEmu: [100],
+          rows: [{ heightEmu: 10, cellTexts: ["x"] }],
+          decision: { headerRows: 0, templateRowIndex: 0, columns: ["okänd-roll"], confirmed: true },
+        },
+      ],
+    };
+    expect(() => parseOnboardingDraft(bad)).toThrow();
+  });
+});
+
 describe("extractPrecount", () => {
   it("plockar ut precount ur en ren precount-payload (satt av upload)", () => {
     expect(extractPrecount({ precount: { slides: 5, candidates: 12 } })).toEqual({

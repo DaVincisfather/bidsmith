@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CAPABILITY_IDS } from "../template-profile";
+import { CAPABILITY_IDS, TABLE_COLUMN_ROLES } from "../template-profile";
 import type { ScreenFinding } from "./geometry-screen";
 
 /**
@@ -65,6 +65,44 @@ export const ScreenFindingSchema = z.object({
   detail: z.string(),
 });
 
+/** Operatörens kolumnkarta för EN tabell — sätts av applyTableDecision (draft-logic)
+ *  när wizardens TablePanel-"Bekräfta" validerar OK. confirmed===true är vad
+ *  buildFinalProfile letar efter innan sliden promotas till requirement-matrix
+ *  + tableMap; en tabell utan decision (eller confirmed=false) lämnar sliden
+ *  static — dagens beteende, oförändrat. */
+export const TableDecisionSchema = z.object({
+  headerRows: z.number().int().nonnegative(),
+  templateRowIndex: z.number().int().nonnegative(),
+  columns: z.array(z.enum(TABLE_COLUMN_ROLES)),
+  confirmed: z.boolean(),
+});
+export type TableDecision = z.infer<typeof TableDecisionSchema>;
+
+export const DraftTableRowSchema = z.object({
+  heightEmu: z.number().int().nonnegative(),
+  cellTexts: z.array(z.string()),
+});
+
+/** Ett främmande a:tbl-bord exponerat för wizarden — en beskuren projektion av
+ *  Task 1:s TableShape (read-pptx): bara det TablePanel behöver för att rita
+ *  kolumn-dropdowns + en cellförhandsvisning, plus operatörens beslut när det
+ *  finns. frameIndex är Task 1:s BINDANDE konvention — den TÄTA räkningen bland
+ *  sliden graphicFrames MED a:tbl — och bärs vidare oförändrad, aldrig
+ *  omräknad. geometry normaliserad till samma {x,y,cx,cy}-form som
+ *  WireframeShapeSchema (TableShape bär xEmu/yEmu/cxEmu/cyEmu) så wireframen
+ *  kan rita bordets ram med samma kod som textrutorna. */
+export const DraftTableSchema = z.object({
+  source: z.number().int().positive(),
+  frameIndex: z.number().int().nonnegative(),
+  geometry: z
+    .object({ x: z.number(), y: z.number(), cx: z.number(), cy: z.number() })
+    .nullable(),
+  gridColsEmu: z.array(z.number().int().nonnegative()),
+  rows: z.array(DraftTableRowSchema),
+  decision: TableDecisionSchema.optional(),
+});
+export type DraftTable = z.infer<typeof DraftTableSchema>;
+
 export const OnboardingDraftSchema = z.object({
   draftVersion: z.literal(1),
   /** Slide-yta i EMU (presentation.xml sldSz) — wireframens viewBox. */
@@ -75,6 +113,11 @@ export const OnboardingDraftSchema = z.object({
   slots: z.array(DraftSlotSchema),
   wireframe: z.array(WireframeSlideSchema).min(1),
   screen: z.array(ScreenFindingSchema).optional(),
+  /** Främmande a:tbl-tabeller ur SlideShapes.tables (Task 1), kopierade in av
+   *  buildDraft (alltid satt på ett NYBYGGT utkast — tomt array om mallen inte
+   *  har tabeller). Optional här ENDAST så gamla persisterade utkast (satta
+   *  innan detta fält fanns) fortsätter parsa oförändrade. */
+  tables: z.array(DraftTableSchema).optional(),
 });
 export type OnboardingDraft = z.infer<typeof OnboardingDraftSchema>;
 
