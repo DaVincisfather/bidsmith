@@ -65,8 +65,8 @@ export function TeamProposal({
       </div>
       {atCap && (
         <p className="text-xs text-ink-mute">
-          Max {maxTeamSize} konsulter — mallens Team &amp; Pris-slide rymmer fler
-          inte. Avmarkera någon för att byta.
+          Max {maxTeamSize} konsulter — mallens Team &amp; Pris-slide rymmer
+          inte fler. Avmarkera någon för att byta.
         </p>
       )}
 

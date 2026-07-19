@@ -32,7 +32,7 @@ För varje konsult i teamet:
 - omfattningPct: procentuell omfattning (1-100), heltal
 - timmar: uppskattat totalt antal timmar över projektets löptid, positivt heltal
 
-Max 5 konsulter (template slot cap). Ideal 3-5 för full impact.
+Max ${MAX_TEAM_SIZE} konsulter (template slot cap). Ideal 3-${MAX_TEAM_SIZE} för full impact.
 
 Svara med giltig JSON:
 {

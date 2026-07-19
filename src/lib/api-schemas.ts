@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ConsultantExtractionSchema } from "./ai-schemas";
 import { OverflowFlagSchema } from "./pptx-template/budget-types";
 import { TABLE_COLUMN_ROLES } from "./pptx-template/template-profile";
+import { MAX_TEAM_SIZE } from "./constants";
 
 // Why: route handlers used to do `body as { ... }` casts and hand-rolled enum
 // checks. Centralised here so a single source of truth defines what each
@@ -46,12 +47,14 @@ export const OutcomePatchSchema = z.object({
 
 // --- Bid: POST /api/bids ---
 
-// .max bounds the resulting PostgREST `.in(...)` query; a firm's whole roster
-// is the largest legitimate team-id list.
+// A bid's team fills the Team & Pris slide's MAX_TEAM_SIZE slots — cap the id
+// list at the SAME count so a direct API call with >5 gets a 400 instead of
+// the structured-output schema silently dropping the overflow (the UI picker
+// enforces this too, but the server must not trust the client).
 export const BidCreateSchema = z.object({
   analysisId: z.string().min(1),
   assessmentId: z.string().optional(),
-  teamConsultantIds: z.array(z.string().min(1)).min(1).max(200),
+  teamConsultantIds: z.array(z.string().min(1)).min(1).max(MAX_TEAM_SIZE),
 });
 
 // --- Consultant: PUT /api/consultants/[id] ---
