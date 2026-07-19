@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser, parseUuidParam } from "@/lib/api-helpers";
+import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
+import { activationBlockReason } from "@/lib/pptx-template/measure/template-defects";
+import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -36,6 +39,25 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       { error: "mallen är inte färdig-onboardad — slutför onboardingen först" },
       { status: 409 },
     );
+  }
+
+  // Hård aktiveringsgrind (onboarding-measure-designen): en foreign-mall utan
+  // slutförd mätning eller med öppna malldefekter får inte aktiveras.
+  // profile === null ⇒ den bundlade mallen utan profil-rad — släpp igenom,
+  // dagens beteende. loadTemplateProfile KASTAR vid DB-/valideringsfel — fånga
+  // och mappa till räknat JSON-500 (routine-fynd #65-klassen).
+  let profile: TemplateProfile | null;
+  try {
+    profile = await loadTemplateProfile(id);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
+  if (profile) {
+    const blocked = activationBlockReason(profile);
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 409 });
   }
 
   // UPSERT: workspace_settings är en enradstabell vars rad KAN SAKNAS (färsk

@@ -107,3 +107,41 @@ describe("TemplateProfile schema", () => {
     expect(() => parseTemplateProfile(bad)).toThrow();
   });
 });
+
+describe("measurement + knownDefects (onboarding-measure)", () => {
+  const base = {
+    profileVersion: 1, templateId: "t1", name: "T", version: 1,
+    slides: [{ source: 1, slots: [] }],
+  };
+
+  it("parses a legacy profile without the new fields unchanged", () => {
+    const out = TemplateProfileSchema.parse(base);
+    expect(out.measurement).toBeUndefined();
+    expect(out.knownDefects).toBeUndefined();
+  });
+
+  it("round-trips measurement and knownDefects", () => {
+    const out = TemplateProfileSchema.parse({
+      ...base,
+      measurement: {
+        status: "complete", measuredAt: "2026-07-19T10:00:00Z",
+        calibrationRounds: 6, unresolved: ["{X}"],
+        slotWarnings: { "{Y}": ["overflowed at minimum budget — box likely tiny or decorative"] },
+      },
+      knownDefects: [{
+        slide: 2, checkId: "vertical-overflow", shape: "Text 36",
+        note: "tom originalmall", suggestion: "Bredda boxen eller acceptera.",
+        status: "accepted", baselineBoundHeightPt: 43.2,
+      }],
+    });
+    expect(out.measurement?.calibrationRounds).toBe(6);
+    expect(out.knownDefects?.[0].status).toBe("accepted");
+  });
+
+  it("rejects an unknown defect status", () => {
+    expect(() => TemplateProfileSchema.parse({
+      ...base,
+      knownDefects: [{ slide: 1, checkId: "outside-slide", shape: "Text 1", note: "", suggestion: "s", status: "maybe" }],
+    })).toThrow();
+  });
+});

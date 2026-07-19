@@ -1,12 +1,14 @@
 // scripts/scan-deck.ts
-// CLI: npm run deck:scan -- <anbud.pptx> [--json ut.json]
+// CLI: npm run deck:scan -- <anbud.pptx> [--json ut.json] [--profile <templateId>]
 // Scans a GENERATED deck for layout ugliness via the shared measurement core:
 // COM-measures every text shape (measure-overflow.ps1), applies the seven
 // checks, prints a per-slide report. Exit contract: 0 clean / 1 WARN /
 // 2 FAIL / 3 crash-or-usage-error — a gate beside inspect-pptx and
 // deck:dupes. Design: notes/2026-07-14-measure-core-design.md.
-// NOTE: --profile budget checks are deferred to the app-surface track (a
-// generated deck has no placeholders left to map shapes to slots).
+// NOTE: --profile requires .env.local with Supabase credentials to load the
+// template profile. Script runs without env (flagless mode works standalone).
+// Budget checks are deferred to the app-surface track (a generated deck has
+// no placeholders left to map shapes to slots).
 import { execFile } from "child_process";
 import { mkdtemp, readFile, rm, writeFile } from "fs/promises";
 import os from "os";
@@ -21,6 +23,8 @@ import {
 } from "../src/lib/pptx-template/measure/verdicts";
 import { buildReport, exitCodeFor, renderTextReport } from "../src/lib/pptx-template/measure/report";
 import { SEVERITIES } from "../src/lib/pptx-template/measure/types";
+import { annotateKnownDefects } from "../src/lib/pptx-template/measure/template-defects";
+import { loadTemplateProfile } from "../src/lib/pptx-template/profile-store";
 
 const execFileAsync = promisify(execFile);
 const PREFIX_LEN = 40;
@@ -29,16 +33,27 @@ async function main() {
   const args = process.argv.slice(2);
   // --json's VALUE is itself a non-flag token, so it must be excluded from the
   // positional search below — otherwise `deck:scan -- --json ut.json anbud.pptx`
-  // picks up "ut.json" as the pptx path.
+  // picks up "ut.json" as the pptx path. Same for --profile's templateId.
   const jsonIdx = args.indexOf("--json");
   const jsonOut = jsonIdx >= 0 ? args[jsonIdx + 1] ?? null : null;
   if (jsonIdx >= 0 && !jsonOut) {
     console.error("--json kräver en filsökväg");
     process.exit(3);
   }
-  const pptxPath = args.find((a, i) => !a.startsWith("--") && (jsonIdx < 0 || i !== jsonIdx + 1));
+  const profIdx = args.indexOf("--profile");
+  const profileId = profIdx >= 0 ? args[profIdx + 1] ?? null : null;
+  if (profIdx >= 0 && !profileId) {
+    console.error("--profile kräver ett templateId");
+    process.exit(3);
+  }
+  const pptxPath = args.find(
+    (a, i) =>
+      !a.startsWith("--") && (jsonIdx < 0 || i !== jsonIdx + 1) && (profIdx < 0 || i !== profIdx + 1),
+  );
   if (!pptxPath) {
-    console.error("Användning: npm run deck:scan -- <anbud.pptx> [--json ut.json]");
+    console.error(
+      "Användning: npm run deck:scan -- <anbud.pptx> [--json ut.json] [--profile <templateId>]",
+    );
     process.exit(3);
   }
 
@@ -77,7 +92,18 @@ async function main() {
       }
     }
 
-    const report = buildReport(path.basename(pptxPath), measured.slideCount, findings);
+    let reported = findings;
+    if (profileId) {
+      const profile = await loadTemplateProfile(profileId);
+      if (!profile) {
+        console.error(`--profile: mall ${profileId} saknar profil`);
+        process.exit(3);
+      }
+      reported = annotateKnownDefects(findings, profile.knownDefects ?? []);
+      const annotated = reported.filter((f) => f.detail.startsWith("känd malldefekt")).length;
+      console.log(`Profil ${profileId}: ${annotated} fynd annoterade som kända malldefekter.`);
+    }
+    const report = buildReport(path.basename(pptxPath), measured.slideCount, reported);
     console.log(renderTextReport(report));
     if (jsonOut) {
       await writeFile(jsonOut, JSON.stringify(report, null, 2) + "\n", "utf8");
@@ -87,7 +113,12 @@ async function main() {
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }
-  process.exit(code);
+  // Use process.exitCode instead of process.exit() to allow natural event-loop
+  // drainage. Hard exit with open Supabase/undici sockets crashes on Windows
+  // (STATUS_STACK_BUFFER_OVERRUN). Pattern proven in backfill-single-line.ts
+  // and onboarding-measure.ts. Early error paths (usage checks) still use
+  // process.exit(3) since no Supabase client is initialized there.
+  process.exitCode = code;
 }
 
 main().catch((err) => { console.error(err); process.exit(3); });

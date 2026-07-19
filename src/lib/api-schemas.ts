@@ -151,3 +151,13 @@ export const OnboardingPatchSchema = z.union([
   OnboardingDecisionSchema,
   OnboardingSlideDecisionSchema,
 ]);
+
+// --- Defects: POST /api/templates/[id]/defects ---
+
+/** Signaturen för en malldefekt att acceptera — samma identitet som
+ *  TemplateDefect (slide + checkId + shape), se template-defects.ts. */
+export const DefectAcceptSchema = z.object({
+  slide: z.number().int().positive(),
+  checkId: z.string().min(1),
+  shape: z.string().min(1),
+});

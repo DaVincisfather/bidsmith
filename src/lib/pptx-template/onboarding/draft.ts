@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CAPABILITY_IDS } from "../template-profile";
+import type { ScreenFinding } from "./geometry-screen";
 
 /**
  * Onboarding-utkastet — det persisterade tillståndet mellan klassificering och
@@ -53,6 +54,17 @@ export const WireframeSlideSchema = z.object({
 });
 export type WireframeSlide = z.infer<typeof WireframeSlideSchema>;
 
+/** Speglar geometry-screen.ts' ScreenFinding — geometriskrivarens PRELIMINÄRA
+ *  kvalitetsflaggor (statisk XML-matte, ingen COM), satta vid uppladdning och
+ *  kopierade in i utkastet av buildDraft. Optional: gamla utkast (satta innan
+ *  Task 6) saknar fältet och måste fortsätta parsa. */
+export const ScreenFindingSchema = z.object({
+  slide: z.number().int().positive(),
+  shape: z.string(),
+  kind: z.enum(["static-overflow", "tight-box"]),
+  detail: z.string(),
+});
+
 export const OnboardingDraftSchema = z.object({
   draftVersion: z.literal(1),
   /** Slide-yta i EMU (presentation.xml sldSz) — wireframens viewBox. */
@@ -62,6 +74,7 @@ export const OnboardingDraftSchema = z.object({
   }),
   slots: z.array(DraftSlotSchema),
   wireframe: z.array(WireframeSlideSchema).min(1),
+  screen: z.array(ScreenFindingSchema).optional(),
 });
 export type OnboardingDraft = z.infer<typeof OnboardingDraftSchema>;
 
@@ -83,6 +96,19 @@ export function extractPrecount(raw: unknown): DraftPrecount | undefined {
     if (obj.precount && typeof obj.precount === "object") {
       return obj.precount as DraftPrecount;
     }
+  }
+  return undefined;
+}
+
+/** Plockar ut { screen } ur en rå onboarding_draft-kolumnvärde, om den bär en
+ *  (satt av upload, bredvid precount — se route.ts). Speglar extractPrecount:
+ *  ett riktigt utkast bär redan sin egen `screen` (schema-optional), så denna
+ *  behövs bara för precount/error-payloads FÖRE klassificeringen är klar. */
+export function extractScreen(raw: unknown): ScreenFinding[] | undefined {
+  if (raw && typeof raw === "object") {
+    const obj = raw as Record<string, unknown>;
+    const parsed = z.array(ScreenFindingSchema).safeParse(obj.screen);
+    return parsed.success ? parsed.data : undefined;
   }
   return undefined;
 }

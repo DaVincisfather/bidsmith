@@ -1,6 +1,7 @@
 import type { SlideShapes } from "../introspect/read-pptx";
 import type { TokenInjection } from "../instrument/instrument-template";
 import type { ProposedSlot } from "./propose-injection-plan";
+import { screenSlides } from "./geometry-screen";
 import {
   parseTemplateProfile,
   type TemplateProfile,
@@ -65,6 +66,9 @@ export function buildDraft(
     slideSize,
     slots: draftSlots,
     wireframe,
+    // Preliminär geometriskrivning (Task 6) — samma slides som wireframen
+    // byggs av, så fynden pekar på exakt de shapes wizarden visar.
+    screen: screenSlides(slides),
   });
 }
 

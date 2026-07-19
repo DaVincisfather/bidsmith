@@ -3,9 +3,12 @@ import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser, parseUuidParam, parseBody } from "@/lib/api-helpers";
 import { OnboardingPatchSchema } from "@/lib/api-schemas";
-import { parseOnboardingDraft, extractPrecount } from "@/lib/pptx-template/onboarding/draft";
+import { parseOnboardingDraft, extractPrecount, extractScreen } from "@/lib/pptx-template/onboarding/draft";
+import type { ScreenFinding } from "@/lib/pptx-template/onboarding/geometry-screen";
 import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 import { applyDecision, applySlideDecision } from "@/lib/pptx-template/onboarding/draft-logic";
+import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
+import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -41,23 +44,27 @@ async function loadOnboardingRow(
   return { ok: true, row };
 }
 
-/** Normaliserar onboarding_draft-kolumnens payloads: utkast (schema-validerat),
- *  { error, precount? } (klassificeringsfel — precount kan bevaras med, se
- *  propose-routen), { precount } (satt av upload, före klassificering). Ett
- *  korrupt utkast (objekt som inte matchar något av dem) får INTE kasta
- *  ZodError ur handlern — det mappas till ett fel-payload.
- *  Nyckeldiskriminering (error först, sedan precount, sedan parse) måste
- *  bevaras — ett utkast får aldrig förväxlas med en precount/error-payload. */
+/** Normaliserar onboarding_draft-kolumnens payloads: utkast (schema-validerat,
+ *  bär redan sin egen `screen`), { error, precount?, screen? } (klassificeringsfel
+ *  — precount/screen kan bevaras med, se propose-routen), { precount, screen? }
+ *  (satt av upload, före klassificering). Ett korrupt utkast (objekt som inte
+ *  matchar något av dem) får INTE kasta ZodError ur handlern — det mappas till
+ *  ett fel-payload. Nyckeldiskriminering (error först, sedan precount, sedan
+ *  parse) måste bevaras — ett utkast får aldrig förväxlas med en
+ *  precount/error-payload. */
 function draftPayload(raw: unknown): {
   draft: ReturnType<typeof parseOnboardingDraft> | null;
   error?: string;
   precount?: { slides: number; candidates: number };
+  screen?: ScreenFinding[];
 } {
   if (raw && typeof raw === "object") {
     const obj = raw as Record<string, unknown>;
-    if (typeof obj.error === "string") return { draft: null, error: obj.error, precount: extractPrecount(raw) };
+    if (typeof obj.error === "string") {
+      return { draft: null, error: obj.error, precount: extractPrecount(raw), screen: extractScreen(raw) };
+    }
     const precount = extractPrecount(raw);
-    if (precount) return { draft: null, precount };
+    if (precount) return { draft: null, precount, screen: extractScreen(raw) };
     try {
       return { draft: parseOnboardingDraft(raw) };
     } catch {
@@ -86,11 +93,34 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   const row = loaded.row;
   if (!row) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
+  // Mätning + malldefekter finns bara efter slutförd onboarding (profilen
+  // skrivs av onboarding:measure-CLI:t) — andra statusar har ingen profil än,
+  // så fälten utelämnas i st.f. att alltid slå upp en profil som saknas.
+  // loadTemplateProfile KASTAR vid DB-/valideringsfel — fånga och mappa till
+  // räknat JSON-500 (routine-fynd #65-klassen). Felet ska synas, inte sväljas
+  // till tysta null-fält (samma anda som complete-routens saveTemplateProfile-
+  // hantering) — degradering hade dolt en trasig profil bakom "inga defekter".
+  const onboarded = row.onboarding_status === "onboarded";
+  let profile: TemplateProfile | null = null;
+  if (onboarded) {
+    try {
+      profile = await loadTemplateProfile(idResult.data);
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : String(err) },
+        { status: 500 },
+      );
+    }
+  }
+
   return NextResponse.json({
     status: row.onboarding_status,
     name: row.name,
     version: row.version,
     ...draftPayload(row.onboarding_draft),
+    ...(onboarded
+      ? { measurement: profile?.measurement ?? null, knownDefects: profile?.knownDefects ?? null }
+      : {}),
   });
 }
 

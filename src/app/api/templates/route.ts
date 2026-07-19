@@ -8,6 +8,7 @@ import { readPptxSlides, type SlideShapes } from "@/lib/pptx-template/introspect
 import { isForeignPptx } from "@/lib/pptx-template/onboarding/detect-foreign";
 import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 import { candidateSlots } from "@/lib/pptx-template/onboarding/propose-injection-plan";
+import { screenSlides } from "@/lib/pptx-template/onboarding/geometry-screen";
 import { TEMPLATE_BUCKET, clearTemplateCache } from "@/lib/pptx-template/template-store";
 import { manifestToProfile } from "@/lib/pptx-template/manifest-to-profile";
 import { saveTemplateProfile } from "@/lib/pptx-template/profile-store";
@@ -121,9 +122,14 @@ export async function POST(request: NextRequest) {
       manifest, // null för foreign — nullable sedan migration 012
       onboarding_status: foreign ? "needs_onboarding" : "none",
       // precount: startsidan visar omfång + kostnadsindikation utan att behöva
-      // ladda ner och parsa pptx:en igen.
+      // ladda ner och parsa pptx:en igen. screen: preliminära geometri-flaggor
+      // (Task 6) — ren XML-matte, ingen COM, satt bredvid precount i samma steg
+      // så wizarden kan visa dem innan/oavsett klassificeringsjobbets utfall.
       onboarding_draft: foreign
-        ? { precount: { slides: slides.length, candidates: candidateSlots(slides).length } }
+        ? {
+            precount: { slides: slides.length, candidates: candidateSlots(slides).length },
+            screen: screenSlides(slides),
+          }
         : null,
     })
     .select("id")

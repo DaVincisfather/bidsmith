@@ -4,9 +4,10 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-19 — **KICKER-ENFORCEMENT LEVERERAD** (kickergrova 2→0,
-kvarvarande grova = enbart malldefekter; se NÄSTA-listan). Tidigare samma dag:
-smoke 3 godkänd (FAIL 0 i skarp generering)._
+_Senast uppdaterad: 2026-07-19 — **ONBOARDING-MÄTPASSET LEVERERAT** (defektdetektion
++ kalibrering i onboardingflödet, hård aktiveringsgrind; se NÄSTA-listan — inkl.
+ärlig v1-begränsning för master-/innehållsklassen). Tidigare samma dag: smoke 3
+godkänd (FAIL 0) + kicker-enforcement (PR #88, kickergrova 2→0)._
 
 _2026-07-15 — **BID-EDITOR-SLIMNINGEN LEVERERAD** (design + plan i
 `notes/2026-07-15-bid-editor-slim-{design,plan}.md`): editorn för onboardade mallar visar
@@ -123,9 +124,25 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       FAIL 0, WARN 23→20, grova 5→3 = enbart malldefekt-klassen kvar
       (slide 1 bolagsnamnsbox, slide 2 Text 36, slide 4 statbox), dubbletter 0,
       volym 10 265. → 5/5 PASS kräver nu ENDAST defektlista + mallfix.
-- [ ] **Defektlist-kandidat (Stefans lista):** Rådrum-boxen slide 2 Text 36
-      (companyName i liten master-ruta, 5/5 anbud, generations-invariant).
-      Statboxarna slide 4 ligger redan på mallfix-punkten nedan.
+- [x] **ONBOARDING-MÄTPASSET — LEVERERAT 2026-07-19 (denna PR).** Stefans
+      processbeslut ("fixa inte Rådrum specifikt, fixa processen"): defektdetektion
+      + kalibrering är nu en del av onboardingflödet för GODTYCKLIGA mallar.
+      Design/plan: `notes/2026-07-19-onboarding-measure-{design,plan}.md`.
+      Levererat: `npm run onboarding:measure -- <id> [--write]` (tomma-mallen-scan
+      [generaliserad ur overflow-bootstrap, beteendebevarande] + budgetkalibrering +
+      ETT atomiskt profilskriv), profilfälten `measurement`/`knownDefects` (jsonb,
+      ingen migration), geometri-screen vid upload (preliminär), wizardens mätsteg +
+      hälsorapport (accept per defekt), HÅRD aktiveringsgrind (`activationBlockReason`),
+      `deck:scan --profile` (accepterade signaturer → INFO "känd malldefekt").
+      LIVE-VERIFIERAT mot Radrum v4: 29 defekter (identiskt evalens frysta lista),
+      budgetar/singleLine identiska, grind 409→200, UI-accept, scan-annotering av
+      slide 1 Text 0. **ÄRLIG BEGRÄNSNING (v1):** tomma-mallen-scannen ser INTE
+      (a) master-boxar vars overflow kräver innehåll (slide 2 Text 36-klassen) eller
+      (b) innehållsdrivna overflows i små boxar (statbox-klassen slide 4) — 2 av 3
+      kvarvarande smoke-grova är därmed oannoterbara i v1; de ägs av mallfix-punkten
+      resp. en framtida innehållsmedveten detektion (v2-kandidat: scan-driven
+      defekt-förslag ur genererade deck). Ersätter "Defektlist-kandidat"-punkten
+      (slide 2 Text 36 dokumenterad här som master-klassens exempel).
 - [ ] **Skip-generation för intent-tomma slots (routine-förslag PR #87, polish):**
       generationssidan motarbetar fortfarande "lämnas tom"-slots — re-asken
       kräver "lämna inte tomt" och bränner ett betalt anrop. Flytta
@@ -243,6 +260,13 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Mätpassets follow-ups (PR #89-routinen, polish):** (1) bära uppmätt detail in i
+  FAIL-defekternas suggestion — kräver medvetet beslut om eval-JSON:ens frysning
+  (EmptyScanDefect serialiseras rakt av i bootstrap); (2) validera `precount`-payloaden
+  med Zod som `screen` nu valideras; (3) annoteringsräknaren i scan-deck bör komma ur
+  annotateKnownDefects i stället för detail-strängprefixet; (4) accept utan CAS-guard
+  (single-operator-risk, låg); (5) engines-rad i package.json (Node ≥22.9 för
+  --env-file-if-exists); (6) OnboardingWizard.tsx 378 rader — bryt ut draft-vyn.
 - **Editor-slimningens follow-ups (PR #82, routine + slutreview 2026-07-15 — polish om
   inte annat anges):** (1) enrads-notis "N kortfält döljs — genereras och exporteras
   ändå" i grupperade vyn (`hiddenShortFields` finns redan i `GroupedSections`);
