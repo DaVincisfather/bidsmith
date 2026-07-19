@@ -36,6 +36,9 @@ export interface SlotResult {
   rounds: number;
   method: "measured" | "geometry-fallback";
   shortField: boolean;
+  /** Geometry fact from the target — persisted to the profile so generation
+   *  can enforce single-line slots (kickers) against the scaled ask. */
+  singleLine: boolean;
   warnings: string[];
   signals: CheckId[];
 }
@@ -129,20 +132,50 @@ export function buildSlotResult(
   return {
     token: t.token, budget, rounds: s.rounds,
     method: measured ? ("measured" as const) : ("geometry-fallback" as const),
-    shortField: budget <= SHORT_FIELD_MAX_CHARS, warnings, signals,
+    shortField: budget <= SHORT_FIELD_MAX_CHARS, singleLine: t.singleLine, warnings, signals,
   };
 }
 
-/** Immutable budget patch: results keyed by placeholder, skip-slots untouched. */
+/** Immutable budget patch: results keyed by placeholder, skip-slots untouched.
+ *  Also persists the single-line fact (true written, false strips any stale
+ *  flag) — generation needs it to enforce kicker slots. */
 export function applyBudgets(profile: TemplateProfile, results: SlotResult[]): TemplateProfile {
-  const byToken = new Map(results.map((r) => [r.token, r.budget]));
+  const byToken = new Map(results.map((r) => [r.token, r]));
   return {
     ...profile,
     slides: profile.slides.map((slide) => ({
       ...slide,
       slots: slide.slots.map((slot) => {
-        const budget = byToken.get(slot.placeholder);
-        return budget === undefined ? slot : { ...slot, budgetChars: budget };
+        const result = byToken.get(slot.placeholder);
+        if (result === undefined) return slot;
+        const { singleLine: _stale, ...rest } = slot;
+        return {
+          ...rest,
+          budgetChars: result.budget,
+          ...(result.singleLine ? { singleLine: true } : {}),
+        };
+      }),
+    })),
+  };
+}
+
+/** Immutable single-line patch for the backfill path: sets/strips ONLY the
+ *  singleLine flag from geometry-planned targets — budgets never move. Slots
+ *  without a target this run are left untouched. */
+export function applySingleLineFlags(
+  profile: TemplateProfile,
+  targets: CalibrationTarget[],
+): TemplateProfile {
+  const byToken = new Map(targets.map((t) => [t.token, t.singleLine]));
+  return {
+    ...profile,
+    slides: profile.slides.map((slide) => ({
+      ...slide,
+      slots: slide.slots.map((slot) => {
+        const singleLine = byToken.get(slot.placeholder);
+        if (singleLine === undefined) return slot;
+        const { singleLine: _stale, ...rest } = slot;
+        return { ...rest, ...(singleLine ? { singleLine: true } : {}) };
       }),
     })),
   };

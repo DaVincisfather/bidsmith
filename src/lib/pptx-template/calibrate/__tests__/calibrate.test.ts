@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyBudgets, buildCalibrationSections, buildSlotResult } from "../calibrate";
+import { applyBudgets, applySingleLineFlags, buildCalibrationSections, buildSlotResult } from "../calibrate";
 import type { SearchState } from "../binary-search";
 import type { CalibrationTarget } from "../plan-targets";
 import type { TemplateProfile } from "../../template-profile";
@@ -38,15 +38,89 @@ describe("applyBudgets", () => {
 
   it("sets budgetChars on matching slots and leaves others untouched", () => {
     const out = applyBudgets(profile, [
-      { token: "{A}", budget: 440, rounds: 5, method: "measured", shortField: false, warnings: [], signals: [] },
+      { token: "{A}", budget: 440, rounds: 5, method: "measured", shortField: false, warnings: [], signals: [], singleLine: false },
     ]);
     expect(out.slides[0].slots[0].budgetChars).toBe(440);
     expect(out.slides[0].slots[1].budgetChars).toBeUndefined();
   });
 
   it("does not mutate the input profile", () => {
-    applyBudgets(profile, [{ token: "{A}", budget: 100, rounds: 1, method: "measured", shortField: false, warnings: [], signals: [] }]);
+    applyBudgets(profile, [{ token: "{A}", budget: 100, rounds: 1, method: "measured", shortField: false, warnings: [], signals: [], singleLine: false }]);
     expect(profile.slides[0].slots[0].budgetChars).toBeUndefined();
+  });
+
+  it("persists singleLine: true and omits the key when false", () => {
+    const out = applyBudgets(profile, [
+      { token: "{A}", budget: 110, rounds: 5, method: "measured", shortField: false, warnings: [], signals: [], singleLine: true },
+    ]);
+    expect(out.slides[0].slots[0].singleLine).toBe(true);
+
+    const multi = applyBudgets(profile, [
+      { token: "{A}", budget: 110, rounds: 5, method: "measured", shortField: false, warnings: [], signals: [], singleLine: false },
+    ]);
+    expect(multi.slides[0].slots[0]).not.toHaveProperty("singleLine");
+  });
+
+  it("strips a stale singleLine flag when recalibration says multi-line", () => {
+    const flagged: TemplateProfile = {
+      ...profile,
+      slides: [{
+        ...profile.slides[0],
+        slots: [{ ...profile.slides[0].slots[0], singleLine: true }, profile.slides[0].slots[1]],
+      }],
+    };
+    const out = applyBudgets(flagged, [
+      { token: "{A}", budget: 300, rounds: 5, method: "measured", shortField: false, warnings: [], signals: [], singleLine: false },
+    ]);
+    expect(out.slides[0].slots[0]).not.toHaveProperty("singleLine");
+  });
+});
+
+describe("applySingleLineFlags", () => {
+  // The backfill path (scripts/backfill-single-line.ts): patch ONLY the
+  // single-line fact from geometry-planned targets — budgets must never move.
+  const profile: TemplateProfile = {
+    profileVersion: 1, templateId: "t1", name: "T", version: 1,
+    slides: [{
+      source: 1, capability: "generic-prose",
+      slots: [
+        { placeholder: "{Kicker}", capability: "generic-prose", format: "prose", intent: "", status: "generic", budgetChars: 130 },
+        { placeholder: "{Prosa}", capability: "generic-prose", format: "prose", intent: "", status: "generic", budgetChars: 500 },
+      ],
+    }],
+  };
+
+  it("flags single-line slots and leaves budgets untouched", () => {
+    const out = applySingleLineFlags(profile, [
+      { ...target("{Kicker}"), singleLine: true, lineCapChars: 130 },
+      target("{Prosa}"),
+    ]);
+    expect(out.slides[0].slots[0].singleLine).toBe(true);
+    expect(out.slides[0].slots[0].budgetChars).toBe(130);
+    expect(out.slides[0].slots[1]).not.toHaveProperty("singleLine");
+    expect(out.slides[0].slots[1].budgetChars).toBe(500);
+  });
+
+  it("strips a stale flag when geometry says multi-line and skips slots without a target", () => {
+    const flagged: TemplateProfile = {
+      ...profile,
+      slides: [{
+        ...profile.slides[0],
+        slots: [
+          { ...profile.slides[0].slots[0], singleLine: true },
+          { ...profile.slides[0].slots[1], singleLine: true },
+        ],
+      }],
+    };
+    const out = applySingleLineFlags(flagged, [target("{Kicker}")]);
+    expect(out.slides[0].slots[0]).not.toHaveProperty("singleLine");
+    // {Prosa} has no target this run — untouched, keeps its (possibly stale) flag.
+    expect(out.slides[0].slots[1].singleLine).toBe(true);
+  });
+
+  it("does not mutate the input profile", () => {
+    applySingleLineFlags(profile, [{ ...target("{Kicker}"), singleLine: true, lineCapChars: 130 }]);
+    expect(profile.slides[0].slots[0]).not.toHaveProperty("singleLine");
   });
 });
 
@@ -186,5 +260,12 @@ describe("buildSlotResult", () => {
   it("records which signals drove the verdict", () => {
     const r = buildSlotResult(target("{A}"), doneState(400), true, undefined, ["horizontal-clip"]);
     expect(r.signals).toEqual(["horizontal-clip"]);
+  });
+
+  it("carries the single-line fact onto the result instead of discarding it", () => {
+    const single = buildSlotResult({ ...target("{A}"), singleLine: true, lineCapChars: 130 }, doneState(400), true);
+    expect(single.singleLine).toBe(true);
+    const multi = buildSlotResult(target("{A}"), doneState(400), true);
+    expect(multi.singleLine).toBe(false);
   });
 });
