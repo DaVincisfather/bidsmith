@@ -82,6 +82,64 @@ const TABLE_SLIDE_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 // list to just those two, write the fixture.
 // ---------------------------------------------------------------------------
 
+// templates/anbudsmall-v2.pptx ships 17 slides; we keep only slide1/slide2 —
+// these are the orphans to strip entirely (not just unreference).
+const ORPHAN_SLIDE_NUMBERS = Array.from({ length: 15 }, (_, i) => i + 3); // 3..17
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Strips slide3..slide17 (and their now-orphaned notesSlides) COMPLETELY from
+ * the package: the physical parts, their own _rels files, their
+ * <Relationship> entries in presentation.xml.rels, and their <Override>
+ * entries in [Content_Types].xml.
+ *
+ * Earlier version of this script left these parts in place (unreferenced by
+ * <p:sldIdLst>, which is all readPptxSlides itself needs). That was fine for
+ * introspection but broke as a RENDER substrate: pptx-automizer names newly
+ * appended slides slide3.xml/slide4.xml — colliding with these leftover
+ * orphan part names — and appends fresh <Override> entries for them into
+ * [Content_Types].xml without checking for an existing one, producing
+ * duplicate PartName overrides (an OPC violation) that PowerPoint refuses to
+ * open (0x80CB8001). Stripping the orphans outright removes the collision
+ * surface. Layouts/masters/theme/media are untouched — slide1/slide2 both
+ * depend on slideLayout1.xml via their own _rels files.
+ */
+async function stripOrphanSlideParts(zip: JSZip): Promise<void> {
+  for (const n of ORPHAN_SLIDE_NUMBERS) {
+    zip.remove(`ppt/slides/slide${n}.xml`);
+    zip.remove(`ppt/slides/_rels/slide${n}.xml.rels`);
+    zip.remove(`ppt/notesSlides/notesSlide${n}.xml`);
+    zip.remove(`ppt/notesSlides/_rels/notesSlide${n}.xml.rels`);
+  }
+
+  const relsPath = "ppt/_rels/presentation.xml.rels";
+  let rels = await zip.file(relsPath)!.async("string");
+  for (const n of ORPHAN_SLIDE_NUMBERS) {
+    const re = new RegExp(`<Relationship[^>]*Target="slides/slide${n}\\.xml"[^>]*/>`);
+    if (!re.test(rels)) {
+      throw new Error(`presentation.xml.rels saknar relationship för slide${n}.xml — kan inte strippa`);
+    }
+    rels = rels.replace(re, "");
+  }
+  zip.file(relsPath, rels);
+
+  const ctPath = "[Content_Types].xml";
+  let ct = await zip.file(ctPath)!.async("string");
+  for (const n of ORPHAN_SLIDE_NUMBERS) {
+    for (const partName of [`/ppt/slides/slide${n}.xml`, `/ppt/notesSlides/notesSlide${n}.xml`]) {
+      const re = new RegExp(`<Override PartName="${escapeRegExp(partName)}"[^>]*/>`);
+      if (!re.test(ct)) {
+        throw new Error(`[Content_Types].xml saknar override för ${partName} — kan inte strippa`);
+      }
+      ct = ct.replace(re, "");
+    }
+  }
+  zip.file(ctPath, ct);
+}
+
 async function main() {
   const zip = await JSZip.loadAsync(
     await readFile(path.resolve("templates", "anbudsmall-v2.pptx")),
@@ -90,11 +148,12 @@ async function main() {
   zip.file("ppt/slides/slide1.xml", PROSE_SLIDE_XML);
   zip.file("ppt/slides/slide2.xml", TABLE_SLIDE_XML);
 
+  await stripOrphanSlideParts(zip);
+
   // Trim presentation.xml's slide list to slide1 (rId2) + slide2 (rId3) only —
   // both r:ids already point at the right targets in presentation.xml.rels, so
-  // no rels changes are needed. Slides 3–17 remain as unreferenced physical
-  // parts in the package; harmless (readPptxSlides walks sldIdLst, not the zip
-  // file listing), and leaving them avoids touching Content_Types/rels at all.
+  // no rels changes are needed here (the orphan rels/overrides were already
+  // stripped above).
   const presPath = "ppt/presentation.xml";
   let presXml = await zip.file(presPath)!.async("string");
   const sldIdLstRe = /<p:sldIdLst>[\s\S]*?<\/p:sldIdLst>/;
