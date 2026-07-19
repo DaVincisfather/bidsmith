@@ -9,20 +9,20 @@ afterEach(() => {
 });
 
 describe("foreignTemplatesEnabled", () => {
-  it("is OFF by default (unset)", () => {
+  it("is ON by default (unset) — the activation gate carries the safety since 2026-07-19", () => {
     delete process.env.BIDSMITH_FOREIGN_TEMPLATES;
-    expect(foreignTemplatesEnabled()).toBe(false);
-  });
-
-  it("is ON only for the exact value 'on'", () => {
-    process.env.BIDSMITH_FOREIGN_TEMPLATES = "on";
     expect(foreignTemplatesEnabled()).toBe(true);
   });
 
-  it("treats any other value as OFF (fail closed)", () => {
-    for (const v of ["true", "1", "ON", "yes", ""]) {
+  it("is OFF only for the exact value 'off'", () => {
+    process.env.BIDSMITH_FOREIGN_TEMPLATES = "off";
+    expect(foreignTemplatesEnabled()).toBe(false);
+  });
+
+  it("treats any other value as ON (legacy 'on' keeps working)", () => {
+    for (const v of ["on", "true", "1", "OFF", ""]) {
       process.env.BIDSMITH_FOREIGN_TEMPLATES = v;
-      expect(foreignTemplatesEnabled()).toBe(false);
+      expect(foreignTemplatesEnabled()).toBe(true);
     }
   });
 });

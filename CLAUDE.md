@@ -82,8 +82,10 @@ Vid ändringar i befintlig kod:
 - Filstorlek-gräns: 20MB i document-parser
 - **Supabase free-tier pausar efter ~7 d inaktivitet** → NXDOMAIN på projektet (både dev
   och drift). Restore via dashboard + ~5 min boot; polla REST-API:t innan skript körs.
-- `BIDSMITH_FOREIGN_TEMPLATES=on` aktiverar foreign-mall-onboardingen (upload av
-  tokenlösa kundmallar + wizard) — AV som default sedan vägbeslutet 2026-07-14.
+- `BIDSMITH_FOREIGN_TEMPLATES` är PÅ som default sedan 2026-07-19 (`=off` stänger
+  ytan) — aktiveringsgrinden (mätpasset) bär säkerheten som flaggan bar tidigare.
+- Ny migration ⇒ kör `npm run gen:setup-sql` och committa `supabase/setup.sql`
+  (drift-testet fäller sviten annars). `npm run doctor` = preflight för installationer.
 
 ## Tech-stack
 
