@@ -58,12 +58,25 @@ export interface GenericProseSlot {
   intent: string;
   /** Character budget from the slot geometry, when known. */
   budgetChars?: number;
+  /** The box holds exactly one line (a kicker): the prompt states the budget
+   *  as a hard cap, and generation enforces it mechanically after the fact. */
+  singleLine?: boolean;
 }
 
 export { SHORT_FIELD_MAX_CHARS };
 
 export function isShortField(slot: GenericProseSlot): boolean {
   return isShortBudget(slot.budgetChars);
+}
+
+/** A wide single-line kicker: prose-classed (not a short field) with a known
+ *  budget in a one-line box. The EN RAD hard-cap promise in the prompt
+ *  (slotLine) and the mechanical shorten pass (generate-from-profile) MUST
+ *  agree on this class — one predicate so they can't drift apart. */
+export function isEnforceableKicker(
+  slot: GenericProseSlot,
+): slot is GenericProseSlot & { budgetChars: number } {
+  return slot.singleLine === true && slot.budgetChars !== undefined && !isShortField(slot);
 }
 
 // Shared voice + source-fidelity contract — identical for the per-slot fallback
@@ -130,6 +143,12 @@ function slotLine(s: GenericProseSlot, suffix = ""): string {
   const intent = s.intent || "(ej angivet — härled från platshållaren och kontexten)";
   if (isShortField(s)) {
     return `- "${s.placeholder}"${suffix}: ${intent} — KORTFÄLT (max ${s.budgetChars} tecken): skriv ENDAST värdet (t.ex. ett namn, datum eller nummer), ALDRIG meningar eller förklaringar. Saknas uppgiften i underlaget: lämna tomt ("").`;
+  }
+  // A wide single-line kicker: any wrap overflows, so the budget is a hard cap
+  // — the soft "ca"-ask reads as negotiable and the model overshoots ~1.1-1.25x
+  // (overflow-loop finding, notes/2026-07-16-overflow-loop-slutrapport.md).
+  if (isEnforceableKicker(s)) {
+    return `- "${s.placeholder}"${suffix}: ${intent} — EN RAD (hård gräns, max ${s.budgetChars} tecken): en kort kärnfras utan radbrytning; överskrid ALDRIG ${s.budgetChars} tecken.`;
   }
   const budget = s.budgetChars ? ` (håll dig inom ca ${s.budgetChars} tecken)` : "";
   return `- "${s.placeholder}"${suffix}: ${intent}${budget}`;
@@ -251,34 +270,18 @@ export async function buildGenericProseSlideSections(
   ctx: BidContext,
   siblings: GenericProseSlot[] = [],
 ): Promise<BidSection[]> {
-  // Guard the key ceiling HERE, not only in the orchestrator's chunking: the cap
-  // no longer guards schema complexity (the fixed schema removed that), but it
-  // still bounds prompt size and attention dilution, so a future call site that
-  // skips the chunking should fail loud and free before the paid call.
-  if (slots.length > MAX_KEYS_PER_CALL) {
-    throw new Error(
-      `buildGenericProseSlideSections: ${slots.length} slots > MAX_KEYS_PER_CALL (${MAX_KEYS_PER_CALL}) — chunka anropet; ett anrop med för många fält späder ut modellens uppmärksamhet och sväller prompten`,
-    );
-  }
-
-  const parsed = await callClaude({
-    // Same role/effort/budget as the per-slot bundle: Sonnet 5, not Opus — a
-    // foreign template can carry 30+ unknown slots and that cost lands on the user.
-    model: MODELS.writingGeneric,
-    maxTokens: 32000,
-    system: slideSystemPrompt(slots, siblings),
-    cachedContext: formatContext(ctx),
-    userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
-    // Fixed schema (not dynamic keys) → constant grammar complexity + a shared
-    // output_config cache prefix across calls. See GenericProseSectionsSchema.
-    schema: GenericProseSectionsSchema,
-    label: "generic-prose slide bundle",
-    effort: "high",
-    userId: ctx.userId,
-    bidId: ctx.bidId,
-  });
-
-  return sectionsFromRecord(recordFromSections(parsed), slots);
+  return callProseBatch(
+    {
+      fnName: "buildGenericProseSlideSections",
+      system: slideSystemPrompt(slots, siblings),
+      label: "generic-prose slide bundle",
+      maxTokens: 32000,
+      effort: "high",
+      withBidContext: true,
+    },
+    slots,
+    ctx,
+  );
 }
 
 /** Collapses the fixed-schema `{ sections: [...] }` response into a
@@ -335,6 +338,61 @@ function sectionsFromRecord(
     });
   }
   return sections;
+}
+
+// Shared scaffold for every batched generic-prose call (slide bundle, re-ask,
+// shorten): the key-ceiling guard, the callClaude invocation with the FIXED
+// sections-array schema, and the response→section mapping. Centralizing this is
+// what actually guarantees the "same schema ⇒ shared output_config cache
+// prefix" property the builders' comments rely on — previously held only by
+// copy-discipline across three near-identical bodies. Writing passes ship the
+// bid context + effort "high"; mechanical passes omit both (see
+// buildGenericProseShortenSections for why).
+interface ProseBatchCall {
+  /** Caller name for the guard's error message. */
+  fnName: string;
+  system: string;
+  label: string;
+  maxTokens: number;
+  /** Omitted ⇒ no effort param sent (thinking off) — for mechanical passes. */
+  effort?: "high";
+  /** Writing passes ship formatContext(ctx) as the cached system block. */
+  withBidContext: boolean;
+}
+
+async function callProseBatch(
+  call: ProseBatchCall,
+  slots: GenericProseSlot[],
+  ctx: BidContext,
+): Promise<BidSection[]> {
+  // Guard the key ceiling HERE, not only in the orchestrator's chunking: the cap
+  // no longer guards schema complexity (the fixed schema removed that), but it
+  // still bounds prompt size and attention dilution, so a call site that skips
+  // the chunking fails loud and free BEFORE the paid call.
+  if (slots.length > MAX_KEYS_PER_CALL) {
+    throw new Error(
+      `${call.fnName}: ${slots.length} slots > MAX_KEYS_PER_CALL (${MAX_KEYS_PER_CALL}) — chunka anropet; ett anrop med för många fält späder ut modellens uppmärksamhet och sväller prompten`,
+    );
+  }
+
+  const parsed = await callClaude({
+    // Same role for every batch pass: Sonnet 5, not Opus — a foreign template
+    // can carry 30+ unknown slots and that cost lands on the user.
+    model: MODELS.writingGeneric,
+    maxTokens: call.maxTokens,
+    system: call.system,
+    ...(call.withBidContext ? { cachedContext: formatContext(ctx) } : {}),
+    userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
+    // Fixed schema (not dynamic keys) → constant grammar complexity + a shared
+    // output_config cache prefix across calls. See GenericProseSectionsSchema.
+    schema: GenericProseSectionsSchema,
+    label: call.label,
+    ...(call.effort !== undefined ? { effort: call.effort } : {}),
+    userId: ctx.userId,
+    bidId: ctx.bidId,
+  });
+
+  return sectionsFromRecord(recordFromSections(parsed), slots);
 }
 
 /** A slot that came back empty from wave 1, carried into the re-ask with a note
@@ -408,33 +466,89 @@ export async function buildGenericProseReaskSections(
   targets: GenericProseReaskTarget[],
   ctx: BidContext,
 ): Promise<BidSection[]> {
-  // Same key-ceiling guard as the slide batch: the re-ask gathers targets across
-  // the whole first wave, so an unchunked call site here is the LIKELIER way to
-  // fire an oversized prompt. Throw before the paid call.
-  if (targets.length > MAX_KEYS_PER_CALL) {
-    throw new Error(
-      `buildGenericProseReaskSections: ${targets.length} targets > MAX_KEYS_PER_CALL (${MAX_KEYS_PER_CALL}) — chunka anropet; ett anrop med för många fält späder ut modellens uppmärksamhet och sväller prompten`,
-    );
-  }
-
-  const parsed = await callClaude({
-    model: MODELS.writingGeneric,
-    maxTokens: 32000,
-    system: reaskSystemPrompt(targets),
-    cachedContext: formatContext(ctx),
-    userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
-    // Same fixed schema as the slide batch (see GenericProseSectionsSchema) — a
-    // still-empty or dropped element degrades to a per-slot failure, and the
-    // shared schema keeps the cache prefix identical across all batch calls.
-    schema: GenericProseSectionsSchema,
-    label: "generic-prose re-ask",
-    effort: "high",
-    userId: ctx.userId,
-    bidId: ctx.bidId,
-  });
-
-  return sectionsFromRecord(
-    recordFromSections(parsed),
+  return callProseBatch(
+    {
+      fnName: "buildGenericProseReaskSections",
+      system: reaskSystemPrompt(targets),
+      label: "generic-prose re-ask",
+      maxTokens: 32000,
+      effort: "high",
+      withBidContext: true,
+    },
     targets.map((t) => t.slot),
+    ctx,
+  );
+}
+
+/** A single-line (kicker) slot whose wave text exceeded the scaled ask, carried
+ *  into the mechanical shorten pass with the text to compress. The slot's
+ *  budgetChars is the SCALED ask (effectiveBudget) — the hard cap. */
+export interface GenericProseShortenTarget {
+  slot: GenericProseSlot;
+  currentText: string;
+}
+
+// System prompt for the batched SHORTEN pass (kicker-enforcement, design
+// 2026-07-19): every listed slot is a single-line box whose text wraps — the
+// task is compression of the given text, not new writing. Hard cap at the
+// scaled ask; whole phrases only (same no-mid-sentence rule as shorten-field);
+// no new facts — the wave text is the only source.
+function shortenSystemPrompt(targets: GenericProseShortenTarget[]): string {
+  const slotLines = targets
+    .map(
+      (t) =>
+        `${slotLine(t.slot)}\n  NUVARANDE TEXT (${t.currentText.length} tecken — för lång): ${t.currentText}`,
+    )
+    .join("\n");
+  const jsonLines = targets
+    .map(
+      (t) =>
+        `    { "placeholder": "${t.slot.placeholder}", "text": "komprimerad enradstext inom maxgränsen" }`,
+    )
+    .join(",\n");
+  return `Följande enradsrubriker i ett svenskt konsultanbud är för långa för sina textrutor —
+texten radbryts och trycks utanför rutan. Komprimera VARJE text till högst sitt angivna
+maxantal tecken. Behåll kärnbudskapet, stryk hellre bisatser och utfyllnad. Hela fraser —
+hugg aldrig av mitt i en mening. Inga nya fakta: texten nedan är enda källan.
+
+Rubriker att korta:
+${slotLines}
+
+Svara med giltig JSON. Fältet "sections" ska ha EXAKT ett element per rubrik ovan — inga extra,
+inga utelämnade — och varje "placeholder" ska vara EXAKT som angiven (inklusive klamrar):
+{
+  "sections": [
+${jsonLines}
+  ]
+}`;
+}
+
+/**
+ * Batched mechanical SHORTEN for single-line slots over the scaled ask (kicker-
+ * enforcement). Same fixed schema, chunk ceiling, and response→section mapping
+ * as the other batch calls, under its own cost label. Returns sections only for
+ * placeholders answered non-blank — the caller applies its merge policy
+ * (shorter-wins, originals kept otherwise) and NEVER records failures from this
+ * pass: a rejected call degrades to keeping the wave text.
+ */
+export async function buildGenericProseShortenSections(
+  targets: GenericProseShortenTarget[],
+  ctx: BidContext,
+): Promise<BidSection[]> {
+  // Mechanical compression, not writing — mirror shorten-field's cost profile:
+  // no effort (thinking off), a tight output cap (≤12 kickers is well under 4k
+  // tokens, while 32000 would put the format-retry budget at ~80k output
+  // tokens), and no bid context — the prompt forbids new facts, so shipping
+  // the context buys nothing.
+  return callProseBatch(
+    {
+      fnName: "buildGenericProseShortenSections",
+      system: shortenSystemPrompt(targets),
+      label: "generic-prose shorten",
+      maxTokens: 4000,
+      withBidContext: false,
+    },
+    targets.map((t) => t.slot),
+    ctx,
   );
 }

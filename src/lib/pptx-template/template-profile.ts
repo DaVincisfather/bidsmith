@@ -56,6 +56,10 @@ export const SlotProfileSchema = z.object({
   intent: z.string(),
   /** Character budget from the slot geometry (compute-budgets), when known. */
   budgetChars: z.number().int().positive().optional(),
+  /** Geometry says the box holds exactly one line (a kicker/label): any wrap is
+   *  an overflow, so generation enforces the scaled ask mechanically. Set by
+   *  calibration (or the backfill script); omitted = multi-line/unknown. */
+  singleLine: z.boolean().optional(),
   /** How onboarding resolved this slot: a known capability (mapped), the
    *  generic generator (generic), or intentionally left blank (skip). */
   status: z.enum(SLOT_STATUSES),

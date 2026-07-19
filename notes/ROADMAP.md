@@ -4,8 +4,9 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-19 — **SMOKE 3 GODKÄND** (FAIL 0 i skarp generering,
-se NÄSTA-listan) — kicker-enforcement påbörjad._
+_Senast uppdaterad: 2026-07-19 — **KICKER-ENFORCEMENT LEVERERAD** (kickergrova 2→0,
+kvarvarande grova = enbart malldefekter; se NÄSTA-listan). Tidigare samma dag:
+smoke 3 godkänd (FAIL 0 i skarp generering)._
 
 _2026-07-15 — **BID-EDITOR-SLIMNINGEN LEVERERAD** (design + plan i
 `notes/2026-07-15-bid-editor-slim-{design,plan}.md`): editorn för onboardade mallar visar
@@ -108,11 +109,20 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       companyName, slide 4 statbox) + 2 kickers (slide 6/7, 1,88–1,96× =
       tvåraders wrap). Noll grova i prosa-klassen — #86/#87-rattarna håller i
       skarp generering. → kicker-enforcement påbörjad (nästa punkt).
-- [ ] **KICKER-ENFORCEMENT (spinoff, byggbeslut):** ~11/20 kvarvarande grova =
-      breda enradskickers där modellen skriver 129–160 tecken mot skalad ask ~110
-      → 2-raders wrap. Mekanisk re-ask/trim i generate-from-profile mot den
-      SKALADE asken (slide 11-fallet: 129 ≤ 140 wrappade ändå — full budget
-      räcker inte som gräns).
+- [x] **KICKER-ENFORCEMENT — LEVERERAD 2026-07-19 (denna PR): kickergrova 2→0 i
+      skarp smoke.** Tre delar: (A) enrads-fakta persisteras nu i profilen
+      (`SlotProfileSchema.singleLine`; kalibreringen sparade siffran men slängde
+      fakta) + backfill-skript `npm run calibrate:backfill-single-line` (ren
+      geometri, $0, inga budgetändringar — Radrum v4: 112 slots flaggade, 9
+      enforcement-bara kickers); (B) hård EN RAD-formulering i prompten för
+      enrads-prosaslots (delat predikat `isEnforceableKicker` så löfte och
+      enforcement inte driftar); (C) EN batchad mekanisk shorten-våg efter F6
+      mot SKALADE asken (label "generic-prose shorten", billiga rattar per
+      shorten-field-precedent, kortaste-vinner, aldrig failedSections).
+      Smoke 4 (anbud 32aed5e5, $0,50): alla 9 kickers under skalad ask,
+      FAIL 0, WARN 23→20, grova 5→3 = enbart malldefekt-klassen kvar
+      (slide 1 bolagsnamnsbox, slide 2 Text 36, slide 4 statbox), dubbletter 0,
+      volym 10 265. → 5/5 PASS kräver nu ENDAST defektlista + mallfix.
 - [ ] **Defektlist-kandidat (Stefans lista):** Rådrum-boxen slide 2 Text 36
       (companyName i liten master-ruta, 5/5 anbud, generations-invariant).
       Statboxarna slide 4 ligger redan på mallfix-punkten nedan.

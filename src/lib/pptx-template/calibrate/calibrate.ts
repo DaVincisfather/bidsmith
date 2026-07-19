@@ -7,7 +7,7 @@ import { loadTemplate } from "../template-store";
 import { loadTemplateProfile, saveTemplateProfile } from "../profile-store";
 import { renderFromProfile } from "../render-from-profile";
 import { readPptxSlides } from "../introspect/read-pptx";
-import type { TemplateProfile } from "../template-profile";
+import type { SlotProfile, TemplateProfile } from "../template-profile";
 import { fillText } from "./test-prose";
 import { planTargets, type CalibrationTarget } from "./plan-targets";
 import { finalBudget, initState, step, type SearchState } from "./binary-search";
@@ -36,6 +36,9 @@ export interface SlotResult {
   rounds: number;
   method: "measured" | "geometry-fallback";
   shortField: boolean;
+  /** Geometry fact from the target — persisted to the profile so generation
+   *  can enforce single-line slots (kickers) against the scaled ask. */
+  singleLine: boolean;
   warnings: string[];
   signals: CheckId[];
 }
@@ -129,23 +132,54 @@ export function buildSlotResult(
   return {
     token: t.token, budget, rounds: s.rounds,
     method: measured ? ("measured" as const) : ("geometry-fallback" as const),
-    shortField: budget <= SHORT_FIELD_MAX_CHARS, warnings, signals,
+    shortField: budget <= SHORT_FIELD_MAX_CHARS, singleLine: t.singleLine, warnings, signals,
   };
 }
 
-/** Immutable budget patch: results keyed by placeholder, skip-slots untouched. */
-export function applyBudgets(profile: TemplateProfile, results: SlotResult[]): TemplateProfile {
-  const byToken = new Map(results.map((r) => [r.token, r.budget]));
+/** Immutable slide/slot walker shared by the profile patchers below. */
+function mapSlots(
+  profile: TemplateProfile,
+  patch: (slot: SlotProfile) => SlotProfile,
+): TemplateProfile {
   return {
     ...profile,
-    slides: profile.slides.map((slide) => ({
-      ...slide,
-      slots: slide.slots.map((slot) => {
-        const budget = byToken.get(slot.placeholder);
-        return budget === undefined ? slot : { ...slot, budgetChars: budget };
-      }),
-    })),
+    slides: profile.slides.map((slide) => ({ ...slide, slots: slide.slots.map(patch) })),
   };
+}
+
+/** The ONE home for the flag representation: true written, false strips the
+ *  key (never an explicit false) — both writers must agree or profiles diverge
+ *  by which tool last touched them. */
+function setSingleLine(slot: SlotProfile, on: boolean): SlotProfile {
+  const patched: SlotProfile = { ...slot, singleLine: true };
+  if (!on) delete patched.singleLine;
+  return patched;
+}
+
+/** Immutable budget patch: results keyed by placeholder, skip-slots untouched.
+ *  Also persists the single-line fact — generation needs it to enforce kicker
+ *  slots. */
+export function applyBudgets(profile: TemplateProfile, results: SlotResult[]): TemplateProfile {
+  const byToken = new Map(results.map((r) => [r.token, r]));
+  return mapSlots(profile, (slot) => {
+    const result = byToken.get(slot.placeholder);
+    if (result === undefined) return slot;
+    return setSingleLine({ ...slot, budgetChars: result.budget }, result.singleLine);
+  });
+}
+
+/** Immutable single-line patch for the backfill path: sets/strips ONLY the
+ *  singleLine flag from geometry-planned targets — budgets never move. Slots
+ *  without a target this run are left untouched. */
+export function applySingleLineFlags(
+  profile: TemplateProfile,
+  targets: CalibrationTarget[],
+): TemplateProfile {
+  const byToken = new Map(targets.map((t) => [t.token, t.singleLine]));
+  return mapSlots(profile, (slot) => {
+    const singleLine = byToken.get(slot.placeholder);
+    return singleLine === undefined ? slot : setSingleLine(slot, singleLine);
+  });
 }
 
 export async function calibrateTemplate(

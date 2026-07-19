@@ -68,3 +68,5 @@ evals/overflow/runs/**/*.pptx
 # Nedladdade upphandlingsdokument — committas inte (storlek); extraherad text hamnar i fixture-yaml
 evals/fixtures/source-docs/*
 !evals/fixtures/source-docs/.gitkeep
+
+.tmp-dev.log

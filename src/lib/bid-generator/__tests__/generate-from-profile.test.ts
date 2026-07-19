@@ -631,3 +631,142 @@ describe("generateSectionsFromProfile — key-chunking (≤12 per call)", () => 
     expect(sections).toHaveLength(30);
   });
 });
+
+// Kicker-enforcement (design 2026-07-19): a single-line prose slot whose wave
+// text exceeds the SCALED ask (effectiveBudget — the number the prompt asked
+// for, NOT the profile's raw budget: 129 chars ≤ raw 140 still wrapped, smoke
+// 2/slide 11) gets ONE batched mechanical shorten pass. Never hard truncation,
+// never a failedSection — worst case keeps the wave text (= today's behavior).
+describe("kicker-enforcement (shorten wave)", () => {
+  const SHORTEN_LABEL = "generic-prose shorten";
+  const isShorten = (opts: { label?: string }) => opts.label === SHORTEN_LABEL;
+  const shortenCalls = () =>
+    callClaudeMock.mock.calls.map((c) => c[0] as CallArg).filter((o) => isShorten(o));
+
+  // Kicker: raw budget 130 → scaled ask effectiveBudget(130) = 110.
+  const kicker = (placeholder: string) => ({
+    ...genericSlot(placeholder),
+    budgetChars: 130,
+    singleLine: true,
+  });
+
+  function mockWaveThenShorten(
+    waveText: Record<string, string>,
+    shortenText: Record<string, string>,
+  ) {
+    callClaudeMock.mockImplementation(async (opts: CallArg) => {
+      const keys = requestedPlaceholders(opts.system);
+      return {
+        sections: keys.map((p) => ({
+          placeholder: p,
+          text: (isShorten(opts) ? shortenText[p] : waveText[p]) ?? `text ${p}`,
+        })),
+      };
+    });
+  }
+
+  type Sections = Awaited<ReturnType<typeof generateSectionsFromProfile>>["sections"];
+  const textOf = (sections: Sections, placeholder: string) => {
+    const s = sections.find(
+      (x) => x.content?.format === "generic-prose" && x.content.placeholder === placeholder,
+    );
+    return s?.content?.format === "generic-prose" ? s.content.text : undefined;
+  };
+
+  it("shortens a single-line slot over the scaled ask — one labelled call, shorter text swapped in", async () => {
+    const long = "x".repeat(129); // ≤ raw 130, but > scaled ask 110 — the slide-11 case
+    const short = "y".repeat(90);
+    mockWaveThenShorten({ "{Kicker}": long }, { "{Kicker}": short });
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [kicker("{Kicker}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(shortenCalls()).toHaveLength(1);
+    // The prompt carries the current text and the SCALED cap (110), never raw 130.
+    expect(shortenCalls()[0].system).toContain(long);
+    expect(shortenCalls()[0].system).toContain("max 110 tecken");
+    expect(textOf(sections, "{Kicker}")).toBe(short);
+    expect(failedSections).toEqual([]);
+  });
+
+  it("never enforces multi-line prose or short fields, and fires no call without violators", async () => {
+    const long = "x".repeat(129);
+    // {Prosa}: same length, same budget, NOT single-line. {Chip}: single-line
+    // but short-field-classed (≤80) — the value-or-empty rule owns it.
+    mockWaveThenShorten(
+      { "{Prosa}": long, "{Chip}": long, "{Kort}": "ok" },
+      {},
+    );
+    const profile = profileWith([
+      {
+        source: 1,
+        capability: "generic-prose",
+        slots: [
+          { ...genericSlot("{Prosa}"), budgetChars: 130 },
+          { ...genericSlot("{Chip}"), budgetChars: 60, singleLine: true },
+          { ...genericSlot("{Kort}"), budgetChars: 60 },
+        ],
+      },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(shortenCalls()).toHaveLength(0);
+    expect(callClaudeMock).toHaveBeenCalledTimes(1);
+    expect(textOf(sections, "{Prosa}")).toBe(long);
+    expect(failedSections).toEqual([]);
+  });
+
+  it("keeps the original when the shorten answer is blank or longer", async () => {
+    const longA = "a".repeat(120);
+    const longB = "b".repeat(120);
+    mockWaveThenShorten(
+      { "{KickerA}": longA, "{KickerB}": longB },
+      { "{KickerA}": "", "{KickerB}": "b".repeat(125) },
+    );
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [kicker("{KickerA}"), kicker("{KickerB}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(textOf(sections, "{KickerA}")).toBe(longA);
+    expect(textOf(sections, "{KickerB}")).toBe(longB);
+    expect(failedSections).toEqual([]);
+  });
+
+  it("keeps a shorter attempt even when still over the ask — never a failedSection", async () => {
+    const long = "x".repeat(129);
+    const stillOver = "y".repeat(120); // > 110, but shorter than 129
+    mockWaveThenShorten({ "{Kicker}": long }, { "{Kicker}": stillOver });
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [kicker("{Kicker}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(textOf(sections, "{Kicker}")).toBe(stillOver);
+    expect(failedSections).toEqual([]);
+  });
+
+  it("keeps originals when the shorten call rejects — enforcement never fails a section", async () => {
+    const long = "x".repeat(129);
+    callClaudeMock.mockImplementation(async (opts: CallArg) => {
+      if (isShorten(opts)) throw new Error("shorten transport error");
+      return {
+        sections: requestedPlaceholders(opts.system).map((p) => ({ placeholder: p, text: long })),
+      };
+    });
+    const profile = profileWith([
+      { source: 1, capability: "generic-prose", slots: [kicker("{Kicker}")] },
+    ]);
+
+    const { sections, failedSections } = await generateSectionsFromProfile(profile, ctx);
+
+    expect(shortenCalls()).toHaveLength(1);
+    expect(textOf(sections, "{Kicker}")).toBe(long);
+    expect(failedSections).toEqual([]);
+  });
+});
