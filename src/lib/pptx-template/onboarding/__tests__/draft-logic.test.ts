@@ -77,6 +77,21 @@ const VALID_TABLE_INPUT: {
   columns: ["krav", "uppfyllnad"],
 };
 
+// Slide 4: samma kravmatris-kandidat men med ärvd/saknad xfrm (geometry: null)
+// — computeTablePages kan inte pagineras säkert utan bordets topp-position.
+const geometrylessTableSlide: SlideShapes = {
+  source: 4,
+  shapes: [],
+  tokens: [],
+  images: { placed: 0, placeholders: 0 },
+  tables: [
+    table(0, [400, 300], [
+      { heightEmu: 10, cells: ["Krav", "Uppfyllnad"] },
+      { heightEmu: 10, cells: ["Exempel krav", "Ja — se referens"] },
+    ], null),
+  ],
+};
+
 const proposal: ProposedSlot[] = [
   {
     source: 1,
@@ -261,7 +276,16 @@ describe("applyDecision", () => {
 });
 
 describe("applyTableDecision", () => {
-  const draft = buildDraft(proposal, [...slides, tableSlide], SIZE);
+  const draft = buildDraft(proposal, [...slides, tableSlide, geometrylessTableSlide], SIZE);
+
+  it("avvisar bekräftelse av en tabell utan geometri (ärvd xfrm — kan inte pagineras säkert)", () => {
+    const res = applyTableDecision(draft, { ...VALID_TABLE_INPUT, source: 4 });
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+    expect(res.error).toBe(
+      "tabellen saknar läsbar position i mallen — kan inte pagineras säkert; lämna den statisk",
+    );
+  });
 
   it("bekräftar en giltig kolumnkarta — sätter confirmed=true", () => {
     const res = applyTableDecision(draft, VALID_TABLE_INPUT);

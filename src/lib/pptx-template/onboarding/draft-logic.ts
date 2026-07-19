@@ -154,6 +154,10 @@ export interface TableDecisionInput {
  * Ett tabellbeslut in i utkastet — samma validera-sen-kopiera-form som
  * applyDecision, men för en kravmatris-kolumnkarta (se TableMapSchema i
  * template-profile). Bekräftelsereglerna (design 2026-07-19):
+ *   - tabellen måste ha läsbar geometri (ärvd/saknad xfrm → null bärs igenom
+ *     från buildDraft) — utan bordets topp-position kan computeTablePages
+ *     inte pagineras säkert vid render (fallback tableTopEmu ?? 0 skulle
+ *     överskatta sidbandet och trycka rader utanför sliden);
  *   - exakt EN krav-kolumn (annars vet radmotorn inte vilken cell som är
  *     kravtexten);
  *   - minst en av uppfyllnad/status (annars finns ingen coverage-signal att
@@ -176,6 +180,12 @@ export function applyTableDecision(
     return { ok: false, error: `okänd tabell ${input.source}:${input.frameIndex}` };
   }
   const table = tables[idx];
+  if (table.geometry === null) {
+    return {
+      ok: false,
+      error: "tabellen saknar läsbar position i mallen — kan inte pagineras säkert; lämna den statisk",
+    };
+  }
   const kravCount = input.columns.filter((c) => c === "krav").length;
   if (kravCount !== 1) {
     return { ok: false, error: `tabellen måste ha exakt en krav-kolumn (hittade ${kravCount})` };

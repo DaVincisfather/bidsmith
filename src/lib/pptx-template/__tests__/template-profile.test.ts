@@ -242,6 +242,10 @@ describe("isForeignProfile", () => {
     };
     expect(isForeignProfile(profile)).toBe(false);
   });
+
+  it("returns false for the real anbudsmall-v2 fixture (our own template never routes foreign)", () => {
+    expect(isForeignProfile(anbudsmallV2Profile)).toBe(false);
+  });
 });
 
 describe("hasMappedTable", () => {
