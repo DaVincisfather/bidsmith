@@ -122,6 +122,25 @@ Ny applikator för äkta `a:tbl` (foreign matris-tabell):
   tabellen över rätt antal sidor, formulaiska svar, inga rader utanför slidekanten →
   Stefans dom.
 
+## EFTERSKRIFT (live-verifieringen 2026-07-19, commit 474755e + 58f8114)
+
+Två live-fynd ändrade detaljer ovan — koden är facit:
+
+1. **Formulaiska formatet skärptes:** bundelns `referens`-fält är verbos evidensprosa
+   (~150 tecken) — att bädda in den i svaret sprängde radhöjderna (COM-mätt: tabellbotten
+   1739pt på 810pt-slide). Per medskickets anda ("se x konsult cv") är formatet nu
+   `Ja — se CV: {konsultnamn}` / `Delvis — se CV: {namn}` / `Nej` (första täckande
+   konsulten ur coverage; "se CV:"-formen vald för att slippa svensk genitiv), och
+   referens-KOLUMNEN bär de täckande konsulternas namn (join ", "), inte bundel-strängen.
+2. **Pagineringen max-wrappar över ALLA mappade innehållskolumner** (krav/uppfyllnad/
+   referens) med det faktiska cellinnehållet, via delad `wrapCellsFor` så estimat och
+   utskrift aldrig driftar — inte bara krav-kolumnen som ovan.
+3. **Geometri-lös tabell (ärvd xfrm) kan inte bekräftas** — `applyTableDecision` avvisar
+   (paginering utan tabelltopp vore en andra off-slide-väg).
+4. **Testmall-fixturen måste vara OPC-ren:** kvarlämnade föräldralösa slide-parts
+   kolliderade med automizers part-namngivning → dubbla Content_Types-overrides →
+   PowerPoint 0x80CB8001. Fixturen strippas nu helt (2 slides, inga orphans).
+
 ## Avgränsningar (v1)
 
 - Endast kravmatris-roller; pris-/bemanningstabeller statiska.
