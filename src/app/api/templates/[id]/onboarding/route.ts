@@ -8,6 +8,7 @@ import type { ScreenFinding } from "@/lib/pptx-template/onboarding/geometry-scre
 import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 import { applyDecision, applySlideDecision } from "@/lib/pptx-template/onboarding/draft-logic";
 import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
+import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -95,8 +96,22 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   // Mätning + malldefekter finns bara efter slutförd onboarding (profilen
   // skrivs av onboarding:measure-CLI:t) — andra statusar har ingen profil än,
   // så fälten utelämnas i st.f. att alltid slå upp en profil som saknas.
+  // loadTemplateProfile KASTAR vid DB-/valideringsfel — fånga och mappa till
+  // räknat JSON-500 (routine-fynd #65-klassen). Felet ska synas, inte sväljas
+  // till tysta null-fält (samma anda som complete-routens saveTemplateProfile-
+  // hantering) — degradering hade dolt en trasig profil bakom "inga defekter".
   const onboarded = row.onboarding_status === "onboarded";
-  const profile = onboarded ? await loadTemplateProfile(idResult.data) : null;
+  let profile: TemplateProfile | null = null;
+  if (onboarded) {
+    try {
+      profile = await loadTemplateProfile(idResult.data);
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : String(err) },
+        { status: 500 },
+      );
+    }
+  }
 
   return NextResponse.json({
     status: row.onboarding_status,

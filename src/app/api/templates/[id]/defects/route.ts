@@ -5,6 +5,7 @@ import { DefectAcceptSchema } from "@/lib/api-schemas";
 import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 import { loadTemplateProfile, saveTemplateProfile } from "@/lib/pptx-template/profile-store";
 import { acceptDefect } from "@/lib/pptx-template/measure/template-defects";
+import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -31,7 +32,19 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   const parsed = await parseBody(request, DefectAcceptSchema);
   if (!parsed.ok) return parsed.response;
 
-  const profile = await loadTemplateProfile(idResult.data);
+  // loadTemplateProfile/saveTemplateProfile KASTAR vid DB-/valideringsfel —
+  // fånga och mappa till räknat JSON-500 så routen håller {error}-kontraktet
+  // i st.f. en icke-JSON-500 (samma buggklass som routine-fynd #65, mönstret
+  // i onboarding/complete/route.ts).
+  let profile: TemplateProfile | null;
+  try {
+    profile = await loadTemplateProfile(idResult.data);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
   if (!profile) return NextResponse.json({ error: "mallen saknar profil" }, { status: 409 });
   if (profile.measurement?.status !== "complete") {
     return NextResponse.json({ error: "mallen är inte mätt — kör onboarding:measure först" }, { status: 409 });
@@ -40,6 +53,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   const result = acceptDefect(profile.knownDefects ?? [], parsed.data);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 422 });
 
-  await saveTemplateProfile({ ...profile, knownDefects: result.defects });
+  try {
+    await saveTemplateProfile({ ...profile, knownDefects: result.defects });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : String(err) },
+      { status: 500 },
+    );
+  }
   return NextResponse.json({ knownDefects: result.defects });
 }
