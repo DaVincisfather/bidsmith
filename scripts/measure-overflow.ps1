@@ -34,6 +34,7 @@ function Get-TextShapes($shapes) {
     $out = @()
     foreach ($s in $shapes) {
         if ($s.Type -eq 6) { $out += Get-TextShapes $s.GroupItems }
+        elseif ($s.HasTable) { $out += ,$s }
         elseif ($s.HasTextFrame -and $s.TextFrame2.HasText) { $out += ,$s }
     }
     return $out
@@ -50,6 +51,42 @@ try {
         $slideHeightPt = [math]::Round($pres.PageSetup.SlideHeight, 2)
         foreach ($slide in $pres.Slides) {
             foreach ($shape in (Get-TextShapes $slide.Shapes)) {
+                if ($shape.HasTable) {
+                    # Table frame measured as a single entry (no per-cell measurement — v2).
+                    $table = $shape.Table
+                    $boundHeight = 0
+                    for ($r = 1; $r -le $table.Rows.Count; $r++) {
+                        $boundHeight += $table.Rows.Item($r).Height
+                    }
+                    $cellTexts = @()
+                    for ($r = 1; $r -le $table.Rows.Count; $r++) {
+                        for ($c = 1; $c -le $table.Columns.Count; $c++) {
+                            $cellTexts += $table.Cell($r, $c).Shape.TextFrame.TextRange.Text
+                        }
+                    }
+                    $allText = [string]::Join('', $cellTexts)
+                    $firstText = $(if ($cellTexts.Count -gt 0) { $cellTexts[0] } else { '' })
+                    $rows += [pscustomobject]@{
+                        slide          = $slide.SlideIndex
+                        name           = $shape.Name
+                        topPt          = [math]::Round($shape.Top, 2)
+                        leftPt         = [math]::Round($shape.Left, 2)
+                        widthPt        = [math]::Round($shape.Width, 2)
+                        heightPt       = [math]::Round($shape.Height, 2)
+                        boundHeightPt  = [math]::Round($boundHeight, 2)
+                        boundWidthPt   = [math]::Round($shape.Width, 2)
+                        marginTopPt    = 0
+                        marginBottomPt = 0
+                        marginLeftPt   = 0
+                        marginRightPt  = 0
+                        wordWrap       = $true
+                        autoSize       = 0
+                        fontSizePt     = $null
+                        textPrefix     = $firstText.Substring(0, [math]::Min(128, $firstText.Length))
+                        textLength     = $allText.Length
+                    }
+                    continue
+                }
                 $tf = $shape.TextFrame2
                 $text = $tf.TextRange.Text
                 try {
