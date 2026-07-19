@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser, parseUuidParam } from "@/lib/api-helpers";
+import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
+import { activationBlockReason } from "@/lib/pptx-template/measure/template-defects";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -36,6 +38,16 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       { error: "mallen är inte färdig-onboardad — slutför onboardingen först" },
       { status: 409 },
     );
+  }
+
+  // Hård aktiveringsgrind (onboarding-measure-designen): en foreign-mall utan
+  // slutförd mätning eller med öppna malldefekter får inte aktiveras.
+  // profile === null ⇒ den bundlade mallen utan profil-rad — släpp igenom,
+  // dagens beteende.
+  const profile = await loadTemplateProfile(id);
+  if (profile) {
+    const blocked = activationBlockReason(profile);
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 409 });
   }
 
   // UPSERT: workspace_settings är en enradstabell vars rad KAN SAKNAS (färsk
