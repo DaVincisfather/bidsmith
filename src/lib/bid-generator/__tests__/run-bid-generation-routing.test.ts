@@ -28,7 +28,22 @@ import { generateSectionsFromProfile } from "../generate-from-profile";
 import { buildRequirementMatrixBundle } from "../bundles/requirement-matrix";
 import { runBidGeneration } from "../run-bid-generation";
 
-const template = { id: "tpl-1", manifest: {} as unknown as TemplateManifest };
+const template = {
+  id: "tpl-1",
+  manifest: { budgets: {}, fieldSlides: {} } as unknown as TemplateManifest,
+};
+
+// A foreign manifest that DOES carry rows[*] cell budgets — proves the matrix
+// call reads them from the real manifest (bug fix: previously a hardcoded
+// empty BudgetPlan silently killed verify-budgets' overflow-retry net for
+// rows[*].requirement/hurUppfylls/referens, see run-bid-generation.ts).
+const templateWithMatrixBudgets = {
+  id: "tpl-1",
+  manifest: {
+    budgets: { "rows[*].requirement": 200 },
+    fieldSlides: { "rows[*].requirement": 3 },
+  } as unknown as TemplateManifest,
+};
 
 const baseAnalysis: RfpAnalysis = {
   title: "t", client: "c", deadline: null, summary: "s",
@@ -258,17 +273,17 @@ describe("runBidGeneration routing", () => {
       overflowFlags: [],
     });
 
-    await runBidGeneration(client, "bid-1", ctx, template);
+    await runBidGeneration(client, "bid-1", ctx, templateWithMatrixBudgets);
 
     expect(generateSectionsFromProfile).toHaveBeenCalledTimes(1);
     expect(buildRequirementMatrixBundle).toHaveBeenCalledTimes(1);
-    // Same call shape as the bundled path's own unit tests
-    // (requirement-matrix.test.ts): empty BudgetPlan (this bundle never reads
-    // field budgets — REQUIREMENT_MATRIX_BUDGET_KEYS is empty) + a fresh
-    // retry budget.
+    // Plan is built from the REAL manifest (same construction as the bundled
+    // path in bid-generator/index.ts), not a hardcoded empty BudgetPlan —
+    // proven here by asserting the manifest's actual rows[*] budget/slide
+    // entries flow through unchanged.
     expect(buildRequirementMatrixBundle).toHaveBeenCalledWith(
       ctx,
-      { budgets: {}, fieldSlides: {} },
+      { budgets: { "rows[*].requirement": 200 }, fieldSlides: { "rows[*].requirement": 3 } },
       { remaining: expect.any(Number) },
     );
 

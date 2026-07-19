@@ -80,20 +80,26 @@ export async function runBidGeneration(
 
       // A foreign template whose requirement-matrix slide maps to a real
       // a:tbl table (hasMappedTable) gets the SAME matrix bundle our own
-      // template uses — same call/inputs as buildRequirementMatrixBundle's
-      // own unit tests (requirement-matrix.test.ts): REQUIREMENT_MATRIX_BUDGET_KEYS
-      // is empty, so this bundle never reads plan.budgets — an empty
-      // BudgetPlan is the correct input, not a shortcut. Runs AFTER the prose
-      // pipeline rather than concurrently with it: generateSectionsFromProfile
-      // already drives its own sequential read-modify-write persistSection
-      // calls internally, and a second concurrent caller of persistSection
-      // would race that read-modify-write (lost updates).
+      // template uses. Plan is built from the manifest exactly like the
+      // bundled path does (bid-generator/index.ts) — NOT a hardcoded empty
+      // plan: withBudgetRetry's verifyFieldBudgets reads plan.budgets
+      // directly (ungated by REQUIREMENT_MATRIX_BUDGET_KEYS, which only
+      // controls the prompt's own "TEXT-LIMITS" block), and verify-budgets'
+      // FIELD_LABELS already has entries for rows[*].requirement/hurUppfylls/
+      // referens. A foreign template's manifest is near-empty today so this
+      // is behaviourally a no-op, but a hardcoded {} would permanently kill
+      // the overflow-retry net the day cell budgets are added for foreign
+      // manifests. Runs AFTER the prose pipeline rather than concurrently
+      // with it: generateSectionsFromProfile already drives its own
+      // sequential read-modify-write persistSection calls internally, and a
+      // second concurrent caller of persistSection would race that
+      // read-modify-write (lost updates).
       if (hasMappedTable(storedProfile)) {
         try {
           const matrixRetryBudget: RetryBudget = { remaining: MATRIX_RETRY_CAP };
           const matrixResult = await buildRequirementMatrixBundle(
             ctx,
-            { budgets: {}, fieldSlides: {} },
+            { budgets: template.manifest.budgets, fieldSlides: template.manifest.fieldSlides },
             matrixRetryBudget,
           );
           sections = [...sections, ...matrixResult.sections];
