@@ -66,6 +66,37 @@ export const SlotProfileSchema = z.object({
 });
 export type SlotProfile = z.infer<typeof SlotProfileSchema>;
 
+/** A template's own defect, found by the empty-substrate measurement scan
+ *  (onboarding-measure design 2026-07-19). Signature = slide + checkId + shape
+ *  — same identity as the overflow-eval's KnownDefect. checkId is a plain
+ *  string (CheckId | "gross-overflow") to keep the profile schema decoupled
+ *  from the measure module. */
+export const TemplateDefectSchema = z.object({
+  slide: z.number().int().positive(),
+  checkId: z.string().min(1),
+  shape: z.string().min(1),
+  note: z.string(),
+  baselineBoundHeightPt: z.number().optional(),
+  /** Generated operator guidance ("bredda boxen ...") shown in the wizard. */
+  suggestion: z.string(),
+  /** "open" blocks activation; "accepted" is annotated (not alarmed) in scans. */
+  status: z.enum(["open", "accepted"]),
+});
+export type TemplateDefect = z.infer<typeof TemplateDefectSchema>;
+
+/** Written ONLY on a successful measurement pass (atomic save at the end) —
+ *  its presence IS the "measured" state; activation gates on it. */
+export const TemplateMeasurementSchema = z.object({
+  status: z.literal("complete"),
+  measuredAt: z.string().min(1),
+  calibrationRounds: z.number().int().nonnegative(),
+  /** Tokens that froze on geometry fallback (never measured). */
+  unresolved: z.array(z.string()),
+  /** token → calibration warnings; informational only, never gates. */
+  slotWarnings: z.record(z.string(), z.array(z.string())),
+});
+export type TemplateMeasurement = z.infer<typeof TemplateMeasurementSchema>;
+
 export const SlideProfileSchema = z.object({
   /** Slide index in the source pptx (1-based). */
   source: z.number().int().positive(),
@@ -91,6 +122,8 @@ export const TemplateProfileSchema = z.object({
   name: z.string().min(1),
   version: z.number().int().positive(),
   slides: z.array(SlideProfileSchema).min(1),
+  measurement: TemplateMeasurementSchema.optional(),
+  knownDefects: z.array(TemplateDefectSchema).optional(),
 });
 export type TemplateProfile = z.infer<typeof TemplateProfileSchema>;
 
