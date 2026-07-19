@@ -31,3 +31,25 @@ it("composes budgets, measurement and merged defects without mutating input", ()
   expect(out.knownDefects?.every((d) => d.suggestion.length > 10)).toBe(true);
   expect(profile.measurement).toBeUndefined();
 });
+
+it("composes an empty calibration report (table-only profile, calibration step skipped) without touching budgets", () => {
+  const tableOnlyProfile: TemplateProfile = {
+    profileVersion: 1, templateId: "t1", name: "T", version: 1,
+    slides: [{
+      source: 1, capability: "requirement-matrix",
+      tableMap: { frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: ["krav", "uppfyllnad"] },
+      slots: [],
+    }],
+  };
+  const emptyReport: CalibrationReport = { templateId: "t1", rounds: 0, results: [], unresolved: [] };
+  const out = composeMeasuredProfile(tableOnlyProfile, emptyReport, [
+    { slide: 4, checkId: "gross-overflow", shape: "Text 5", note: "tom originalmall", baselineBoundHeightPt: 82.8 },
+  ], "2026-07-19T12:00:00Z");
+
+  expect(out.measurement).toEqual({
+    status: "complete", measuredAt: "2026-07-19T12:00:00Z", calibrationRounds: 0,
+    unresolved: [], slotWarnings: {},
+  });
+  expect(out.knownDefects?.find((d) => d.shape === "Text 5")?.status).toBe("open");
+  expect(out.slides).toEqual(tableOnlyProfile.slides);
+});

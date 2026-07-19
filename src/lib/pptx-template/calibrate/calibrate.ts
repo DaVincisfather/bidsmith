@@ -182,6 +182,20 @@ export function applySingleLineFlags(
   });
 }
 
+/** True when the profile has at least one calibratable slot — same filter as
+ *  planTargets' fillable set (generic-prose, not skip). A table-only or fully
+ *  static profile (draft-logic explicitly allows onboarding with only a
+ *  confirmed table, foreign-table-matrix design) has none: the onboarding
+ *  measurement pass uses this to skip the calibration step instead of calling
+ *  calibrateTemplate, which throws loud on zero targets (see below) — that
+ *  throw stays intact for the calibrate:budgets CLI, which has no such
+ *  table-only case to tolerate. */
+export function hasCalibratableSlots(profile: TemplateProfile): boolean {
+  return profile.slides.some((slide) =>
+    slide.slots.some((slot) => slot.capability === "generic-prose" && slot.status !== "skip"),
+  );
+}
+
 export async function calibrateTemplate(
   templateId: string,
   opts: { write: boolean; maxRounds?: number; workDir?: string },

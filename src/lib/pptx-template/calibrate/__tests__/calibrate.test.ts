@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyBudgets, applySingleLineFlags, buildCalibrationSections, buildSlotResult } from "../calibrate";
+import { applyBudgets, applySingleLineFlags, buildCalibrationSections, buildSlotResult, hasCalibratableSlots } from "../calibrate";
 import type { SearchState } from "../binary-search";
 import type { CalibrationTarget } from "../plan-targets";
 import type { TemplateProfile } from "../../template-profile";
@@ -73,6 +73,42 @@ describe("applyBudgets", () => {
       { token: "{A}", budget: 300, rounds: 5, method: "measured", shortField: false, warnings: [], signals: [], singleLine: false },
     ]);
     expect(out.slides[0].slots[0]).not.toHaveProperty("singleLine");
+  });
+});
+
+describe("hasCalibratableSlots", () => {
+  it("true when at least one slot is generic-prose and not skip", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "T", version: 1,
+      slides: [{
+        source: 1, capability: "generic-prose",
+        slots: [{ placeholder: "{A}", capability: "generic-prose", format: "prose", intent: "", status: "generic" }],
+      }],
+    };
+    expect(hasCalibratableSlots(profile)).toBe(true);
+  });
+
+  it("false when every generic-prose slot is skip", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "T", version: 1,
+      slides: [{
+        source: 1, capability: "generic-prose",
+        slots: [{ placeholder: "{A}", capability: "generic-prose", format: "prose", intent: "", status: "skip" }],
+      }],
+    };
+    expect(hasCalibratableSlots(profile)).toBe(false);
+  });
+
+  it("false for a table-only profile — a requirement-matrix slide with tableMap and no slots", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "T", version: 1,
+      slides: [{
+        source: 1, capability: "requirement-matrix",
+        tableMap: { frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: ["krav", "uppfyllnad"] },
+        slots: [],
+      }],
+    };
+    expect(hasCalibratableSlots(profile)).toBe(false);
   });
 });
 

@@ -4,7 +4,7 @@
 // (1) empty-substrate defect scan (COM), (2) budget calibration (COM),
 // (3) ONE atomic profile save. Dry-run by default. Requires PowerPoint CLOSED.
 import { createServiceClient } from "../src/lib/supabase";
-import { calibrateTemplate } from "../src/lib/pptx-template/calibrate/calibrate";
+import { calibrateTemplate, hasCalibratableSlots, type CalibrationReport } from "../src/lib/pptx-template/calibrate/calibrate";
 import { loadTemplateProfile, saveTemplateProfile } from "../src/lib/pptx-template/profile-store";
 import { buildEmptyScanDefects } from "../src/lib/pptx-template/measure/empty-scan";
 import { composeMeasuredProfile } from "../src/lib/pptx-template/measure/compose-measured-profile";
@@ -37,7 +37,13 @@ async function main() {
   const scanned = await buildEmptyScanDefects(supabase, templateId);
 
   console.log("\n=== Steg 2/2: budgetkalibrering ===");
-  const report = await calibrateTemplate(templateId, { write: false, maxRounds });
+  let report: CalibrationReport;
+  if (!hasCalibratableSlots(profile)) {
+    console.log("Inga kalibrerbara prosa-rutor — kalibreringssteget hoppas över (tabell-/statisk mall).");
+    report = { templateId, rounds: 0, results: [], unresolved: [] };
+  } else {
+    report = await calibrateTemplate(templateId, { write: false, maxRounds });
+  }
 
   // Re-load right before compose/save: a wizard defect-accept made DURING the
   // COM pass above must not be silently overwritten by the stale profile
