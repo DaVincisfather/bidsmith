@@ -194,8 +194,8 @@ ${jsonLines}
  * Per-CHUNK batch: ONE Sonnet call fills a chunk (≤MAX_KEYS_PER_CALL) of a slide's
  * generic-prose slots. The FIXED sections-array schema (GenericProseSectionsSchema)
  * lets the model write the slots as a coherent whole while the response still maps
- * back to one BidSection per slot — same key/title/placeholder shape as
- * buildGenericProseSection. `siblings` names the slide's other slots (filled by
+ * back to one BidSection per slot (generic-prose format, key `generic-prose:{...}`).
+ * `siblings` names the slide's other slots (filled by
  * sibling chunk-calls, intent truncated) as coherence context only; they're prompt
  * text, never schema, so the schema is byte-identical on every call.
  *
@@ -245,7 +245,7 @@ function recordFromSections(parsed: z.infer<typeof GenericProseSectionsSchema>):
 
 /** Maps a keyed AI response back to one BidSection per slot, dropping slots the
  *  model answered blank (or omitted) — those are left to the caller to record.
- *  Same section shape as buildGenericProseSection; shared by the slide batch and
+ *  Shared by the slide batch and
  *  the re-ask batch so both map responses identically. This is the SINGLE
  *  empty-decision point: the orchestrator's re-ask collection and its
  *  post-re-ask merge both derive from which sections this produces. */

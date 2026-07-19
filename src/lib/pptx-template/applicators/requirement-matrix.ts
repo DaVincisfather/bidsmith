@@ -23,7 +23,8 @@ import {
  * content pass — a substring remap would corrupt requirement text containing the
  * digits (e.g. "ISO 9001").
  *
- * "JA" stays static (v1 assumes met). TODO: override with NEJ/DELVIS on met===false.
+ * Status text comes from rowStatus(coverage) (JA/DELVIS/NEJ), computed in the
+ * content pass — not a static assumption.
  *
  * Replacement-order: row 1 uses long-form placeholders, rows 2–6 short-form;
  * insert LONGEST keys first so long-form is consumed before any shorter variant.
