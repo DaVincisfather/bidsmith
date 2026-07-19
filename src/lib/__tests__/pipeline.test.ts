@@ -4,23 +4,26 @@ import {
   daysUntil,
   sortPipelineItems,
   sortBidSummaries,
+  stockholmToday,
 } from "@/lib/pipeline";
 import type { PipelineItem, BidSummary } from "@/lib/types";
 
+// Fixed midday-UTC `now` — unambiguous across the Stockholm/UTC day boundary,
+// so these don't go red between local midnight and 02:00 (the bug daysUntil's
+// timezone fix introduced against the old UTC-based expectations).
+const NOON = new Date("2026-07-15T12:00:00Z");
+
 describe("daysUntil", () => {
   it("returns 0 for today", () => {
-    const today = new Date().toISOString().split("T")[0];
-    expect(daysUntil(today)).toBe(0);
+    expect(daysUntil(stockholmToday(NOON), NOON)).toBe(0);
   });
 
   it("returns positive integer for future date", () => {
-    const future = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
-    expect(daysUntil(future)).toBe(10);
+    expect(daysUntil("2026-07-25", NOON)).toBe(10);
   });
 
   it("returns negative for past date", () => {
-    const past = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
-    expect(daysUntil(past)).toBe(-5);
+    expect(daysUntil("2026-07-10", NOON)).toBe(-5);
   });
 });
 
