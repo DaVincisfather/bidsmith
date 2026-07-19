@@ -89,6 +89,16 @@ describe("activationBlockReason", () => {
     });
     expect(activationBlockReason(p)).toBeNull();
   });
+  it("passes a non-foreign (bundled) profile with no measurement", () => {
+    const p: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "T", version: 1,
+      slides: [{
+        source: 1, capability: "cover",
+        slots: [{ placeholder: "{Title}", capability: "cover", format: "prose", intent: "bid title", status: "mapped" }],
+      }],
+    };
+    expect(activationBlockReason(p)).toBeNull();
+  });
 });
 
 describe("defectSuggestion", () => {

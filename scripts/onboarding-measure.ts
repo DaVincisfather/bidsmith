@@ -20,7 +20,7 @@ async function main() {
   const mrIdx = args.indexOf("--max-rounds");
   const maxRounds = mrIdx >= 0 ? Number(args[mrIdx + 1]) : undefined;
   if (maxRounds !== undefined && !Number.isFinite(maxRounds)) {
-    console.error("--max-rounds kräver ett numeriskt värde");
+    console.error("--max-rounds kräver ett numeriskt värde, t.ex. --max-rounds 6");
     process.exit(1);
   }
 
@@ -48,6 +48,12 @@ async function main() {
     for (const w of r.warnings) console.log(`    VARNING: ${w}`);
   }
   if (report.unresolved.length > 0) console.log(`\nOmätta (geometri-fallback): ${report.unresolved.join(", ")}`);
+  const unconverged = report.results.filter((r) =>
+    r.warnings.includes("did not converge within maxRounds — budget is last proven fit"),
+  );
+  if (unconverged.length > 0) {
+    console.log(`\nVARNING: ${unconverged.length} slots ej konvergerade — kör om med --max-rounds högre innan --write.`);
+  }
 
   const open = (updated.knownDefects ?? []).filter((d) => d.status === "open");
   const accepted = (updated.knownDefects ?? []).filter((d) => d.status === "accepted");
