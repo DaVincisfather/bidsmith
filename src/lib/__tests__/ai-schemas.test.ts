@@ -7,14 +7,18 @@ import {
 } from "@/lib/ai-schemas";
 
 describe("RfpRequirementSchema — kind (qualification vs deliverable)", () => {
-  it("defaultar kind till qualification när fältet saknas (bakåtkompatibelt)", () => {
-    const r = RfpRequirementSchema.parse({
-      category: "Konsultkvalifikationer",
-      description: "Minst 5 års erfarenhet",
-      priority: "must",
-      evidence: "Minst 5 års erfarenhet",
-    });
-    expect(r.kind).toBe("qualification");
+  it("avvisar krav UTAN kind — modellen måste klassa varje krav (BUG-A)", () => {
+    // .default("qualification") gjorde fältet utelämnbart i structured outputs;
+    // varje utelämnande blev tyst qualification och leveranser läckte in i
+    // ska-kraven. Required stänger vägen; legacy-LÄSNING är types.ts:s ansvar.
+    expect(() =>
+      RfpRequirementSchema.parse({
+        category: "Konsultkvalifikationer",
+        description: "Minst 5 års erfarenhet",
+        priority: "must",
+        evidence: "Minst 5 års erfarenhet",
+      }),
+    ).toThrow();
   });
 
   it("bevarar kind=deliverable", () => {
@@ -47,6 +51,7 @@ describe("RfpRequirementSchema — evidence (obligatoriskt i modell-output)", ()
       category: "Erfarenhet",
       description: "Minst tre års erfarenhet",
       priority: "must",
+      kind: "qualification",
       evidence: "minst tre års erfarenhet av liknande uppdrag",
     });
     expect(r.evidence).toBe("minst tre års erfarenhet av liknande uppdrag");
@@ -167,9 +172,9 @@ describe("RfpAnalysisSchema — priority coercion in requirements", () => {
     const raw = {
       ...base,
       requirements: [
-        { category: "A", description: "a", priority: "ska-krav", evidence: "a" },
-        { category: "B", description: "b", priority: "bör", evidence: "b" },
-        { category: "C", description: "c", priority: "kan", evidence: "c" },
+        { category: "A", description: "a", priority: "ska-krav", kind: "qualification", evidence: "a" },
+        { category: "B", description: "b", priority: "bör", kind: "qualification", evidence: "b" },
+        { category: "C", description: "c", priority: "kan", kind: "qualification", evidence: "c" },
       ],
     };
     const parsed = RfpAnalysisSchema.parse(raw);
@@ -188,7 +193,7 @@ describe("RfpAnalysisSchema — evaluationCriteria weight", () => {
     deadline: null,
     summary: "s",
     // min(1) på requirements — basen bär ett minimalt giltigt krav.
-    requirements: [{ category: "x", description: "y", priority: "must", evidence: "z" }],
+    requirements: [{ category: "x", description: "y", priority: "must", kind: "qualification", evidence: "z" }],
     requiredCompetencies: [],
     estimatedScope: "",
     redFlags: [],

@@ -36,7 +36,11 @@ export function PipelineRow({ item }: { item: PipelineItem }) {
           className="text-xs"
           style={{ color: DAYS_LABEL_COLOR[item.urgency], fontWeight: weight }}
         >
-          {item.daysLeft === 0 ? "Idag" : `${item.daysLeft}d kvar`}
+          {item.daysLeft === null
+            ? "deadline saknas"
+            : item.daysLeft === 0
+              ? "Idag"
+              : `${item.daysLeft}d kvar`}
         </span>
       </div>
     </Link>

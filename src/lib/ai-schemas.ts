@@ -52,13 +52,17 @@ export const SecrecyRowSchema = z.object({
 // qualification = krav PÅ anbudsgivaren som bedöms/måste uppfyllas (kompetens, cert,
 //   erfarenhet, uteslutningsgrunder, obligatoriska villkor) — bär priority ska/bör/kan.
 // deliverable = det uppdraget ska PRODUCERA/leverera (rapporter, analyser, workshops).
-// Separationen håller leverabler ute ur ska/bör-krav + kravmatrisen; default är
-// bakåtkompatibelt (äldre analyser utan fältet → qualification).
+// Separationen håller leverabler ute ur ska/bör-krav + kravmatrisen. kind är
+// OBLIGATORISKT i modell-output (BUG-A: .default gjorde fältet utelämnbart i
+// structured outputs — varje utelämnad/misslyckad klassning blev tyst
+// "qualification" och leveranser läckte in i ska-kraven; required tvingar
+// modellen att välja per krav). Läs-typen RfpRequirement.kind förblir valfri
+// (lagrade legacy-analyser saknar fältet).
 export const RfpRequirementSchema = z.object({
   category: z.string(),
   description: z.string(),
   priority: PrioritySchema,
-  kind: z.enum(["qualification", "deliverable"]).default("qualification"),
+  kind: z.enum(["qualification", "deliverable"]),
   // OBLIGATORISKT i modell-output (min(1)): varje krav MÅSTE bära ett ordagrant
   // källcitat så den mekaniska verifieraren (verify-evidence.ts) kan sträng-matcha
   // det mot källdokumentet. Läs-typen RfpRequirement.evidence är valfri (bakåtkompat

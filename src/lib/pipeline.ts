@@ -17,7 +17,11 @@ export function calculateUrgency(daysLeft: number): Urgency {
 }
 
 export function sortPipelineItems(items: PipelineItem[]): PipelineItem[] {
-  return [...items].sort((a, b) => a.daysLeft - b.daysLeft);
+  // Deadline-less items sort LAST — they are actionable but not time-pressed.
+  return [...items].sort(
+    (a, b) =>
+      (a.daysLeft ?? Number.POSITIVE_INFINITY) - (b.daysLeft ?? Number.POSITIVE_INFINITY),
+  );
 }
 
 export function sortBidSummaries(items: BidSummary[]): BidSummary[] {
