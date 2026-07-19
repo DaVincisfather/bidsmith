@@ -32,8 +32,8 @@ function shape(
 }
 
 const slides: SlideShapes[] = [
-  { source: 1, shapes: [shape("Rubrik"), shape("Beskriv er metod")], tokens: [], images: { placed: 0, placeholders: 0 } },
-  { source: 2, shapes: [shape("Statisk footer")], tokens: [], images: { placed: 0, placeholders: 0 } },
+  { source: 1, shapes: [shape("Rubrik"), shape("Beskriv er metod")], tokens: [], images: { placed: 0, placeholders: 0 }, tables: [] },
+  { source: 2, shapes: [shape("Statisk footer")], tokens: [], images: { placed: 0, placeholders: 0 }, tables: [] },
 ];
 
 const proposal: ProposedSlot[] = [

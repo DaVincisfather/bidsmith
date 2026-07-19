@@ -46,13 +46,13 @@ describe("identifySlides (anbudsmall-v2.pptx)", () => {
   it("token-fri slide MED bilder blir static, inte exkluderad", () => {
     const synthetic: SlideShapes[] = [
       { source: 1, shapes: [], tokens: ["{Upphandlingens namn}", "{Kundnamn}", "{Anbudsdatum}"],
-        images: { placed: 0, placeholders: 0 } },
+        images: { placed: 0, placeholders: 0 }, tables: [] },
       { source: 2, shapes: [], tokens: [],
-        images: { placed: 0, placeholders: 0 } },           // → toc (första token-fria utan bild)
+        images: { placed: 0, placeholders: 0 }, tables: [] },           // → toc (första token-fria utan bild)
       { source: 3, shapes: [], tokens: ["{Bolagsnamn}"],
-        images: { placed: 2, placeholders: 1 } },           // → static (bildavdelare)
+        images: { placed: 2, placeholders: 1 }, tables: [] },           // → static (bildavdelare)
       { source: 4, shapes: [], tokens: [],
-        images: { placed: 0, placeholders: 0 } },           // → exkluderad
+        images: { placed: 0, placeholders: 0 }, tables: [] },           // → exkluderad
     ];
     const { included, excluded } = identifySlides(synthetic);
     expect(included.find((s) => s.source === 3)).toEqual({
