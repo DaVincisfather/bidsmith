@@ -20,38 +20,38 @@ npm install
    strong database password. The free tier is plenty for a demo.
 2. Wait ~2 minutes for it to provision.
 
-## 3. Create the database schema
+## 3. Create the database schema and storage buckets
+
+**Fresh install (recommended):**
 
 1. In your Supabase project, open **SQL Editor** (left sidebar) → **New query**.
-2. Run **every file in `supabase/migrations/` in numeric order** (`001_...` through
-   `012_...`): open each file, copy its entire contents, paste into the editor, and
-   click **Run** before moving on to the next. Each one should report success
-   ("Success. No rows returned." for most of them).
-3. That's it — all tables, security policies, and the bundled proposal template are
-   now in place.
+2. Open `supabase/setup.sql`, copy its ENTIRE contents, paste, and click **Run** —
+   once. It contains every migration in order **and creates the three private
+   storage buckets** (`rfp-documents`, `consultant-cvs`, `bid-templates`), so
+   there are no manual bucket steps.
+3. Verify from the repo: `npm run doctor` — every line should be green.
+
+**Existing install:** do NOT run `setup.sql`. Keep applying the files in
+`supabase/migrations/` incrementally in numeric order, exactly as before.
 
 > Running only `001_initial_schema.sql` is **not** enough — the template system and
 > organisation profiles live in later migrations, and bid generation fails without them.
 
-> Optional: to populate sample TED-radar competencies, repeat with `supabase/seed.sql`.
+> Optional: to populate sample TED-radar competencies, run `supabase/seed.sql` too.
 
-## 4. Create the storage buckets
+## 4. Verify with the doctor
 
-Uploaded RFP documents and consultant CVs are stored in two Supabase Storage buckets.
-Buckets can't be created from SQL, so add them once via the dashboard:
+```bash
+npm run doctor
+```
 
-1. Supabase → **Storage** (left sidebar) → **New bucket**.
-2. Name it exactly **`rfp-documents`**.
-3. Leave **Public bucket OFF** — it stays private; the app generates signed URLs on
-   demand.
-4. Click **Create**.
-5. Repeat for a second bucket named exactly **`consultant-cvs`** (also private).
+Checks env keys, Supabase reachability, that every migration sentinel is in place,
+that all three buckets exist, and that the bundled template file is present. Each
+failure prints the exact fix. (The buckets are private; the app reads and writes
+via the service-role key and signed URLs.)
 
-No bucket policies are needed: the app reads and writes via the service-role key.
-
-> Skip `rfp-documents` and RFP upload fails with "Bucket not found". Skip
-> `consultant-cvs` and CV uploads still work, but every upload reports a warning and
-> the "open original CV" link is broken.
+> Heads-up for the Supabase free tier: projects pause after ~7 days of inactivity
+> (DNS stops resolving). Restore from the dashboard; allow ~5 minutes to boot.
 
 ## 5. Configure environment variables
 
@@ -68,6 +68,13 @@ Open `.env.local` and fill in the values. Each one is explained in the file:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → `anon` `public` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → `service_role` (secret) |
 | `CRON_SECRET` | Required if you use the TED radar. The `/api/radar/fetch` and `/api/radar/score` endpoints reject **all** requests unless this is set and sent as `Authorization: Bearer <CRON_SECRET>`. Leave unset to keep the radar background jobs disabled (they will 401). |
+
+Optional feature flags (sane defaults — set only to change behavior):
+
+| Flag | Default | Effect |
+|---|---|---|
+| `BIDSMITH_FOREIGN_TEMPLATES` | on | Custom-template upload + onboarding wizard. Set `off` to hide the surface. Activation of an onboarded template is gated on the measurement pass (`npm run onboarding:measure`, requires Windows + PowerPoint) regardless of this flag. |
+| `BIDSMITH_STRUCTURED_OUTPUTS` | on | Claude structured outputs for AI responses. Set `off` to fall back to freetext + JSON extraction. |
 
 ## 6. Enable email login in Supabase
 

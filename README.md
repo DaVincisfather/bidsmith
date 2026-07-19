@@ -96,10 +96,14 @@ The short version:
 ```bash
 npm install
 cp .env.local.example .env.local   # fill in your keys (see SETUP.md)
-# → run every file in supabase/migrations/ in numeric order in the Supabase SQL Editor
-# → create two private storage buckets: "rfp-documents" and "consultant-cvs"
+# → paste supabase/setup.sql into the Supabase SQL Editor and run it ONCE
+#   (creates all tables, policies, seed data AND the three storage buckets)
+npm run doctor                      # verifies env, schema, buckets, template
 npm run dev                         # → http://localhost:3000
 ```
+
+Upgrading an existing install? Keep applying `supabase/migrations/` incrementally
+in numeric order as before — `setup.sql` is for fresh installs only.
 
 Want a populated workspace without hunting for documents? Seed the bundled synthetic
 demo data — ten consultant CVs and a public-sector tender run through the entire

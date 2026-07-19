@@ -4,10 +4,10 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-19 — **TABELLER (SLICE 6, tabelldelen) LEVERERAD**
-(kravmatris i äkta a:tbl i främmande mallar, formulaiska svar, kund-geometri-paginering;
-se NÄSTA-listan). Tidigare samma dag: onboarding-mätpasset (PR #89), smoke 3 godkänd
-(FAIL 0) + kicker-enforcement (PR #88, kickergrova 2→0)._
+_Senast uppdaterad: 2026-07-19 — **LAUNCH-POLISH LEVERERAD** (setup.sql + doctor,
+BUG-A/B fixade, foreign-flaggan default PÅ; nästa: workflowanalys → video →
+publicering). Tidigare samma dag: tabeller slice 6 (PR #90), onboarding-mätpasset
+(PR #89), smoke 3 godkänd + kicker-enforcement (PR #88)._
 
 _2026-07-15 — **BID-EDITOR-SLIMNINGEN LEVERERAD** (design + plan i
 `notes/2026-07-15-bid-editor-slim-{design,plan}.md`): editorn för onboardade mallar visar
@@ -44,7 +44,9 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       EDITOR-SLIMNINGS-spåret nedan. Kvar = loop v2 (mätluckorna nedan).
 - [x] **ENV-FLAGGA för foreign-vägen — LEVERERAD 2026-07-14 (PR #80):**
       `BIDSMITH_FOREIGN_TEMPLATES=on` krävs för foreign-uppladdning/wizard/API
-      (default AV, fail closed); onboardade mallar renderar oförändrat. OBS:
+      (default AV, fail closed); onboardade mallar renderar oförändrat.
+      SUPERSEDED 2026-07-19 (launch-polish): default PÅ, `=off` stänger —
+      aktiveringsgrinden bär säkerheten. Historisk OBS (inaktuell):
       sätt flaggan i Vercel-env om foreign-vägen ska vara på i driften, och
       `=on` i dev-worktrees `.env.local`.
 - [x] **KALIBRERINGSLOOP v2 + DECK-SCANNERN — LEVERERADE 2026-07-14** (design
@@ -143,6 +145,21 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       resp. en framtida innehållsmedveten detektion (v2-kandidat: scan-driven
       defekt-förslag ur genererade deck). Ersätter "Defektlist-kandidat"-punkten
       (slide 2 Text 36 dokumenterad här som master-klassens exempel).
+- [x] **LAUNCH-POLISH — LEVERERAD 2026-07-19 (denna PR).** Stefans prioritering
+      inför publiceringen (2, 3, 4 av lanseringsluckorna; Supabase-pausen +
+      PowerPoint-kravet accepterade som de är): (2) SETUP-KOLLAPSEN —
+      `supabase/setup.sql` (genererad: alla migrationer + de tre buckets via SQL;
+      gamla "buckets kan inte skapas via SQL"-påståendet var fel, 005 bevisade
+      motsatsen) + driftskyddstest + `npm run doctor` (preflight: env, Supabase,
+      migrations-sentineller, buckets, mallfil — svensk checklista med åtgärd per
+      FAIL; verifierad allt-grön mot dev + negativtest utan env) + README/SETUP
+      omskrivna till klistra-en-fil-flödet; (3) BUG-A + BUG-B fixade (se
+      backloggen); (4) FOREIGN-FLAGGAN DEFAULT PÅ (`=off` stänger) —
+      aktiveringsgrinden bär säkerheten, vägbeslutets villkor uppfyllt av
+      mätpasset. EFTER MERGE (Stefans ordning): workflowanalys (död kod +
+      färsk-ögon-djupdykning + lanseringschecklista) → video (verifiera att
+      #83:s max_tokens-detektering löste phases-trunkeringen → ta om scen 5–6)
+      → publicering.
 - [x] **TABELLER (SLICE 6, tabelldelen) — LEVERERAD 2026-07-19 (denna PR).** Kravmatris
       i äkta `a:tbl`-tabeller i främmande mallar: introspektionen läser tabeller
       (additivt `SlideShapes.tables` — shapeIndex orörd), wizarden får tabellsteg
@@ -182,7 +199,9 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       0,5/0,7-gaten (parafras ≈ 0,3–0,45 trigram). Kalibrera mot fler riktiga deck innan
       gaten får beslutsvikt; parvis mätning vid 0,3 är tills vidare jämföraren.
 - [ ] **Supabase free-tier-pausen:** dev + drift går ner efter 7 d inaktivitet
-      (~5 min boot efter restore). Betald tier eller veckoping FÖRE publik lansering.
+      (~5 min boot efter restore). STEFANS BESLUT 2026-07-19: accepteras som den är
+      inför publiceringen (dokumenterad i SETUP.md + doctor-hinten); betald
+      tier/veckoping förblir öppen option, ingen blockerare.
 - [ ] **PR-ROUTINEN triggade inte på #76** — kolla körloggen/återskapa triggern
       (jfr agentic-dealflow-fallet: pull_request.opened, draft=false, base main).
 - [x] **RADRUM-GRÖNT-VARV (KLART 2026-07-07, varv 5):** 117/117 sektioner, 0 failade,
@@ -335,8 +354,14 @@ _Inga — #54–#68 mergade 2026-07-03/04._
 - [x] ~~`consultants/upload` sanerar inte filnamn (ingen storage-nyckel-yta idag, men om det ändras)~~ — AKTIVERAD + LÖST: originalfilen persisteras nu, så en storage-nyckel-yta finns; `buildCvKey` slugar filnamnet (gemener, åäö behålls, allt annat → "-", sökväg strippas) som mall-uploaden och behåller den whitelistade extensionen
 - Profil-renderarens `variant` castas `as ProseVariant` utan validering (render-from-profile.ts) — härda när slice 5/6 låter främmande mallar sätta godtyckliga variant-strängar
 - [x] ~~generic-prose kör Opus + effort max per okänd slot~~ — LÖST 2026-07-03: egen roll `writingGeneric` = Sonnet 5 ($2/$10 intro → $3/$15 efter 2026-08-31; bump-påminnelse i ai-cost.ts)
-- **BUG-A:** leveranser hamnar i ska-krav i analysvyn
-- **BUG-B:** analyserad RFP syns inte i dashboarden → svårt att gå tillbaka till analysen
+- [x] ~~**BUG-A:** leveranser hamnar i ska-krav i analysvyn~~ — FIXAD 2026-07-19
+  (launch-polish): rotorsak = `.default("qualification")` gjorde `kind` utelämnbart i
+  structured outputs; nu OBLIGATORISKT i modell-output (utelämnad klassning omöjlig).
+  Legacy-analyser utan fältet renderas som förr — om-analys är vägen.
+- [x] ~~**BUG-B:** analyserad RFP syns inte i dashboarden~~ — FIXAD 2026-07-19
+  (launch-polish): deadline-lösa analyser ingår nu i Pipen (sorteras sist,
+  "deadline saknas"), och railen har permanent "Alla analyser →"-länk till
+  /arbetsyta/analyser (passerade deadlines ägs fortsatt av den listan).
 - "Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera — semantik att se över
 - T15 manuell smoke + runtime hallucination/coverage-kalibrering (kräver riktig RFP-data / Ekan-adoption)
 - Profil-schema vs renderare: `SlideProfile.capability` är optional ("a slide may mix capabilities") men `applicatorForCapability` dispatchar bara på slide-nivå och kastar på undefined — per-slot-dispatch eller skärpt schema krävs innan främmande profiler renderas (Fable-review 2026-07-03)
