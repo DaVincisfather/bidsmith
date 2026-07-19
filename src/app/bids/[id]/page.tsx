@@ -4,7 +4,7 @@ import { BidSection, StyleGuide } from "@/lib/types";
 import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
 import { loadTemplateForBid } from "@/lib/pptx-template/active-template";
 import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
-import { isAllGenericProfile } from "@/lib/pptx-template/template-profile";
+import { isForeignProfile } from "@/lib/pptx-template/template-profile";
 import { buildSlotMeta, type SlotMeta } from "@/lib/bid-editor/slot-meta";
 import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
 import type { FailedBundle } from "@/lib/bundle-labels";
@@ -68,7 +68,7 @@ export default async function BidEditorPage({ params }: PageProps) {
     ? (async () => {
         try {
           const profile = await loadTemplateProfile(templateId);
-          return profile && isAllGenericProfile(profile) ? buildSlotMeta(profile) : null;
+          return profile && isForeignProfile(profile) ? buildSlotMeta(profile) : null;
         } catch (err) {
           console.error("slotMeta: kunde inte läsa mallprofilen", err);
           return null;

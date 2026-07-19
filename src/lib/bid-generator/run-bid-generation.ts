@@ -8,7 +8,7 @@ import {
 import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
-import { isAllGenericProfile } from "@/lib/pptx-template/template-profile";
+import { isForeignProfile } from "@/lib/pptx-template/template-profile";
 import type { BidSection } from "@/lib/types";
 import {
   judgeBidStructure,
@@ -59,12 +59,12 @@ export async function runBidGeneration(
   // en egen backlog-post; här persisteras structure_eval null = "ej utvärderad".
   let onProfilePath = false;
   try {
-    // A stored all-generic profile means this is a FOREIGN template: its manifest
-    // is near-empty (upload introspection excludes unrecognised slides), so the
-    // profile is the only truth for BOTH generation and rendering. Our own
-    // template has no stored profile → the type-driven bundle path, unchanged.
+    // A FOREIGN template's manifest is near-empty (upload introspection
+    // excludes unrecognised slides), so the profile is the only truth for
+    // BOTH generation and rendering. Our own template has no stored profile
+    // → the type-driven bundle path, unchanged.
     const storedProfile = await loadTemplateProfile(template.id);
-    if (storedProfile && isAllGenericProfile(storedProfile)) {
+    if (storedProfile && isForeignProfile(storedProfile)) {
       onProfilePath = true;
       const result = await generateSectionsFromProfile(storedProfile, ctx, persistSection);
       sections = result.sections;

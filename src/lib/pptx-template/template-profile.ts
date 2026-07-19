@@ -71,6 +71,25 @@ export type SlotProfile = z.infer<typeof SlotProfileSchema>;
  *  — same identity as the overflow-eval's KnownDefect. checkId is a plain
  *  string (CheckId | "gross-overflow") to keep the profile schema decoupled
  *  from the measure module. */
+/** Fixed roles a column in a foreign a:tbl requirement-matrix table can play —
+ *  see notes/2026-07-19-foreign-table-matrix design. "ignorera" marks a column
+ *  the row engine must skip (e.g. a customer's own running-number column). */
+export const TABLE_COLUMN_ROLES = ["krav", "uppfyllnad", "referens", "status", "ignorera"] as const;
+export type TableColumnRole = (typeof TABLE_COLUMN_ROLES)[number];
+
+/** Maps ONE foreign a:tbl table (read into SlideShapes.tables by the pptx
+ *  reader, slice 1) to how the requirement-matrix row engine fills it:
+ *  which table on the slide (frameIndex, when a slide has more than one),
+ *  how many header rows to skip, which row is the reusable template row to
+ *  clone per requirement, and each remaining column's fixed role. */
+export const TableMapSchema = z.object({
+  frameIndex: z.number().int().nonnegative(),
+  headerRows: z.number().int().nonnegative(),
+  templateRowIndex: z.number().int().nonnegative(),
+  columns: z.array(z.enum(TABLE_COLUMN_ROLES)).min(1),
+});
+export type TableMap = z.infer<typeof TableMapSchema>;
+
 export const TemplateDefectSchema = z.object({
   slide: z.number().int().positive(),
   checkId: z.string().min(1),
@@ -112,6 +131,10 @@ export const SlideProfileSchema = z.object({
    *  different data (our template: prose variant kunden-idag/uppdraget/vision).
    *  Free-form so arbitrary templates can carry their own discriminator. */
   variant: z.string().min(1).optional(),
+  /** Set when this slide's requirement-matrix content lives in a foreign
+   *  a:tbl table (as opposed to our own cloneFrom row-per-slide layout) —
+   *  see TableMapSchema. Absent for every other slide/capability. */
+  tableMap: TableMapSchema.optional(),
 });
 export type SlideProfile = z.infer<typeof SlideProfileSchema>;
 
@@ -146,5 +169,39 @@ export function parseTemplateProfile(raw: unknown): TemplateProfile {
 export function isAllGenericProfile(profile: TemplateProfile): boolean {
   return profile.slides.every(
     (s) => s.capability === "generic-prose" || s.capability === "static",
+  );
+}
+
+/**
+ * Routing predicate (foreign-table-matrix design, slice 2): true for every
+ * profile that must route down the FOREIGN path — a pure generic/static
+ * profile (isAllGenericProfile, the pre-existing signature) OR one that
+ * additionally carries a requirement-matrix slide mapped to a foreign a:tbl
+ * table (capability "requirement-matrix" WITH tableMap set). A
+ * requirement-matrix slide WITHOUT tableMap is OUR bundled template's own
+ * cloneFrom matrix layout, so it fails the predicate and keeps routing down
+ * the type-driven path — same as isAllGenericProfile always did for it.
+ * This is the seam every routing/export/editor/activation call site must use
+ * instead of isAllGenericProfile going forward (that predicate stays exported
+ * — used internally here, and by anything that specifically needs the
+ * pure-generic signature).
+ */
+export function isForeignProfile(profile: TemplateProfile): boolean {
+  if (isAllGenericProfile(profile)) return true;
+  return profile.slides.every(
+    (s) =>
+      s.capability === "generic-prose" ||
+      s.capability === "static" ||
+      (s.capability === "requirement-matrix" && s.tableMap !== undefined),
+  );
+}
+
+/** True when the profile has a requirement-matrix slide mapped to a foreign
+ *  a:tbl table. Defined alongside isForeignProfile since both read the same
+ *  tableMap signal; the row engine (slice 5+) uses this to pick the foreign
+ *  table-fill path over the cloneFrom row-per-slide layout. */
+export function hasMappedTable(profile: TemplateProfile): boolean {
+  return profile.slides.some(
+    (s) => s.capability === "requirement-matrix" && s.tableMap !== undefined,
   );
 }
