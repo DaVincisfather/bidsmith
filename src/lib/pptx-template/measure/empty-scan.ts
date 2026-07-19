@@ -158,7 +158,7 @@ export async function resolveEmptyScanTargets(supabase: SupabaseClient, template
   const isInstrumented = tpl.storage_path.endsWith("-instrumented.pptx");
   if (!isInstrumented) {
     throw new Error(
-      `storage_path (${tpl.storage_path}) pekar inte på en -instrumented.pptx — Radrum v4 förväntas vara onboardad; verifiera manuellt innan defektlistan byggs`,
+      `storage_path (${tpl.storage_path}) pekar inte på en -instrumented.pptx — mall ${templateId} förväntas vara onboardad; verifiera manuellt innan defektlistan byggs`,
     );
   }
   const instrumentedPath = tpl.storage_path;

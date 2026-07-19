@@ -19,6 +19,7 @@
     "template:introspect": "tsx scripts/introspect-template.ts",
     "calibrate:budgets": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/calibrate-budgets.ts",
     "calibrate:backfill-single-line": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/backfill-single-line.ts",
+    "onboarding:measure": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/onboarding-measure.ts",
     "deck:dupes": "tsx scripts/check-deck-duplication.ts",
     "deck:scan": "tsx scripts/scan-deck.ts",
     "overflow:bootstrap": "node --env-file=.env.local node_modules/tsx/dist/cli.mjs scripts/overflow-bootstrap.ts",
