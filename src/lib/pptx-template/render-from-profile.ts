@@ -10,7 +10,11 @@ import type { CapabilityId, SlideProfile, TemplateProfile } from "./template-pro
 import { readPptxSlides } from "./introspect/read-pptx";
 import { readSlideSize } from "./onboarding/slide-size";
 import { packRows, BOTTOM_MARGIN_EMU } from "./foreign-table-pagination";
-import { foreignTableApplicator } from "./applicators/foreign-table";
+import {
+  foreignTableApplicator,
+  wrapCellsFor,
+  type MatrixRow,
+} from "./applicators/foreign-table";
 import { coverApplicator } from "./applicators/cover";
 import { tocApplicator } from "./applicators/toc";
 import { proseApplicator } from "./applicators/prose";
@@ -131,7 +135,6 @@ async function computeTablePages(
   const { cy: slideHeightEmu } = await readSlideSize(buffer);
 
   const rows = matrixRequirementRows(sections);
-  const kravRows = rows.map((r) => ({ kravText: r.requirement }));
 
   for (const slide of tableSlides) {
     const tm = slide.tableMap!;
@@ -142,16 +145,17 @@ async function computeTablePages(
       map.set(slide.source, rows.length > 0 ? [rows.map((_, i) => i)] : [[]]);
       continue;
     }
-    const kravColIndex = tm.columns.indexOf("krav");
-    const pages = packRows(kravRows, {
+    // Estimate each row's height from the ACTUAL text of every mapped content
+    // column against its own gridCol width (max wrap wins) — a verbose answer in
+    // a narrow column, not just the krav text, decides the row height.
+    const wrapRows = rows.map((r) => wrapCellsFor(r, tm.columns, table.gridColsEmu));
+    const pages = packRows(wrapRows, {
       slideHeightEmu,
       tableTopEmu: table.geometry?.yEmu ?? 0,
       headerHeightsEmu: table.rows
         .slice(0, tm.headerRows)
         .map((r) => r.heightEmu),
       templateRowHeightEmu: table.rows[tm.templateRowIndex]?.heightEmu ?? 0,
-      kravColWidthEmu:
-        kravColIndex >= 0 ? (table.gridColsEmu[kravColIndex] ?? 0) : 0,
       fontSizePt: null,
       bottomMarginEmu: BOTTOM_MARGIN_EMU,
     });
@@ -161,9 +165,7 @@ async function computeTablePages(
 }
 
 /** The requirement-matrix-v2 section's rows, or [] when absent. */
-function matrixRequirementRows(
-  sections: BidSection[],
-): { requirement: string }[] {
+function matrixRequirementRows(sections: BidSection[]): MatrixRow[] {
   const sec = sections.find(
     (s) => s.content?.format === "requirement-matrix-v2",
   );

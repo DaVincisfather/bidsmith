@@ -1,6 +1,7 @@
 import type { ISlide } from "pptx-automizer/dist/interfaces/islide";
 import type { ApplicatorContext } from "../types";
 import type { SlideProfile, TableColumnRole } from "../template-profile";
+import type { WrapCell } from "../foreign-table-pagination";
 import { rowStatus } from "./requirement-matrix";
 
 /**
@@ -24,27 +25,77 @@ import { rowStatus } from "./requirement-matrix";
 const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
 const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
 
-interface MatrixRow {
+type Status = "JA" | "NEJ" | "DELVIS";
+
+interface Coverage {
+  consultantName: string;
+  status: Status;
+}
+
+export interface MatrixRow {
   requirement: string;
-  hurUppfylls: string;
-  referens: string;
-  coverage: { status: "JA" | "NEJ" | "DELVIS" }[];
+  coverage: Coverage[];
 }
 
 /**
- * The deterministic "uppfyllnad" answer for a requirement — NOT the AI prose.
- * "Ja — se {referens}" / "Delvis — se {referens}" / "Nej". Without a referens
- * (or for NEJ), just the status word. The status column, when mapped, gets the
- * bare JA/DELVIS/NEJ instead (pills are our own template's idiom).
+ * The consultants whose coverage CARRIES this row's status, in coverage order:
+ * for a JA row the ones marked JA, for a DELVIS row the ones marked DELVIS (the
+ * best available), for a NEJ row none. Same roll-up logic as rowStatus, so the
+ * pointer always names someone who actually covers the requirement. Blank names
+ * are dropped.
  */
-export function formulaicAnswer(
-  row: { referens?: string },
-  status: "JA" | "DELVIS" | "NEJ",
-): string {
+export function coveringNames(coverage: Coverage[]): string[] {
+  const status = rowStatus(coverage);
+  if (status === "NEJ") return [];
+  return coverage
+    .filter((c) => c.status === status)
+    .map((c) => c.consultantName.trim())
+    .filter((n) => n.length > 0);
+}
+
+/**
+ * The deterministic "uppfyllnad" answer — a SHORT CV pointer, not the AI prose
+ * and not the bundle's verbose referens string (that overflowed narrow cells).
+ * "Ja — se CV: {namn}" / "Delvis — se CV: {namn}" / "Nej", naming the first
+ * covering consultant. "se CV: Namn" (colon form) sidesteps Swedish genitive on
+ * names ending in s. Without a covering name (or for NEJ), just the status word.
+ */
+export function formulaicAnswer(coverage: Coverage[]): string {
+  const status = rowStatus(coverage);
   if (status === "NEJ") return "Nej";
   const word = status === "JA" ? "Ja" : "Delvis";
-  const ref = row.referens?.trim();
-  return ref ? `${word} — se ${ref}` : word;
+  const names = coveringNames(coverage);
+  return names.length > 0 ? `${word} — se CV: ${names[0]}` : word;
+}
+
+/**
+ * The mapped CONTENT cells of a generated row (krav / uppfyllnad / referens) as
+ * text + column width — the exact strings the applicator writes, so pagination
+ * estimates the honest wrapped height of every column it fills. status/ignorera
+ * are excluded (a single status word / the kept template text never drive the
+ * row height). Column c aligns with gridCol c (roles are one-per-gridCol).
+ */
+export function wrapCellsFor(
+  row: MatrixRow,
+  columns: TableColumnRole[],
+  gridColsEmu: number[],
+): WrapCell[] {
+  const cells: WrapCell[] = [];
+  for (let c = 0; c < columns.length; c++) {
+    const colWidthEmu = gridColsEmu[c] ?? 0;
+    switch (columns[c]) {
+      case "krav":
+        cells.push({ text: row.requirement, colWidthEmu });
+        break;
+      case "uppfyllnad":
+        cells.push({ text: formulaicAnswer(row.coverage), colWidthEmu });
+        break;
+      case "referens":
+        cells.push({ text: coveringNames(row.coverage).join(", "), colWidthEmu });
+        break;
+    }
+  }
+  return cells;
 }
 
 export function foreignTableApplicator(
@@ -106,7 +157,6 @@ function fillRow(
   row: MatrixRow,
 ): void {
   const cells = childElementsNS(tr, A_NS, "tc");
-  const status = rowStatus(row.coverage);
   for (let c = 0; c < columns.length; c++) {
     const cell = cells[c];
     if (!cell) continue;
@@ -115,13 +165,15 @@ function fillRow(
         setCellText(doc, cell, row.requirement);
         break;
       case "uppfyllnad":
-        setCellText(doc, cell, formulaicAnswer(row, status));
+        setCellText(doc, cell, formulaicAnswer(row.coverage));
         break;
       case "referens":
-        setCellText(doc, cell, row.referens);
+        // Short CV pointers — the covering consultants' names, not the bundle's
+        // verbose referens string (which overflowed the narrow column).
+        setCellText(doc, cell, coveringNames(row.coverage).join(", "));
         break;
       case "status":
-        setCellText(doc, cell, status);
+        setCellText(doc, cell, rowStatus(row.coverage));
         break;
       case "ignorera":
         // Keep the template row's own cell content (e.g. a running-number column).

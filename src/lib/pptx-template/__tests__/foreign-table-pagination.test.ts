@@ -3,23 +3,30 @@ import {
   packRows,
   BOTTOM_MARGIN_EMU,
   type TablePageParams,
+  type WrapCell,
 } from "../foreign-table-pagination";
 
 // Explicit, geometry-only params (no fixture, no XML) so the packing math is
 // tested in isolation. 16:9 slide, a table starting ~1M EMU down, one header
-// row, ~0.4M EMU template rows, a wide krav column at the default 18pt.
+// row, ~0.4M EMU template rows, at the default 18pt.
 const BASE: TablePageParams = {
   slideHeightEmu: 6858000,
   tableTopEmu: 1000000,
   headerHeightsEmu: [400000],
   templateRowHeightEmu: 400000,
-  kravColWidthEmu: 4000000,
   fontSizePt: null,
   bottomMarginEmu: BOTTOM_MARGIN_EMU,
 };
 
-const short = { kravText: "kort krav" };
-const long = { kravText: "x".repeat(200) };
+const KRAV_W = 4000000;
+const NARROW_W = 1000000;
+
+/** A single-content-column (krav) row of the given text. */
+function kravRow(text: string): WrapCell[] {
+  return [{ text, colWidthEmu: KRAV_W }];
+}
+const short = kravRow("kort krav");
+const long = kravRow("x".repeat(200));
 
 /** Flattened indices across all pages, in order. */
 function flat(pages: number[][]): number[] {
@@ -28,14 +35,13 @@ function flat(pages: number[][]): number[] {
 
 describe("packRows — coverage invariants", () => {
   it("covers every row index exactly once, in order (nothing dropped)", () => {
-    const rows = Array.from({ length: 13 }, (_, i) => ({ kravText: `k${i}` }));
+    const rows = Array.from({ length: 13 }, (_, i) => kravRow(`k${i}`));
     const pages = packRows(rows, BASE);
     expect(flat(pages)).toEqual(Array.from({ length: 13 }, (_, i) => i));
   });
 
   it("never emits a page with zero rows when there are rows", () => {
-    const rows = Array.from({ length: 9 }, () => long);
-    const pages = packRows(rows, BASE);
+    const pages = packRows(Array.from({ length: 9 }, () => long), BASE);
     expect(pages.every((p) => p.length >= 1)).toBe(true);
   });
 
@@ -65,20 +71,52 @@ describe("packRows — geometry drives rows per page", () => {
     const maxShort = Math.max(...shortPages.map((p) => p.length));
     const maxLong = Math.max(...longPages.map((p) => p.length));
     expect(maxLong).toBeLessThan(maxShort);
-    // Still every row placed.
     expect(flat(longPages)).toHaveLength(12);
   });
 
   it("gives a single over-tall row its own page rather than dropping it", () => {
-    const huge = { kravText: "y".repeat(5000) };
-    const pages = packRows([huge], BASE);
+    const pages = packRows([kravRow("y".repeat(5000))], BASE);
     expect(pages).toEqual([[0]]);
   });
+});
 
-  it("a wider krav column fits more characters per line ⇒ fewer wrapped pages", () => {
-    const rows = Array.from({ length: 6 }, () => ({ kravText: "z".repeat(120) }));
-    const narrow = packRows(rows, { ...BASE, kravColWidthEmu: 1500000 });
-    const wide = packRows(rows, { ...BASE, kravColWidthEmu: 6000000 });
-    expect(wide.length).toBeLessThanOrEqual(narrow.length);
+describe("packRows — row height is the MAX wrap across mapped columns", () => {
+  it("a verbose cell in a NARROW column makes the row tall even with a short krav", () => {
+    // Short krav, but a long string in a narrow second column: the row must be
+    // estimated by the tallest-wrapping column, not the krav column alone. This
+    // is the regression the live scan caught (verbose referens in a narrow col).
+    const tallByOtherCol: WrapCell[] = [
+      { text: "kort", colWidthEmu: KRAV_W },
+      { text: "z".repeat(200), colWidthEmu: NARROW_W },
+    ];
+    const shortOnly: WrapCell[] = [{ text: "kort", colWidthEmu: KRAV_W }];
+
+    const tallPages = packRows(Array.from({ length: 12 }, () => tallByOtherCol), BASE);
+    const shortPages = packRows(Array.from({ length: 12 }, () => shortOnly), BASE);
+    expect(Math.max(...tallPages.map((p) => p.length))).toBeLessThan(
+      Math.max(...shortPages.map((p) => p.length)),
+    );
+    expect(flat(tallPages)).toHaveLength(12);
+  });
+
+  it("short CV pointers page far denser than the old verbose referens string", () => {
+    // The fix's payoff: uppfyllnad/referens now carry SHORT pointers instead of
+    // the bundle's ~140-char referens, so many more rows fit per page in the same
+    // narrow columns (the verbose string wrapped to ~12 lines and overflowed).
+    const VERBOSE =
+      "Uppfylls, se Karl Svensson – Organisationsdesign post-merger, Industrikoncern (2022); Anna Berg – Förändringsledning offentlig sektor (2021)";
+    const shortRows = Array.from({ length: 12 }, (_, i) => [
+      { text: `Krav ${i}`, colWidthEmu: KRAV_W },
+      { text: "Ja — se CV: Anna", colWidthEmu: 1500000 },
+      { text: "Anna Berg", colWidthEmu: 1800000 },
+    ]);
+    const verboseRows = Array.from({ length: 12 }, (_, i) => [
+      { text: `Krav ${i}`, colWidthEmu: KRAV_W },
+      { text: VERBOSE, colWidthEmu: 1500000 },
+      { text: VERBOSE, colWidthEmu: 1800000 },
+    ]);
+    const maxShort = Math.max(...packRows(shortRows, BASE).map((p) => p.length));
+    const maxVerbose = Math.max(...packRows(verboseRows, BASE).map((p) => p.length));
+    expect(maxShort).toBeGreaterThan(maxVerbose);
   });
 });
