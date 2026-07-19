@@ -5,9 +5,10 @@
 // checks, prints a per-slide report. Exit contract: 0 clean / 1 WARN /
 // 2 FAIL / 3 crash-or-usage-error — a gate beside inspect-pptx and
 // deck:dupes. Design: notes/2026-07-14-measure-core-design.md.
-// NOTE: --profile requires .env.local (uses Supabase). Budget checks are
-// deferred to the app-surface track (a generated deck has no placeholders
-// left to map shapes to slots).
+// NOTE: --profile requires .env.local with Supabase credentials to load the
+// template profile. Script runs without env (flagless mode works standalone).
+// Budget checks are deferred to the app-surface track (a generated deck has
+// no placeholders left to map shapes to slots).
 import { execFile } from "child_process";
 import { mkdtemp, readFile, rm, writeFile } from "fs/promises";
 import os from "os";
