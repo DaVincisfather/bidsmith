@@ -21,7 +21,7 @@ import type { BidContext } from "../src/lib/bid-generator";
 import { loadTemplate } from "../src/lib/pptx-template/template-store";
 import { loadActiveProfile } from "../src/lib/org-profile";
 import { loadTemplateProfile } from "../src/lib/pptx-template/profile-store";
-import { isAllGenericProfile } from "../src/lib/pptx-template/template-profile";
+import { isForeignProfile } from "../src/lib/pptx-template/template-profile";
 import { renderFromProfile } from "../src/lib/pptx-template/render-from-profile";
 import { buildMasterContext } from "../src/app/api/bids/[id]/export/build-master-context";
 import { buildSlotMeta } from "../src/lib/bid-editor/slot-meta";
@@ -268,13 +268,13 @@ async function main() {
       `onboarda/kalibrera mallen innan overflow:eval körs.`,
     );
   }
-  // Fail loud: renderFromProfile below assumes the foreign-template profile path
-  // (isAllGenericProfile true — see run-bid-generation.ts's own routing check).
-  // A non-generic profile silently renders wrong; catching it here beats a
-  // confusing measurement-time failure deep in the fixture loop.
-  if (!isAllGenericProfile(storedProfile)) {
+  // Fail loud: renderFromProfile below assumes the foreign-template path. Use
+  // the SAME predicate as run-bid-generation.ts's routing (isForeignProfile) —
+  // isAllGenericProfile is now stricter than production and would reject a valid
+  // table-matrix mapped mall that production renders fine (drifted after PR #90).
+  if (!isForeignProfile(storedProfile)) {
     throw new Error(
-      `mall ${fixturesFile.templateId}s profil är inte all-generic-prose (isAllGenericProfile=false) — ` +
+      `mall ${fixturesFile.templateId}s profil routas inte som foreign (isForeignProfile=false) — ` +
       `overflow:eval förutsätter foreign-mall-vägen (profile-driven generation + renderFromProfile).`,
     );
   }

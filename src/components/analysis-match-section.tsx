@@ -6,6 +6,7 @@ import { TeamProposal } from "./team-proposal";
 import { GoNoGoResultView } from "./go-no-go-result";
 import { GoNoGoResult } from "@/lib/types";
 import { BUNDLE_LABELS_SV, type FailedBundle } from "@/lib/bundle-labels";
+import { MAX_TEAM_SIZE } from "@/lib/constants";
 import { ForgeLoader } from "./ForgeLoader";
 
 interface ScoredConsultant {
@@ -138,6 +139,9 @@ export function AnalysisMatchSection({
       if (next.has(consultantId)) {
         next.delete(consultantId);
       } else {
+        // Defensive: the UI disables unselected rows at the cap, but never let
+        // a toggle push the team past the slot count (silent-drop guard).
+        if (next.size >= MAX_TEAM_SIZE) return prev;
         next.add(consultantId);
       }
       return next;
@@ -292,6 +296,7 @@ export function AnalysisMatchSection({
             selectedIds={selectedIds}
             onToggle={handleToggle}
             disabled={teamLocked}
+            maxTeamSize={MAX_TEAM_SIZE}
           />
 
           {!teamLocked && !goNoGoLoading && (

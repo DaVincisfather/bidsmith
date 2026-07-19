@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { callClaude } from "@/lib/ai-client";
 import { MODELS } from "@/lib/models";
+import { MAX_TEAM_SIZE } from "@/lib/constants";
 import type { BidSection } from "@/lib/types";
 import type { BudgetPlan, OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { formatContext, type BidContext } from "../context";
@@ -18,7 +19,7 @@ export const TeamBundleSchema = z.object({
       }),
     )
     .min(1)
-    .max(5),
+    .max(MAX_TEAM_SIZE),
 });
 
 const TEAM_BUDGET_KEYS: string[] = [];

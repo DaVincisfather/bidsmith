@@ -1,3 +1,10 @@
+// The Team & Pris slide has exactly 5 member slots, and the team bundle's
+// structured-output schema hard-caps `members` at this count. The team-picker
+// UI must enforce the SAME cap — otherwise selecting >5 consultants lets the
+// model silently drop the overflow (they vanish from the export with no
+// warning). Single source of truth so the UI and the schema can't drift.
+export const MAX_TEAM_SIZE = 5;
+
 export const CONSULTANT_SELECT = `
   *,
   consultant_competencies (id, competency, category, evidence),

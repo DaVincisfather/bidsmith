@@ -13,6 +13,10 @@ interface TeamProposalProps {
   selectedIds: Set<string>;
   onToggle: (consultantId: string) => void;
   disabled?: boolean;
+  /** Hard cap on team size — the Team & Pris slide has this many slots. At the
+   *  cap, unselected consultants are disabled so the overflow can't be silently
+   *  dropped by the generator. */
+  maxTeamSize: number;
 }
 
 const LEVEL_ORDER = ["expert", "senior", "intermediate", "junior"] as const;
@@ -35,7 +39,9 @@ export function TeamProposal({
   selectedIds,
   onToggle,
   disabled = false,
+  maxTeamSize,
 }: TeamProposalProps) {
+  const atCap = selectedIds.size >= maxTeamSize;
   const byLevel: Record<string, ScoredConsultant[]> = {};
   for (const c of scoredConsultants) {
     if (!byLevel[c.level]) byLevel[c.level] = [];
@@ -54,9 +60,15 @@ export function TeamProposal({
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-display font-normal">Teamförslag</h3>
         <span className="text-sm text-ink-mute">
-          {teamCount} konsult{teamCount !== 1 ? "er" : ""} valda
+          {teamCount} / {maxTeamSize} valda
         </span>
       </div>
+      {atCap && (
+        <p className="text-xs text-ink-mute">
+          Max {maxTeamSize} konsulter — mallens Team &amp; Pris-slide rymmer fler
+          inte. Avmarkera någon för att byta.
+        </p>
+      )}
 
       {LEVEL_ORDER.map((level) => {
         const consultants = byLevel[level];
@@ -74,18 +86,21 @@ export function TeamProposal({
             <div className="divide-y divide-rule">
               {consultants.map((c) => {
                 const selected = selectedIds.has(c.consultantId);
+                // At the cap, only already-selected rows stay toggleable (so
+                // you can deselect); unselected rows are locked out.
+                const lockedOut = atCap && !selected;
                 return (
                   <div
                     key={c.consultantId}
                     className={`px-4 py-3 flex items-start gap-3 ${
-                      selected ? "bg-blue-50/50" : ""
+                      selected ? "bg-blue-50/50" : lockedOut ? "opacity-50" : ""
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={selected}
                       onChange={() => onToggle(c.consultantId)}
-                      disabled={disabled}
+                      disabled={disabled || lockedOut}
                       className="mt-1 shrink-0"
                     />
                     <div className="flex-1 min-w-0">

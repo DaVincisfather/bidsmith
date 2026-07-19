@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, mapConsultantRow } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { parseUuidParam } from "@/lib/api-helpers";
+import { parseUuidParam, internalError } from "@/lib/api-helpers";
 import { CONSULTANT_SELECT } from "@/lib/constants";
 import { matchConsultants } from "@/lib/consultant-matcher";
 import { RfpAnalysis } from "@/lib/types";
@@ -12,6 +12,7 @@ interface RouteContext {
 }
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {
+  try {
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "analysis id");
   if (!idResult.ok) return idResult.response;
@@ -56,4 +57,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   }
 
   return NextResponse.json({ id: matchRecord.id, scoredConsultants: result.scoredConsultants });
+  } catch (err) {
+    return internalError(err);
+  }
 }

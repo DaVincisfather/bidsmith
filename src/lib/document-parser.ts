@@ -76,9 +76,13 @@ export async function parseDocument(
 
   const ext = getExtension(fileName);
 
-  // Plain text — no conversion needed
+  // Plain text — no conversion needed. Guard the empty result the same way the
+  // markitdown branch does, so an empty/whitespace-only .md/.txt can't slip
+  // through to a paid AI analysis of nothing.
   if (ext === ".md" || ext === ".txt") {
-    return buffer.toString("utf-8").trim();
+    const text = buffer.toString("utf-8").trim();
+    if (!text) throw new Error(`Failed to extract text from ${fileName}`);
+    return text;
   }
 
   // All other formats — use markitdown via temp file
