@@ -296,6 +296,9 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Node-krav maskinkontrollerat (PR #91-routinen):** `engines`-fält i package.json;
+  `deck:scan`-scriptet använder fortfarande `--env-file-if-exists` (Node ≥22.9) —
+  antingen samma script-interna env-laddning som doctor, eller höjt dokumenterat krav.
 - **Mätpassets follow-ups (PR #89-routinen, polish):** (1) bära uppmätt detail in i
   FAIL-defekternas suggestion — kräver medvetet beslut om eval-JSON:ens frysning
   (EmptyScanDefect serialiseras rakt av i bootstrap); (2) validera `precount`-payloaden
