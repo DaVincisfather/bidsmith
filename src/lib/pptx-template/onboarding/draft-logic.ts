@@ -345,9 +345,10 @@ export function buildFinalProfile(
  * skriver därför detta manifest i samma update som statusflippen.
  *
  * Manifestet konsulteras ALDRIG för generering: en foreign mall körs på
- * profil-vägen (isAllGenericProfile på den sparade profilen är sant — buildFinal
- * Profile mappar allt till generic-prose/static), och den grinden läser profilen,
- * inte manifestet. type "static" per slide håller manifestet utanför type-vägens
+ * profil-vägen (isForeignProfile på den sparade profilen är sant — buildFinal
+ * Profile mappar varje slide till generic-prose/static, eller requirement-matrix
+ * + tableMap för en bekräftad tabell), och den grinden läser profilen, inte
+ * manifestet. type "static" per slide håller manifestet utanför type-vägens
  * specialiserade slidelogik även om det någonsin lästes. En static-slide per
  * wireframe-slide räcker för TemplateManifestSchema.min(1); parse:en fail-loud-
  * validerar vår egen hopsättning (spegling av buildFinalProfile).

@@ -137,16 +137,27 @@ function fillForeignTable(
   const rows = childElementsNS(tbl, A_NS, "tr");
   const templateRow = rows[tableMap.templateRowIndex];
   if (!templateRow) return;
-  // No rows to place → leave the table (and its template row) untouched rather
-  // than emitting a header-only husk.
-  if (window.length === 0) return;
 
-  for (const row of window) {
+  // Build the generated rows from a clone of the template row FIRST — the
+  // template row is one of the body rows stripped below, so order matters.
+  const generated = window.map((row) => {
     const clone = templateRow.cloneNode(true) as Element;
     fillRow(doc, clone, tableMap.columns, row);
-    templateRow.parentNode?.insertBefore(clone, templateRow);
+    return clone;
+  });
+
+  // Strip EVERY original body row (index >= headerRows): the mapped template row
+  // AND any extra example rows the customer left in the template. Leaving those
+  // would print stale example text in the real export, uncounted by the page
+  // band. Header rows are untouched. Zero requirements → the table is just its
+  // header row(s), which is honest — no faked example rows.
+  for (let i = rows.length - 1; i >= tableMap.headerRows; i--) {
+    rows[i].parentNode?.removeChild(rows[i]);
   }
-  templateRow.parentNode?.removeChild(templateRow);
+
+  // Append the generated rows after the surviving header rows (nothing follows
+  // the rows in an a:tbl, so appendChild lands them in order).
+  for (const clone of generated) tbl.appendChild(clone);
 }
 
 /** Writes one cloned row's cells by their column roles. */

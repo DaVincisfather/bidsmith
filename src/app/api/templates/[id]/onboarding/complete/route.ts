@@ -120,7 +120,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   // minimalt manifest skrivs i SAMMA update: materialize() kräver ett
   // schemagiltigt manifest för varje rad, annars kraschar loadActiveTemplate i
   // bid-/export-vägarna (routine-fynd C1). Routingen påverkas inte — foreign
-  // mallar körs på profil-vägen (isAllGenericProfile på profilen ovan), som
+  // mallar körs på profil-vägen (isForeignProfile på profilen ovan), som
   // läser profilen, inte manifestet.
   const { error: updErr } = await supabase
     .from("templates")

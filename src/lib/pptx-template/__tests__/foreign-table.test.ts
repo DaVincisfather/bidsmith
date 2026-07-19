@@ -7,8 +7,10 @@
  * and assert the generated rows cell-by-cell.
  */
 import { describe, it, expect } from "vitest";
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import path from "path";
+import os from "os";
+import JSZip from "jszip";
 import { renderFromProfile } from "../render-from-profile";
 import { readPptxSlides } from "../introspect/read-pptx";
 import { readSlideSize } from "../onboarding/slide-size";
@@ -92,6 +94,37 @@ const tpl = { templateFile: FIXTURE } as unknown as Pick<
   LoadedTemplate,
   "manifest" | "templateFile"
 >;
+
+function asTpl(templateFile: string) {
+  return { templateFile } as unknown as Pick<
+    LoadedTemplate,
+    "manifest" | "templateFile"
+  >;
+}
+
+/**
+ * Writes a mutated copy of the fixture whose table has header + template row +
+ * ONE extra EXAMPLE row (index 2) — the customer-left-example case that must not
+ * survive into the export. Returns the temp file path.
+ */
+async function makeExtraRowTemplate(): Promise<string> {
+  const zip = await JSZip.loadAsync(await readFile(FIXTURE));
+  const slide2 = await zip.file("ppt/slides/slide2.xml")!.async("string");
+  const cell = (t: string) =>
+    `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="sv-SE" dirty="0"/><a:t>${t}</a:t></a:r></a:p></a:txBody><a:tcPr/></a:tc>`;
+  const exampleRow = `<a:tr h="370840">${["EXEMPEL_KRAV_2", "EXEMPEL_UPP_2", "EXEMPEL_REF_2", "EXEMPEL_STAT_2"]
+    .map(cell)
+    .join("")}</a:tr>`;
+  const mutated = slide2.replace("</a:tbl>", `${exampleRow}</a:tbl>`);
+  expect(mutated).not.toBe(slide2); // guard: the injection actually happened
+  zip.file("ppt/slides/slide2.xml", mutated);
+  const out = path.join(
+    os.tmpdir(),
+    `table-sample-extra-${Date.now()}-${Math.random().toString(36).slice(2)}.pptx`,
+  );
+  await writeFile(out, await zip.generateAsync({ type: "nodebuffer" }));
+  return out;
+}
 
 /** Expected page windows for `rows` against the fixture's real geometry, using
  *  the SAME wrap-cell builder the renderer uses (max wrap across mapped cols). */
@@ -233,5 +266,50 @@ describe("foreignTableApplicator — ignorera column keeps the template cell", (
       expect(table.rows[r].cells[3].text).toBe("Uppfyllt");
     }
     expect(table.rows[1].cells[0].text).toBe("KRAV_1 kort");
+  });
+});
+
+describe("foreignTableApplicator — strips ALL original body rows", () => {
+  const columns: TableColumnRole[] = ["krav", "uppfyllnad", "referens", "status"];
+
+  it("removes every template AND example row, leaving header + N generated", async () => {
+    const templateFile = await makeExtraRowTemplate();
+    const sections = makeSections(3, false); // short krav → single page
+    const buffer = await renderFromProfile(
+      asTpl(templateFile),
+      tableProfile(columns),
+      sections,
+      master,
+    );
+    const outSlides = await readPptxSlides(buffer);
+    expect(outSlides).toHaveLength(1);
+
+    const table = outSlides[0].tables[0];
+    // header + exactly 3 generated rows — no example/template row survives.
+    expect(table.rows).toHaveLength(1 + 3);
+    expect(table.rows[0].cells.map((c) => c.text)).toEqual(HEADER);
+
+    const allText = table.rows
+      .flatMap((row) => row.cells.map((c) => c.text))
+      .join("\n");
+    expect(allText).not.toContain("EXEMPEL_");
+    expect(allText).not.toContain(TEMPLATE_ROW_KRAV);
+    expect(table.rows[1].cells[0].text).toBe("KRAV_1 kort");
+  });
+
+  it("0 krav ⇒ header row(s) only (no example rows survive, no faked rows)", async () => {
+    const templateFile = await makeExtraRowTemplate();
+    const buffer = await renderFromProfile(
+      asTpl(templateFile),
+      tableProfile(columns),
+      makeSections(0, false),
+      master,
+    );
+    const outSlides = await readPptxSlides(buffer);
+    expect(outSlides).toHaveLength(1);
+
+    const table = outSlides[0].tables[0];
+    expect(table.rows).toHaveLength(1);
+    expect(table.rows[0].cells.map((c) => c.text)).toEqual(HEADER);
   });
 });

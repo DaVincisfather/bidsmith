@@ -7,7 +7,7 @@ import type { BidContext } from "../context";
 import type { BidSection, RfpAnalysis } from "@/lib/types";
 
 // Both generation engines are mocked so routing is observable without any API
-// call. isAllGenericProfile is the REAL discriminator (not mocked).
+// call. isForeignProfile is the REAL discriminator (not mocked).
 vi.mock("@/lib/bid-generator", () => ({
   generateAllSections: vi.fn(),
   BID_BUNDLE_COUNT: 6,
