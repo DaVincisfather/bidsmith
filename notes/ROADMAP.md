@@ -4,7 +4,10 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-15 — **BID-EDITOR-SLIMNINGEN LEVERERAD** (design + plan i
+_Senast uppdaterad: 2026-07-19 — **SMOKE 3 GODKÄND** (FAIL 0 i skarp generering,
+se NÄSTA-listan) — kicker-enforcement påbörjad._
+
+_2026-07-15 — **BID-EDITOR-SLIMNINGEN LEVERERAD** (design + plan i
 `notes/2026-07-15-bid-editor-slim-{design,plan}.md`): editorn för onboardade mallar visar
 nu bara prosa-rutor grupperade per slide med teckenräknare; wizarden fick "fast slide"-knapp.
 Visuellt verifierad mot Radrum v4-anbudet (137 → 28 synliga rutor). Vägbeslutet 2026-07-14
@@ -96,6 +99,15 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       meningsinitial "lämnas tom(t)"-intent (negations-säkrad regex efter
       routine-fyndet). Varv 5-verifiering: grova 60→20, min-fill 0/5, korridoren
       höll. $14,61 av $50. Addendum i notes/2026-07-16-overflow-loop-slutrapport.md.
+- [x] **SMOKE 3 GODKÄND 2026-07-19 (Stefans dom):** ny skarp generering (anbud
+      f5faeb4c, samma flöde som smoke 2: analys 930bc471 + samma team, 137/137
+      sektioner, 108 s, $0,51) mot omkalibrerade Radrum v4. Grindarna:
+      **FAIL 3→0**, WARN 42→23, volym 11 804→10 474 (korridoren höll), parvisa
+      dubbletter 1 par (0,31, gränsfall). 5 grova enligt eval-definitionen, ALLA
+      i kända klasser: 3 malldefekter (slide 1 bolagsnamnsbox, slide 2 Text 36
+      companyName, slide 4 statbox) + 2 kickers (slide 6/7, 1,88–1,96× =
+      tvåraders wrap). Noll grova i prosa-klassen — #86/#87-rattarna håller i
+      skarp generering. → kicker-enforcement påbörjad (nästa punkt).
 - [ ] **KICKER-ENFORCEMENT (spinoff, byggbeslut):** ~11/20 kvarvarande grova =
       breda enradskickers där modellen skriver 129–160 tecken mot skalad ask ~110
       → 2-raders wrap. Mekanisk re-ask/trim i generate-from-profile mot den
