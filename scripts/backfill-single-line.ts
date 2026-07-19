@@ -14,7 +14,7 @@ async function main() {
   const args = process.argv.slice(2);
   const templateId = args.find((a) => !a.startsWith("--"));
   if (!templateId) {
-    console.error("Användning: npx tsx scripts/backfill-single-line.ts <templateId> [--write]");
+    console.error("Användning: npm run calibrate:backfill-single-line -- <templateId> [--write]");
     process.exit(1);
   }
   const write = args.includes("--write");

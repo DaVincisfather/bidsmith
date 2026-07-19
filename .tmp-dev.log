@@ -1,0 +1,23 @@
+
+> bidsmith@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.23:3000
+- Environments: .env.local
+✓ Ready in 977ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+ POST /api/bids 202 in 1566ms (next.js: 756ms, proxy.ts: 253ms, application-code: 558ms)
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299 200 in 1270ms (next.js: 1119ms, proxy.ts: 67ms, application-code: 84ms)
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299 200 in 458ms (next.js: 16ms, proxy.ts: 249ms, application-code: 194ms)
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299 200 in 175ms (next.js: 15ms, proxy.ts: 80ms, application-code: 80ms)
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299 200 in 201ms (next.js: 14ms, proxy.ts: 109ms, application-code: 78ms)
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299 200 in 209ms (next.js: 15ms, proxy.ts: 122ms, application-code: 72ms)
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299 200 in 233ms (next.js: 15ms, proxy.ts: 122ms, application-code: 96ms)
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299 200 in 240ms (next.js: 14ms, proxy.ts: 71ms, application-code: 155ms)
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299 200 in 210ms (next.js: 15ms, proxy.ts: 126ms, application-code: 69ms)
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299 200 in 192ms (next.js: 15ms, proxy.ts: 103ms, application-code: 74ms)
+[soft-cap] slide 1 field '{Företagsnamn}' length 11 > recommended 7 — overflow likely
+ GET /api/bids/32aed5e5-51c6-49e1-aea1-4202b33a8299/export 200 in 2.4s (next.js: 1577ms, proxy.ts: 98ms, application-code: 724ms)

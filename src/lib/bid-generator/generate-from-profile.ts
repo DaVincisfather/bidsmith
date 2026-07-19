@@ -262,8 +262,13 @@ export async function generateSectionsFromProfile(
       buildGenericProseShortenSections(shortenChunks[idx], ctx),
     );
     shortenResults.forEach((result) => {
-      // Rejected shorten chunk → keep the wave text for its slots, silently.
-      if (result.status !== "fulfilled") return;
+      // Rejected shorten chunk → keep the wave text for its slots. Warn-only
+      // (softCap precedent): without a trace, a shorten pass that stops biting
+      // in production only shows up as kickers wrapping again.
+      if (result.status !== "fulfilled") {
+        console.warn("generic-prose shorten: chunk rejected, behåller wave-text", result.reason);
+        return;
+      }
       for (const shortened of result.value) {
         if (shortened.content?.format !== "generic-prose") continue;
         const idx = sectionIndex.get(shortened.content.placeholder);
