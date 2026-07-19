@@ -107,9 +107,8 @@ export function extractPrecount(raw: unknown): DraftPrecount | undefined {
 export function extractScreen(raw: unknown): ScreenFinding[] | undefined {
   if (raw && typeof raw === "object") {
     const obj = raw as Record<string, unknown>;
-    if (Array.isArray(obj.screen)) {
-      return obj.screen as ScreenFinding[];
-    }
+    const parsed = z.array(ScreenFindingSchema).safeParse(obj.screen);
+    return parsed.success ? parsed.data : undefined;
   }
   return undefined;
 }

@@ -22,9 +22,12 @@ export function dedupeDefects<T extends Pick<TemplateDefect, "slide" | "checkId"
   return out;
 }
 
-/** Operator guidance per check class. `detail` is the measured fact
- *  ("text 43.2pt > box 26pt") — always included so the suggestion stays
- *  anchored to data. Swedish: this is wizard/CLI copy. */
+/** Operator guidance per check class. `detail` is contextual info appended
+ *  verbatim — today the CLI's compose path passes the provenance note (e.g.
+ *  "tom originalmall") plus, when available, the baseline bound height, NOT
+ *  a measured fact like "text 43.2pt > box 26pt". Enriching `detail` with the
+ *  actual measured fact is a known follow-up. Swedish: this is wizard/CLI
+ *  copy. */
 export function defectSuggestion(checkId: string, detail: string): string {
   const base: Record<string, string> = {
     "outside-slide": "Boxen går utanför sliden redan i tom mall — flytta upp eller förminska den i mallen",

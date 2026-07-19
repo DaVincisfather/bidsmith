@@ -11,13 +11,16 @@ import { composeMeasuredProfile } from "../src/lib/pptx-template/measure/compose
 
 async function main() {
   const args = process.argv.slice(2);
-  const templateId = args.find((a) => !a.startsWith("--"));
+  // --max-rounds's VALUE is itself a non-flag token, so it must be excluded from
+  // the positional search below — otherwise `onboarding:measure -- --max-rounds 8 <id>`
+  // picks up "8" as templateId (mirrors scan-deck.ts's --json/--profile exclusion).
+  const mrIdx = args.indexOf("--max-rounds");
+  const templateId = args.find((a, i) => !a.startsWith("--") && (mrIdx < 0 || i !== mrIdx + 1));
   if (!templateId) {
     console.error("Användning: npm run onboarding:measure -- <templateId> [--write] [--max-rounds N]");
     process.exit(1);
   }
   const write = args.includes("--write");
-  const mrIdx = args.indexOf("--max-rounds");
   const maxRounds = mrIdx >= 0 ? Number(args[mrIdx + 1]) : undefined;
   if (maxRounds !== undefined && !Number.isFinite(maxRounds)) {
     console.error("--max-rounds kräver ett numeriskt värde, t.ex. --max-rounds 6");
@@ -25,6 +28,8 @@ async function main() {
   }
 
   const supabase = createServiceClient();
+  // Early load: validates the template has a profile before the multi-minute
+  // COM pass below runs at all.
   const profile = await loadTemplateProfile(templateId);
   if (!profile) throw new Error(`mall ${templateId} saknar profil — onboarda den först`);
 
@@ -34,7 +39,13 @@ async function main() {
   console.log("\n=== Steg 2/2: budgetkalibrering ===");
   const report = await calibrateTemplate(templateId, { write: false, maxRounds });
 
-  const updated = composeMeasuredProfile(profile, report, scanned, new Date().toISOString());
+  // Re-load right before compose/save: a wizard defect-accept made DURING the
+  // COM pass above must not be silently overwritten by the stale profile
+  // captured at the top of main() (mergeDefectAccepts needs the fresh accepts).
+  const fresh = await loadTemplateProfile(templateId);
+  if (!fresh) throw new Error(`mall ${templateId} saknar profil — onboarda den först`);
+
+  const updated = composeMeasuredProfile(fresh, report, scanned, new Date().toISOString());
 
   // Rapport (svenska): budgettabell (samma kolumner som calibrate-budgets) + defektlista.
   console.log(`\nKalibrering: ${report.rounds} varv, ${report.results.length} slots, ${report.unresolved.length} omätta.`);
