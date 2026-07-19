@@ -113,7 +113,12 @@ async function main() {
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }
-  process.exit(code);
+  // Use process.exitCode instead of process.exit() to allow natural event-loop
+  // drainage. Hard exit with open Supabase/undici sockets crashes on Windows
+  // (STATUS_STACK_BUFFER_OVERRUN). Pattern proven in backfill-single-line.ts
+  // and onboarding-measure.ts. Early error paths (usage checks) still use
+  // process.exit(3) since no Supabase client is initialized there.
+  process.exitCode = code;
 }
 
 main().catch((err) => { console.error(err); process.exit(3); });
