@@ -260,6 +260,13 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Mätpassets follow-ups (PR #89-routinen, polish):** (1) bära uppmätt detail in i
+  FAIL-defekternas suggestion — kräver medvetet beslut om eval-JSON:ens frysning
+  (EmptyScanDefect serialiseras rakt av i bootstrap); (2) validera `precount`-payloaden
+  med Zod som `screen` nu valideras; (3) annoteringsräknaren i scan-deck bör komma ur
+  annotateKnownDefects i stället för detail-strängprefixet; (4) accept utan CAS-guard
+  (single-operator-risk, låg); (5) engines-rad i package.json (Node ≥22.9 för
+  --env-file-if-exists); (6) OnboardingWizard.tsx 378 rader — bryt ut draft-vyn.
 - **Editor-slimningens follow-ups (PR #82, routine + slutreview 2026-07-15 — polish om
   inte annat anges):** (1) enrads-notis "N kortfält döljs — genereras och exporteras
   ändå" i grupperade vyn (`hiddenShortFields` finns redan i `GroupedSections`);
