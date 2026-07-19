@@ -3,6 +3,7 @@ import {
   parseDocument,
   validateDocument,
   sanitizeFilename,
+  contentTypeForFile,
   MAX_UPLOAD_REQUEST_BYTES,
 } from "@/lib/document-parser";
 import { enforceContentLength } from "@/lib/api-helpers";
@@ -51,7 +52,9 @@ export async function POST(request: NextRequest) {
     const { error: uploadError } = await supabase.storage
       .from("rfp-documents")
       .upload(filePath, buffer, {
-        contentType: file.type,
+        // Derived from the whitelisted extension, not client-supplied file.type
+        // (spoofable → stored-XSS on the storage origin). Mirrors CV upload.
+        contentType: contentTypeForFile(file.name),
       });
 
     if (uploadError) {

@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import { DOMParser } from "@xmldom/xmldom";
+import { assertZipWithinLimits } from "../zip-guard";
 
 const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
 
@@ -16,6 +17,7 @@ export async function readSlideSize(
   buffer: Buffer,
 ): Promise<{ cx: number; cy: number }> {
   const zip = await JSZip.loadAsync(buffer);
+  assertZipWithinLimits(zip, "pptx");
   const xml = await zip.file("ppt/presentation.xml")?.async("string");
   if (!xml) return DEFAULT_SLIDE_SIZE;
   const doc = new DOMParser().parseFromString(xml, "application/xml");

@@ -2,6 +2,7 @@ import JSZip from "jszip";
 // Element importeras från @xmldom/xmldom (inte lib.dom) — den parsade DOM:en är
 // xmldoms och dess Element saknar lib.dom-Elementets HTML-egenskaper (classList m.fl.).
 import { DOMParser, type Element } from "@xmldom/xmldom";
+import { assertZipWithinLimits } from "../zip-guard";
 
 const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
 const P_NS = "http://schemas.openxmlformats.org/presentationml/2006/main";
@@ -103,6 +104,7 @@ export async function resolveSlidePaths(
 
 export async function readPptxSlides(buffer: Buffer): Promise<SlideShapes[]> {
   const zip = await JSZip.loadAsync(buffer);
+  assertZipWithinLimits(zip, "pptx");
   const parser = new DOMParser();
 
   const presXml = await readEntry(zip, "ppt/presentation.xml");
