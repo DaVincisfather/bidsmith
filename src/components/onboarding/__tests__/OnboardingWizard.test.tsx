@@ -71,12 +71,37 @@ describe("OnboardingWizard", () => {
     expect(screen.getByRole("button", { name: /^slide 2$/i })).toBeInTheDocument();
   });
 
-  it("onboarded: visar klar-vy med länk till inställningar", async () => {
-    mockGet({ status: "onboarded", name: "kundmall", version: 1, draft: null });
+  it("draft: listar screen-fynd för sliden märkta som preliminära", async () => {
+    const draftWithScreen: OnboardingDraft = {
+      ...draft,
+      screen: [{ slide: 2, shape: "3", kind: "tight-box", detail: "kapacitet 12 tecken < 20" }],
+    };
+    mockGet({ status: "draft", name: "kundmall", version: 1, draft: draftWithScreen });
+    render(<OnboardingWizard templateId="t-1" />);
+    await waitFor(() => expect(screen.getByText(/preliminär geometri-bedömning/i)).toBeInTheDocument());
+    expect(screen.getByText(/kapacitet 12 tecken < 20/)).toBeInTheDocument();
+  });
+
+  it("onboarded utan measurement: visar mätsteget med kommandot", async () => {
+    mockGet({ status: "onboarded", name: "kundmall", version: 1, draft: null, measurement: null });
     render(<OnboardingWizard templateId="t-1" />);
     await waitFor(() =>
-      expect(screen.getByText(/onboardad och körbar/i)).toBeInTheDocument(),
+      expect(screen.getByText(/mallen behöver mätas lokalt/i)).toBeInTheDocument(),
     );
+    expect(screen.getByText(/npm run onboarding:measure -- t-1 --write/)).toBeInTheDocument();
+  });
+
+  it("onboarded med measurement: visar hälsorapport med länk till inställningar", async () => {
+    mockGet({
+      status: "onboarded", name: "kundmall", version: 1, draft: null,
+      measurement: { status: "complete", measuredAt: "2026-07-19T10:00:00Z", calibrationRounds: 1, unresolved: [], slotWarnings: {} },
+      knownDefects: [],
+    });
+    render(<OnboardingWizard templateId="t-1" />);
+    await waitFor(() =>
+      expect(screen.getByText(/hälsorapport/i)).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/klar för aktivering/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /inställningar/i })).toHaveAttribute("href", "/installningar");
   });
 

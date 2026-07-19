@@ -4,18 +4,26 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { OnboardingDraft } from "@/lib/pptx-template/onboarding/draft";
 import { fastSlideSources } from "@/lib/pptx-template/onboarding/draft-logic";
+import type { TemplateDefect, TemplateMeasurement } from "@/lib/pptx-template/template-profile";
 import { SlideWireframe, type SlotDecision } from "./SlideWireframe";
 import { SlotPanel } from "./SlotPanel";
 import { SummaryView } from "./SummaryView";
+import { MeasurementStep } from "./MeasurementStep";
+import { HealthReport } from "./HealthReport";
 
 type WizardData = {
   status: "needs_onboarding" | "classifying" | "draft" | "onboarded";
   draft: OnboardingDraft | null;
   error?: string;
   precount?: { slides: number; candidates: number };
+  // Bara satta när status === "onboarded" (se GET-routen) — null = ännu inte
+  // mätt lokalt (MeasurementStep), TemplateMeasurement = mätpasset klart (HealthReport).
+  measurement?: TemplateMeasurement | null;
+  knownDefects?: TemplateDefect[] | null;
 };
 
 const POLL_MS = 3000;
+const MEASURE_POLL_MS = 10000;
 
 export function OnboardingWizard({ templateId }: { templateId: string }) {
   const [data, setData] = useState<WizardData | null>(null);
@@ -48,6 +56,15 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
     return () => clearInterval(t);
   }, [data?.status, refresh]);
 
+  // Polla under det lokala mätpasset (COM-mätningen körs utanför appen och
+  // tar några minuter) — samma mönster som klassificeringspollen, glesare
+  // intervall (MEASURE_POLL_MS) eftersom passet är betydligt längre.
+  useEffect(() => {
+    if (data?.status !== "onboarded" || data.measurement != null) return;
+    const t = setInterval(refresh, MEASURE_POLL_MS);
+    return () => clearInterval(t);
+  }, [data?.status, data?.measurement, refresh]);
+
   // Slides som kräver beslut — statiska hoppas över i navigeringen.
   const candidateSlides = useMemo(
     () => data?.draft?.wireframe.filter((s) => s.shapes.some((sh) => sh.candidate)) ?? [],
@@ -58,6 +75,12 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
   const slotsOnSlide = useMemo(
     () => (slide ? data!.draft!.slots.filter((s) => s.source === slide.source) : []),
     [slide, data],
+  );
+  // Preliminära geometri-fynd (upload-tidens XML-matte, ingen COM) för sliden
+  // som visas — rena informationsrader under wireframen, gate:ar ingenting.
+  const screenFindings = useMemo(
+    () => (slide ? (data?.draft?.screen ?? []).filter((f) => f.slide === slide.source) : []),
+    [slide, data?.draft],
   );
   const selectedSlot =
     slotsOnSlide.find((s) => s.shapeIndex === selectedShape) ?? slotsOnSlide[0] ?? null;
@@ -118,6 +141,28 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
       const body = await res.json();
       if (!res.ok) { setUiError(body.error ?? "kunde inte spara beslutet"); return; }
       setData((d) => (d ? { ...d, draft: body.draft } : d));
+    } catch {
+      setUiError("nätverksfel — försök igen");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Accepterar en malldefekt från hälsorapporten — samma fetch/setData-mönster
+  // som decide/decideSlide (spara knownDefects direkt från POST-svaret,
+  // ingen extra refresh() behövs).
+  async function acceptDefect(sig: { slide: number; checkId: string; shape: string }) {
+    setSaving(true);
+    setUiError(null);
+    try {
+      const res = await fetch(`/api/templates/${templateId}/defects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sig),
+      });
+      const body = await res.json();
+      if (!res.ok) { setUiError(body.error ?? "kunde inte acceptera defekten"); return; }
+      setData((d) => (d ? { ...d, knownDefects: body.knownDefects } : d));
     } catch {
       setUiError("nätverksfel — försök igen");
     } finally {
@@ -199,12 +244,18 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
   }
 
   if (data.status === "onboarded") {
+    if (!data.measurement) {
+      return <MeasurementStep templateId={templateId} />;
+    }
     return (
-      <div className="border border-rule rounded-lg p-6 max-w-xl space-y-4">
-        <p className="text-sm font-medium">Mallen är onboardad och körbar. ✓</p>
-        <p className="text-sm text-ink-soft">
-          Aktivera den i Inställningar när du vill att nya anbud genereras mot den.
-        </p>
+      <div className="space-y-4">
+        <HealthReport
+          measurement={data.measurement}
+          knownDefects={data.knownDefects ?? []}
+          onAccept={acceptDefect}
+          saving={saving}
+          uiError={uiError}
+        />
         <Link href="/installningar" className="inline-block text-sm font-medium text-accent hover:underline">
           Till Inställningar →
         </Link>
@@ -293,13 +344,30 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_20rem] gap-4">
-        <SlideWireframe
-          slide={slide!}
-          slideSize={data.draft.slideSize}
-          selectedShapeIndex={selectedSlot?.shapeIndex ?? null}
-          decisions={new Map(slotsOnSlide.map((s) => [s.shapeIndex, s.decision as SlotDecision]))}
-          onSelect={setSelectedShape}
-        />
+        <div className="space-y-2">
+          <SlideWireframe
+            slide={slide!}
+            slideSize={data.draft.slideSize}
+            selectedShapeIndex={selectedSlot?.shapeIndex ?? null}
+            decisions={new Map(slotsOnSlide.map((s) => [s.shapeIndex, s.decision as SlotDecision]))}
+            onSelect={setSelectedShape}
+          />
+          {screenFindings.length > 0 && (
+            <div className="border border-rule rounded-lg p-3 text-xs text-ink-soft space-y-1">
+              <p className="font-medium text-ink-mute uppercase tracking-wide text-[11px]">
+                Preliminär geometri-bedömning
+              </p>
+              <ul className="space-y-1">
+                {screenFindings.map((f) => (
+                  <li key={`${f.shape}:${f.kind}`}>
+                    Ruta {f.shape} —{" "}
+                    {f.kind === "static-overflow" ? "statisk overflow" : "trång box"}: {f.detail}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
         {selectedSlot ? (
           <SlotPanel
             key={`${selectedSlot.source}:${selectedSlot.shapeIndex}`}
