@@ -304,6 +304,40 @@ describe("short-field rule", () => {
     expect(c && c.format === "generic-prose" && c.text).toBe("");
   });
 
+  it("marks single-line prose slots with the hard EN RAD cap instead of the soft ca-budget", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
+    await buildGenericProseSlideSections(
+      [{ placeholder: "{Kicker}", intent: "sammanfattande kicker", budgetChars: 110, singleLine: true }],
+      baseCtx,
+    );
+
+    const system = vi.mocked(callClaude).mock.calls[0][0].system;
+    expect(system).toContain("EN RAD");
+    expect(system).toContain("max 110 tecken");
+    expect(system).not.toContain("håll dig inom ca 110");
+  });
+
+  it("keeps the soft ca-budget for multi-line prose and KORTFÄLT for short single-line slots", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
+    await buildGenericProseSlideSections(
+      [
+        { placeholder: "{Prosa}", intent: "p", budgetChars: 110 },
+        { placeholder: "{Chip}", intent: "c", budgetChars: 60, singleLine: true },
+      ],
+      baseCtx,
+    );
+
+    const system = vi.mocked(callClaude).mock.calls[0][0].system;
+    const proseLine = system.split("\n").find((l) => l.includes("{Prosa}"))!;
+    const chipLine = system.split("\n").find((l) => l.includes("{Chip}"))!;
+    expect(proseLine).toContain("håll dig inom ca 110 tecken");
+    expect(proseLine).not.toContain("EN RAD");
+    // A short single-line slot is a chip — the value-or-empty rule already
+    // covers it; the EN RAD phrasing is for wide prose-classed kickers only.
+    expect(chipLine).toContain("KORTFÄLT");
+    expect(chipLine).not.toContain("EN RAD");
+  });
+
   it("re-ask prompt carries the value-or-empty rule for short fields", async () => {
     vi.mocked(callClaude).mockResolvedValue({ sections: [] });
     await buildGenericProseReaskSections(

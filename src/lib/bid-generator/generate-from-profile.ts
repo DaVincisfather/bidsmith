@@ -126,6 +126,7 @@ export async function generateSectionsFromProfile(
         placeholder: slot.placeholder,
         intent: slot.intent,
         ...(budget !== undefined ? { budgetChars: budget } : {}),
+        ...(slot.singleLine ? { singleLine: true } : {}),
       });
     }
     if (slots.length === 0) continue;

@@ -58,6 +58,9 @@ export interface GenericProseSlot {
   intent: string;
   /** Character budget from the slot geometry, when known. */
   budgetChars?: number;
+  /** The box holds exactly one line (a kicker): the prompt states the budget
+   *  as a hard cap, and generation enforces it mechanically after the fact. */
+  singleLine?: boolean;
 }
 
 export { SHORT_FIELD_MAX_CHARS };
@@ -130,6 +133,12 @@ function slotLine(s: GenericProseSlot, suffix = ""): string {
   const intent = s.intent || "(ej angivet — härled från platshållaren och kontexten)";
   if (isShortField(s)) {
     return `- "${s.placeholder}"${suffix}: ${intent} — KORTFÄLT (max ${s.budgetChars} tecken): skriv ENDAST värdet (t.ex. ett namn, datum eller nummer), ALDRIG meningar eller förklaringar. Saknas uppgiften i underlaget: lämna tomt ("").`;
+  }
+  // A wide single-line kicker: any wrap overflows, so the budget is a hard cap
+  // — the soft "ca"-ask reads as negotiable and the model overshoots ~1.1-1.25x
+  // (overflow-loop finding, notes/2026-07-16-overflow-loop-slutrapport.md).
+  if (s.singleLine && s.budgetChars) {
+    return `- "${s.placeholder}"${suffix}: ${intent} — EN RAD (hård gräns, max ${s.budgetChars} tecken): en kort kärnfras utan radbrytning; överskrid ALDRIG ${s.budgetChars} tecken.`;
   }
   const budget = s.budgetChars ? ` (håll dig inom ca ${s.budgetChars} tecken)` : "";
   return `- "${s.placeholder}"${suffix}: ${intent}${budget}`;
