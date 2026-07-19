@@ -1,11 +1,16 @@
 import Automizer from "pptx-automizer";
 import type { ISlide } from "pptx-automizer/dist/interfaces/islide";
 import path from "path";
+import { readFile } from "fs/promises";
 import type { BidSection } from "../types";
 import type { LoadedTemplate } from "./template-store";
 import type { ApplicatorContext, MasterContext } from "./types";
 import type { ProseVariant } from "./manifest-types";
 import type { CapabilityId, SlideProfile, TemplateProfile } from "./template-profile";
+import { readPptxSlides } from "./introspect/read-pptx";
+import { readSlideSize } from "./onboarding/slide-size";
+import { packRows, BOTTOM_MARGIN_EMU } from "./foreign-table-pagination";
+import { foreignTableApplicator } from "./applicators/foreign-table";
 import { coverApplicator } from "./applicators/cover";
 import { tocApplicator } from "./applicators/toc";
 import { proseApplicator } from "./applicators/prose";
@@ -57,20 +62,40 @@ export async function renderFromProfile(
 
   const pres = automizer.loadRoot(templateFile).load(templateFile, "main");
 
+  // Foreign a:tbl requirement-matrix slides paginate by CLONING the slide, once
+  // per page computed from the customer's table geometry. Read the template's
+  // tables + slide size ONCE up front (async, off the sync clone helpers) and
+  // key the resulting per-slide page windows by source slide number.
+  const tablePages = await computeTablePages(tpl, profile, sections);
+
   let outIdx = 0;
-  const totalSlides = countProfileOutputSlides(profile, sections);
+  const totalSlides = countProfileOutputSlides(profile, sections, tablePages);
 
   for (const slide of profile.slides) {
     // Clone slides render once per item in the driving capability's data array;
     // non-clone slides render once (cloneItems null → cloneIndex undefined).
-    const cloneItems = cloneItemsFor(slide, sections);
+    const cloneItems = cloneItemsFor(slide, sections, tablePages);
     const count = cloneItems ? cloneItems.length : 1;
     for (let i = 0; i < count; i++) {
       outIdx++;
       const cloneIndex = cloneItems ? i : undefined;
+      // A foreign-table slide's clone data is its page's row-index chunk; pass
+      // it through so the applicator fills exactly this page's requirements.
+      const tableRowIndices =
+        isTableMapSlide(slide) && cloneItems
+          ? (cloneItems[i] as number[])
+          : undefined;
       const cb = applicatorForCapability(
         slide,
-        ctxFor(slide, sections, master, outIdx, totalSlides, cloneIndex),
+        ctxFor(
+          slide,
+          sections,
+          master,
+          outIdx,
+          totalSlides,
+          cloneIndex,
+          tableRowIndices,
+        ),
       );
       pres.addSlide("main", slide.source, cb);
     }
@@ -80,6 +105,73 @@ export async function renderFromProfile(
   return streamToBuffer(stream);
 }
 
+/** True for a foreign requirement-matrix slide backed by a mapped a:tbl table. */
+function isTableMapSlide(slide: SlideProfile): boolean {
+  return slide.capability === "requirement-matrix" && slide.tableMap !== undefined;
+}
+
+/**
+ * Per-source-slide page windows for every foreign-table slide in the profile:
+ * packRows over the requirement-matrix rows, driven by each mapped table's
+ * measured geometry (col widths, row heights, table top) + the slide height.
+ * Empty when the profile has no mapped table (OUR template), so nothing changes
+ * on the golden path. Read once — the template file is opened a single time.
+ */
+async function computeTablePages(
+  tpl: Pick<LoadedTemplate, "manifest" | "templateFile">,
+  profile: TemplateProfile,
+  sections: BidSection[],
+): Promise<Map<number, number[][]>> {
+  const map = new Map<number, number[][]>();
+  const tableSlides = profile.slides.filter(isTableMapSlide);
+  if (tableSlides.length === 0) return map;
+
+  const buffer = await readFile(tpl.templateFile);
+  const templateSlides = await readPptxSlides(buffer);
+  const { cy: slideHeightEmu } = await readSlideSize(buffer);
+
+  const rows = matrixRequirementRows(sections);
+  const kravRows = rows.map((r) => ({ kravText: r.requirement }));
+
+  for (const slide of tableSlides) {
+    const tm = slide.tableMap!;
+    const source = templateSlides.find((s) => s.source === slide.source);
+    const table = source?.tables[tm.frameIndex];
+    if (!table) {
+      // Geometry unreadable → one page holding all rows (still no drop).
+      map.set(slide.source, rows.length > 0 ? [rows.map((_, i) => i)] : [[]]);
+      continue;
+    }
+    const kravColIndex = tm.columns.indexOf("krav");
+    const pages = packRows(kravRows, {
+      slideHeightEmu,
+      tableTopEmu: table.geometry?.yEmu ?? 0,
+      headerHeightsEmu: table.rows
+        .slice(0, tm.headerRows)
+        .map((r) => r.heightEmu),
+      templateRowHeightEmu: table.rows[tm.templateRowIndex]?.heightEmu ?? 0,
+      kravColWidthEmu:
+        kravColIndex >= 0 ? (table.gridColsEmu[kravColIndex] ?? 0) : 0,
+      fontSizePt: null,
+      bottomMarginEmu: BOTTOM_MARGIN_EMU,
+    });
+    map.set(slide.source, pages);
+  }
+  return map;
+}
+
+/** The requirement-matrix-v2 section's rows, or [] when absent. */
+function matrixRequirementRows(
+  sections: BidSection[],
+): { requirement: string }[] {
+  const sec = sections.find(
+    (s) => s.content?.format === "requirement-matrix-v2",
+  );
+  return sec && sec.content?.format === "requirement-matrix-v2"
+    ? sec.content.rows
+    : [];
+}
+
 function ctxFor(
   slide: SlideProfile,
   sections: BidSection[],
@@ -87,6 +179,7 @@ function ctxFor(
   slideNum: number,
   totalSlides: number,
   cloneIndex?: number,
+  tableRowIndices?: number[],
 ): ApplicatorContext {
   return {
     sections,
@@ -95,6 +188,7 @@ function ctxFor(
     totalSlides,
     sourceSlide: slide.source,
     ...(cloneIndex !== undefined ? { cloneIndex } : {}),
+    ...(tableRowIndices !== undefined ? { tableRowIndices } : {}),
     // Profile carries the variant as a free-form string (general templates);
     // our prose applicator narrows it to the ProseVariant enum.
     ...(slide.variant ? { variant: slide.variant as ProseVariant } : {}),
@@ -105,7 +199,15 @@ function ctxFor(
 function cloneItemsFor(
   slide: SlideProfile,
   sections: BidSection[],
+  tablePages: Map<number, number[][]>,
 ): unknown[] | null {
+  // Foreign a:tbl matrix slide: one clone per page (row-index chunk). Checked
+  // before cloneFrom — these slides carry no cloneFrom (the table IS the
+  // content), and their page count comes from the table geometry, not a data
+  // array. Always ≥ 1 page so the slide never vanishes.
+  if (isTableMapSlide(slide)) {
+    return tablePages.get(slide.source) ?? [[]];
+  }
   if (!slide.cloneFrom) return null;
   const key = CLONE_CAPABILITY_TO_KEY[slide.cloneFrom];
   if (!key) {
@@ -121,10 +223,11 @@ function cloneItemsFor(
 function countProfileOutputSlides(
   profile: TemplateProfile,
   sections: BidSection[],
+  tablePages: Map<number, number[][]>,
 ): number {
   let n = 0;
   for (const slide of profile.slides) {
-    const cloneItems = cloneItemsFor(slide, sections);
+    const cloneItems = cloneItemsFor(slide, sections, tablePages);
     n += cloneItems ? cloneItems.length : 1;
   }
   return n;
@@ -156,7 +259,11 @@ export function applicatorForCapability(
     case "team-pricing":
       return teamPricingApplicator(ctx);
     case "requirement-matrix":
-      return requirementMatrixApplicator(ctx);
+      // A mapped foreign a:tbl table → the row engine; our own template's
+      // stack-of-boxes matrix (no tableMap) keeps the existing applicator.
+      return slide.tableMap
+        ? foreignTableApplicator(ctx, slide)
+        : requirementMatrixApplicator(ctx);
     case "references":
       return referenceApplicator(ctx);
     case "secrecy":
