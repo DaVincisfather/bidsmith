@@ -75,9 +75,11 @@ export async function GET() {
     .map((a) => {
       const analysis = a.analysis as RfpAnalysis;
       const deadline = analysis.deadline;
-      if (!deadline) return null;
-      const daysLeft = daysUntil(deadline);
-      if (daysLeft < 0) return null;
+      // BUG-B: a deadline-less analysis is still actionable — include it
+      // (sorted last, "deadline saknas" in the rail). Only a PASSED deadline
+      // drops the item from the pipe; /arbetsyta/analyser owns the history.
+      const daysLeft = deadline ? daysUntil(deadline) : null;
+      if (daysLeft !== null && daysLeft < 0) return null;
       const title =
         analysis.title ??
         ((a.documents as unknown as { file_name: string })?.file_name ?? "Namnlös RFP");
@@ -85,9 +87,9 @@ export async function GET() {
         id: a.id as string,
         source: "upload",
         title,
-        deadline,
+        deadline: deadline ?? null,
         daysLeft,
-        urgency: calculateUrgency(daysLeft),
+        urgency: daysLeft === null ? "later" : calculateUrgency(daysLeft),
         relevanceScore: null,
         analysisId: a.id as string,
         tedUrl: null,

@@ -59,6 +59,17 @@ describe("sortPipelineItems", () => {
     const sorted = sortPipelineItems(items);
     expect(sorted.map((i) => i.id)).toEqual(["b", "c", "a"]);
   });
+
+  it("sorts deadline-less items LAST (BUG-B: included but not time-pressed)", () => {
+    const noDeadline: PipelineItem = {
+      ...base(0, "u"),
+      deadline: null,
+      daysLeft: null,
+      urgency: "later",
+    };
+    const sorted = sortPipelineItems([noDeadline, base(20, "a"), base(5, "b")]);
+    expect(sorted.map((i) => i.id)).toEqual(["b", "a", "u"]);
+  });
 });
 
 describe("sortBidSummaries", () => {

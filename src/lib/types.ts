@@ -334,8 +334,10 @@ export interface PipelineItem {
   id: string;                     // opportunityId OR documentId
   source: "ted" | "upload";
   title: string;
-  deadline: string;               // ISO date
-  daysLeft: number;
+  /** ISO date; null when the analysis carries no extractable deadline (BUG-B:
+   *  deadline-less analyses must still surface in the pipe, sorted last). */
+  deadline: string | null;
+  daysLeft: number | null;
   urgency: Urgency;
   relevanceScore: number | null;  // TED only
   analysisId: string | null;      // exists once analyzed (upload always, TED after analyze)

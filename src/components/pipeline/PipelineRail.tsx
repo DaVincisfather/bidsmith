@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import type { PipelineItem, BidSummary, PipelineStats } from "@/lib/types";
 import { PipelineRow } from "./PipelineRow";
 import { SubmittedRow } from "./SubmittedRow";
@@ -43,6 +44,11 @@ export function PipelineRail() {
       {pipeItems?.map((item) => (
         <PipelineRow key={item.id} item={item} />
       ))}
+      {/* BUG-B: the pipe hides passed deadlines by design — this is the
+          permanent path back to EVERY analysis, one click away. */}
+      <Link href="/arbetsyta/analyser" className="block text-xs text-ink-mute underline mt-2 hover:no-underline">
+        Alla analyser →
+      </Link>
 
       <h3 className="text-[10px] font-bold uppercase tracking-wider text-ink-mute mt-6 mb-2">
         Inlämnade {stats && `· ${stats.awaitingCount + stats.loggedCount} anbud`}
