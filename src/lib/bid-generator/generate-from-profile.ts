@@ -5,7 +5,7 @@ import {
   buildGenericProseSlideSections,
   buildGenericProseReaskSections,
   buildGenericProseShortenSections,
-  isShortField,
+  isEnforceableKicker,
   type GenericProseSlot,
   type GenericProseReaskTarget,
   type GenericProseShortenTarget,
@@ -52,6 +52,16 @@ interface CallJob {
   source: number;
   slots: GenericProseSlot[];
   siblings: GenericProseSlot[];
+}
+
+// ≤MAX_KEYS_PER_CALL chunks for the batch waves (re-ask, shorten) — both gather
+// targets across the whole deck, so both must key-chunk before calling.
+function chunkByCallCeiling<T>(items: T[]): T[][] {
+  const chunks: T[][] = [];
+  for (let k = 0; k < items.length; k += MAX_KEYS_PER_CALL) {
+    chunks.push(items.slice(k, k + MAX_KEYS_PER_CALL));
+  }
+  return chunks;
 }
 
 // Runs `run` over `items` in waves of SLIDE_CONCURRENCY under Promise.allSettled,
@@ -196,10 +206,7 @@ export async function generateSectionsFromProfile(
   // fills what it can; a slot still empty afterwards — or a whole chunk's slots
   // if that call rejects — becomes a failedSection, never touching wave-1 sections.
   if (reaskTargets.length > 0) {
-    const reaskChunks: GenericProseReaskTarget[][] = [];
-    for (let k = 0; k < reaskTargets.length; k += MAX_KEYS_PER_CALL) {
-      reaskChunks.push(reaskTargets.slice(k, k + MAX_KEYS_PER_CALL));
-    }
+    const reaskChunks = chunkByCallCeiling(reaskTargets);
     const reaskResults = await runInWaves(reaskChunks.length, (idx) =>
       buildGenericProseReaskSections(reaskChunks[idx], ctx),
     );
@@ -233,33 +240,24 @@ export async function generateSectionsFromProfile(
   // shorten pass. Short fields are excluded (value-or-empty rule owns them).
   // Merge is shorter-wins: a blank/longer/rejected answer keeps the wave text,
   // and this pass NEVER records failedSections — worst case is today's output.
-  const enforceable = new Map<string, GenericProseSlot>();
-  for (const job of jobs) {
-    for (const slot of job.slots) {
-      if (slot.singleLine && slot.budgetChars !== undefined && !isShortField(slot)) {
-        enforceable.set(slot.placeholder, slot);
-      }
-    }
-  }
   const sectionIndex = new Map<string, number>();
   sections.forEach((s, i) => {
     if (s.content?.format === "generic-prose") sectionIndex.set(s.content.placeholder, i);
   });
   const shortenTargets: GenericProseShortenTarget[] = [];
-  for (const [placeholder, slot] of enforceable) {
-    const idx = sectionIndex.get(placeholder);
-    if (idx === undefined) continue;
-    const content = sections[idx].content;
-    if (content?.format !== "generic-prose") continue;
-    if (content.text.length > slot.budgetChars!) {
-      shortenTargets.push({ slot, currentText: content.text });
+  for (const job of jobs) {
+    for (const slot of job.slots) {
+      if (!isEnforceableKicker(slot)) continue;
+      const idx = sectionIndex.get(slot.placeholder);
+      if (idx === undefined) continue;
+      const content = sections[idx].content;
+      if (content?.format === "generic-prose" && content.text.length > slot.budgetChars) {
+        shortenTargets.push({ slot, currentText: content.text });
+      }
     }
   }
   if (shortenTargets.length > 0) {
-    const shortenChunks: GenericProseShortenTarget[][] = [];
-    for (let k = 0; k < shortenTargets.length; k += MAX_KEYS_PER_CALL) {
-      shortenChunks.push(shortenTargets.slice(k, k + MAX_KEYS_PER_CALL));
-    }
+    const shortenChunks = chunkByCallCeiling(shortenTargets);
     const shortenResults = await runInWaves(shortenChunks.length, (idx) =>
       buildGenericProseShortenSections(shortenChunks[idx], ctx),
     );

@@ -13,6 +13,7 @@ import {
   buildGenericProseSection,
   buildGenericProseSlideSections,
   buildGenericProseReaskSections,
+  buildGenericProseShortenSections,
   GenericProseBundleSchema,
   type GenericProseSlot,
 } from "../bundles/generic-prose";
@@ -223,6 +224,21 @@ describe("MAX_KEYS_PER_CALL guard", () => {
     vi.mocked(callClaude).mockResolvedValue({ sections: [] });
     const targets = slotsOf(MAX_KEYS_PER_CALL).map((slot) => ({ slot, slideSource: 1 }));
     await expect(buildGenericProseReaskSections(targets, baseCtx)).resolves.toEqual([]);
+    expect(vi.mocked(callClaude)).toHaveBeenCalledTimes(1);
+  });
+
+  it("buildGenericProseShortenSections throws on >MAX_KEYS_PER_CALL targets without calling the API", async () => {
+    const targets = slotsOf(MAX_KEYS_PER_CALL + 1).map((slot) => ({ slot, currentText: "x" }));
+    await expect(buildGenericProseShortenSections(targets, baseCtx)).rejects.toThrow(
+      /MAX_KEYS_PER_CALL/,
+    );
+    expect(vi.mocked(callClaude)).not.toHaveBeenCalled();
+  });
+
+  it("buildGenericProseShortenSections accepts exactly MAX_KEYS_PER_CALL targets", async () => {
+    vi.mocked(callClaude).mockResolvedValue({ sections: [] });
+    const targets = slotsOf(MAX_KEYS_PER_CALL).map((slot) => ({ slot, currentText: "x" }));
+    await expect(buildGenericProseShortenSections(targets, baseCtx)).resolves.toEqual([]);
     expect(vi.mocked(callClaude)).toHaveBeenCalledTimes(1);
   });
 });

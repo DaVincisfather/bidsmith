@@ -136,24 +136,36 @@ export function buildSlotResult(
   };
 }
 
-/** Immutable budget patch: results keyed by placeholder, skip-slots untouched.
- *  Also persists the single-line fact (true written, false strips any stale
- *  flag) — generation needs it to enforce kicker slots. */
-export function applyBudgets(profile: TemplateProfile, results: SlotResult[]): TemplateProfile {
-  const byToken = new Map(results.map((r) => [r.token, r]));
+/** Immutable slide/slot walker shared by the profile patchers below. */
+function mapSlots(
+  profile: TemplateProfile,
+  patch: (slot: SlotProfile) => SlotProfile,
+): TemplateProfile {
   return {
     ...profile,
-    slides: profile.slides.map((slide) => ({
-      ...slide,
-      slots: slide.slots.map((slot) => {
-        const result = byToken.get(slot.placeholder);
-        if (result === undefined) return slot;
-        const patched: SlotProfile = { ...slot, budgetChars: result.budget, singleLine: true };
-        if (!result.singleLine) delete patched.singleLine;
-        return patched;
-      }),
-    })),
+    slides: profile.slides.map((slide) => ({ ...slide, slots: slide.slots.map(patch) })),
   };
+}
+
+/** The ONE home for the flag representation: true written, false strips the
+ *  key (never an explicit false) — both writers must agree or profiles diverge
+ *  by which tool last touched them. */
+function setSingleLine(slot: SlotProfile, on: boolean): SlotProfile {
+  const patched: SlotProfile = { ...slot, singleLine: true };
+  if (!on) delete patched.singleLine;
+  return patched;
+}
+
+/** Immutable budget patch: results keyed by placeholder, skip-slots untouched.
+ *  Also persists the single-line fact — generation needs it to enforce kicker
+ *  slots. */
+export function applyBudgets(profile: TemplateProfile, results: SlotResult[]): TemplateProfile {
+  const byToken = new Map(results.map((r) => [r.token, r]));
+  return mapSlots(profile, (slot) => {
+    const result = byToken.get(slot.placeholder);
+    if (result === undefined) return slot;
+    return setSingleLine({ ...slot, budgetChars: result.budget }, result.singleLine);
+  });
 }
 
 /** Immutable single-line patch for the backfill path: sets/strips ONLY the
@@ -164,19 +176,10 @@ export function applySingleLineFlags(
   targets: CalibrationTarget[],
 ): TemplateProfile {
   const byToken = new Map(targets.map((t) => [t.token, t.singleLine]));
-  return {
-    ...profile,
-    slides: profile.slides.map((slide) => ({
-      ...slide,
-      slots: slide.slots.map((slot) => {
-        const singleLine = byToken.get(slot.placeholder);
-        if (singleLine === undefined) return slot;
-        const patched: SlotProfile = { ...slot, singleLine: true };
-        if (!singleLine) delete patched.singleLine;
-        return patched;
-      }),
-    })),
-  };
+  return mapSlots(profile, (slot) => {
+    const singleLine = byToken.get(slot.placeholder);
+    return singleLine === undefined ? slot : setSingleLine(slot, singleLine);
+  });
 }
 
 export async function calibrateTemplate(
