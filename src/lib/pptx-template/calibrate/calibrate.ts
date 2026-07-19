@@ -7,7 +7,7 @@ import { loadTemplate } from "../template-store";
 import { loadTemplateProfile, saveTemplateProfile } from "../profile-store";
 import { renderFromProfile } from "../render-from-profile";
 import { readPptxSlides } from "../introspect/read-pptx";
-import type { TemplateProfile } from "../template-profile";
+import type { SlotProfile, TemplateProfile } from "../template-profile";
 import { fillText } from "./test-prose";
 import { planTargets, type CalibrationTarget } from "./plan-targets";
 import { finalBudget, initState, step, type SearchState } from "./binary-search";
@@ -148,12 +148,9 @@ export function applyBudgets(profile: TemplateProfile, results: SlotResult[]): T
       slots: slide.slots.map((slot) => {
         const result = byToken.get(slot.placeholder);
         if (result === undefined) return slot;
-        const { singleLine: _stale, ...rest } = slot;
-        return {
-          ...rest,
-          budgetChars: result.budget,
-          ...(result.singleLine ? { singleLine: true } : {}),
-        };
+        const patched: SlotProfile = { ...slot, budgetChars: result.budget, singleLine: true };
+        if (!result.singleLine) delete patched.singleLine;
+        return patched;
       }),
     })),
   };
@@ -174,8 +171,9 @@ export function applySingleLineFlags(
       slots: slide.slots.map((slot) => {
         const singleLine = byToken.get(slot.placeholder);
         if (singleLine === undefined) return slot;
-        const { singleLine: _stale, ...rest } = slot;
-        return { ...rest, ...(singleLine ? { singleLine: true } : {}) };
+        const patched: SlotProfile = { ...slot, singleLine: true };
+        if (!singleLine) delete patched.singleLine;
+        return patched;
       }),
     })),
   };

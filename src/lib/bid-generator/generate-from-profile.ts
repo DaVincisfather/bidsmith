@@ -4,8 +4,11 @@ import {
   MAX_KEYS_PER_CALL,
   buildGenericProseSlideSections,
   buildGenericProseReaskSections,
+  buildGenericProseShortenSections,
+  isShortField,
   type GenericProseSlot,
   type GenericProseReaskTarget,
+  type GenericProseShortenTarget,
 } from "./bundles/generic-prose";
 import type { BidContext } from "./context";
 import { effectiveBudget } from "./budget-rules";
@@ -220,6 +223,61 @@ export async function generateSectionsFromProfile(
         for (const { slot } of targets) {
           failedSections.push({ placeholder: slot.placeholder, error: message });
         }
+      }
+    });
+  }
+
+  // Kicker-enforcement (design 2026-07-19): single-line prose slots whose text
+  // exceeds the SCALED ask (the number the prompt asked for — 129 chars within
+  // raw budget 140 still wrapped, smoke 2/slide 11) get ONE batched mechanical
+  // shorten pass. Short fields are excluded (value-or-empty rule owns them).
+  // Merge is shorter-wins: a blank/longer/rejected answer keeps the wave text,
+  // and this pass NEVER records failedSections — worst case is today's output.
+  const enforceable = new Map<string, GenericProseSlot>();
+  for (const job of jobs) {
+    for (const slot of job.slots) {
+      if (slot.singleLine && slot.budgetChars !== undefined && !isShortField(slot)) {
+        enforceable.set(slot.placeholder, slot);
+      }
+    }
+  }
+  const sectionIndex = new Map<string, number>();
+  sections.forEach((s, i) => {
+    if (s.content?.format === "generic-prose") sectionIndex.set(s.content.placeholder, i);
+  });
+  const shortenTargets: GenericProseShortenTarget[] = [];
+  for (const [placeholder, slot] of enforceable) {
+    const idx = sectionIndex.get(placeholder);
+    if (idx === undefined) continue;
+    const content = sections[idx].content;
+    if (content?.format !== "generic-prose") continue;
+    if (content.text.length > slot.budgetChars!) {
+      shortenTargets.push({ slot, currentText: content.text });
+    }
+  }
+  if (shortenTargets.length > 0) {
+    const shortenChunks: GenericProseShortenTarget[][] = [];
+    for (let k = 0; k < shortenTargets.length; k += MAX_KEYS_PER_CALL) {
+      shortenChunks.push(shortenTargets.slice(k, k + MAX_KEYS_PER_CALL));
+    }
+    const shortenResults = await runInWaves(shortenChunks.length, (idx) =>
+      buildGenericProseShortenSections(shortenChunks[idx], ctx),
+    );
+    shortenResults.forEach((result) => {
+      // Rejected shorten chunk → keep the wave text for its slots, silently.
+      if (result.status !== "fulfilled") return;
+      for (const shortened of result.value) {
+        if (shortened.content?.format !== "generic-prose") continue;
+        const idx = sectionIndex.get(shortened.content.placeholder);
+        if (idx === undefined) continue;
+        const current = sections[idx].content;
+        if (current?.format !== "generic-prose") continue;
+        const newText = shortened.content.text;
+        if (newText.trim().length === 0 || newText.length >= current.text.length) continue;
+        sections[idx] = {
+          ...sections[idx],
+          content: { ...current, text: newText },
+        };
       }
     });
   }

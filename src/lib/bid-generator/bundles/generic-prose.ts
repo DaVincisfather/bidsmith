@@ -447,3 +447,83 @@ export async function buildGenericProseReaskSections(
     targets.map((t) => t.slot),
   );
 }
+
+/** A single-line (kicker) slot whose wave text exceeded the scaled ask, carried
+ *  into the mechanical shorten pass with the text to compress. The slot's
+ *  budgetChars is the SCALED ask (effectiveBudget) — the hard cap. */
+export interface GenericProseShortenTarget {
+  slot: GenericProseSlot;
+  currentText: string;
+}
+
+// System prompt for the batched SHORTEN pass (kicker-enforcement, design
+// 2026-07-19): every listed slot is a single-line box whose text wraps — the
+// task is compression of the given text, not new writing. Hard cap at the
+// scaled ask; whole phrases only (same no-mid-sentence rule as shorten-field);
+// no new facts — the wave text is the only source.
+function shortenSystemPrompt(targets: GenericProseShortenTarget[]): string {
+  const slotLines = targets
+    .map(
+      (t) =>
+        `${slotLine(t.slot)}\n  NUVARANDE TEXT (${t.currentText.length} tecken — för lång): ${t.currentText}`,
+    )
+    .join("\n");
+  const jsonLines = targets
+    .map(
+      (t) =>
+        `    { "placeholder": "${t.slot.placeholder}", "text": "komprimerad enradstext inom maxgränsen" }`,
+    )
+    .join(",\n");
+  return `Följande enradsrubriker i ett svenskt konsultanbud är för långa för sina textrutor —
+texten radbryts och trycks utanför rutan. Komprimera VARJE text till högst sitt angivna
+maxantal tecken. Behåll kärnbudskapet, stryk hellre bisatser och utfyllnad. Hela fraser —
+hugg aldrig av mitt i en mening. Inga nya fakta: texten nedan är enda källan.
+
+Rubriker att korta:
+${slotLines}
+
+Svara med giltig JSON. Fältet "sections" ska ha EXAKT ett element per rubrik ovan — inga extra,
+inga utelämnade — och varje "placeholder" ska vara EXAKT som angiven (inklusive klamrar):
+{
+  "sections": [
+${jsonLines}
+  ]
+}`;
+}
+
+/**
+ * Batched mechanical SHORTEN for single-line slots over the scaled ask (kicker-
+ * enforcement). Same fixed schema, chunk ceiling, and response→section mapping
+ * as the other batch calls, under its own cost label. Returns sections only for
+ * placeholders answered non-blank — the caller applies its merge policy
+ * (shorter-wins, originals kept otherwise) and NEVER records failures from this
+ * pass: a rejected call degrades to keeping the wave text.
+ */
+export async function buildGenericProseShortenSections(
+  targets: GenericProseShortenTarget[],
+  ctx: BidContext,
+): Promise<BidSection[]> {
+  if (targets.length > MAX_KEYS_PER_CALL) {
+    throw new Error(
+      `buildGenericProseShortenSections: ${targets.length} targets > MAX_KEYS_PER_CALL (${MAX_KEYS_PER_CALL}) — chunka anropet; ett anrop med för många fält späder ut modellens uppmärksamhet och sväller prompten`,
+    );
+  }
+
+  const parsed = await callClaude({
+    model: MODELS.writingGeneric,
+    maxTokens: 32000,
+    system: shortenSystemPrompt(targets),
+    cachedContext: formatContext(ctx),
+    userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
+    schema: GenericProseSectionsSchema,
+    label: "generic-prose shorten",
+    effort: "high",
+    userId: ctx.userId,
+    bidId: ctx.bidId,
+  });
+
+  return sectionsFromRecord(
+    recordFromSections(parsed),
+    targets.map((t) => t.slot),
+  );
+}
