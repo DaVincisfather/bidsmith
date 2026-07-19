@@ -11,16 +11,10 @@ import { isShortBudget, SHORT_FIELD_MAX_CHARS } from "../short-field";
  * `intent` + the bid context + an optional character budget, it writes source-
  * faithful prose. This is what makes arbitrary uploaded templates renderable:
  * known sections keep their specialised bundles; everything else falls here.
- *
- * Isolated mechanism only — NOT yet wired into generateAllSections. The
- * orchestrator becomes profile-aware once onboarding produces a real foreign
- * profile to drive it (slice 5). See
+ * The generate-from-profile orchestrator drives this via the batched
+ * slide/re-ask/shorten calls below. See
  * notes/2026-07-02-template-upload-architecture.md.
  */
-
-export const GenericProseBundleSchema = z.object({
-  text: z.string().min(1),
-});
 
 // FAST schema for the batch (slide + re-ask) calls — one array element per
 // placeholder, NOT one dynamic object key per placeholder. Live measurements
@@ -94,22 +88,6 @@ ETT STYCKE (HÅRD REGEL):
 Varje sektion skrivs som ETT sammanhängande stycke — inga radbrytningar, inga tomma rader,
 inga punktlistor. Textrutorna är kalibrerade för löpande text: varje radbrytning kostar
 höjd som inte finns och trycker texten utanför rutan.`;
-
-function systemPrompt(slot: GenericProseSlot): string {
-  const budgetLine = slot.budgetChars
-    ? `\nLÄNGD: håll dig inom ca ${slot.budgetChars} tecken. Hellre kortare och korrekt än utfyllt.`
-    : "";
-  return `Du skriver en sektion till ett svenskt konsultanbud.
-
-Sektionens syfte: ${slot.intent || "(ej angivet — härled från platshållaren och kontexten)"}.
-
-${PROSE_VOICE}${budgetLine}
-
-Svara med giltig JSON:
-{
-  "text": "sammanhängande prosa i ETT stycke, utan radbrytningar"
-}`;
-}
 
 // Max placeholders per batch call. The fixed sections-array schema removed the
 // grammar-compilation ceiling that dynamic per-slot keys hit (see
@@ -210,41 +188,6 @@ inga utelämnade — och varje "placeholder" ska vara EXAKT som angiven (inklusi
 ${jsonLines}
   ]
 }`;
-}
-
-export async function buildGenericProseSection(
-  slot: GenericProseSlot,
-  ctx: BidContext,
-): Promise<BidSection> {
-  const parsed = await callClaude({
-    // Egen roll (inte MODELS.writing): fallbacken kör Sonnet 5 — en främmande
-    // mall kan ha 30+ okända slots per anbud, Opus-pris där bärs av användaren.
-    model: MODELS.writingGeneric,
-    maxTokens: 32000,
-    system: systemPrompt(slot),
-    cachedContext: formatContext(ctx),
-    userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
-    schema: GenericProseBundleSchema,
-    label: "generic-prose bundle",
-    // "high", inte "max": fallback-prosa på Sonnet 5 — max är benäget till
-    // overthinking, och vid 30+ okända slots per anbud är det reell
-    // användarkostnad (routine-review #53).
-    effort: "high",
-    userId: ctx.userId,
-    bidId: ctx.bidId,
-  });
-
-  return {
-    type: "ai",
-    key: `generic-prose:${slot.placeholder}`,
-    title: slot.intent || slot.placeholder,
-    content: {
-      format: "generic-prose",
-      placeholder: slot.placeholder,
-      text: parsed.text,
-    },
-    generatedAt: new Date().toISOString(),
-  };
 }
 
 /**

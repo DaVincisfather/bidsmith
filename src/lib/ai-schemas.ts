@@ -164,23 +164,6 @@ export const GoNoGoAiResponseSchema = GoNoGoResultSchema.extend({
   ),
 });
 
-// --- Bid Generator: phases schema (v2) ---
-
-export const PhasesV2Schema = z.object({
-  phases: z.array(
-    z.object({
-      name: z.string(),
-      objective: z.string(),
-      activities: z.array(z.string()),
-      deliverables: z.array(z.string()),
-      duration: z.string(),
-      risks: z.array(z.string()).optional(),
-      hoursEstimate: z.number().optional(),
-      period: z.string().optional(),
-    })
-  ),
-});
-
 // --- Consultant Extractor ---
 
 export const ConsultantExtractionSchema = z.object({
