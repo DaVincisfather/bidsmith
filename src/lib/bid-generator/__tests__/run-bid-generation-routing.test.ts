@@ -15,6 +15,9 @@ vi.mock("@/lib/bid-generator", () => ({
 vi.mock("../generate-from-profile", () => ({
   generateSectionsFromProfile: vi.fn(),
 }));
+vi.mock("../bundles/requirement-matrix", () => ({
+  buildRequirementMatrixBundle: vi.fn(),
+}));
 const loadTemplateProfile = vi.fn();
 vi.mock("@/lib/pptx-template/profile-store", () => ({
   loadTemplateProfile: (...a: unknown[]) => loadTemplateProfile(...a),
@@ -22,6 +25,7 @@ vi.mock("@/lib/pptx-template/profile-store", () => ({
 
 import { generateAllSections } from "@/lib/bid-generator";
 import { generateSectionsFromProfile } from "../generate-from-profile";
+import { buildRequirementMatrixBundle } from "../bundles/requirement-matrix";
 import { runBidGeneration } from "../run-bid-generation";
 
 const template = { id: "tpl-1", manifest: {} as unknown as TemplateManifest };
@@ -47,6 +51,16 @@ function mockSection(placeholder: string): BidSection {
     key: `generic-prose:${placeholder}`,
     title: placeholder,
     content: { format: "generic-prose", placeholder, text: "x" },
+    generatedAt: "2026-07-04",
+  };
+}
+
+function mockMatrixSection(): BidSection {
+  return {
+    type: "ai",
+    key: "requirement-matrix-v2",
+    title: "Kravmatris",
+    content: { format: "requirement-matrix-v2", rows: [] },
     generatedAt: "2026-07-04",
   };
 }
@@ -83,6 +97,29 @@ const allGenericProfile: TemplateProfile = {
   ],
 };
 
+const foreignWithTableMapProfile: TemplateProfile = {
+  profileVersion: 1,
+  templateId: "tpl-1",
+  name: "kundmall med tabell",
+  version: 1,
+  slides: [
+    { source: 1, capability: "static", slots: [] },
+    {
+      source: 2,
+      capability: "generic-prose",
+      slots: [
+        { placeholder: "{A}", capability: "generic-prose", format: "prose", intent: "i", status: "generic" },
+      ],
+    },
+    {
+      source: 3,
+      capability: "requirement-matrix",
+      slots: [],
+      tableMap: { frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: ["krav", "uppfyllnad"] },
+    },
+  ],
+};
+
 const mixedProfile: TemplateProfile = {
   profileVersion: 1,
   templateId: "tpl-1",
@@ -103,6 +140,7 @@ const mixedProfile: TemplateProfile = {
 beforeEach(() => {
   vi.mocked(generateAllSections).mockReset();
   vi.mocked(generateSectionsFromProfile).mockReset();
+  vi.mocked(buildRequirementMatrixBundle).mockReset();
   loadTemplateProfile.mockReset();
 });
 
@@ -191,5 +229,75 @@ describe("runBidGeneration routing", () => {
     expect(final.status).toBe("draft");
     expect(final.failed_bundles).toEqual([{ placeholder: "{B}", error: "boom" }]);
     expect(final.overflow_flags).toEqual([]);
+  });
+
+  it("does not run the requirement-matrix bundle for a foreign profile without a mapped table", async () => {
+    const { client, updates } = createSupabaseStub();
+    loadTemplateProfile.mockResolvedValue(allGenericProfile);
+    vi.mocked(generateSectionsFromProfile).mockResolvedValue({
+      sections: [mockSection("{A}")],
+      failedSections: [],
+    });
+
+    await runBidGeneration(client, "bid-1", ctx, template);
+
+    expect(buildRequirementMatrixBundle).not.toHaveBeenCalled();
+    const final = updates[updates.length - 1];
+    expect(final.sections).toHaveLength(1);
+  });
+
+  it("runs the requirement-matrix bundle for a foreign profile with a mapped table and merges the sections", async () => {
+    const { client, updates } = createSupabaseStub();
+    loadTemplateProfile.mockResolvedValue(foreignWithTableMapProfile);
+    vi.mocked(generateSectionsFromProfile).mockResolvedValue({
+      sections: [mockSection("{A}")],
+      failedSections: [],
+    });
+    vi.mocked(buildRequirementMatrixBundle).mockResolvedValue({
+      sections: [mockMatrixSection()],
+      overflowFlags: [],
+    });
+
+    await runBidGeneration(client, "bid-1", ctx, template);
+
+    expect(generateSectionsFromProfile).toHaveBeenCalledTimes(1);
+    expect(buildRequirementMatrixBundle).toHaveBeenCalledTimes(1);
+    // Same call shape as the bundled path's own unit tests
+    // (requirement-matrix.test.ts): empty BudgetPlan (this bundle never reads
+    // field budgets — REQUIREMENT_MATRIX_BUDGET_KEYS is empty) + a fresh
+    // retry budget.
+    expect(buildRequirementMatrixBundle).toHaveBeenCalledWith(
+      ctx,
+      { budgets: {}, fieldSlides: {} },
+      { remaining: expect.any(Number) },
+    );
+
+    const final = updates[updates.length - 1];
+    expect(final.status).toBe("draft");
+    expect(final.sections).toHaveLength(2);
+    const formats = (final.sections as BidSection[]).map((s) => s.content?.format);
+    expect(formats).toContain("generic-prose");
+    expect(formats).toContain("requirement-matrix-v2");
+    expect(final.failed_bundles).toEqual([]);
+  });
+
+  it("keeps prose sections when the requirement-matrix bundle rejects, recording the failure", async () => {
+    const { client, updates } = createSupabaseStub();
+    loadTemplateProfile.mockResolvedValue(foreignWithTableMapProfile);
+    vi.mocked(generateSectionsFromProfile).mockResolvedValue({
+      sections: [mockSection("{A}")],
+      failedSections: [],
+    });
+    vi.mocked(buildRequirementMatrixBundle).mockRejectedValue(new Error("matrix boom"));
+
+    await runBidGeneration(client, "bid-1", ctx, template);
+
+    const final = updates[updates.length - 1];
+    expect(final.status).toBe("draft");
+    expect(final.sections).toHaveLength(1);
+    expect((final.sections as BidSection[])[0].content?.format).toBe("generic-prose");
+    expect(final.failed_bundles).toEqual([
+      { bundle: "requirement-matrix", error: "matrix boom" },
+    ]);
   });
 });

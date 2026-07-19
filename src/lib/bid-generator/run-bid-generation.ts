@@ -5,16 +5,23 @@ import {
   generateSectionsFromProfile,
   type FailedSection,
 } from "@/lib/bid-generator/generate-from-profile";
+import { buildRequirementMatrixBundle } from "@/lib/bid-generator/bundles/requirement-matrix";
+import type { RetryBudget } from "@/lib/bid-generator/with-budget-retry";
 import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
-import { isForeignProfile } from "@/lib/pptx-template/template-profile";
+import { isForeignProfile, hasMappedTable } from "@/lib/pptx-template/template-profile";
 import type { BidSection } from "@/lib/types";
 import {
   judgeBidStructure,
   buildStructureEvalSummary,
   RUNTIME_MANDATORY_SECTIONS,
 } from "@/lib/eval/bid-structure";
+
+// Same cap as generateAllSections' GLOBAL_RETRY_CAP (bid-generator/index.ts) —
+// the bundle path shares one budget across 5 concurrent bundles; here it's a
+// single bundle, so it gets its own budget at the same cap.
+const MATRIX_RETRY_CAP = 5;
 
 /**
  * Background half of POST /api/bids. The route returns 202 as soon as the bid
@@ -69,10 +76,48 @@ export async function runBidGeneration(
       const result = await generateSectionsFromProfile(storedProfile, ctx, persistSection);
       sections = result.sections;
       overflowFlags = [];
-      failedUnits = result.failedSections;
-      // Nothing produced but slots failed = every paid call rejected → no draft
-      // worth opening. Zero targets (all static/skip) is a valid empty bid.
-      totalWipeout = result.sections.length === 0 && result.failedSections.length > 0;
+      failedUnits = [...result.failedSections];
+
+      // A foreign template whose requirement-matrix slide maps to a real
+      // a:tbl table (hasMappedTable) gets the SAME matrix bundle our own
+      // template uses — same call/inputs as buildRequirementMatrixBundle's
+      // own unit tests (requirement-matrix.test.ts): REQUIREMENT_MATRIX_BUDGET_KEYS
+      // is empty, so this bundle never reads plan.budgets — an empty
+      // BudgetPlan is the correct input, not a shortcut. Runs AFTER the prose
+      // pipeline rather than concurrently with it: generateSectionsFromProfile
+      // already drives its own sequential read-modify-write persistSection
+      // calls internally, and a second concurrent caller of persistSection
+      // would race that read-modify-write (lost updates).
+      if (hasMappedTable(storedProfile)) {
+        try {
+          const matrixRetryBudget: RetryBudget = { remaining: MATRIX_RETRY_CAP };
+          const matrixResult = await buildRequirementMatrixBundle(
+            ctx,
+            { budgets: {}, fieldSlides: {} },
+            matrixRetryBudget,
+          );
+          sections = [...sections, ...matrixResult.sections];
+          overflowFlags = [...overflowFlags, ...matrixResult.overflowFlags];
+          for (const s of matrixResult.sections) {
+            await persistSection(s);
+          }
+        } catch (err) {
+          // Mirrors generateAllSections' failedBundles/allSettled contract: a
+          // matrix-bundle rejection is recorded, not thrown — the
+          // already-generated (and already persisted) prose sections above
+          // must survive it.
+          const matrixFailure: FailedBundle = {
+            bundle: "requirement-matrix",
+            error: err instanceof Error ? err.message : String(err),
+          };
+          failedUnits = [...failedUnits, matrixFailure];
+        }
+      }
+
+      // Nothing produced but slots/bundle failed = every paid call rejected →
+      // no draft worth opening. Zero targets (all static/skip) is a valid
+      // empty bid.
+      totalWipeout = sections.length === 0 && failedUnits.length > 0;
     } else {
       const result = await generateAllSections(ctx, template.manifest, persistSection);
       sections = result.sections;
