@@ -4,10 +4,10 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-19 — **ONBOARDING-MÄTPASSET LEVERERAT** (defektdetektion
-+ kalibrering i onboardingflödet, hård aktiveringsgrind; se NÄSTA-listan — inkl.
-ärlig v1-begränsning för master-/innehållsklassen). Tidigare samma dag: smoke 3
-godkänd (FAIL 0) + kicker-enforcement (PR #88, kickergrova 2→0)._
+_Senast uppdaterad: 2026-07-19 — **TABELLER (SLICE 6, tabelldelen) LEVERERAD**
+(kravmatris i äkta a:tbl i främmande mallar, formulaiska svar, kund-geometri-paginering;
+se NÄSTA-listan). Tidigare samma dag: onboarding-mätpasset (PR #89), smoke 3 godkänd
+(FAIL 0) + kicker-enforcement (PR #88, kickergrova 2→0)._
 
 _2026-07-15 — **BID-EDITOR-SLIMNINGEN LEVERERAD** (design + plan i
 `notes/2026-07-15-bid-editor-slim-{design,plan}.md`): editorn för onboardade mallar visar
@@ -143,6 +143,23 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       resp. en framtida innehållsmedveten detektion (v2-kandidat: scan-driven
       defekt-förslag ur genererade deck). Ersätter "Defektlist-kandidat"-punkten
       (slide 2 Text 36 dokumenterad här som master-klassens exempel).
+- [x] **TABELLER (SLICE 6, tabelldelen) — LEVERERAD 2026-07-19 (denna PR).** Kravmatris
+      i äkta `a:tbl`-tabeller i främmande mallar: introspektionen läser tabeller
+      (additivt `SlideShapes.tables` — shapeIndex orörd), wizarden får tabellsteg
+      (fasta kolumnroller krav/uppfyllnad/referens/status/ignorera, rubrikrader,
+      mallrad), profilen bär `tableMap` (ingen migration), `isForeignProfile` ersätter
+      routing-predikatet, matris-bundeln körs för foreign med mappad tabell, och en
+      direktskrivande radmotor klonar mall-`a:tr` per ska-krav med FORMULAISKA svar
+      (`Ja — se CV: {namn}` / `Delvis` / `Nej`; referenskolumn = konsultnamn) och
+      paginerar via slide-kloning ur KUNDENS geometri (max-wrap över mappade kolumner).
+      Mätgrenen ser tabellramar (HasTable). Ingen cell-tokenisering (medvetet).
+      Design/plan + efterskrift: `notes/2026-07-19-foreign-table-matrix-{design,plan}.md`.
+      LIVE-VERIFIERAT: fixturmall onboardad → mappad → mätt → aktiverad → genererad
+      (5 krav, 41 s) → PowerPoint-öppningsbar → deck:scan 0 FAIL. Två live-rotorsaker
+      fixade: OPC-orena fixtur-orphans (0x80CB8001) + verbosa referens-strängar i
+      formulaiska svar (radhöjds-explosion). KVAR (v2/backlog): bullets-delen av
+      slice 6, pris-/bemanningsroller, cellnivå-mätning, cell-`sz` i radestimatet,
+      parallell bundle-körning, UI-varning vid flera tabeller per slide.
 - [ ] **Skip-generation för intent-tomma slots (routine-förslag PR #87, polish):**
       generationssidan motarbetar fortfarande "lämnas tom"-slots — re-asken
       kräver "lämna inte tomt" och bränner ett betalt anrop. Flytta

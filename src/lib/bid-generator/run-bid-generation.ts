@@ -5,16 +5,23 @@ import {
   generateSectionsFromProfile,
   type FailedSection,
 } from "@/lib/bid-generator/generate-from-profile";
+import { buildRequirementMatrixBundle } from "@/lib/bid-generator/bundles/requirement-matrix";
+import type { RetryBudget } from "@/lib/bid-generator/with-budget-retry";
 import type { TemplateManifest } from "@/lib/pptx-template/manifest-types";
 import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
-import { isAllGenericProfile } from "@/lib/pptx-template/template-profile";
+import { isForeignProfile, hasMappedTable } from "@/lib/pptx-template/template-profile";
 import type { BidSection } from "@/lib/types";
 import {
   judgeBidStructure,
   buildStructureEvalSummary,
   RUNTIME_MANDATORY_SECTIONS,
 } from "@/lib/eval/bid-structure";
+
+// Same cap as generateAllSections' GLOBAL_RETRY_CAP (bid-generator/index.ts) —
+// the bundle path shares one budget across 5 concurrent bundles; here it's a
+// single bundle, so it gets its own budget at the same cap.
+const MATRIX_RETRY_CAP = 5;
 
 /**
  * Background half of POST /api/bids. The route returns 202 as soon as the bid
@@ -59,20 +66,64 @@ export async function runBidGeneration(
   // en egen backlog-post; här persisteras structure_eval null = "ej utvärderad".
   let onProfilePath = false;
   try {
-    // A stored all-generic profile means this is a FOREIGN template: its manifest
-    // is near-empty (upload introspection excludes unrecognised slides), so the
-    // profile is the only truth for BOTH generation and rendering. Our own
-    // template has no stored profile → the type-driven bundle path, unchanged.
+    // A FOREIGN template's manifest is near-empty (upload introspection
+    // excludes unrecognised slides), so the profile is the only truth for
+    // BOTH generation and rendering. Our own template has no stored profile
+    // → the type-driven bundle path, unchanged.
     const storedProfile = await loadTemplateProfile(template.id);
-    if (storedProfile && isAllGenericProfile(storedProfile)) {
+    if (storedProfile && isForeignProfile(storedProfile)) {
       onProfilePath = true;
       const result = await generateSectionsFromProfile(storedProfile, ctx, persistSection);
       sections = result.sections;
       overflowFlags = [];
-      failedUnits = result.failedSections;
-      // Nothing produced but slots failed = every paid call rejected → no draft
-      // worth opening. Zero targets (all static/skip) is a valid empty bid.
-      totalWipeout = result.sections.length === 0 && result.failedSections.length > 0;
+      failedUnits = [...result.failedSections];
+
+      // A foreign template whose requirement-matrix slide maps to a real
+      // a:tbl table (hasMappedTable) gets the SAME matrix bundle our own
+      // template uses. Plan is built from the manifest exactly like the
+      // bundled path does (bid-generator/index.ts) — NOT a hardcoded empty
+      // plan: withBudgetRetry's verifyFieldBudgets reads plan.budgets
+      // directly (ungated by REQUIREMENT_MATRIX_BUDGET_KEYS, which only
+      // controls the prompt's own "TEXT-LIMITS" block), and verify-budgets'
+      // FIELD_LABELS already has entries for rows[*].requirement/hurUppfylls/
+      // referens. A foreign template's manifest is near-empty today so this
+      // is behaviourally a no-op, but a hardcoded {} would permanently kill
+      // the overflow-retry net the day cell budgets are added for foreign
+      // manifests. Runs AFTER the prose pipeline rather than concurrently
+      // with it: generateSectionsFromProfile already drives its own
+      // sequential read-modify-write persistSection calls internally, and a
+      // second concurrent caller of persistSection would race that
+      // read-modify-write (lost updates).
+      if (hasMappedTable(storedProfile)) {
+        try {
+          const matrixRetryBudget: RetryBudget = { remaining: MATRIX_RETRY_CAP };
+          const matrixResult = await buildRequirementMatrixBundle(
+            ctx,
+            { budgets: template.manifest.budgets, fieldSlides: template.manifest.fieldSlides },
+            matrixRetryBudget,
+          );
+          sections = [...sections, ...matrixResult.sections];
+          overflowFlags = [...overflowFlags, ...matrixResult.overflowFlags];
+          for (const s of matrixResult.sections) {
+            await persistSection(s);
+          }
+        } catch (err) {
+          // Mirrors generateAllSections' failedBundles/allSettled contract: a
+          // matrix-bundle rejection is recorded, not thrown — the
+          // already-generated (and already persisted) prose sections above
+          // must survive it.
+          const matrixFailure: FailedBundle = {
+            bundle: "requirement-matrix",
+            error: err instanceof Error ? err.message : String(err),
+          };
+          failedUnits = [...failedUnits, matrixFailure];
+        }
+      }
+
+      // Nothing produced but slots/bundle failed = every paid call rejected →
+      // no draft worth opening. Zero targets (all static/skip) is a valid
+      // empty bid.
+      totalWipeout = sections.length === 0 && failedUnits.length > 0;
     } else {
       const result = await generateAllSections(ctx, template.manifest, persistSection);
       sections = result.sections;

@@ -22,7 +22,7 @@ export type { BidContext } from "./context";
  * there are no specialised bundles to run: we generate one prose section per
  * generic-prose slot instead. renderFromProfile then matches each section back
  * to its placeholder. Routing between this and generateAllSections is the
- * isAllGenericProfile discriminator (template-profile.ts).
+ * isForeignProfile discriminator (template-profile.ts).
  *
  * See notes/2026-07-02-template-upload-architecture.md.
  */

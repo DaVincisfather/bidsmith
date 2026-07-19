@@ -2,7 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   parseTemplateProfile,
   TemplateProfileSchema,
+  isForeignProfile,
+  hasMappedTable,
   type TemplateProfile,
+  type TableMap,
 } from "../template-profile";
 
 // A representative profile for our own anbudsmall-v2: one slide profile per
@@ -143,5 +146,132 @@ describe("measurement + knownDefects (onboarding-measure)", () => {
       ...base,
       knownDefects: [{ slide: 1, checkId: "outside-slide", shape: "Text 1", note: "", suggestion: "s", status: "maybe" }],
     })).toThrow();
+  });
+});
+
+describe("tableMap on SlideProfile (foreign a:tbl matrix)", () => {
+  const base = {
+    profileVersion: 1, templateId: "t1", name: "T", version: 1,
+    slides: [{ source: 1, slots: [] }],
+  };
+  const tableMap: TableMap = {
+    frameIndex: 0,
+    headerRows: 1,
+    templateRowIndex: 1,
+    columns: ["krav", "uppfyllnad", "referens"],
+  };
+
+  it("round-trips a slide carrying a tableMap", () => {
+    const withTableMap = {
+      ...base,
+      slides: [{ source: 5, capability: "requirement-matrix" as const, slots: [], tableMap }],
+    };
+    const parsed = parseTemplateProfile(withTableMap);
+    const reparsed = parseTemplateProfile(JSON.parse(JSON.stringify(parsed)));
+    expect(reparsed).toEqual(withTableMap);
+    expect(reparsed.slides[0].tableMap?.columns).toEqual(["krav", "uppfyllnad", "referens"]);
+  });
+
+  it("parses a legacy profile (no tableMap) unchanged — the field stays absent", () => {
+    const out = TemplateProfileSchema.parse(base);
+    expect(out.slides[0].tableMap).toBeUndefined();
+  });
+
+  it("rejects an unknown column role", () => {
+    const bad = {
+      ...base,
+      slides: [{ source: 5, slots: [], tableMap: { ...tableMap, columns: ["krav", "nonsense"] } }],
+    };
+    expect(() => parseTemplateProfile(bad)).toThrow();
+  });
+
+  it("rejects an empty columns array", () => {
+    const bad = {
+      ...base,
+      slides: [{ source: 5, slots: [], tableMap: { ...tableMap, columns: [] } }],
+    };
+    expect(() => parseTemplateProfile(bad)).toThrow();
+  });
+});
+
+describe("isForeignProfile", () => {
+  const genericSlide = {
+    source: 1, capability: "generic-prose" as const,
+    slots: [{ placeholder: "{A}", capability: "generic-prose" as const, format: "prose" as const, intent: "i", status: "generic" as const }],
+  };
+  const staticSlide = { source: 2, capability: "static" as const, slots: [] };
+  const matrixTableMap: TableMap = { frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: ["krav", "uppfyllnad"] };
+
+  it("returns true for a pure generic-prose/static profile", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "kundmall", version: 1,
+      slides: [genericSlide, staticSlide],
+    };
+    expect(isForeignProfile(profile)).toBe(true);
+  });
+
+  it("returns true for generic-prose + a requirement-matrix slide WITH tableMap", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "kundmall", version: 1,
+      slides: [
+        genericSlide,
+        { source: 3, capability: "requirement-matrix", slots: [], tableMap: matrixTableMap },
+      ],
+    };
+    expect(isForeignProfile(profile)).toBe(true);
+  });
+
+  it("returns false for a requirement-matrix slide WITHOUT tableMap (our bundled template)", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "kundmall", version: 1,
+      slides: [
+        genericSlide,
+        { source: 3, capability: "requirement-matrix", slots: [] },
+      ],
+    };
+    expect(isForeignProfile(profile)).toBe(false);
+  });
+
+  it("returns false for a mixed specialised profile (our own template)", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "anbudsmall-v2", version: 1,
+      slides: [
+        { source: 1, slots: [{ placeholder: "{Kundnamn}", capability: "cover", format: "field", intent: "", status: "mapped" }] },
+        { source: 3, slots: [{ placeholder: "{Nuläge}", capability: "understanding", format: "prose", intent: "", status: "mapped" }] },
+      ],
+    };
+    expect(isForeignProfile(profile)).toBe(false);
+  });
+
+  it("returns false for the real anbudsmall-v2 fixture (our own template never routes foreign)", () => {
+    expect(isForeignProfile(anbudsmallV2Profile)).toBe(false);
+  });
+});
+
+describe("hasMappedTable", () => {
+  const matrixTableMap: TableMap = { frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: ["krav", "status"] };
+
+  it("returns true when a slide carries capability requirement-matrix AND tableMap", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "kundmall", version: 1,
+      slides: [{ source: 1, capability: "requirement-matrix", slots: [], tableMap: matrixTableMap }],
+    };
+    expect(hasMappedTable(profile)).toBe(true);
+  });
+
+  it("returns false when the matrix slide has no tableMap", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "kundmall", version: 1,
+      slides: [{ source: 1, capability: "requirement-matrix", slots: [] }],
+    };
+    expect(hasMappedTable(profile)).toBe(false);
+  });
+
+  it("returns false when no slide has capability requirement-matrix", () => {
+    const profile: TemplateProfile = {
+      profileVersion: 1, templateId: "t1", name: "kundmall", version: 1,
+      slides: [{ source: 1, capability: "generic-prose", slots: [] }],
+    };
+    expect(hasMappedTable(profile)).toBe(false);
   });
 });

@@ -20,4 +20,33 @@ describe("OnboardingPatchSchema", () => {
   it("avvisar slide-beslut utan slide-nummer", () => {
     expect(OnboardingPatchSchema.safeParse({ decision: "skipped" }).success).toBe(false);
   });
+
+  it("accepterar tabellbeslut", () => {
+    const r = OnboardingPatchSchema.safeParse({
+      table: { source: 3, frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: ["krav", "uppfyllnad"] },
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect("table" in r.data).toBe(true);
+  });
+
+  it("avvisar tabellbeslut med okänd kolumnroll", () => {
+    const r = OnboardingPatchSchema.safeParse({
+      table: { source: 3, frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: ["okänd-roll"] },
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("avvisar tabellbeslut utan kolumner", () => {
+    const r = OnboardingPatchSchema.safeParse({
+      table: { source: 3, frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: [] },
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("avvisar tabellbeslut utan frameIndex", () => {
+    const r = OnboardingPatchSchema.safeParse({
+      table: { source: 3, headerRows: 1, templateRowIndex: 1, columns: ["krav"] },
+    });
+    expect(r.success).toBe(false);
+  });
 });

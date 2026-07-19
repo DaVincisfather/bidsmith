@@ -44,7 +44,7 @@ function profileWith(slots: { placeholder: string; status?: "generic" | "skip" }
 describe("planTargets", () => {
   it("emits one target per fillable generic-prose slot with a marker sans braces", () => {
     const slides: SlideShapes[] = [
-      { source: 1, shapes: [shape(["{Om oss}"], GEO)], tokens: ["{Om oss}"], images: { placed: 0, placeholders: 0 } },
+      { source: 1, shapes: [shape(["{Om oss}"], GEO)], tokens: ["{Om oss}"], images: { placed: 0, placeholders: 0 }, tables: [] },
     ];
     const targets = planTargets(slides, profileWith([{ placeholder: "{Om oss}" }]));
     expect(targets).toHaveLength(1);
@@ -55,7 +55,7 @@ describe("planTargets", () => {
 
   it("skips skip-status slots and tokens absent from the pptx", () => {
     const slides: SlideShapes[] = [
-      { source: 1, shapes: [shape(["{A}"], GEO)], tokens: ["{A}"], images: { placed: 0, placeholders: 0 } },
+      { source: 1, shapes: [shape(["{A}"], GEO)], tokens: ["{A}"], images: { placed: 0, placeholders: 0 }, tables: [] },
     ];
     const targets = planTargets(
       slides,
@@ -66,7 +66,7 @@ describe("planTargets", () => {
 
   it("marks shared shapes: two tokens in one shape → shareCount 2 on both", () => {
     const slides: SlideShapes[] = [
-      { source: 1, shapes: [shape(["{A}", "{B}"], GEO)], tokens: ["{A}", "{B}"], images: { placed: 0, placeholders: 0 } },
+      { source: 1, shapes: [shape(["{A}", "{B}"], GEO)], tokens: ["{A}", "{B}"], images: { placed: 0, placeholders: 0 }, tables: [] },
     ];
     const targets = planTargets(slides, profileWith([{ placeholder: "{A}" }, { placeholder: "{B}" }]));
     expect(targets.map((t) => t.shareCount)).toEqual([2, 2]);
@@ -74,7 +74,7 @@ describe("planTargets", () => {
 
   it("falls back to DEFAULT_GUESS with geometryMissing when the shape inherits geometry", () => {
     const slides: SlideShapes[] = [
-      { source: 1, shapes: [shape(["{A}"], null)], tokens: ["{A}"], images: { placed: 0, placeholders: 0 } },
+      { source: 1, shapes: [shape(["{A}"], null)], tokens: ["{A}"], images: { placed: 0, placeholders: 0 }, tables: [] },
     ];
     const [t] = planTargets(slides, profileWith([{ placeholder: "{A}" }]));
     expect(t.initialGuess).toBe(DEFAULT_GUESS);
@@ -84,7 +84,7 @@ describe("planTargets", () => {
   it("marks single-line boxes and carries a per-slot line cap", () => {
     const oneLine = { x: 0, y: 0, cx: 2286000, cy: 280000 };
     const slides: SlideShapes[] = [
-      { source: 1, shapes: [shape(["{A}"], oneLine)], tokens: ["{A}"], images: { placed: 0, placeholders: 0 } },
+      { source: 1, shapes: [shape(["{A}"], oneLine)], tokens: ["{A}"], images: { placed: 0, placeholders: 0 }, tables: [] },
     ];
     const [t] = planTargets(slides, profileWith([{ placeholder: "{A}" }]));
     expect(t.singleLine).toBe(true);
@@ -93,7 +93,7 @@ describe("planTargets", () => {
 
   it("multi-line and geometry-less boxes are not single-line", () => {
     const slides: SlideShapes[] = [
-      { source: 1, shapes: [shape(["{A}"], GEO), shape(["{B}"], null)], tokens: ["{A}", "{B}"], images: { placed: 0, placeholders: 0 } },
+      { source: 1, shapes: [shape(["{A}"], GEO), shape(["{B}"], null)], tokens: ["{A}", "{B}"], images: { placed: 0, placeholders: 0 }, tables: [] },
     ];
     const targets = planTargets(slides, profileWith([{ placeholder: "{A}" }, { placeholder: "{B}" }]));
     expect(targets.every((t) => t.singleLine === false && t.lineCapChars === null)).toBe(true);

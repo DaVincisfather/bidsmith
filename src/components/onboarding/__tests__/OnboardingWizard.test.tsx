@@ -30,6 +30,24 @@ const draft: OnboardingDraft = {
   ],
 };
 
+// Ren tabellslide — inga p:sp-textrutor alls (Task 3-fixturens tabellslide-form).
+const draftWithTable: OnboardingDraft = {
+  draftVersion: 1,
+  slideSize: { cx: 12192000, cy: 6858000 },
+  slots: [],
+  wireframe: [{ source: 3, shapes: [] }],
+  tables: [
+    {
+      source: 3, frameIndex: 0, geometry: { x: 0, y: 0, cx: 100, cy: 100 },
+      gridColsEmu: [400, 300],
+      rows: [
+        { heightEmu: 10, cellTexts: ["Krav", "Uppfyllnad"] },
+        { heightEmu: 10, cellTexts: ["Exempel krav", "Ja"] },
+      ],
+    },
+  ],
+};
+
 describe("OnboardingWizard", () => {
   afterEach(() => vi.unstubAllGlobals());
 
@@ -151,5 +169,41 @@ describe("OnboardingWizard", () => {
       }),
     );
     expect(screen.getByRole("button", { name: /ångra/i })).toBeInTheDocument();
+  });
+
+  it("draft: en ren tabellslide (inga textrutor) är ändå navigerbar och visar TablePanel", async () => {
+    mockGet({ status: "draft", name: "kundmall", version: 1, draft: draftWithTable });
+    render(<OnboardingWizard templateId="t-1" />);
+    await waitFor(() => expect(screen.getByRole("button", { name: /^slide 3$/i })).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /bekräfta/i })).toBeInTheDocument();
+    // Fast-slide-knappen kräver minst en textruta (applySlideDecision) — döljs
+    // för en ren tabellslide i st.f. att alltid felmeddela vid klick.
+    expect(screen.queryByRole("button", { name: /markera hela sliden som fast/i })).not.toBeInTheDocument();
+  });
+
+  it("TablePanel Bekräfta PATCHar tabellbeslutet", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ status: "draft", name: "kundmall", version: 1, draft: draftWithTable }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ draft: draftWithTable }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<OnboardingWizard templateId="t-1" />);
+    await screen.findByRole("button", { name: /bekräfta/i });
+    fireEvent.change(screen.getByLabelText(/kolumn 1/i), { target: { value: "krav" } });
+    fireEvent.change(screen.getByLabelText(/kolumn 2/i), { target: { value: "uppfyllnad" } });
+    fireEvent.click(screen.getByRole("button", { name: /bekräfta/i }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/templates/t-1/onboarding",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({
+            table: { source: 3, frameIndex: 0, headerRows: 1, templateRowIndex: 1, columns: ["krav", "uppfyllnad"] },
+          }),
+        }),
+      ),
+    );
   });
 });

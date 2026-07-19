@@ -7,7 +7,7 @@ import { renderTemplate } from "@/lib/pptx-template/loader";
 import { renderFromProfile } from "@/lib/pptx-template/render-from-profile";
 import { loadTemplateForBid } from "@/lib/pptx-template/active-template";
 import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
-import { isAllGenericProfile } from "@/lib/pptx-template/template-profile";
+import { isForeignProfile } from "@/lib/pptx-template/template-profile";
 import { loadProfileForBid } from "@/lib/org-profile";
 import { BidSection, RfpAnalysis } from "@/lib/types";
 import { buildMasterContext } from "./build-master-context";
@@ -96,14 +96,14 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   // must not mark the bid as exported.
   let buffer: Buffer;
   try {
-    // A stored all-generic profile means a FOREIGN template: its manifest is
-    // near-empty, so render from the SAME stored profile that drove generation
-    // (mirrors the generation-side routing in run-bid-generation.ts), regardless
-    // of BIDSMITH_PROFILE_RENDER (that flag gates only OUR template's parity
-    // path). Our template (no stored profile / mixed capabilities) → renderTemplate.
+    // A FOREIGN template's manifest is near-empty, so render from the SAME
+    // stored profile that drove generation (mirrors the generation-side
+    // routing in run-bid-generation.ts), regardless of BIDSMITH_PROFILE_RENDER
+    // (that flag gates only OUR template's parity path). Our template (no
+    // stored profile / mixed capabilities) → renderTemplate.
     const storedProfile = await loadTemplateProfile(template.id);
     buffer =
-      storedProfile && isAllGenericProfile(storedProfile)
+      storedProfile && isForeignProfile(storedProfile)
         ? await renderFromProfile(template, storedProfile, sections, master)
         : await renderTemplate(template, sections, master);
   } catch (err) {

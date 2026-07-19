@@ -72,4 +72,28 @@ describe("SlideWireframe", () => {
     fireEvent.click(screen.getByTestId("shape-3-0"));
     expect(onSelect).not.toHaveBeenCalled();
   });
+
+  it("ritar en enkel ram för tabeller — icke-interaktiv (mappning sker i TablePanel)", () => {
+    const onSelect = vi.fn();
+    render(
+      <SlideWireframe slide={slide} slideSize={size} selectedShapeIndex={null}
+        decisions={new Map()} onSelect={onSelect}
+        tables={[
+          { source: 3, frameIndex: 0, geometry: { x: 0, y: 4500000, cx: 8000000, cy: 1000000 }, gridColsEmu: [100], rows: [] },
+        ]} />,
+    );
+    const tableBox = screen.getByTestId("table-3-0");
+    expect(tableBox).toBeInTheDocument();
+    fireEvent.click(tableBox);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("hoppar över tabeller utan geometri (ärvd/saknad xfrm)", () => {
+    render(
+      <SlideWireframe slide={slide} slideSize={size} selectedShapeIndex={null}
+        decisions={new Map()} onSelect={() => {}}
+        tables={[{ source: 3, frameIndex: 0, geometry: null, gridColsEmu: [100], rows: [] }]} />,
+    );
+    expect(screen.queryByTestId("table-3-0")).not.toBeInTheDocument();
+  });
 });

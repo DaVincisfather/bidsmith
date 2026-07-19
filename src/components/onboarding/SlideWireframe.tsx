@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { WireframeSlide } from "@/lib/pptx-template/onboarding/draft";
+import type { DraftTable, WireframeSlide } from "@/lib/pptx-template/onboarding/draft";
 
 export type SlotDecision = "confirmed" | "skipped" | "pending";
 
@@ -25,6 +25,10 @@ interface SlideWireframeProps {
   selectedShapeIndex: number | null;
   decisions: ReadonlyMap<number, SlotDecision>;
   onSelect: (shapeIndex: number) => void;
+  /** Främmande a:tbl-tabeller på DENNA slide (draft.tables filtrerad av
+   *  anroparen) — ritas som en enkel ram, icke-interaktiv (mappningen sker i
+   *  TablePanel, inte via klick i wireframen). */
+  tables?: DraftTable[];
 }
 
 export function SlideWireframe({
@@ -33,6 +37,7 @@ export function SlideWireframe({
   selectedShapeIndex,
   decisions,
   onSelect,
+  tables = [],
 }: SlideWireframeProps) {
   const placeable = slide.shapes.filter((s) => s.geometry !== null);
   const floating = slide.shapes.filter((s) => s.geometry === null && s.candidate);
@@ -100,6 +105,30 @@ export function SlideWireframe({
             </g>
           );
         })}
+        {tables
+          .filter((t) => t.geometry !== null)
+          .map((t) => {
+            const g = t.geometry!;
+            return (
+              <g key={`table-${t.frameIndex}`} data-testid={`table-${slide.source}-${t.frameIndex}`}>
+                <rect
+                  x={g.x} y={g.y} width={g.cx} height={g.cy}
+                  fill="transparent"
+                  stroke="var(--rule)"
+                  strokeWidth={1 * EMU_PER_PT}
+                  strokeDasharray={`${3 * EMU_PER_PT} ${2 * EMU_PER_PT}`}
+                />
+                <text
+                  x={g.x + 4 * EMU_PER_PT}
+                  y={g.y + 14 * EMU_PER_PT}
+                  fontSize={10 * EMU_PER_PT}
+                  fill="var(--ink-soft)"
+                >
+                  Tabell
+                </text>
+              </g>
+            );
+          })}
       </svg>
       {floating.length > 0 && (
         <div className="text-sm text-ink-soft">

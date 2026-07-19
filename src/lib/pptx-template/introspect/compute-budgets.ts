@@ -303,3 +303,21 @@ export function singleLineCapacity(shape: ShapeText): number | null {
   const capacity = charsPerLine * FILL_FACTOR;
   return Math.max(ROUND_TO, Math.round(capacity / ROUND_TO) * ROUND_TO);
 }
+
+/**
+ * Effective characters that fit on ONE line of a box `widthEmu` wide at
+ * `fontSizePt` — the same char-width math boxCapacity uses (CHAR_WIDTH_FACTOR ×
+ * font advance, FILL_FACTOR box utilisation, both global calibration constants),
+ * exposed for the foreign-table row engine's krav-column wrap estimate. null
+ * font falls back to DEFAULT_FONT_PT, matching read-pptx's own missing-sz
+ * handling. Always ≥ 1 so a wrap estimate never divides by zero.
+ */
+export function charsPerLineForWidth(
+  widthEmu: number,
+  fontSizePt: number | null,
+): number {
+  const fontPt = fontSizePt ?? DEFAULT_FONT_PT;
+  const charWidthEmu = fontPt * EMU_PER_PT * CHAR_WIDTH_FACTOR;
+  const charsPerLine = Math.floor(widthEmu / charWidthEmu);
+  return Math.max(1, Math.round(charsPerLine * FILL_FACTOR));
+}

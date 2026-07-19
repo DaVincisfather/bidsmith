@@ -2,7 +2,7 @@
 // The overflow-eval keeps its own frozen copy of the signature predicate
 // (src/lib/overflow-eval/gates.ts) — eval behavior must not change.
 import type { Finding } from "./types";
-import { isAllGenericProfile, type TemplateDefect, type TemplateProfile } from "../template-profile";
+import { isForeignProfile, type TemplateDefect, type TemplateProfile } from "../template-profile";
 
 export function defectKey(d: Pick<TemplateDefect, "slide" | "checkId" | "shape">): string {
   return `${d.slide}|${d.checkId}|${d.shape}`;
@@ -85,7 +85,7 @@ export function annotateKnownDefects(findings: Finding[], defects: TemplateDefec
 /** Activation gate (design: HARD). Non-foreign profiles always pass — the
  *  bundled template never carries measurement. Swedish: operator-facing copy. */
 export function activationBlockReason(profile: TemplateProfile): string | null {
-  if (!isAllGenericProfile(profile)) return null;
+  if (!isForeignProfile(profile)) return null;
   if (profile.measurement?.status !== "complete") {
     return "mallen är inte mätt — kör npm run onboarding:measure -- <templateId> --write och försök igen";
   }

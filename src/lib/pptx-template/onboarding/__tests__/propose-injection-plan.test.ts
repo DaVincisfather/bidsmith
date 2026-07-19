@@ -49,7 +49,7 @@ beforeEach(() => {
 describe("candidateSlots (pure)", () => {
   it("includes token-less shapes with text", () => {
     const slides: SlideShapes[] = [
-      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, shapes: [shape({ paragraphs: ["Rubrik", "Brödtext"] })] },
+      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, tables: [], shapes: [shape({ paragraphs: ["Rubrik", "Brödtext"] })] },
     ];
     const result = candidateSlots(slides);
     expect(result).toEqual([{ source: 1, shapeIndex: 0, shapeText: "Rubrik\nBrödtext" }]);
@@ -57,7 +57,7 @@ describe("candidateSlots (pure)", () => {
 
   it("includes an empty box that has geometry (fillable box)", () => {
     const slides: SlideShapes[] = [
-      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, shapes: [shape({ paragraphs: [""], geometry: GEO })] },
+      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, tables: [], shapes: [shape({ paragraphs: [""], geometry: GEO })] },
     ];
     const result = candidateSlots(slides);
     expect(result).toEqual([{ source: 1, shapeIndex: 0, shapeText: "" }]);
@@ -68,7 +68,7 @@ describe("candidateSlots (pure)", () => {
       {
         source: 1,
         tokens: ["{Redan}"],
-        images: { placed: 0, placeholders: 0 },
+        images: { placed: 0, placeholders: 0 }, tables: [],
         shapes: [
           shape({ paragraphs: ["{Redan}"], tokens: ["{Redan}"] }), // index 0 — excluded
           shape({ paragraphs: ["Fyll mig"] }), // index 1 — candidate
@@ -82,7 +82,7 @@ describe("candidateSlots (pure)", () => {
 
   it("excludes noise shapes with neither text nor geometry", () => {
     const slides: SlideShapes[] = [
-      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, shapes: [shape({ paragraphs: ["  ", ""] })] },
+      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, tables: [], shapes: [shape({ paragraphs: ["  ", ""] })] },
     ];
     expect(candidateSlots(slides)).toEqual([]);
   });
@@ -90,7 +90,7 @@ describe("candidateSlots (pure)", () => {
 
 describe("proposeInjectionPlan", () => {
   function oneSlide(shapes: ShapeText[]): SlideShapes[] {
-    return [{ source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, shapes }];
+    return [{ source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, tables: [], shapes }];
   }
 
   it("passes the OTHER shapes' text as slideText, excluding the candidate's own", async () => {
@@ -126,7 +126,7 @@ describe("proposeInjectionPlan", () => {
       {
         source: 1,
         tokens: ["{Namn}"],
-        images: { placed: 0, placeholders: 0 },
+        images: { placed: 0, placeholders: 0 }, tables: [],
         shapes: [
           shape({ paragraphs: ["{Namn}"], tokens: ["{Namn}"] }), // not a candidate
           shape({ paragraphs: ["fyll mig"] }),
@@ -161,9 +161,9 @@ describe("proposeInjectionPlan", () => {
     // an omitted slide (pure image slide, already-instrumented on re-onboarding)
     // would disappear from rendered bids. Routine-review finding on #52.
     vi.mocked(readPptxSlides).mockResolvedValue([
-      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, shapes: [shape({ paragraphs: ["fyll"] })] },
+      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, tables: [], shapes: [shape({ paragraphs: ["fyll"] })] },
       // slide 2: only a token-bearing shape → no candidate → static passthrough
-      { source: 2, tokens: ["{X}"], images: { placed: 0, placeholders: 0 }, shapes: [shape({ paragraphs: ["{X}"], tokens: ["{X}"] })] },
+      { source: 2, tokens: ["{X}"], images: { placed: 0, placeholders: 0 }, tables: [], shapes: [shape({ paragraphs: ["{X}"], tokens: ["{X}"] })] },
     ]);
 
     const { profile } = await proposeInjectionPlan(Buffer.from(""), OPTS);

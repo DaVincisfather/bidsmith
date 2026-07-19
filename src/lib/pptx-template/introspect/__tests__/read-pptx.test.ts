@@ -188,3 +188,153 @@ describe("readPptxSlides (syntetisk mini-pptx)", () => {
     await expect(readPptxSlides(buffer)).rejects.toThrow(/PPTX saknar/);
   });
 });
+
+describe("readPptxSlides — a:tbl-tabeller (syntetisk mini-pptx)", () => {
+  it("läser en tabell (2 kolumner, rubrikrad + mallrad) till tables[0]", async () => {
+    const slide = `<?xml version="1.0"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld><p:spTree>
+    <p:graphicFrame>
+      <p:xfrm><a:off x="914400" y="1828800"/><a:ext cx="7315200" cy="1524000"/></p:xfrm>
+      <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
+        <a:tbl>
+          <a:tblGrid>
+            <a:gridCol w="3657600"/>
+            <a:gridCol w="3657600"/>
+          </a:tblGrid>
+          <a:tr h="365760">
+            <a:tc><a:txBody><a:p><a:r><a:t>Krav</a:t></a:r></a:p></a:txBody></a:tc>
+            <a:tc><a:txBody><a:p><a:r><a:t>Uppfyllnad</a:t></a:r></a:p></a:txBody></a:tc>
+          </a:tr>
+          <a:tr h="457200">
+            <a:tc><a:txBody><a:p><a:r><a:t>{Krav 1}</a:t></a:r></a:p></a:txBody></a:tc>
+            <a:tc><a:txBody><a:p><a:r><a:t>{Uppfyllnad 1}</a:t></a:r></a:p></a:txBody></a:tc>
+          </a:tr>
+        </a:tbl>
+      </a:graphicData></a:graphic>
+    </p:graphicFrame>
+  </p:spTree></p:cSld>
+</p:sld>`;
+    const slides = await readPptxSlides(await buildMiniPptx(slide));
+    expect(slides[0].tables).toHaveLength(1);
+    const table = slides[0].tables[0];
+    expect(table.frameIndex).toBe(0);
+    expect(table.geometry).toEqual({ xEmu: 914400, yEmu: 1828800, cxEmu: 7315200, cyEmu: 1524000 });
+    expect(table.gridColsEmu).toEqual([3657600, 3657600]);
+    expect(table.rows).toHaveLength(2);
+    expect(table.rows[0]).toEqual({
+      heightEmu: 365760,
+      cells: [{ text: "Krav" }, { text: "Uppfyllnad" }],
+    });
+    expect(table.rows[1]).toEqual({
+      heightEmu: 457200,
+      cells: [{ text: "{Krav 1}" }, { text: "{Uppfyllnad 1}" }],
+    });
+  });
+
+  it("cellens txBody-paragrafer joinas med \\n (samma paragraf-läsning som shape-text)", async () => {
+    const slide = `<?xml version="1.0"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld><p:spTree>
+    <p:graphicFrame>
+      <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
+        <a:tbl>
+          <a:tblGrid><a:gridCol w="1000"/></a:tblGrid>
+          <a:tr h="200">
+            <a:tc><a:txBody>
+              <a:p><a:r><a:t>Rad ett</a:t></a:r></a:p>
+              <a:p><a:r><a:t>Rad två</a:t></a:r></a:p>
+            </a:txBody></a:tc>
+          </a:tr>
+        </a:tbl>
+      </a:graphicData></a:graphic>
+    </p:graphicFrame>
+  </p:spTree></p:cSld>
+</p:sld>`;
+    const slides = await readPptxSlides(await buildMiniPptx(slide));
+    expect(slides[0].tables[0].rows[0].cells[0].text).toBe("Rad ett\nRad två");
+    // Ingen p:xfrm på frame ⇒ ärvd geometri, inte en tyst nollyta.
+    expect(slides[0].tables[0].geometry).toBeNull();
+  });
+
+  it("slide utan tabell ⇒ tables: [] och shapes/tokens/images opåverkade", async () => {
+    const slide = slideWithShape(`
+      <p:txBody><a:p><a:r><a:t>{Mål}</a:t></a:r></a:p></p:txBody>`);
+    const slides = await readPptxSlides(await buildMiniPptx(slide));
+    expect(slides[0].tables).toEqual([]);
+    expect(slides[0].shapes).toHaveLength(1);
+  });
+
+  it("frameIndex räknar bara graphicFrames som innehåller en a:tbl, i dokumentordning; shapes-indexeringen är oberörd", async () => {
+    const slide = `<?xml version="1.0"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld><p:spTree>
+    <p:sp>
+      <p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="100" cy="100"/></a:xfrm></p:spPr>
+      <p:txBody><a:p><a:r><a:t>{Rubrik}</a:t></a:r></a:p></p:txBody>
+    </p:sp>
+    <p:graphicFrame>
+      <p:xfrm><a:off x="1" y="1"/><a:ext cx="2" cy="2"/></p:xfrm>
+      <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
+        <a:tbl>
+          <a:tblGrid><a:gridCol w="1000"/></a:tblGrid>
+          <a:tr h="200"><a:tc><a:txBody><a:p><a:r><a:t>Första</a:t></a:r></a:p></a:txBody></a:tc></a:tr>
+        </a:tbl>
+      </a:graphicData></a:graphic>
+    </p:graphicFrame>
+    <p:sp>
+      <p:txBody><a:p><a:r><a:t>{Fotnot}</a:t></a:r></a:p></p:txBody>
+    </p:sp>
+    <p:graphicFrame>
+      <p:xfrm><a:off x="3" y="3"/><a:ext cx="4" cy="4"/></p:xfrm>
+      <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
+        <a:tbl>
+          <a:tblGrid><a:gridCol w="1000"/></a:tblGrid>
+          <a:tr h="200"><a:tc><a:txBody><a:p><a:r><a:t>Andra</a:t></a:r></a:p></a:txBody></a:tc></a:tr>
+        </a:tbl>
+      </a:graphicData></a:graphic>
+    </p:graphicFrame>
+  </p:spTree></p:cSld>
+</p:sld>`;
+    const slides = await readPptxSlides(await buildMiniPptx(slide));
+    // shapes-indexeringen (endast p:sp) är helt oberörd av graphicFrames.
+    expect(slides[0].shapes).toHaveLength(2);
+    expect(slides[0].shapes[0].tokens).toEqual(["{Rubrik}"]);
+    expect(slides[0].shapes[1].tokens).toEqual(["{Fotnot}"]);
+    // tables räknas separat, dokumentordning bland graphicFrames med a:tbl.
+    expect(slides[0].tables).toHaveLength(2);
+    expect(slides[0].tables[0].frameIndex).toBe(0);
+    expect(slides[0].tables[0].rows[0].cells[0].text).toBe("Första");
+    expect(slides[0].tables[1].frameIndex).toBe(1);
+    expect(slides[0].tables[1].rows[0].cells[0].text).toBe("Andra");
+  });
+
+  it("frameIndex hoppar över graphicFrames UTAN a:tbl (t.ex. inbäddat chart) — de räknas inte alls", async () => {
+    const slide = `<?xml version="1.0"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld><p:spTree>
+    <p:graphicFrame>
+      <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">
+        <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId1"
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/>
+      </a:graphicData></a:graphic>
+    </p:graphicFrame>
+    <p:graphicFrame>
+      <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">
+        <a:tbl>
+          <a:tblGrid><a:gridCol w="1000"/></a:tblGrid>
+          <a:tr h="200"><a:tc><a:txBody><a:p><a:r><a:t>Enda</a:t></a:r></a:p></a:txBody></a:tc></a:tr>
+        </a:tbl>
+      </a:graphicData></a:graphic>
+    </p:graphicFrame>
+  </p:spTree></p:cSld>
+</p:sld>`;
+    const slides = await readPptxSlides(await buildMiniPptx(slide));
+    expect(slides[0].tables).toHaveLength(1);
+    expect(slides[0].tables[0].frameIndex).toBe(0);
+  });
+});

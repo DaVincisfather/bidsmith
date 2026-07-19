@@ -34,6 +34,11 @@ export interface ApplicatorContext {
   totalSlides: number;
   /** For cloned slides, the index within the cloned set (0-based) */
   cloneIndex?: number;
+  /** For a foreign-table (tableMap) slide clone: the requirement-matrix row
+   *  indices to render on THIS page, precomputed by render-from-profile via
+   *  packRows so the loader's page count and the applicator's fill window stay
+   *  in lockstep. */
+  tableRowIndices?: number[];
   /** Source slide number from the template (1-based). Used by multi-slide applicators
    *  like prose to dispatch on the correct placeholder set. */
   sourceSlide: number;

@@ -6,7 +6,7 @@ import { OnboardingPatchSchema } from "@/lib/api-schemas";
 import { parseOnboardingDraft, extractPrecount, extractScreen } from "@/lib/pptx-template/onboarding/draft";
 import type { ScreenFinding } from "@/lib/pptx-template/onboarding/geometry-screen";
 import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
-import { applyDecision, applySlideDecision } from "@/lib/pptx-template/onboarding/draft-logic";
+import { applyDecision, applySlideDecision, applyTableDecision } from "@/lib/pptx-template/onboarding/draft-logic";
 import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
 import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
 
@@ -161,7 +161,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const result =
     "slide" in parsed.data
       ? applySlideDecision(draft, parsed.data.slide, parsed.data.decision)
-      : applyDecision(draft, parsed.data);
+      : "table" in parsed.data
+        ? applyTableDecision(draft, parsed.data.table)
+        : applyDecision(draft, parsed.data);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 422 });
 
   const supabase = createServiceClient();

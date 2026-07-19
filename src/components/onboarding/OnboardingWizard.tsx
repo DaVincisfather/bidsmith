@@ -2,11 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { OnboardingDraft } from "@/lib/pptx-template/onboarding/draft";
+import type { DraftTable, OnboardingDraft } from "@/lib/pptx-template/onboarding/draft";
 import { fastSlideSources } from "@/lib/pptx-template/onboarding/draft-logic";
-import type { TemplateDefect, TemplateMeasurement } from "@/lib/pptx-template/template-profile";
+import type {
+  TableColumnRole,
+  TemplateDefect,
+  TemplateMeasurement,
+} from "@/lib/pptx-template/template-profile";
 import { SlideWireframe, type SlotDecision } from "./SlideWireframe";
 import { SlotPanel } from "./SlotPanel";
+import { TablePanel } from "./TablePanel";
 import { SummaryView } from "./SummaryView";
 import { MeasurementStep } from "./MeasurementStep";
 import { HealthReport } from "./HealthReport";
@@ -65,16 +70,27 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
     return () => clearInterval(t);
   }, [data?.status, data?.measurement, refresh]);
 
-  // Slides som kräver beslut — statiska hoppas över i navigeringen.
-  const candidateSlides = useMemo(
-    () => data?.draft?.wireframe.filter((s) => s.shapes.some((sh) => sh.candidate)) ?? [],
-    [data?.draft],
-  );
+  // Slides som kräver beslut — statiska hoppas över i navigeringen. En slide
+  // med bara en tabell (inga p:sp-textrutor, se Task 3-fixturen) har inga
+  // shape-kandidater men ska ändå navigeras till (tabellsteget), så en slide
+  // räknas som kandidat om den har EN slot-kandidat ELLER en tabell.
+  const candidateSlides = useMemo(() => {
+    const tables = data?.draft?.tables ?? [];
+    return (
+      data?.draft?.wireframe.filter(
+        (s) => s.shapes.some((sh) => sh.candidate) || tables.some((t) => t.source === s.source),
+      ) ?? []
+    );
+  }, [data?.draft]);
   const slide = candidateSlides[slideIdx] ?? null;
 
   const slotsOnSlide = useMemo(
     () => (slide ? data!.draft!.slots.filter((s) => s.source === slide.source) : []),
     [slide, data],
+  );
+  const tablesOnSlide = useMemo(
+    () => (slide ? (data?.draft?.tables ?? []).filter((t) => t.source === slide.source) : []),
+    [slide, data?.draft],
   );
   // Preliminära geometri-fynd (upload-tidens XML-matte, ingen COM) för sliden
   // som visas — rena informationsrader under wireframen, gate:ar ingenting.
@@ -140,6 +156,34 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
       });
       const body = await res.json();
       if (!res.ok) { setUiError(body.error ?? "kunde inte spara beslutet"); return; }
+      setData((d) => (d ? { ...d, draft: body.draft } : d));
+    } catch {
+      setUiError("nätverksfel — försök igen");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Tabellbeslut (TablePanels "Bekräfta") — samma fetch/setData-mönster som
+  // decide/decideSlide. Ogiltiga kartor (t.ex. två krav-kolumner) 422:as av
+  // applyTableDecision (draft-logic) och ytas via uiError, samma väg som allt
+  // annat i wizarden.
+  async function decideTable(
+    table: DraftTable,
+    input: { headerRows: number; templateRowIndex: number; columns: TableColumnRole[] },
+  ) {
+    setSaving(true);
+    setUiError(null);
+    try {
+      const res = await fetch(`/api/templates/${templateId}/onboarding`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: { source: table.source, frameIndex: table.frameIndex, ...input },
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) { setUiError(body.error ?? "kunde inte spara tabellbeslutet"); return; }
       setData((d) => (d ? { ...d, draft: body.draft } : d));
     } catch {
       setUiError("nätverksfel — försök igen");
@@ -323,25 +367,29 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
-        {slideIsFast ? (
-          <>
-            <span className="text-xs text-ink-soft">
-              Sliden är markerad som fast — originaltexten behålls i alla anbud.
-            </span>
-            <button type="button" disabled={saving} onClick={() => decideSlide("pending")}
-              className="text-xs underline text-ink-mute hover:text-ink disabled:opacity-50">
-              Ångra (rutorna blir obeslutade)
+      {/* Fast-slide-knappen gäller textrutor (applySlideDecision kräver minst
+          en) — en ren tabellslide har inga, så knappen döljs där. */}
+      {slotsOnSlide.length > 0 && (
+        <div className="flex items-center gap-3">
+          {slideIsFast ? (
+            <>
+              <span className="text-xs text-ink-soft">
+                Sliden är markerad som fast — originaltexten behålls i alla anbud.
+              </span>
+              <button type="button" disabled={saving} onClick={() => decideSlide("pending")}
+                className="text-xs underline text-ink-mute hover:text-ink disabled:opacity-50">
+                Ångra (rutorna blir obeslutade)
+              </button>
+            </>
+          ) : (
+            <button type="button" disabled={saving} onClick={() => decideSlide("skipped")}
+              title="Alla rutor på sliden skippas — slidens originaltext behålls oförändrad i varje anbud"
+              className="border border-rule py-1.5 px-3 rounded text-xs font-medium hover:border-accent disabled:opacity-50">
+              Markera hela sliden som fast
             </button>
-          </>
-        ) : (
-          <button type="button" disabled={saving} onClick={() => decideSlide("skipped")}
-            title="Alla rutor på sliden skippas — slidens originaltext behålls oförändrad i varje anbud"
-            className="border border-rule py-1.5 px-3 rounded text-xs font-medium hover:border-accent disabled:opacity-50">
-            Markera hela sliden som fast
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_20rem] gap-4">
         <div className="space-y-2">
@@ -351,6 +399,7 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
             selectedShapeIndex={selectedSlot?.shapeIndex ?? null}
             decisions={new Map(slotsOnSlide.map((s) => [s.shapeIndex, s.decision as SlotDecision]))}
             onSelect={setSelectedShape}
+            tables={tablesOnSlide}
           />
           {screenFindings.length > 0 && (
             <div className="border border-rule rounded-lg p-3 text-xs text-ink-soft space-y-1">
@@ -368,16 +417,27 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
             </div>
           )}
         </div>
-        {selectedSlot ? (
-          <SlotPanel
-            key={`${selectedSlot.source}:${selectedSlot.shapeIndex}`}
-            slot={selectedSlot}
-            onDecide={decide}
-            saving={saving}
-          />
-        ) : (
-          <p className="text-sm text-ink-mute">Välj en markerad ruta i wireframen.</p>
-        )}
+        <div className="space-y-3">
+          {selectedSlot && (
+            <SlotPanel
+              key={`${selectedSlot.source}:${selectedSlot.shapeIndex}`}
+              slot={selectedSlot}
+              onDecide={decide}
+              saving={saving}
+            />
+          )}
+          {tablesOnSlide.map((t) => (
+            <TablePanel
+              key={`table-${t.source}-${t.frameIndex}`}
+              table={t}
+              onDecide={(input) => decideTable(t, input)}
+              saving={saving}
+            />
+          ))}
+          {!selectedSlot && tablesOnSlide.length === 0 && (
+            <p className="text-sm text-ink-mute">Välj en markerad ruta i wireframen.</p>
+          )}
+        </div>
       </div>
 
       {uiError && <p className="text-sm text-red-700">{uiError}</p>}

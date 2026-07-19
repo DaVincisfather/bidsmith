@@ -40,6 +40,27 @@ export interface SlideShapes {
   /** Bildytor — placerade <p:pic> resp. tomma <p:ph type="pic">. Lämnas orörda
    *  av hela pipelinen; räknas för manifest/preview. */
   images: { placed: number; placeholders: number };
+  /** Främmande <a:tbl>-tabeller (kravmatris-kandidater). Additivt fält — rör inte
+   *  shapes[]/tokens-adresseringen, som fortsätter räkna endast <p:sp>. */
+  tables: TableShape[];
+}
+
+export interface TableCell {
+  text: string;
+}
+
+export interface TableRow {
+  heightEmu: number;
+  cells: TableCell[];
+}
+
+export interface TableShape {
+  /** Index bland sliden graphicFrames som innehåller en a:tbl, dokumentordning. */
+  frameIndex: number;
+  /** Frame-geometri ur <p:graphicFrame><p:xfrm> (EMU); null när ärvd/saknas. */
+  geometry: { xEmu: number; yEmu: number; cxEmu: number; cyEmu: number } | null;
+  gridColsEmu: number[];
+  rows: TableRow[];
 }
 
 const TOKEN_RE = /\{[^{}]+\}/g;
@@ -105,6 +126,7 @@ export async function readPptxSlides(buffer: Buffer): Promise<SlideShapes[]> {
       shapes,
       tokens: [...new Set(shapes.flatMap((s) => s.tokens))],
       images: countImages(doc),
+      tables: extractTables(doc),
     });
   }
   return result;
@@ -183,14 +205,7 @@ function extractShapes(
     if (txBodies.length === 0) continue;
     const txBody = txBodies[0];
 
-    const paragraphs: string[] = [];
-    const pNodes = txBody.getElementsByTagNameNS(A_NS, "p");
-    for (let j = 0; j < pNodes.length; j++) {
-      const tNodes = pNodes[j].getElementsByTagNameNS(A_NS, "t");
-      let text = "";
-      for (let k = 0; k < tNodes.length; k++) text += tNodes[k].textContent ?? "";
-      paragraphs.push(text);
-    }
+    const paragraphs = readParagraphs(txBody);
 
     const tokens = [...new Set(paragraphs.flatMap((p) => p.match(TOKEN_RE) ?? []))];
 
@@ -205,6 +220,85 @@ function extractShapes(
     });
   }
   return shapes;
+}
+
+// Paragraftexter av valfri txBody (sp eller a:tc) — runs konkatenerade per <a:p>,
+// samma split-run-säkra läsning som extractShapes använde inline tidigare.
+function readParagraphs(txBody: Element): string[] {
+  const paragraphs: string[] = [];
+  const pNodes = txBody.getElementsByTagNameNS(A_NS, "p");
+  for (let j = 0; j < pNodes.length; j++) {
+    const tNodes = pNodes[j].getElementsByTagNameNS(A_NS, "t");
+    let text = "";
+    for (let k = 0; k < tNodes.length; k++) text += tNodes[k].textContent ?? "";
+    paragraphs.push(text);
+  }
+  return paragraphs;
+}
+
+// Främmande <a:tbl>-tabeller: en per <p:graphicFrame> som innehåller en a:tbl.
+// frameIndex räknas bland just dessa graphicFrames (dokumentordning) — helt
+// separat räkning från extractShapes p:sp-lista, så shapes[]-indexeringen
+// (adresserad av drafts/instrumentering) är oberörd per konstruktion.
+function extractTables(doc: ReturnType<DOMParser["parseFromString"]>): TableShape[] {
+  const tables: TableShape[] = [];
+  const frameNodes = doc.getElementsByTagNameNS(P_NS, "graphicFrame");
+  let frameIndex = 0;
+  for (let i = 0; i < frameNodes.length; i++) {
+    const frame = frameNodes[i];
+    const tblNodes = frame.getElementsByTagNameNS(A_NS, "tbl");
+    if (tblNodes.length === 0) continue;
+    const tbl = tblNodes[0];
+
+    const gridColsEmu: number[] = [];
+    const gridCols = tbl.getElementsByTagNameNS(A_NS, "gridCol");
+    for (let g = 0; g < gridCols.length; g++) {
+      const w = gridCols[g].getAttribute("w");
+      gridColsEmu.push(w === null ? 0 : Number(w));
+    }
+
+    const rows: TableRow[] = [];
+    // Direkta a:tr-barn (getElementsByTagNameNS är rekursiv, men a:tr nästlar
+    // sig inte i denna struktur, så full trädsökning är trygg och enkel).
+    const trNodes = tbl.getElementsByTagNameNS(A_NS, "tr");
+    for (let r = 0; r < trNodes.length; r++) {
+      const tr = trNodes[r];
+      const h = tr.getAttribute("h");
+      const cells: TableCell[] = [];
+      const tcNodes = tr.getElementsByTagNameNS(A_NS, "tc");
+      for (let c = 0; c < tcNodes.length; c++) {
+        const txBodies = tcNodes[c].getElementsByTagNameNS(A_NS, "txBody");
+        const text = txBodies.length > 0 ? readParagraphs(txBodies[0]).join("\n") : "";
+        cells.push({ text });
+      }
+      rows.push({ heightEmu: h === null ? 0 : Number(h), cells });
+    }
+
+    tables.push({
+      frameIndex: frameIndex++,
+      geometry: readFrameGeometry(frame),
+      gridColsEmu,
+      rows,
+    });
+  }
+  return tables;
+}
+
+// Frame-geometri ur <p:graphicFrame><p:xfrm> — OBS annan förälder än sp:s
+// <p:spPr><a:xfrm> (readGeometry ovan): graphicFrame bär xfrm direkt i P_NS,
+// inte nästlat under en spPr-liknande wrapper.
+function readFrameGeometry(frame: Element): TableShape["geometry"] {
+  const xfrms = frame.getElementsByTagNameNS(P_NS, "xfrm");
+  if (xfrms.length === 0) return null;
+  const off = xfrms[0].getElementsByTagNameNS(A_NS, "off")[0];
+  const ext = xfrms[0].getElementsByTagNameNS(A_NS, "ext")[0];
+  if (!off || !ext) return null;
+  const x = off.getAttribute("x");
+  const y = off.getAttribute("y");
+  const cx = ext.getAttribute("cx");
+  const cy = ext.getAttribute("cy");
+  if (x === null || y === null || cx === null || cy === null) return null;
+  return { xEmu: Number(x), yEmu: Number(y), cxEmu: Number(cx), cyEmu: Number(cy) };
 }
 
 function readGeometry(sp: Element): ShapeText["geometry"] {

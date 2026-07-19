@@ -5,6 +5,7 @@ import { screenSlides } from "./geometry-screen";
 import {
   parseTemplateProfile,
   type TemplateProfile,
+  type TableColumnRole,
 } from "../template-profile";
 import {
   TemplateManifestSchema,
@@ -15,6 +16,7 @@ import {
   TOKEN_RE,
   type OnboardingDraft,
   type DraftSlot,
+  type DraftTable,
 } from "./draft";
 
 /** Wireframe-etiketterna behöver bara igenkänning, inte hela texten. */
@@ -60,6 +62,22 @@ export function buildDraft(
       candidate: candidateKeys.has(`${slide.source}:${shapeIndex}`),
     })),
   }));
+  // Främmande a:tbl-tabeller (Task 1's SlideShapes.tables) — trimmad projektion
+  // för wizarden: geometri normaliserad till {x,y,cx,cy} (samma form som
+  // wireframens shape-geometri; TableShape bär xEmu/yEmu/cxEmu/cyEmu), rader
+  // till {heightEmu, cellTexts}. frameIndex bärs igenom OFÖRÄNDRAT — Task 1:s
+  // bindande konvention (tät räkning bland graphicFrames MED a:tbl).
+  const tables: DraftTable[] = slides.flatMap((slide) =>
+    slide.tables.map((t) => ({
+      source: slide.source,
+      frameIndex: t.frameIndex,
+      geometry: t.geometry
+        ? { x: t.geometry.xEmu, y: t.geometry.yEmu, cx: t.geometry.cxEmu, cy: t.geometry.cyEmu }
+        : null,
+      gridColsEmu: t.gridColsEmu,
+      rows: t.rows.map((r) => ({ heightEmu: r.heightEmu, cellTexts: r.cells.map((c) => c.text) })),
+    })),
+  );
   // Validera vår egen hopsättning — fail loud, spegling av proposeInjectionPlan.
   return parseOnboardingDraft({
     draftVersion: 1,
@@ -69,6 +87,7 @@ export function buildDraft(
     // Preliminär geometriskrivning (Task 6) — samma slides som wireframen
     // byggs av, så fynden pekar på exakt de shapes wizarden visar.
     screen: screenSlides(slides),
+    tables,
   });
 }
 
@@ -121,6 +140,88 @@ export function applyDecision(
       : s,
   );
   return { ok: true, draft: { ...draft, slots } };
+}
+
+export interface TableDecisionInput {
+  source: number;
+  frameIndex: number;
+  headerRows: number;
+  templateRowIndex: number;
+  columns: TableColumnRole[];
+}
+
+/**
+ * Ett tabellbeslut in i utkastet — samma validera-sen-kopiera-form som
+ * applyDecision, men för en kravmatris-kolumnkarta (se TableMapSchema i
+ * template-profile). Bekräftelsereglerna (design 2026-07-19):
+ *   - tabellen måste ha läsbar geometri (ärvd/saknad xfrm → null bärs igenom
+ *     från buildDraft) — utan bordets topp-position kan computeTablePages
+ *     inte pagineras säkert vid render (fallback tableTopEmu ?? 0 skulle
+ *     överskatta sidbandet och trycka rader utanför sliden);
+ *   - exakt EN krav-kolumn (annars vet radmotorn inte vilken cell som är
+ *     kravtexten);
+ *   - minst en av uppfyllnad/status (annars finns ingen coverage-signal att
+ *     skriva);
+ *   - mallraden måste ligga EFTER rubrikraderna och INOM tabellens radantal;
+ *   - columns måste täcka varje kolumn (annars vet skrivaren inte vad en
+ *     kolumn ska göra).
+ * Lyckad validering sätter decision.confirmed=true — buildFinalProfile
+ * promotar bara en tabell med confirmed===true till requirement-matrix.
+ */
+export function applyTableDecision(
+  draft: OnboardingDraft,
+  input: TableDecisionInput,
+): ApplyResult {
+  const tables = draft.tables ?? [];
+  const idx = tables.findIndex(
+    (t) => t.source === input.source && t.frameIndex === input.frameIndex,
+  );
+  if (idx === -1) {
+    return { ok: false, error: `okänd tabell ${input.source}:${input.frameIndex}` };
+  }
+  const table = tables[idx];
+  if (table.geometry === null) {
+    return {
+      ok: false,
+      error: "tabellen saknar läsbar position i mallen — kan inte pagineras säkert; lämna den statisk",
+    };
+  }
+  const kravCount = input.columns.filter((c) => c === "krav").length;
+  if (kravCount !== 1) {
+    return { ok: false, error: `tabellen måste ha exakt en krav-kolumn (hittade ${kravCount})` };
+  }
+  if (!input.columns.some((c) => c === "uppfyllnad" || c === "status")) {
+    return { ok: false, error: "tabellen måste ha minst en uppfyllnad- eller status-kolumn" };
+  }
+  if (input.templateRowIndex < input.headerRows) {
+    return { ok: false, error: "mallraden kan inte ligga bland rubrikraderna" };
+  }
+  if (input.templateRowIndex >= table.rows.length) {
+    return {
+      ok: false,
+      error: `mallradsindex ${input.templateRowIndex} finns inte i tabellen (${table.rows.length} rader)`,
+    };
+  }
+  if (input.columns.length !== table.gridColsEmu.length) {
+    return {
+      ok: false,
+      error: `antal kolumnroller (${input.columns.length}) matchar inte tabellens kolumner (${table.gridColsEmu.length})`,
+    };
+  }
+  const nextTables = tables.map((t, i) =>
+    i === idx
+      ? {
+          ...t,
+          decision: {
+            headerRows: input.headerRows,
+            templateRowIndex: input.templateRowIndex,
+            columns: input.columns,
+            confirmed: true,
+          },
+        }
+      : t,
+  );
+  return { ok: true, draft: { ...draft, tables: nextTables } };
 }
 
 /**
@@ -179,17 +280,39 @@ export function buildInjections(draft: OnboardingDraft): TokenInjection[] {
  * Slutprofilen: en SlideProfile per wireframe-slide (ALLA slides — en utelämnad
  * slide försvinner ur renderade anbud, se proposeInjectionPlan). Bekräftade
  * slots → generic-prose (v1-beslutet: specialiserade applikatorer kräver våra
- * kanoniska tokens); slides utan bekräftade slots → static passthrough.
+ * kanoniska tokens); en slide med en BEKRÄFTAD tabellkarta (decision.confirmed
+ * — se applyTableDecision) → requirement-matrix + tableMap i st.f. sina slots
+ * (tabellen ÄR slidens innehåll; eventuella slot-beslut på samma slide vinner
+ * inte över en bekräftad tabell). Slides utan bekräftade slots/tabell → static
+ * passthrough — oförändrat från innan tabellstödet.
  */
 export function buildFinalProfile(
   draft: OnboardingDraft,
   meta: { templateId: string; name: string; version: number },
 ): TemplateProfile {
   const confirmed = draft.slots.filter((s) => s.decision === "confirmed");
-  if (confirmed.length === 0) {
+  const confirmedTables = (draft.tables ?? []).filter((t) => t.decision?.confirmed === true);
+  if (confirmed.length === 0 && confirmedTables.length === 0) {
     throw new Error("minst en textruta måste bekräftas");
   }
   const slides = draft.wireframe.map((slide) => {
+    // En bekräftad tabell på sliden vinner — v1 stöder EN mappad tabell per
+    // slide (SlideProfileSchema bär ett enda tableMap-fält); väljer den
+    // FÖRSTA bekräftade om operatören mot förmodan bekräftat flera.
+    const table = confirmedTables.find((t) => t.source === slide.source);
+    if (table && table.decision) {
+      return {
+        source: slide.source,
+        capability: "requirement-matrix" as const,
+        slots: [],
+        tableMap: {
+          frameIndex: table.frameIndex,
+          headerRows: table.decision.headerRows,
+          templateRowIndex: table.decision.templateRowIndex,
+          columns: table.decision.columns,
+        },
+      };
+    }
     const slideSlots = confirmed
       .filter((s) => s.source === slide.source)
       .map((s) => ({
@@ -222,9 +345,10 @@ export function buildFinalProfile(
  * skriver därför detta manifest i samma update som statusflippen.
  *
  * Manifestet konsulteras ALDRIG för generering: en foreign mall körs på
- * profil-vägen (isAllGenericProfile på den sparade profilen är sant — buildFinal
- * Profile mappar allt till generic-prose/static), och den grinden läser profilen,
- * inte manifestet. type "static" per slide håller manifestet utanför type-vägens
+ * profil-vägen (isForeignProfile på den sparade profilen är sant — buildFinal
+ * Profile mappar varje slide till generic-prose/static, eller requirement-matrix
+ * + tableMap för en bekräftad tabell), och den grinden läser profilen, inte
+ * manifestet. type "static" per slide håller manifestet utanför type-vägens
  * specialiserade slidelogik även om det någonsin lästes. En static-slide per
  * wireframe-slide räcker för TemplateManifestSchema.min(1); parse:en fail-loud-
  * validerar vår egen hopsättning (spegling av buildFinalProfile).

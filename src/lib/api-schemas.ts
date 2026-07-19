@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ConsultantExtractionSchema } from "./ai-schemas";
 import { OverflowFlagSchema } from "./pptx-template/budget-types";
+import { TABLE_COLUMN_ROLES } from "./pptx-template/template-profile";
 
 // Why: route handlers used to do `body as { ... }` casts and hand-rolled enum
 // checks. Centralised here so a single source of truth defines what each
@@ -145,11 +146,28 @@ export const OnboardingSlideDecisionSchema = z.object({
   decision: z.enum(["skipped", "pending"]),
 });
 
-/** PATCH-body: ett slot-beslut ELLER ett slide-beslut. Slot-formen först —
- *  den är den vanliga och har disjunkta obligatoriska nycklar. */
+/** Tabellbeslut (TablePanels "Bekräfta"-knapp): kolumnkartan för EN främmande
+ *  a:tbl-tabell. columns valideras mot TABLE_COLUMN_ROLES (template-profile) —
+ *  övriga bekräftelseregler (exakt en krav-kolumn, mallrad inom tabellen, …)
+ *  är draft-logic.applyTableDecisions ansvar, inte schemats (samma delning
+ *  som slot-formens token/intent-fält ovan). */
+export const OnboardingTableDecisionSchema = z.object({
+  table: z.object({
+    source: z.number().int().positive(),
+    frameIndex: z.number().int().nonnegative(),
+    headerRows: z.number().int().nonnegative(),
+    templateRowIndex: z.number().int().nonnegative(),
+    columns: z.array(z.enum(TABLE_COLUMN_ROLES)).min(1),
+  }),
+});
+
+/** PATCH-body: ett slot-beslut, ett slide-beslut, ELLER ett tabellbeslut.
+ *  Slot-formen först — den är den vanliga och har disjunkta obligatoriska
+ *  nycklar. */
 export const OnboardingPatchSchema = z.union([
   OnboardingDecisionSchema,
   OnboardingSlideDecisionSchema,
+  OnboardingTableDecisionSchema,
 ]);
 
 // --- Defects: POST /api/templates/[id]/defects ---

@@ -31,7 +31,7 @@ describe("screenSlides", () => {
     expect(text.length).toBeGreaterThan(capacity as number);
 
     const slides: SlideShapes[] = [
-      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, shapes: [staticShape] },
+      { source: 1, tokens: [], images: { placed: 0, placeholders: 0 }, tables: [], shapes: [staticShape] },
     ];
 
     expect(screenSlides(slides)).toEqual([
@@ -54,7 +54,7 @@ describe("screenSlides", () => {
     expect(capacity as number).toBeLessThan(TIGHT_BOX_MIN_CHARS);
 
     const slides: SlideShapes[] = [
-      { source: 2, tokens: [], images: { placed: 0, placeholders: 0 }, shapes: [emptyBox] },
+      { source: 2, tokens: [], images: { placed: 0, placeholders: 0 }, tables: [], shapes: [emptyBox] },
     ];
 
     expect(screenSlides(slides)).toEqual([
@@ -79,7 +79,7 @@ describe("screenSlides", () => {
       {
         source: 1,
         tokens: ["{Namn}"],
-        images: { placed: 0, placeholders: 0 },
+        images: { placed: 0, placeholders: 0 }, tables: [],
         shapes: [tokenBearing, noGeometry],
       },
     ];
