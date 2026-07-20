@@ -7,7 +7,7 @@ export default function SetupPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "adopted" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,7 +41,8 @@ export default function SetupPage() {
       setErrorMessage(body.error ?? "Kunde inte slutföra setup.");
       return;
     }
-    setStatus("sent");
+    const body = (await res.json().catch(() => ({}))) as { adopted?: boolean };
+    setStatus(body.adopted ? "adopted" : "sent");
   }
 
   if (!ready) return null;
@@ -55,7 +56,14 @@ export default function SetupPage() {
           inloggningslänk. Det här steget kan bara göras en gång.
         </p>
 
-        {status === "sent" ? (
+        {status === "adopted" ? (
+          <div className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+            <strong>{email}</strong> hade redan ett konto — det är nu
+            administratör. Inget mejl har skickats:{" "}
+            <a href="/login" className="underline">logga in via /login</a> som
+            vanligt.
+          </div>
+        ) : status === "sent" ? (
           <div className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800">
             Administratörskontot är skapat. Vi har skickat en inloggningslänk till{" "}
             <strong>{email}</strong>. Öppna mejlet och klicka på länken.

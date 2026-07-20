@@ -69,6 +69,24 @@ export async function findAppUserByEmail(
   return data ? mapAppUserRow(data as Record<string, unknown>) : null;
 }
 
+/** Auth-account lookup by email via the admin listUsers API — supabase-js has
+ *  no direct getUserByEmail. Paged defensively; installs are tens of users. */
+async function findAuthUserByEmail(
+  service: SupabaseClient,
+  email: string,
+): Promise<{ id: string } | null> {
+  const target = email.toLowerCase();
+  const perPage = 200;
+  for (let page = 1; page <= 10; page++) {
+    const { data, error } = await service.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(error.message);
+    const hit = data.users.find((u) => u.email?.toLowerCase() === target);
+    if (hit) return { id: hit.id };
+    if (data.users.length < perPage) return null;
+  }
+  return null;
+}
+
 /**
  * Creates the auth account AND sends the invite email in one Supabase admin
  * call, then records the app_users row. The invite is the source of truth: if
@@ -76,6 +94,12 @@ export async function findAppUserByEmail(
  * app_users row without a matching auth account. Caller is responsible for the
  * duplicate-email pre-check (findAppUserByEmail) — a unique auth account per
  * email is enforced by Supabase auth itself.
+ *
+ * Upgrade/orphan path (`adopted: true`): if the email already has an auth
+ * account (created before the access model, or left behind by a failed row
+ * insert), inviteUserByEmail fails with email_exists — the account is then
+ * ADOPTED: its app_users row is created for the existing auth id. No invite
+ * email is sent; the account signs in via the normal /login magic link.
  */
 export async function createInvite(
   service: SupabaseClient,
@@ -88,17 +112,29 @@ export async function createInvite(
     // project's Site URL root and the invite is a dead end.
     redirectTo?: string;
   },
-): Promise<AppUser> {
+): Promise<{ appUser: AppUser; adopted: boolean }> {
   const { data, error } = args.redirectTo
     ? await service.auth.admin.inviteUserByEmail(args.email, { redirectTo: args.redirectTo })
     : await service.auth.admin.inviteUserByEmail(args.email);
+  let userId: string;
+  let adopted = false;
   if (error || !data?.user) {
-    throw new Error(error?.message ?? "Invite failed: no user returned");
+    if ((error as { code?: string } | null)?.code !== "email_exists") {
+      throw new Error(error?.message ?? "Invite failed: no user returned");
+    }
+    const existing = await findAuthUserByEmail(service, args.email);
+    if (!existing) {
+      throw new Error(`Auth-kontot för ${args.email} hittades inte trots email_exists.`);
+    }
+    userId = existing.id;
+    adopted = true;
+  } else {
+    userId = data.user.id;
   }
   const { data: row, error: insertError } = await service
     .from("app_users")
     .insert({
-      id: data.user.id,
+      id: userId,
       email: args.email,
       role: args.role,
       status: "invited",
@@ -107,7 +143,7 @@ export async function createInvite(
     .select(APP_USER_SELECT)
     .single();
   if (insertError) throw new Error(insertError.message);
-  return mapAppUserRow(row as Record<string, unknown>);
+  return { appUser: mapAppUserRow(row as Record<string, unknown>), adopted };
 }
 
 /** Flips invited→active on first successful login. No-op if already active. */

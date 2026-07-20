@@ -27,7 +27,9 @@ export async function POST(request: NextRequest) {
       invitedBy: null,
       redirectTo: `${new URL(request.url).origin}/auth/callback`,
     });
-    return NextResponse.json({ id: admin.id }, { status: 201 });
+    // adopted ⇒ the email already had an auth account (upgrade install) — no
+    // invite email was sent, so the UI must say "log in" instead of "check mail".
+    return NextResponse.json({ id: admin.appUser.id, adopted: admin.adopted }, { status: 201 });
   } catch (err) {
     return internalError(err);
   }

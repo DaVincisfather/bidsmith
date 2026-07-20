@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       invitedBy: auth.data.id,
       redirectTo: `${new URL(request.url).origin}/auth/callback`,
     });
-    return NextResponse.json({ id: invited.id }, { status: 201 });
+    return NextResponse.json({ id: invited.appUser.id, adopted: invited.adopted }, { status: 201 });
   } catch (err) {
     return internalError(err);
   }

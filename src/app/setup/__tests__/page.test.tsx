@@ -55,6 +55,27 @@ describe("SetupPage", () => {
     expect(screen.getByText(/Vi har skickat en inloggningslänk/)).toBeTruthy();
   });
 
+  it("shows the log-in-instead confirmation when the account was adopted (no email sent)", async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url === "/api/setup/bootstrap") {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: "old-id", adopted: true }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ needsSetup: true }) });
+    });
+    vi.stubGlobal("fetch", fetchMock as never);
+
+    render(<SetupPage />);
+    await waitFor(() => expect(screen.getByLabelText(/E-post/)).toBeTruthy());
+
+    fireEvent.change(screen.getByLabelText(/E-post/), {
+      target: { value: "admin@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Skapa administratörskonto/ }));
+
+    await waitFor(() => expect(screen.getByText(/hade redan ett konto/)).toBeTruthy());
+    expect(screen.queryByText(/Vi har skickat en inloggningslänk/)).toBeNull();
+  });
+
   it("shows the server error message when bootstrap fails and does not redirect", async () => {
     const errorMessage = "Setup är redan slutförd. Logga in via /login.";
     const fetchMock = vi.fn((url: string) => {

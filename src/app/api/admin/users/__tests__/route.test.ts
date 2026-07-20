@@ -73,7 +73,7 @@ describe("POST /api/admin/users", () => {
   it("invites a new member as role=member", async () => {
     h.requireAdminMock.mockResolvedValue(okAdmin);
     h.findByEmailMock.mockResolvedValue(null);
-    h.createInviteMock.mockResolvedValue({ id: "member-id" });
+    h.createInviteMock.mockResolvedValue({ appUser: { id: "member-id" }, adopted: false });
     const res = await POST(jsonReq({ email: "new@firm.se" }));
     expect(res.status).toBe(201);
     expect(h.createInviteMock).toHaveBeenCalledWith(expect.anything(), { email: "new@firm.se", role: "member", invitedBy: "admin1", redirectTo: "http://x/auth/callback" });

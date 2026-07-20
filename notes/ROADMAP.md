@@ -17,9 +17,18 @@ första körningen la bara tabell+RLS, resten reconcile:ades in). **PR-ROUTINEN 
 tsc+testkör såg det INTE — LÄRDOM i CLAUDE.md); (b) `createInvite` skickar nu `redirectTo=<origin>/auth/callback`
 så invite-länken inte dör på Site-URL-roten. Verifierat under CI-paritet: `next build` exit 0, tsc rent,
 1371 tester gröna, per-task + Opus-granskning, CI grön.
-KVAR före live: **manuell invite-smoke** mot riktig Supabase (nästa session) — bootstrappa admin via
-`/setup`, bjud in en andra adress, verifiera att mejl kommer + länken loggar in. Kolla om invite-länken är
-`?code=` eller `token_hash`/`type=invite` — callback kan då behöva `verifyOtp`-gren. Sedan: merga PR #95.
+**INVITE-SMOKE GRÖN 2026-07-20 (Stefan, live mot dev):** invite av andra-adress → 201, mejl fram,
+länken loggade in. Smoken avslöjade UPPGRADERINGSLUCKAN: `/setup`-bootstrap föll med 500
+`email_exists` för konton skapade FÖRE access-modellen (`inviteUserByEmail` vägrar befintlig mejl)
+— dvs. varje uppgraderingsinstallation (inkl. PRODUKTIONEN) hade låsts ute permanent
+(tom `app_users` + callback-nekning + evig 500 på `/setup`). **ADOPTIONSFIXEN (samma PR, TDD):**
+`createInvite` fångar `email_exists` → slår upp befintligt auth-konto via `listUsers` (paginerad,
+case-insensitiv) → skapar `app_users`-raden på befintliga id:t; returnerar `{appUser, adopted}`;
+`/setup`-sidan visar "logga in via /login"-copy i stället för "kolla mejlen" när `adopted` (inget
+mejl skickas vid adoption). Lagar också specens orphan-städning (återinvite i stället för
+dashboard-radering). Live-verifierad mot dev-Supabase (dev-smoke-kontot adopterat som member).
+DEV-NOT: Stefans admin-rad i dev seedades manuellt via service-rollen (utredningens unblock)
+INNAN fixen fanns — prod behöver INTE seedas, `/setup` adopterar nu. Sedan: merga PR #95.
 **⚠️ REVOKERING (Opus-slutgranskning):**
 medlemskap enforce:as bara vid login-kanten (`/auth/callback`), INTE per request — middlewaren
 re-kollar inte `app_users`. Att ta bort en användare = **radera `auth.users`-raden** (kaskaderar

@@ -48,10 +48,18 @@ describe("GET /api/setup/status", () => {
 describe("POST /api/setup/bootstrap", () => {
   it("creates the first admin when the table is empty", async () => {
     h.countAppUsersMock.mockResolvedValue(0);
-    h.createInviteMock.mockResolvedValue({ id: "admin-id" });
+    h.createInviteMock.mockResolvedValue({ appUser: { id: "admin-id" }, adopted: false });
     const res = await bootstrapPOST(jsonRequest({ email: "boss@firm.se" }));
     expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ id: "admin-id", adopted: false });
     expect(h.createInviteMock).toHaveBeenCalledWith(expect.anything(), { email: "boss@firm.se", role: "admin", invitedBy: null, redirectTo: "http://x/auth/callback" });
+  });
+  it("flags adoption in the response when the email already had an auth account", async () => {
+    h.countAppUsersMock.mockResolvedValue(0);
+    h.createInviteMock.mockResolvedValue({ appUser: { id: "old-id" }, adopted: true });
+    const res = await bootstrapPOST(jsonRequest({ email: "upgrade@firm.se" }));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ id: "old-id", adopted: true });
   });
   it("409s and does not invite when setup already ran", async () => {
     h.countAppUsersMock.mockResolvedValue(1);
