@@ -876,6 +876,12 @@ create table app_users (
   updated_at timestamptz not null default now()
 );
 
+-- One row per email, case-insensitive. Backs the app-level duplicate check in
+-- createInvite (findAppUserByEmail) with a DB guarantee, so a concurrent
+-- double-invite fails at the database instead of creating two rows for the same
+-- address. Emails are compared lower-cased to match that check's ilike lookup.
+create unique index app_users_email_lower_idx on app_users (lower(email));
+
 create trigger app_users_updated_at
   before update on app_users
   for each row execute function trigger_set_updated_at();
