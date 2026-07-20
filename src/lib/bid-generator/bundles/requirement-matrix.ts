@@ -24,7 +24,6 @@ export const RequirementMatrixBundleSchema = z.object({
             }),
           )
           .min(1),
-        met: z.boolean().optional(),
       }),
     )
     .min(1)

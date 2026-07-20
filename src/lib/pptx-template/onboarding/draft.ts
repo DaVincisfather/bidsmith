@@ -46,7 +46,6 @@ export const WireframeShapeSchema = z.object({
   /** true = har en DraftSlot (klickbar i wireframen). */
   candidate: z.boolean(),
 });
-export type WireframeShape = z.infer<typeof WireframeShapeSchema>;
 
 export const WireframeSlideSchema = z.object({
   source: z.number().int().positive(),
@@ -76,7 +75,6 @@ export const TableDecisionSchema = z.object({
   columns: z.array(z.enum(TABLE_COLUMN_ROLES)),
   confirmed: z.boolean(),
 });
-export type TableDecision = z.infer<typeof TableDecisionSchema>;
 
 export const DraftTableRowSchema = z.object({
   heightEmu: z.number().int().nonnegative(),

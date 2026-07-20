@@ -42,7 +42,6 @@ export type SlotFormat = (typeof SLOT_FORMATS)[number];
 
 /** How template onboarding resolved a slot. */
 export const SLOT_STATUSES = ["mapped", "generic", "skip"] as const;
-export type SlotStatus = (typeof SLOT_STATUSES)[number];
 
 export const SlotProfileSchema = z.object({
   /** The pptx placeholder token this slot fills, e.g. "{Vår metod}". */

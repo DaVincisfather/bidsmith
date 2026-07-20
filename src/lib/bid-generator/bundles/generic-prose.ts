@@ -11,16 +11,10 @@ import { isShortBudget, SHORT_FIELD_MAX_CHARS } from "../short-field";
  * `intent` + the bid context + an optional character budget, it writes source-
  * faithful prose. This is what makes arbitrary uploaded templates renderable:
  * known sections keep their specialised bundles; everything else falls here.
- *
- * Isolated mechanism only — NOT yet wired into generateAllSections. The
- * orchestrator becomes profile-aware once onboarding produces a real foreign
- * profile to drive it (slice 5). See
+ * The generate-from-profile orchestrator drives this via the batched
+ * slide/re-ask/shorten calls below. See
  * notes/2026-07-02-template-upload-architecture.md.
  */
-
-export const GenericProseBundleSchema = z.object({
-  text: z.string().min(1),
-});
 
 // FAST schema for the batch (slide + re-ask) calls — one array element per
 // placeholder, NOT one dynamic object key per placeholder. Live measurements
@@ -94,22 +88,6 @@ ETT STYCKE (HÅRD REGEL):
 Varje sektion skrivs som ETT sammanhängande stycke — inga radbrytningar, inga tomma rader,
 inga punktlistor. Textrutorna är kalibrerade för löpande text: varje radbrytning kostar
 höjd som inte finns och trycker texten utanför rutan.`;
-
-function systemPrompt(slot: GenericProseSlot): string {
-  const budgetLine = slot.budgetChars
-    ? `\nLÄNGD: håll dig inom ca ${slot.budgetChars} tecken. Hellre kortare och korrekt än utfyllt.`
-    : "";
-  return `Du skriver en sektion till ett svenskt konsultanbud.
-
-Sektionens syfte: ${slot.intent || "(ej angivet — härled från platshållaren och kontexten)"}.
-
-${PROSE_VOICE}${budgetLine}
-
-Svara med giltig JSON:
-{
-  "text": "sammanhängande prosa i ETT stycke, utan radbrytningar"
-}`;
-}
 
 // Max placeholders per batch call. The fixed sections-array schema removed the
 // grammar-compilation ceiling that dynamic per-slot keys hit (see
@@ -212,47 +190,12 @@ ${jsonLines}
 }`;
 }
 
-export async function buildGenericProseSection(
-  slot: GenericProseSlot,
-  ctx: BidContext,
-): Promise<BidSection> {
-  const parsed = await callClaude({
-    // Egen roll (inte MODELS.writing): fallbacken kör Sonnet 5 — en främmande
-    // mall kan ha 30+ okända slots per anbud, Opus-pris där bärs av användaren.
-    model: MODELS.writingGeneric,
-    maxTokens: 32000,
-    system: systemPrompt(slot),
-    cachedContext: formatContext(ctx),
-    userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
-    schema: GenericProseBundleSchema,
-    label: "generic-prose bundle",
-    // "high", inte "max": fallback-prosa på Sonnet 5 — max är benäget till
-    // overthinking, och vid 30+ okända slots per anbud är det reell
-    // användarkostnad (routine-review #53).
-    effort: "high",
-    userId: ctx.userId,
-    bidId: ctx.bidId,
-  });
-
-  return {
-    type: "ai",
-    key: `generic-prose:${slot.placeholder}`,
-    title: slot.intent || slot.placeholder,
-    content: {
-      format: "generic-prose",
-      placeholder: slot.placeholder,
-      text: parsed.text,
-    },
-    generatedAt: new Date().toISOString(),
-  };
-}
-
 /**
  * Per-CHUNK batch: ONE Sonnet call fills a chunk (≤MAX_KEYS_PER_CALL) of a slide's
  * generic-prose slots. The FIXED sections-array schema (GenericProseSectionsSchema)
  * lets the model write the slots as a coherent whole while the response still maps
- * back to one BidSection per slot — same key/title/placeholder shape as
- * buildGenericProseSection. `siblings` names the slide's other slots (filled by
+ * back to one BidSection per slot (generic-prose format, key `generic-prose:{...}`).
+ * `siblings` names the slide's other slots (filled by
  * sibling chunk-calls, intent truncated) as coherence context only; they're prompt
  * text, never schema, so the schema is byte-identical on every call.
  *
@@ -302,7 +245,7 @@ function recordFromSections(parsed: z.infer<typeof GenericProseSectionsSchema>):
 
 /** Maps a keyed AI response back to one BidSection per slot, dropping slots the
  *  model answered blank (or omitted) — those are left to the caller to record.
- *  Same section shape as buildGenericProseSection; shared by the slide batch and
+ *  Shared by the slide batch and
  *  the re-ask batch so both map responses identically. This is the SINGLE
  *  empty-decision point: the orchestrator's re-ask collection and its
  *  post-re-ask merge both derive from which sections this produces. */

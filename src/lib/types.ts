@@ -43,14 +43,6 @@ export interface RfpAnalysis {
   secrecyRows: SecrecyRow[];        // NEW — what the RFP asks to be classified (may be empty)
 }
 
-export interface AnalysisRecord {
-  id: string;
-  fileName: string;
-  fileUrl: string;
-  analysis: RfpAnalysis;
-  createdAt: string;
-}
-
 // --- M1: Consultant Profiles & Matching ---
 
 export type ConsultantLevel = "junior" | "intermediate" | "senior" | "expert";
@@ -124,13 +116,6 @@ export interface ScoredMatchResult {
   scoredConsultants: ScoredConsultant[];
 }
 
-export interface MatchRecord {
-  id: string;
-  analysisId: string;
-  scoredConsultants: ScoredConsultant[];
-  createdAt: string;
-}
-
 // --- M1.5: Go/No-Go Agent ---
 
 export interface MustRequirementCheck {
@@ -160,18 +145,6 @@ export interface GoNoGoResult {
   improvements: ImprovementSuggestion[];
   recommendation: GoNoGoRecommendation;
   reasoning: string;
-}
-
-export type GoNoGoDecision = "pending" | "go" | "no-go";
-
-export interface GoNoGoAssessment {
-  id: string;
-  analysisId: string;
-  teamConsultantIds: string[];
-  result: GoNoGoResult;
-  decision: GoNoGoDecision;
-  decisionAt: string | null;
-  createdAt: string;
 }
 
 // --- M2: Bid Generation ---
@@ -242,7 +215,6 @@ export type BidSectionContent =
           status: "JA" | "NEJ" | "DELVIS";
           evidence: string;
         }>;
-        met?: boolean;
       }>;
     }
   | {
@@ -297,18 +269,6 @@ export interface BidSection {
 export type BidStatus = "generating" | "draft" | "exported" | "failed";
 export type BidOutcome = "won" | "lost" | "no-bid" | "cancelled";
 
-export interface Bid {
-  id: string;
-  analysisId: string;
-  assessmentId: string | null;
-  createdBy: string | null;
-  teamConsultantIds: string[];
-  sections: BidSection[];
-  status: BidStatus;
-  outcome: BidOutcome | null;
-  exportedAt: string | null;
-  createdAt: string;
-}
 
 export interface StyleGuide {
   colors: {
@@ -361,11 +321,4 @@ export interface PipelineStats {
   loggedCount: number;
   wonCount: number;
   lostCount: number;
-}
-
-export interface OutcomePatch {
-  outcome: BidOutcome;
-  competitorName?: string;
-  lossReason?: LossReason;
-  lossComment?: string;
 }

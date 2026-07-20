@@ -4,7 +4,15 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-19 — **LAUNCH-POLISH LEVERERAD** (setup.sql + doctor,
+_Senast uppdaterad: 2026-07-20 — **WORKFLOWANALYSENS FIX-KEDJA MERGAD**: säkerhet
+(PR #92: zip-bomb-guard, content-type-hantering, JSON-bounds, open-redirect-guard),
+buggsvep (PR #93: server-side team-cap, atomisk CV-upsert, JSON-500-guards, tidszon),
+död kod-städ (PR #94, ~185 rader verifierat oanvänt). Residualer bokförda i
+backloggen (zip-bomb robust bounding + markitdown-vägen, engines-fältet,
+buggsvepets fyra kvarvarande). Nästa: **access-modellen** (invite-flow,
+publiceringsblockeraren — brainstormas före bygge) → video → publicering._
+
+_2026-07-19 — **LAUNCH-POLISH LEVERERAD** (setup.sql + doctor,
 BUG-A/B fixade, foreign-flaggan default PÅ; nästa: workflowanalys → video →
 publicering). Tidigare samma dag: tabeller slice 6 (PR #90), onboarding-mätpasset
 (PR #89), smoke 3 godkänd + kicker-enforcement (PR #88)._
@@ -330,9 +338,13 @@ _Inga — #54–#68 mergade 2026-07-03/04._
     drabbades bara den överstora sloten (correctness, svansrisk på täta slides)
   - dubbel-placeholder på samma slide garderas ENBART av onboardingens kollisionssuffix —
     map-nyckeln skriver tyst över (correctness-lite, ej nåbar idag)
-  - missing-key-nedgraderingen i generate-from-profile är onåbar i produktion (schemat
-    rejectar före) — död defensiv kod med felbeskrivande kommentar (städ)
-  - `buildGenericProseSection` (per-slot) är nu produktions-orphan — behåll/ta bort medvetet
+  - ~~missing-key-nedgraderingen i generate-from-profile är onåbar~~ — INAKTUELL NOT
+    (2026-07-19-städning): efter övergången till det FASTA sections-array-schemat
+    tolererar mappningen aktivt att modellen utelämnar ett element (re-ask-insamlingen);
+    testas explicit i generate-from-profile.test.ts. Koden är levande, inte död.
+  - ~~`buildGenericProseSection` (per-slot) produktions-orphan~~ — BORTTAGEN 2026-07-19
+    (död kod-städ-PR): produktion kör batch-varianterna; per-slot-funktionen +
+    GenericProseBundleSchema + systemPrompt hade noll produktionsreferenser.
 - **Onboarding-verifieringens övriga fynd (2026-07-06):**
   - F3 (polish): wireframens textetiketter skalar inte med slideSize — oläsliga på mallar
     i övernormal storlek (Radrum 150 %)
