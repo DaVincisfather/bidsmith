@@ -44,6 +44,7 @@ describe("GET /api/admin/users", () => {
     h.requireAdminMock.mockResolvedValue({ ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) });
     const res = await GET();
     expect(res.status).toBe(403);
+    expect(h.listMock).not.toHaveBeenCalled();
   });
   it("lists rows for an admin", async () => {
     h.requireAdminMock.mockResolvedValue(okAdmin);
