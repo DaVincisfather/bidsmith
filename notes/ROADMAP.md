@@ -28,7 +28,11 @@ case-insensitiv) → skapar `app_users`-raden på befintliga id:t; returnerar `{
 mejl skickas vid adoption). Lagar också specens orphan-städning (återinvite i stället för
 dashboard-radering). Live-verifierad mot dev-Supabase (dev-smoke-kontot adopterat som member).
 DEV-NOT: Stefans admin-rad i dev seedades manuellt via service-rollen (utredningens unblock)
-INNAN fixen fanns — prod behöver INTE seedas, `/setup` adopterar nu. Sedan: merga PR #95.
+INNAN fixen fanns — prod behöver INTE seedas, `/setup` adopterar nu. Fräsch-reviewer (Opus):
+APPROVE, 0 kritiska; cast-städ + page-2-pagineringstest åtgärdade i follow-up-commit. MEDVETEN
+TRADEOFF (reviewer-fynd, ingen kod): fel-men-existerande mejl i one-shot-`/setup` adopterar
+irreversibelt det kontot som admin (pre-fix: retrybar 500) — operatören har service-rollen och
+kan backa raden manuellt. Sedan: merga PR #95.
 **⚠️ REVOKERING (Opus-slutgranskning):**
 medlemskap enforce:as bara vid login-kanten (`/auth/callback`), INTE per request — middlewaren
 re-kollar inte `app_users`. Att ta bort en användare = **radera `auth.users`-raden** (kaskaderar

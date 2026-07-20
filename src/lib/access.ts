@@ -119,7 +119,7 @@ export async function createInvite(
   let userId: string;
   let adopted = false;
   if (error || !data?.user) {
-    if ((error as { code?: string } | null)?.code !== "email_exists") {
+    if (error?.code !== "email_exists") {
       throw new Error(error?.message ?? "Invite failed: no user returned");
     }
     const existing = await findAuthUserByEmail(service, args.email);

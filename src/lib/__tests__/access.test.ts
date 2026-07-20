@@ -121,6 +121,29 @@ describe("createInvite", () => {
     expect(r.adopted).toBe(true);
     expect(r.appUser.id).toBe("old-id");
   });
+  it("keeps paging listUsers when the account sits beyond the first full page", async () => {
+    const invite = vi.fn(() => Promise.resolve({
+      data: { user: null },
+      error: { code: "email_exists", message: "A user with this email address has already been registered" },
+    }));
+    const fullPage = Array.from({ length: 200 }, (_, i) => ({ id: `u${i}`, email: `u${i}@x.se` }));
+    const listUsers = vi.fn()
+      .mockResolvedValueOnce({ data: { users: fullPage }, error: null })
+      .mockResolvedValueOnce({ data: { users: [{ id: "old-id", email: "c@d.se" }] }, error: null });
+    const single = vi.fn(() => Promise.resolve({
+      data: { id: "old-id", email: "c@d.se", role: "member", status: "invited", invited_by: null, created_at: "t", updated_at: "t" },
+      error: null,
+    }));
+    const insert = vi.fn(() => ({ select: () => ({ single }) }));
+    const service = serviceMock({
+      auth: { admin: { inviteUserByEmail: invite, listUsers } },
+      from: () => ({ insert }),
+    });
+    const r = await createInvite(service, { email: "c@d.se", role: "member", invitedBy: null });
+    expect(listUsers).toHaveBeenNthCalledWith(1, { page: 1, perPage: 200 });
+    expect(listUsers).toHaveBeenNthCalledWith(2, { page: 2, perPage: 200 });
+    expect(r.appUser.id).toBe("old-id");
+  });
   it("throws and does NOT insert when email_exists but no auth account matches the email", async () => {
     const invite = vi.fn(() => Promise.resolve({
       data: { user: null },
