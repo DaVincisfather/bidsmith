@@ -65,6 +65,12 @@ describe("findAppUserByEmail", () => {
     expect(await findAppUserByEmail(service, "A@B.se")).toBeNull();
     expect(ilike).toHaveBeenCalledWith("email", "A@B.se");
   });
+  it("escapes ILIKE metacharacters so an underscore in the local-part is literal", async () => {
+    const ilike = vi.fn(() => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }));
+    const service = serviceMock({ from: () => ({ select: () => ({ ilike }) }) });
+    expect(await findAppUserByEmail(service, "jo_n@x.se")).toBeNull();
+    expect(ilike).toHaveBeenCalledWith("email", "jo\\_n@x.se");
+  });
 });
 
 describe("createInvite", () => {

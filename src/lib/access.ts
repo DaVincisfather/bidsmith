@@ -56,10 +56,14 @@ export async function findAppUserByEmail(
   service: SupabaseClient,
   email: string,
 ): Promise<AppUser | null> {
+  // Escape ILIKE metacharacters (%/_/\) so an email that happens to contain them
+  // (e.g. first_last@co.se) matches literally, not as a wildcard. Mirrors
+  // upsertConsultant's name lookup in supabase.ts.
+  const likePattern = email.replace(/[\\%_]/g, "\\$&");
   const { data, error } = await service
     .from("app_users")
     .select(APP_USER_SELECT)
-    .ilike("email", email)
+    .ilike("email", likePattern)
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data ? mapAppUserRow(data as Record<string, unknown>) : null;
@@ -110,10 +114,10 @@ export async function activateAppUser(
 }
 
 /**
- * Gate for admin-only routes. Identity comes from the session-bound client
- * (self-read RLS lets a user read their own row); the caller then uses the
- * service client for operations touching other rows. Returns a 401 when
- * unauthenticated, 403 when the caller lacks the admin role.
+ * Gate for admin-only routes. Identity is resolved from the session-bound
+ * client's auth session (via getUserId); the role lookup then reads the
+ * app_users row through the service client. Returns 401 when unauthenticated,
+ * 403 when the caller lacks the admin role.
  */
 export async function requireAdmin(
   sessionClient: SupabaseClient,
