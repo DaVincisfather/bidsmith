@@ -33,12 +33,21 @@ function makeStub(existing: { id: string } | null) {
               limit: () => ({ maybeSingle: async () => ({ data: existing, error: null }) }),
             }),
           }),
+          // Barn-old-ids-läsning (UPDATE-vägen): .select("id").eq(consultant_id).
+          // En gammal rad → delete-by-id körs efter att nya barnen infogats.
+          eq: async () => {
+            ops.push(`${table}.select`);
+            return { data: [{ id: `${table}-old` }], error: null };
+          },
         }),
         update: (row: unknown) => {
           (updated[table] ??= []).push(row);
           return { eq: () => okThenable(`${table}.update`) };
         },
-        delete: () => ({ eq: () => okThenable(`${table}.delete`) }),
+        delete: () => ({
+          eq: () => okThenable(`${table}.delete`),
+          in: () => okThenable(`${table}.delete`),
+        }),
         insert: (rows: unknown) => {
           (inserted[table] ??= []).push(...(Array.isArray(rows) ? rows : [rows]));
           const p = okThenable(`${table}.insert`);
@@ -68,9 +77,14 @@ describe("upsertConsultant", () => {
     expect(res).toEqual({ consultantId: "existing-1", updated: true });
     expect(stub._ops).toContain("consultants.update");
     expect(stub._ops).not.toContain("consultants.insert"); // ingen ny konsultrad
+    expect(stub._ops).toContain("consultant_competencies.insert");
     expect(stub._ops).toContain("consultant_competencies.delete");
     expect(stub._ops).toContain("consultant_references.delete");
-    expect(stub._ops).toContain("consultant_competencies.insert");
+    // Nya barnen infogas FÖRE gamla raderas (annars kan ett fel mitt i lämna
+    // konsulten utan kompetenser) — verifiera ordningen.
+    expect(stub._ops.indexOf("consultant_competencies.insert")).toBeLessThan(
+      stub._ops.indexOf("consultant_competencies.delete"),
+    );
   });
 
   it("infogar ny konsult när ingen matchar namnet", async () => {

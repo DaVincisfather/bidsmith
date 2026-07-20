@@ -60,6 +60,21 @@ export async function requireUser(
 }
 
 /**
+ * Maps an unexpected thrown error to a counted JSON 500. Core POST routes
+ * (matches/go-no-go/bids) call service-lib functions that throw on operational
+ * failures — e.g. fetchConsultantsByIds throws "Consultants not found: ..."
+ * when a stored team references a since-deleted consultant. Without a catch the
+ * client gets a non-JSON 500 it can't `response.json()` (routine-fynd #65); this
+ * gives the same {error} contract every other path honours.
+ */
+export function internalError(err: unknown): NextResponse {
+  return NextResponse.json(
+    { error: err instanceof Error ? err.message : "Internt serverfel" },
+    { status: 500 },
+  );
+}
+
+/**
  * Parses and validates a JSON request body against a Zod schema.
  *
  * Why: routes used to do `body as { ... }` casts plus hand-rolled enum/required

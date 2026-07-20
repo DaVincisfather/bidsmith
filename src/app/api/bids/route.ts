@@ -8,7 +8,7 @@ import { loadActiveTemplate } from "@/lib/pptx-template/active-template";
 import { loadActiveProfile } from "@/lib/org-profile";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
-import { parseBody } from "@/lib/api-helpers";
+import { parseBody, internalError } from "@/lib/api-helpers";
 import { BidCreateSchema } from "@/lib/api-schemas";
 
 // 6 parallel Opus calls take 2–5 min — far beyond the default serverless
@@ -19,6 +19,7 @@ import { BidCreateSchema } from "@/lib/api-schemas";
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
+  try {
   const parsed = await parseBody(request, BidCreateSchema);
   if (!parsed.ok) return parsed.response;
   const { analysisId, assessmentId, teamConsultantIds } = parsed.data;
@@ -96,4 +97,7 @@ export async function POST(request: NextRequest) {
   after(() => runBidGeneration(supabase, bid.id, ctx, template));
 
   return NextResponse.json({ id: bid.id, status: "generating" }, { status: 202 });
+  } catch (err) {
+    return internalError(err);
+  }
 }

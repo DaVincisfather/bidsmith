@@ -3,11 +3,12 @@ import { createServiceClient, fetchConsultantsByIds } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { evaluateGoNoGo } from "@/lib/go-no-go-evaluator";
 import { RfpAnalysis, ScoredConsultant } from "@/lib/types";
-import { parseBody } from "@/lib/api-helpers";
+import { parseBody, internalError } from "@/lib/api-helpers";
 import { GoNoGoCreateSchema } from "@/lib/api-schemas";
 import { getUserId } from "@/lib/org";
 
 export async function POST(request: NextRequest) {
+  try {
   const parsed = await parseBody(request, GoNoGoCreateSchema);
   if (!parsed.ok) return parsed.response;
   const { analysisId, teamConsultantIds } = parsed.data;
@@ -63,4 +64,7 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ id: assessment.id, result });
+  } catch (err) {
+    return internalError(err);
+  }
 }

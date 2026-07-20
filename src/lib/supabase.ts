@@ -153,6 +153,14 @@ export async function upsertConsultant(
 
   let consultantId: string;
   let updated: boolean;
+  // On re-upload we REPLACE the children, but delete-then-insert used to wipe a
+  // consultant's competencies/references if the insert failed in between (no
+  // transaction — grep .rpc = none). So we capture the old rows' ids here and
+  // delete them only AFTER the new ones have landed (below): an insert failure
+  // now leaves the old, valid data intact instead of an empty consultant. Worst
+  // case on a delete failure is transient duplicates, cleaned up next upload.
+  let oldCompetencyIds: string[] = [];
+  let oldReferenceIds: string[] = [];
 
   if (existing) {
     consultantId = (existing as { id: string }).id;
@@ -162,17 +170,18 @@ export async function upsertConsultant(
       .update(row)
       .eq("id", consultantId);
     if (updateError) throw new Error(updateError.message);
-    // Ersätt barnen — CV:t skrivs om, gamla kompetenser/referenser ska inte ligga kvar.
-    const { error: delCompError } = await supabase
+    const { data: oldComp, error: oldCompErr } = await supabase
       .from("consultant_competencies")
-      .delete()
+      .select("id")
       .eq("consultant_id", consultantId);
-    if (delCompError) throw new Error(delCompError.message);
-    const { error: delRefError } = await supabase
+    if (oldCompErr) throw new Error(oldCompErr.message);
+    oldCompetencyIds = (oldComp ?? []).map((r) => (r as { id: string }).id);
+    const { data: oldRef, error: oldRefErr } = await supabase
       .from("consultant_references")
-      .delete()
+      .select("id")
       .eq("consultant_id", consultantId);
-    if (delRefError) throw new Error(delRefError.message);
+    if (oldRefErr) throw new Error(oldRefErr.message);
+    oldReferenceIds = (oldRef ?? []).map((r) => (r as { id: string }).id);
   } else {
     const { data: inserted, error: insertError } = await supabase
       .from("consultants")
@@ -209,6 +218,24 @@ export async function upsertConsultant(
         evidence: r.evidence ?? null,
       })),
     );
+    if (error) throw new Error(error.message);
+  }
+
+  // New children are in place — now remove the old ones (re-upload only). Any
+  // failure above threw before this point, so the old data survived; only the
+  // delete itself remains, and its worst case is transient duplicates.
+  if (oldCompetencyIds.length > 0) {
+    const { error } = await supabase
+      .from("consultant_competencies")
+      .delete()
+      .in("id", oldCompetencyIds);
+    if (error) throw new Error(error.message);
+  }
+  if (oldReferenceIds.length > 0) {
+    const { error } = await supabase
+      .from("consultant_references")
+      .delete()
+      .in("id", oldReferenceIds);
     if (error) throw new Error(error.message);
   }
 

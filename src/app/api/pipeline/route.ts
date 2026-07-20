@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { daysUntil, calculateUrgency, sortPipelineItems } from "@/lib/pipeline";
+import { daysUntil, calculateUrgency, sortPipelineItems, stockholmToday } from "@/lib/pipeline";
 import type { PipelineItem, RfpAnalysis } from "@/lib/types";
 
 const MIN_SCORE = 65;
 
 export async function GET() {
   const supabase = await createClient();
-  const today = new Date().toISOString().split("T")[0];
+  // Stockholm-local "today" so the TED deadline filter and daysUntil agree with
+  // the user's calendar day (UTC flipped 1-2 h early after local midnight).
+  const today = stockholmToday();
 
   // Fetch TED opportunities, analyses, and exported bids in parallel
   const [
