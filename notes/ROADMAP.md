@@ -4,13 +4,26 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-20 — **WORKFLOWANALYSENS FIX-KEDJA MERGAD**: säkerhet
+_Senast uppdaterad: 2026-07-20 — **ACCESS-MODELLEN BYGGD (invite-flow, publiceringsblockeraren)**
+på branch `feat/access-control` (spec + plan i `docs/superpowers/specs|plans/2026-07-20-access-control*`):
+stänger öppen Supabase-signup. Ny tabell `app_users` (migration 013 — **applicera manuellt
+i SQL Editor före deploy**) med roll (admin/member) + status (invited/active), self-read-RLS
+(alla skrivningar via service-rollen). `/login` fick `shouldCreateUser:false` + "ej inbjuden"-copy;
+`/auth/callback` nekar konton utan app_users-rad (signOut + no_access) och flippar invited→active;
+`/setup` bootstrappar första admin (inert när tabellen har ≥1 rad); admin bjuder in medlemmar via
+`/installningar/anvandare`. Verifierat: tsc rent, 1370 tester gröna, per-task + Opus-granskning.
+KVAR före live: **manuell invite-smoke** mot riktig Supabase (kolla om invite-länken är `?code=`
+eller `token_hash`/`type=invite` — callback kan behöva `verifyOtp`-gren). V1-BACKLOG (medvetet
+utanför): återkalla/inaktivera åtkomst från UI, byta roll efter skapande, återsända utgånget
+inbjudningsmejl, samt Supabase built-in-mejlets rate-limits vid högre invite-volym.
+Nästa efter merge: **video → publicering**._
+
+_2026-07-20 — **WORKFLOWANALYSENS FIX-KEDJA MERGAD**: säkerhet
 (PR #92: zip-bomb-guard, content-type-hantering, JSON-bounds, open-redirect-guard),
 buggsvep (PR #93: server-side team-cap, atomisk CV-upsert, JSON-500-guards, tidszon),
 död kod-städ (PR #94, ~185 rader verifierat oanvänt). Residualer bokförda i
 backloggen (zip-bomb robust bounding + markitdown-vägen, engines-fältet,
-buggsvepets fyra kvarvarande). Nästa: **access-modellen** (invite-flow,
-publiceringsblockeraren — brainstormas före bygge) → video → publicering._
+buggsvepets fyra kvarvarande)._
 
 _2026-07-19 — **LAUNCH-POLISH LEVERERAD** (setup.sql + doctor,
 BUG-A/B fixade, foreign-flaggan default PÅ; nästa: workflowanalys → video →
