@@ -13,10 +13,16 @@ i SQL Editor före deploy**) med roll (admin/member) + status (invited/active), 
 `/setup` bootstrappar första admin (inert när tabellen har ≥1 rad); admin bjuder in medlemmar via
 `/installningar/anvandare`. Verifierat: tsc rent, 1370 tester gröna, per-task + Opus-granskning.
 KVAR före live: **manuell invite-smoke** mot riktig Supabase (kolla om invite-länken är `?code=`
-eller `token_hash`/`type=invite` — callback kan behöva `verifyOtp`-gren). V1-BACKLOG (medvetet
-utanför): återkalla/inaktivera åtkomst från UI, byta roll efter skapande, återsända utgånget
-inbjudningsmejl, samt Supabase built-in-mejlets rate-limits vid högre invite-volym.
-Nästa efter merge: **video → publicering**._
+eller `token_hash`/`type=invite` — callback kan behöva `verifyOtp`-gren). **⚠️ REVOKERING (Opus-slutgranskning):**
+medlemskap enforce:as bara vid login-kanten (`/auth/callback`), INTE per request — middlewaren
+re-kollar inte `app_users`. Att ta bort en användare = **radera `auth.users`-raden** (kaskaderar
+`app_users` + invaliderar sessionen), INTE bara `app_users`-raden (den lämnar sessionen levande).
+V1-BACKLOG (medvetet utanför): (1) per-request medlemskaps-koll i `middleware.ts` så revokering
+slår igenom direkt (inte bara login-kanten); (2) roll-gejta admin-UI:t — `/installningar/anvandare`
++ länken på Inställningar-landningen syns för icke-admins (API:t nekar med 403, men sidan renderar
+tom; dölj via self-read-rollen); (3) återkalla/byta roll/återsända inbjudan från UI; (4) callback
+saknar try/catch (fail-closed idag, men rå 500 mid-auth); (5) Supabase built-in-mejlets rate-limits
+vid högre invite-volym. Nästa efter merge: **video → publicering**._
 
 _2026-07-20 — **WORKFLOWANALYSENS FIX-KEDJA MERGAD**: säkerhet
 (PR #92: zip-bomb-guard, content-type-hantering, JSON-bounds, open-redirect-guard),
