@@ -4,6 +4,7 @@ import JSZip from "jszip";
 // HTML-egenskaper (classList m.fl.). Speglar read-pptx.ts import-stil.
 import { DOMParser, XMLSerializer, type Element } from "@xmldom/xmldom";
 import { resolveSlidePaths } from "../introspect/read-pptx";
+import { assertZipWithinLimits } from "../zip-guard";
 
 /**
  * Token-injektion för oinstrumenterade kundmallar (design-doc TILLÄGG 2026-07-03,
@@ -56,6 +57,7 @@ export async function instrumentTemplate(
   validateInjections(injections);
 
   const zip = await JSZip.loadAsync(buffer);
+  assertZipWithinLimits(zip, "pptx");
   const parser = new DOMParser();
   const serializer = new XMLSerializer();
   const slidePaths = await resolveSlidePaths(zip, parser);

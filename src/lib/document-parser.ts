@@ -21,6 +21,25 @@ export function getExtension(fileName: string): string {
   return ext ? `.${ext}` : "";
 }
 
+// MIME types keyed by our WHITELISTED extensions. Derive the stored
+// content-type from the (validated) extension, never from the client's
+// file.type — a spoofed text/html on an allowed extension would make Supabase
+// serve an uploaded file as HTML (stored-XSS on the storage origin).
+const CONTENT_TYPES: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".doc": "application/msword",
+  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".md": "text/markdown",
+  ".txt": "text/plain",
+};
+
+/** Safe storage content-type for a validated upload; octet-stream fallback. */
+export function contentTypeForFile(fileName: string): string {
+  return CONTENT_TYPES[getExtension(fileName)] ?? "application/octet-stream";
+}
+
 /**
  * Validates size and extension. Exported so callers can reject a bad upload
  * BEFORE persisting it (e.g. to Storage) instead of discovering the problem

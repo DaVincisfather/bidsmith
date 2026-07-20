@@ -296,6 +296,14 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Zip-bomb-skyddet robust (säkerhetsauditen + #92-granskningen, MEDIUM):**
+  `assertZipWithinLimits` litar på zip-huvudets DEKLARERADE uncompressedSize —
+  en förfalskad mall kan underrapportera den och ändå inflatera till GB (bevisat
+  i granskningen; pako cappar inte inflationen). Robust fix = strömma uppackning
+  med hård byte-gräns (annat unzip-lib, t.ex. yauzl). Auth-gatat + serverless-
+  isolerat ⇒ residual = per-anrop-OOM, inte total nedsläckning. (2) SAMMA
+  klass osäkrad på markitdown-vägen (`/api/analyze` + CV-upload parsar
+  docx/pptx/xlsx via markitdowns interna unzip — utanför JSZip-guarden).
 - **Node-krav maskinkontrollerat (PR #91-routinen):** `engines`-fält i package.json;
   `deck:scan`-scriptet använder fortfarande `--env-file-if-exists` (Node ≥22.9) —
   antingen samma script-interna env-laddning som doctor, eller höjt dokumenterat krav.

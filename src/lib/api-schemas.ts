@@ -16,7 +16,9 @@ import { TABLE_COLUMN_ROLES } from "./pptx-template/template-profile";
 export const BidPatchSchema = z
   .object({
     outcome: z.enum(["won", "lost", "no-bid"]).optional(),
-    sections: z.array(z.unknown()).optional(),
+    // .max caps the JSONB row size against an oversized client payload; a real
+    // deck is well under this (our template is 17 slides).
+    sections: z.array(z.unknown()).max(500).optional(),
     overflowFlags: OverflowFlagSchema.array().optional(),
   })
   .refine(
@@ -44,10 +46,12 @@ export const OutcomePatchSchema = z.object({
 
 // --- Bid: POST /api/bids ---
 
+// .max bounds the resulting PostgREST `.in(...)` query; a firm's whole roster
+// is the largest legitimate team-id list.
 export const BidCreateSchema = z.object({
   analysisId: z.string().min(1),
   assessmentId: z.string().optional(),
-  teamConsultantIds: z.array(z.string().min(1)).min(1),
+  teamConsultantIds: z.array(z.string().min(1)).min(1).max(200),
 });
 
 // --- Consultant: PUT /api/consultants/[id] ---
@@ -100,7 +104,7 @@ export const ShortenRequestSchema = z.object({
 
 export const GoNoGoCreateSchema = z.object({
   analysisId: z.string().min(1),
-  teamConsultantIds: z.array(z.string()).optional(),
+  teamConsultantIds: z.array(z.string()).max(200).optional(),
 });
 
 // --- Go/No-Go: PATCH /api/go-no-go/[id] ---
@@ -125,7 +129,11 @@ export const ProfileBodySchema = z.object({
   companyName: z.string().min(1).max(200),
   tonality: z.string().max(2000).nullable().optional(),
   boilerplate: z.string().max(4000).nullable().optional(),
-  colors: z.record(z.string(), z.string()).nullable().optional(),
+  colors: z
+    .record(z.string(), z.string())
+    .refine((c) => Object.keys(c).length <= 50, "för många färgnycklar")
+    .nullable()
+    .optional(),
 });
 
 // --- Onboarding: PATCH /api/templates/[id]/onboarding ---

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   parseDocument,
   getExtension,
+  contentTypeForFile,
   SUPPORTED_EXTENSIONS,
   MAX_UPLOAD_REQUEST_BYTES,
 } from "@/lib/document-parser";
@@ -21,16 +22,6 @@ interface UploadResult {
   // bara "Öppna originalet"-länken saknas för just denna konsult.
   warning: string | null;
 }
-
-// contentType härleds ur den WHITELISTADE extensionen — inte klientens file.type,
-// som är opålitlig/spoofbar (routine-polish #63).
-const CONTENT_TYPES: Record<string, string> = {
-  ".pdf": "application/pdf",
-  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ".doc": "application/msword",
-  ".md": "text/markdown",
-  ".txt": "text/plain",
-};
 
 /**
  * Bygger storage-nyckeln för originalfilen: FAST nyckel `${consultantId}/cv${ext}`
@@ -100,7 +91,7 @@ export async function POST(request: NextRequest) {
               .from(CV_BUCKET)
               .upload(cvKey, buffer, {
                 upsert: true,
-                contentType: CONTENT_TYPES[getExtension(file.name)],
+                contentType: contentTypeForFile(file.name),
               });
             if (upErr) throw new Error(upErr.message);
 
