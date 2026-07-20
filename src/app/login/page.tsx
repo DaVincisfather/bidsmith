@@ -4,6 +4,14 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+export function messageForOtpError(raw: string): string {
+  const s = raw.toLowerCase();
+  if (s.includes("signup") && (s.includes("not allowed") || s.includes("disabled"))) {
+    return "Den här adressen är inte inbjuden. Kontakta din administratör.";
+  }
+  return raw;
+}
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/";
@@ -28,12 +36,12 @@ function LoginForm() {
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: redirectTo },
+      options: { emailRedirectTo: redirectTo, shouldCreateUser: false },
     });
 
     if (error) {
       setStatus("error");
-      setErrorMessage(error.message);
+      setErrorMessage(messageForOtpError(error.message));
       return;
     }
 
