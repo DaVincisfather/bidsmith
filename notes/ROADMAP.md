@@ -4,7 +4,15 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-19 — **LAUNCH-POLISH LEVERERAD** (setup.sql + doctor,
+_Senast uppdaterad: 2026-07-20 — **WORKFLOWANALYSENS FIX-KEDJA MERGAD**: säkerhet
+(PR #92: zip-bomb-guard, content-type-hantering, JSON-bounds, open-redirect-guard),
+buggsvep (PR #93: server-side team-cap, atomisk CV-upsert, JSON-500-guards, tidszon),
+död kod-städ (PR #94, ~185 rader verifierat oanvänt). Residualer bokförda i
+backloggen (zip-bomb robust bounding + markitdown-vägen, engines-fältet,
+buggsvepets fyra kvarvarande). Nästa: **access-modellen** (invite-flow,
+publiceringsblockeraren — brainstormas före bygge) → video → publicering._
+
+_2026-07-19 — **LAUNCH-POLISH LEVERERAD** (setup.sql + doctor,
 BUG-A/B fixade, foreign-flaggan default PÅ; nästa: workflowanalys → video →
 publicering). Tidigare samma dag: tabeller slice 6 (PR #90), onboarding-mätpasset
 (PR #89), smoke 3 godkänd + kicker-enforcement (PR #88)._
