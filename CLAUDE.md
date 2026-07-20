@@ -86,6 +86,12 @@ Vid ändringar i befintlig kod:
   ytan) — aktiveringsgrinden (mätpasset) bär säkerheten som flaggan bar tidigare.
 - Ny migration ⇒ kör `npm run gen:setup-sql` och committa `supabase/setup.sql`
   (drift-testet fäller sviten annars). `npm run doctor` = preflight för installationer.
+- **`tsc --noEmit` + testsviten fångar INTE Next:s page/route-export-typvakt** — bara
+  `next build` gör det (den lever i `.next/types`, genereras vid bygget). Ett otillåtet
+  export ur en `page.tsx`/`route.ts` (bara kända fält tillåts) ger grön CI men bruten
+  deploy. **Verifiera page/route/auth-ändringar med ett riktigt `next build`.** OBS:
+  Turbopack-bygget kan inte följa en node_modules-**junction** (symlink-out-of-root) —
+  kör `npm ci` i worktreen först om node_modules är en junction till en annan worktree.
 
 ## Tech-stack
 

@@ -4,16 +4,23 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-20 — **ACCESS-MODELLEN BYGGD (invite-flow, publiceringsblockeraren)**
+_Senast uppdaterad: 2026-07-20 — **ACCESS-MODELLEN BYGGD → PR #95 (grön, oMERGAD)**
 på branch `feat/access-control` (spec + plan i `docs/superpowers/specs|plans/2026-07-20-access-control*`):
-stänger öppen Supabase-signup. Ny tabell `app_users` (migration 013 — **applicera manuellt
-i SQL Editor före deploy**) med roll (admin/member) + status (invited/active), self-read-RLS
-(alla skrivningar via service-rollen). `/login` fick `shouldCreateUser:false` + "ej inbjuden"-copy;
-`/auth/callback` nekar konton utan app_users-rad (signOut + no_access) och flippar invited→active;
-`/setup` bootstrappar första admin (inert när tabellen har ≥1 rad); admin bjuder in medlemmar via
-`/installningar/anvandare`. Verifierat: tsc rent, 1370 tester gröna, per-task + Opus-granskning.
-KVAR före live: **manuell invite-smoke** mot riktig Supabase (kolla om invite-länken är `?code=`
-eller `token_hash`/`type=invite` — callback kan behöva `verifyOtp`-gren). **⚠️ REVOKERING (Opus-slutgranskning):**
+stänger öppen Supabase-signup. Ny tabell `app_users` (migration 013) med roll (admin/member) +
+status (invited/active), self-read-RLS + unikt `lower(email)`-index (alla skrivningar via
+service-rollen). `/login` fick `shouldCreateUser:false` + "ej inbjuden"-copy; `/auth/callback` nekar
+konton utan app_users-rad (signOut + no_access) och flippar invited→active; `/setup` bootstrappar
+första admin (inert när tabellen har ≥1 rad); admin bjuder in medlemmar via `/installningar/anvandare`.
+**MIGRATION 013 APPLICERAD** i SQL Editor (verifierat: rls=true, policy=1, trigger=1, index=1 — den
+första körningen la bara tabell+RLS, resten reconcile:ades in). **PR-ROUTINEN (CRITICAL) fixad i PR:en:**
+(a) `messageForOtpError` flyttad ur `login/page.tsx` → `otp-error.ts` (page-export bröt `next build`;
+tsc+testkör såg det INTE — LÄRDOM i CLAUDE.md); (b) `createInvite` skickar nu `redirectTo=<origin>/auth/callback`
+så invite-länken inte dör på Site-URL-roten. Verifierat under CI-paritet: `next build` exit 0, tsc rent,
+1371 tester gröna, per-task + Opus-granskning, CI grön.
+KVAR före live: **manuell invite-smoke** mot riktig Supabase (nästa session) — bootstrappa admin via
+`/setup`, bjud in en andra adress, verifiera att mejl kommer + länken loggar in. Kolla om invite-länken är
+`?code=` eller `token_hash`/`type=invite` — callback kan då behöva `verifyOtp`-gren. Sedan: merga PR #95.
+**⚠️ REVOKERING (Opus-slutgranskning):**
 medlemskap enforce:as bara vid login-kanten (`/auth/callback`), INTE per request — middlewaren
 re-kollar inte `app_users`. Att ta bort en användare = **radera `auth.users`-raden** (kaskaderar
 `app_users` + invaliderar sessionen), INTE bara `app_users`-raden (den lämnar sessionen levande).
