@@ -76,6 +76,6 @@ describe("POST /api/admin/users", () => {
     h.createInviteMock.mockResolvedValue({ id: "member-id" });
     const res = await POST(jsonReq({ email: "new@firm.se" }));
     expect(res.status).toBe(201);
-    expect(h.createInviteMock).toHaveBeenCalledWith(expect.anything(), { email: "new@firm.se", role: "member", invitedBy: "admin1" });
+    expect(h.createInviteMock).toHaveBeenCalledWith(expect.anything(), { email: "new@firm.se", role: "member", invitedBy: "admin1", redirectTo: "http://x/auth/callback" });
   });
 });

@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       email: parsed.data.email,
       role: "member",
       invitedBy: auth.data.id,
+      redirectTo: `${new URL(request.url).origin}/auth/callback`,
     });
     return NextResponse.json({ id: invited.id }, { status: 201 });
   } catch (err) {

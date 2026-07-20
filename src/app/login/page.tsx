@@ -3,14 +3,7 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-export function messageForOtpError(raw: string): string {
-  const s = raw.toLowerCase();
-  if (s.includes("signup") && (s.includes("not allowed") || s.includes("disabled"))) {
-    return "Den här adressen är inte inbjuden. Kontakta din administratör.";
-  }
-  return raw;
-}
+import { messageForOtpError } from "./otp-error";
 
 function LoginForm() {
   const searchParams = useSearchParams();

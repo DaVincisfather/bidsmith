@@ -97,6 +97,20 @@ describe("createInvite", () => {
     await expect(createInvite(service, { email: "c@d.se", role: "member", invitedBy: null })).rejects.toThrow("smtp down");
     expect(insert).not.toHaveBeenCalled();
   });
+  it("passes redirectTo to inviteUserByEmail so the invite link lands on the callback", async () => {
+    const invite = vi.fn(() => Promise.resolve({ data: { user: { id: "new-id" } }, error: null }));
+    const single = vi.fn(() => Promise.resolve({
+      data: { id: "new-id", email: "c@d.se", role: "member", status: "invited", invited_by: "admin1", created_at: "t", updated_at: "t" },
+      error: null,
+    }));
+    const insert = vi.fn(() => ({ select: () => ({ single }) }));
+    const service = serviceMock({
+      auth: { admin: { inviteUserByEmail: invite } },
+      from: () => ({ insert }),
+    });
+    await createInvite(service, { email: "c@d.se", role: "member", invitedBy: "admin1", redirectTo: "http://x/auth/callback" });
+    expect(invite).toHaveBeenCalledWith("c@d.se", { redirectTo: "http://x/auth/callback" });
+  });
 });
 
 describe("activateAppUser", () => {

@@ -51,7 +51,7 @@ describe("POST /api/setup/bootstrap", () => {
     h.createInviteMock.mockResolvedValue({ id: "admin-id" });
     const res = await bootstrapPOST(jsonRequest({ email: "boss@firm.se" }));
     expect(res.status).toBe(201);
-    expect(h.createInviteMock).toHaveBeenCalledWith(expect.anything(), { email: "boss@firm.se", role: "admin", invitedBy: null });
+    expect(h.createInviteMock).toHaveBeenCalledWith(expect.anything(), { email: "boss@firm.se", role: "admin", invitedBy: null, redirectTo: "http://x/auth/callback" });
   });
   it("409s and does not invite when setup already ran", async () => {
     h.countAppUsersMock.mockResolvedValue(1);

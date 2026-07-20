@@ -79,9 +79,19 @@ export async function findAppUserByEmail(
  */
 export async function createInvite(
   service: SupabaseClient,
-  args: { email: string; role: AppUserRole; invitedBy: string | null },
+  args: {
+    email: string;
+    role: AppUserRole;
+    invitedBy: string | null;
+    // Where the invite email's link lands. Must point at /auth/callback so the
+    // invited user gets a session; without it Supabase sends the link to the
+    // project's Site URL root and the invite is a dead end.
+    redirectTo?: string;
+  },
 ): Promise<AppUser> {
-  const { data, error } = await service.auth.admin.inviteUserByEmail(args.email);
+  const { data, error } = args.redirectTo
+    ? await service.auth.admin.inviteUserByEmail(args.email, { redirectTo: args.redirectTo })
+    : await service.auth.admin.inviteUserByEmail(args.email);
   if (error || !data?.user) {
     throw new Error(error?.message ?? "Invite failed: no user returned");
   }

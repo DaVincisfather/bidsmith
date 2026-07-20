@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       email: parsed.data.email,
       role: "admin",
       invitedBy: null,
+      redirectTo: `${new URL(request.url).origin}/auth/callback`,
     });
     return NextResponse.json({ id: admin.id }, { status: 201 });
   } catch (err) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { messageForOtpError } from "../page";
+import { messageForOtpError } from "../otp-error";
 
 describe("messageForOtpError", () => {
   it("maps the signup-disabled error to the not-invited copy", () => {
