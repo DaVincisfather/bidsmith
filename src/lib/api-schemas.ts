@@ -190,3 +190,14 @@ export const DefectAcceptSchema = z.object({
   checkId: z.string().min(1),
   shape: z.string().min(1),
 });
+
+// --- Access: POST /api/setup/bootstrap & POST /api/admin/users ---
+// Both take a single email. Kept as two named schemas so each endpoint's
+// surface is explicit even though they currently coincide.
+export const SetupBootstrapSchema = z.object({
+  email: z.string().email(),
+});
+
+export const AdminInviteSchema = z.object({
+  email: z.string().email(),
+});
