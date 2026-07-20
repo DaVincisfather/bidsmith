@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 // Cron routes authenticate via CRON_SECRET header, not Supabase session.
 const PUBLIC_PATHS = [
   "/login",
+  "/setup",
+  "/api/setup",
   "/auth/callback",
   "/auth/signout",
   "/api/radar/fetch",
