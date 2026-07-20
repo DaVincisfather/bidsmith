@@ -55,6 +55,18 @@ describe("GET /auth/callback", () => {
     expect(res.headers.get("location")).toContain("/arbetsyta");
   });
 
+  it("collapses a protocol-relative or absolute next to / (open-redirect guard)", async () => {
+    h.exchangeMock.mockResolvedValue({ error: null });
+    h.getUserMock.mockResolvedValue({ data: { user: { id: "u1" } } });
+    h.getAppUserMock.mockResolvedValue({ id: "u1", email: "a@b.se", role: "admin", status: "active", invitedBy: null, createdAt: "t", updatedAt: "t" });
+
+    const res = await GET(req("http://x/auth/callback?code=abc&next=//evil.com"));
+    expect(res.headers.get("location")).toBe("http://x/");
+
+    const res2 = await GET(req("http://x/auth/callback?code=abc&next=https://evil.com"));
+    expect(res2.headers.get("location")).toBe("http://x/");
+  });
+
   it("does not re-activate an already active user", async () => {
     h.exchangeMock.mockResolvedValue({ error: null });
     h.getUserMock.mockResolvedValue({ data: { user: { id: "u1" } } });
