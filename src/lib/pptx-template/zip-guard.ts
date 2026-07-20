@@ -4,10 +4,18 @@ import type JSZip from "jszip";
  * Decompression-bomb guard for user-uploaded zip containers (pptx/docx/xlsx).
  * The 20 MB per-file upload cap (document-parser) bounds the COMPRESSED body;
  * it does not bound what a malicious DEFLATE stream inflates to — a ≤20 MB
- * archive can decompress to multiple GB and OOM-kill the function. JSZip exposes
- * each entry's declared uncompressed size on `_data` (populated by loadAsync)
- * BEFORE we ever call `.async(...)`, so we can reject a bomb without inflating
- * it. Also caps entry count so a "zip of many files" can't DoS by breadth.
+ * archive can decompress to multiple GB and OOM-kill the function. JSZip
+ * populates each entry's DECLARED uncompressed size on `_data` at loadAsync
+ * (before any `.async(...)` inflation), and this checks that declared total +
+ * entry count.
+ *
+ * LIMITATION (see ROADMAP follow-up): the declared size comes from the zip's
+ * own central directory, so a crafted archive can under-report it and still
+ * inflate large — pako does not cap inflation at the declared value. This guard
+ * therefore stops accidental/breadth bombs and honestly-sized bombs, NOT a
+ * forged-metadata bomb; robustly bounding that needs streaming-with-a-byte-cap
+ * (a different unzip lib). The surface is auth-gated and serverless-isolated,
+ * so the residual is a per-invocation OOM, not a full outage.
  */
 
 export const MAX_UNCOMPRESSED_BYTES = 200 * 1024 * 1024; // 200 MB total inflated
