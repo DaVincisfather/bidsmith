@@ -857,6 +857,40 @@ alter table templates add column onboarding_status text not null default 'none'
 -- ({ error } resp. { precount }) bor här — se draft.ts.
 alter table templates add column onboarding_draft jsonb;
 
+-- ===== 013_access_control.sql =====
+-- 013_access_control.sql — access-modell: app_users (invite-flow, publiceringsblockeraren)
+-- Appliceras manuellt via Supabase SQL Editor.
+--
+-- Stänger single-workspace-appens öppna signup: bara mejladresser som fått en
+-- app_users-rad (via /setup för första admin, eller admin-invite) kan logga in.
+-- Rollen kan ENBART sättas server-side via service-rollen — klienten får bara
+-- läsa sin egen rad (self-read-policyn nedan).
+
+create table app_users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  role text not null default 'member' check (role in ('admin', 'member')),
+  status text not null default 'invited' check (status in ('invited', 'active')),
+  invited_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger app_users_updated_at
+  before update on app_users
+  for each row execute function trigger_set_updated_at();
+
+alter table app_users enable row level security;
+
+-- Till skillnad från övriga tabellers `for all to authenticated using (true)`:
+-- klienten får bara läsa sin EGEN rad (räcker för att UI:t ska kunna visa/dölja
+-- adminvyn). Inga insert/update/delete-policyer för `authenticated` — alla
+-- skrivningar (bjuda in, flippa status) går via createServiceClient() i
+-- API-routes (service_role bypassar RLS). Det är den bärande säkerhetsegenskapen:
+-- rollen kan aldrig sättas från klienten.
+create policy app_users_self_read on app_users
+  for select to authenticated using (auth.uid() = id);
+
 -- ===== storage-buckets (ersätter de manuella dashboard-stegen) =====
 -- Privata buckets; åtkomst sker via service-rollen och signerade URL:er.
 -- Mönstret är detsamma som bid-templates-bucketen i 005_org_profiles.sql.
