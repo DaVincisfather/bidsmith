@@ -4,7 +4,19 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-20 — **ACCESS-MODELLEN BYGGD → PR #95 (grön, oMERGAD)**
+_Senast uppdaterad: 2026-07-21 — **#95 + #96 + #97 MERGADE.** Access-modellen (#95) är på
+main och invite-smoken grön. Mallsmoke 2 (Design-genererad blankettmall, 195 slots/79 defekter)
+drev fram tre leveranser samma dag: **#96** utfalls-buggen (berikningsformuläret avmonterades av
+förälderns refetch innan anledning kunde fyllas i — refetch flyttad till save/skip/close, TDD),
+**#97** hälsorapporten permanent nåbar (länk i Inställningar-mallistan + anbudseditorns nav) +
+"Acceptera alla (N)" (API: `{ all: true }`-union på defects-endpointen). ROUTINE-FOLLOW-UPS
+(båda APPROVE, polish — bokförda i backloggen nedan): OutcomeSheet cancelled-vägen + knapp-flash
+efter save/skip; wizardens tysta `refresh()`-fel (permanent "Laddar…" när foreign-flaggan är av);
+BidEditor saknar testfil. NÄSTA: smoke-anbudets visuella dom (anbud-fc07d29b: volym PASS 8k,
+dupes 0, scan 0 FAIL/35 WARN/56 INFO-annoterade) → beslut om polish-mekanik → video → publicering._
+
+_Historik (2026-07-20, access-modellen i detalj):_
+_**ACCESS-MODELLEN BYGGD → PR #95**
 på branch `feat/access-control` (spec + plan i `docs/superpowers/specs|plans/2026-07-20-access-control*`):
 stänger öppen Supabase-signup. Ny tabell `app_users` (migration 013) med roll (admin/member) +
 status (invited/active), self-read-RLS + unikt `lower(email)`-index (alla skrivningar via
@@ -343,6 +355,15 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **Routine-follow-ups #96 (polish):** (1) "Avbröts"-vägen i OutcomeSheet är en död ände
+  (ingen refetch, inget formulär — raden ligger inert tills sheeten stängs), otestad;
+  (2) efter Hoppa över/Spara flashar utfallsknapparna tillbaka tills refetchen landat —
+  snabbt dubbelklick kan PATCH:a om utfallet; (3) fyll i BidSummary-fixturens null-fält
+  i st.f. `as`-cast i OutcomeSheet.test.
+- **Routine-follow-ups #97 (polish):** (1) wizardens `refresh()` sväljer icke-ok-svar
+  tyst — med `BIDSMITH_FOREIGN_TEMPLATES=off` 404:ar GET-routen och de permanenta
+  Hälsorapport-länkarna landar i evigt "Laddar…"; `else setUiError(...)` räcker;
+  (2) BidEditor.tsx saknar helt testfil (navlänken slotMeta && templateId otestad).
 - **Zip-bomb-skyddet robust (säkerhetsauditen + #92-granskningen, MEDIUM):**
   `assertZipWithinLimits` litar på zip-huvudets DEKLARERADE uncompressedSize —
   en förfalskad mall kan underrapportera den och ändå inflatera till GB (bevisat
