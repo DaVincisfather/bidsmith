@@ -86,7 +86,12 @@ export function PipelineRail() {
       {sheetOpen && (
         <OutcomeSheet
           awaiting={awaiting}
-          onClose={() => setSheetOpen(false)}
+          onClose={() => {
+            setSheetOpen(false);
+            // Committed-but-unenriched outcomes only reach the rail here —
+            // the sheet defers refetch until save/skip to keep its rows mounted.
+            refetch();
+          }}
           onCommitted={refetch}
         />
       )}

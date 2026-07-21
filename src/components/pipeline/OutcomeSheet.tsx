@@ -29,8 +29,10 @@ export function OutcomeSheet({ awaiting, onClose, onCommitted }: Props) {
       alert("Kunde inte spara utfall. Försök igen.");
       return;
     }
+    // No onCommitted() here: a parent refetch would drop the bid out of
+    // `awaiting` and unmount this row before the enrichment form (reason,
+    // competitor) ever renders. The refetch happens on save/skip/close instead.
     setCommitted((prev) => ({ ...prev, [bidId]: outcome }));
-    onCommitted();
   }
 
   async function saveEnrichment(
@@ -132,13 +134,14 @@ export function OutcomeSheet({ awaiting, onClose, onCommitted }: Props) {
                   <OutcomeEnrichmentForm
                     outcome={outcomeKey}
                     onSave={(v) => saveEnrichment(bid.id, v)}
-                    onSkip={() =>
+                    onSkip={() => {
                       setCommitted((prev) => {
                         const next = { ...prev };
                         delete next[bid.id];
                         return next;
-                      })
-                    }
+                      });
+                      onCommitted();
+                    }}
                   />
                 )}
               </div>
