@@ -26,7 +26,7 @@ function makeDefect(overrides: Partial<TemplateDefect>): TemplateDefect {
 describe("HealthReport", () => {
   it("visar grön klar-rad och ingen tabell när det inte finns några defekter", () => {
     render(
-      <HealthReport measurement={measurement} knownDefects={[]} onAccept={vi.fn()} saving={false} uiError={null} />,
+      <HealthReport measurement={measurement} knownDefects={[]} onAccept={vi.fn()} onAcceptAll={vi.fn()} saving={false} uiError={null} />,
     );
     expect(screen.getByText(/klar för aktivering/i)).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
@@ -35,7 +35,7 @@ describe("HealthReport", () => {
   it("listar öppna defekter med acceptera-knapp, ingen klar-rad", () => {
     const defects = [makeDefect({})];
     render(
-      <HealthReport measurement={measurement} knownDefects={defects} onAccept={vi.fn()} saving={false} uiError={null} />,
+      <HealthReport measurement={measurement} knownDefects={defects} onAccept={vi.fn()} onAcceptAll={vi.fn()} saving={false} uiError={null} />,
     );
     expect(screen.getByText("Text 5")).toBeInTheDocument();
     expect(screen.getByText("vertical-overflow")).toBeInTheDocument();
@@ -47,7 +47,7 @@ describe("HealthReport", () => {
     const onAccept = vi.fn();
     const defects = [makeDefect({ slide: 4, checkId: "gross-overflow", shape: "Text 9" })];
     render(
-      <HealthReport measurement={measurement} knownDefects={defects} onAccept={onAccept} saving={false} uiError={null} />,
+      <HealthReport measurement={measurement} knownDefects={defects} onAccept={onAccept} onAcceptAll={vi.fn()} saving={false} uiError={null} />,
     );
     fireEvent.click(screen.getByRole("button", { name: /acceptera/i }));
     expect(onAccept).toHaveBeenCalledWith({ slide: 4, checkId: "gross-overflow", shape: "Text 9" });
@@ -56,11 +56,35 @@ describe("HealthReport", () => {
   it("accepterade defekter döljer knappen och grön klar-rad visas ovanför tabellen", () => {
     const defects = [makeDefect({ status: "accepted" })];
     render(
-      <HealthReport measurement={measurement} knownDefects={defects} onAccept={vi.fn()} saving={false} uiError={null} />,
+      <HealthReport measurement={measurement} knownDefects={defects} onAccept={vi.fn()} onAcceptAll={vi.fn()} saving={false} uiError={null} />,
     );
     expect(screen.getByText(/klar för aktivering/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /acceptera/i })).not.toBeInTheDocument();
     expect(screen.getByText("Accepterad ✓")).toBeInTheDocument();
+  });
+
+  it("visar acceptera alla-knapp med antal när flera defekter är öppna", () => {
+    const onAcceptAll = vi.fn();
+    const defects = [makeDefect({}), makeDefect({ shape: "Text 9" })];
+    render(
+      <HealthReport
+        measurement={measurement} knownDefects={defects}
+        onAccept={vi.fn()} onAcceptAll={onAcceptAll} saving={false} uiError={null}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /acceptera alla \(2\)/i }));
+    expect(onAcceptAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("döljer acceptera alla-knappen när högst en defekt är öppen", () => {
+    const defects = [makeDefect({}), makeDefect({ shape: "Text 9", status: "accepted" })];
+    render(
+      <HealthReport
+        measurement={measurement} knownDefects={defects}
+        onAccept={vi.fn()} onAcceptAll={vi.fn()} saving={false} uiError={null}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /acceptera alla/i })).not.toBeInTheDocument();
   });
 
   it("visar unresolved-tokens och slotWarnings kompakt (informativt)", () => {
@@ -69,7 +93,7 @@ describe("HealthReport", () => {
       unresolved: ["{Vår metod}"],
       slotWarnings: { "{Fas 1}": ["autofit krympte till 80%"] },
     };
-    render(<HealthReport measurement={m} knownDefects={[]} onAccept={vi.fn()} saving={false} uiError={null} />);
+    render(<HealthReport measurement={m} knownDefects={[]} onAccept={vi.fn()} onAcceptAll={vi.fn()} saving={false} uiError={null} />);
     expect(screen.getByText(/mättes aldrig/i)).toHaveTextContent("{Vår metod}");
     expect(screen.getByText(/kalibreringsvarningar/i)).toBeInTheDocument();
     expect(screen.getByText(/autofit krympte till 80%/)).toBeInTheDocument();
@@ -77,7 +101,7 @@ describe("HealthReport", () => {
 
   it("visar uiError när satt", () => {
     render(
-      <HealthReport measurement={measurement} knownDefects={[]} onAccept={vi.fn()} saving={false} uiError="nätverksfel" />,
+      <HealthReport measurement={measurement} knownDefects={[]} onAccept={vi.fn()} onAcceptAll={vi.fn()} saving={false} uiError="nätverksfel" />,
     );
     expect(screen.getByText(/nätverksfel/)).toBeInTheDocument();
   });

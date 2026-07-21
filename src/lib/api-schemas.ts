@@ -190,3 +190,11 @@ export const DefectAcceptSchema = z.object({
   checkId: z.string().min(1),
   shape: z.string().min(1),
 });
+
+// Bulk sign-off ("Acceptera alla" in the health report): { all: true } instead
+// of a single defect signature. Union order matters for error messages only —
+// both branches are objects and cannot overlap ({ all } vs { slide, ... }).
+export const DefectAcceptBodySchema = z.union([
+  z.object({ all: z.literal(true) }),
+  DefectAcceptSchema,
+]);

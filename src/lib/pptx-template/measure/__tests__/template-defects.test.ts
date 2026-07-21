@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  acceptDefect, activationBlockReason, annotateKnownDefects,
+  acceptAllDefects, acceptDefect, activationBlockReason, annotateKnownDefects,
   dedupeDefects, defectSuggestion, mergeDefectAccepts,
 } from "../template-defects";
 import type { TemplateDefect, TemplateProfile } from "../../template-profile";
@@ -44,6 +44,18 @@ describe("acceptDefect", () => {
   it("errors on an unknown signature", () => {
     const res = acceptDefect([defect()], { slide: 9, checkId: "outside-slide", shape: "X" });
     expect(res.ok).toBe(false);
+  });
+});
+
+describe("acceptAllDefects", () => {
+  it("flips every open defect to accepted, immutably, and keeps accepted ones", () => {
+    const input = [defect(), defect({ shape: "Text 1" }), defect({ shape: "Klar", status: "accepted" })];
+    const out = acceptAllDefects(input);
+    expect(out.every((d) => d.status === "accepted")).toBe(true);
+    expect(input[0].status).toBe("open");
+  });
+  it("returns an empty list unchanged", () => {
+    expect(acceptAllDefects([])).toEqual([]);
   });
 });
 

@@ -48,6 +48,23 @@ describe("TemplateSection", () => {
     expect(screen.getAllByRole("button", { name: /Aktivera/ })).toHaveLength(1);
   });
 
+  it("shows a health-report link on onboarded foreign templates, also when active", () => {
+    const onboarded: TemplateRow[] = [
+      { ...templates[0], onboarding_status: "onboarded" },
+      templates[1],
+    ];
+    render(
+      <TemplateSection templates={onboarded} activeTemplateId={onboarded[0].id} />
+    );
+    const link = screen.getByRole("link", { name: "Hälsorapport" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/installningar/mallar/${onboarded[0].id}/onboarding`
+    );
+    // The bundled (non-onboarded) row gets none.
+    expect(screen.getAllByRole("link", { name: "Hälsorapport" })).toHaveLength(1);
+  });
+
   it("renders the empty state when there are no templates", () => {
     render(<TemplateSection templates={[]} activeTemplateId={null} />);
     expect(screen.getByText("Inga mallar ännu.")).toBeInTheDocument();

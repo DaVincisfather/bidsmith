@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser, parseUuidParam, parseBody } from "@/lib/api-helpers";
-import { DefectAcceptSchema } from "@/lib/api-schemas";
+import { DefectAcceptBodySchema } from "@/lib/api-schemas";
 import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 import { loadTemplateProfile, saveTemplateProfile } from "@/lib/pptx-template/profile-store";
-import { acceptDefect } from "@/lib/pptx-template/measure/template-defects";
+import { acceptAllDefects, acceptDefect } from "@/lib/pptx-template/measure/template-defects";
 import type { TemplateProfile } from "@/lib/pptx-template/template-profile";
 
 interface RouteContext {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   const idResult = parseUuidParam(rawId, "template id");
   if (!idResult.ok) return idResult.response;
 
-  const parsed = await parseBody(request, DefectAcceptSchema);
+  const parsed = await parseBody(request, DefectAcceptBodySchema);
   if (!parsed.ok) return parsed.response;
 
   // loadTemplateProfile/saveTemplateProfile KASTAR vid DB-/valideringsfel —
@@ -50,7 +50,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "mallen är inte mätt — kör onboarding:measure först" }, { status: 409 });
   }
 
-  const result = acceptDefect(profile.knownDefects ?? [], parsed.data);
+  const result =
+    "all" in parsed.data
+      ? { ok: true as const, defects: acceptAllDefects(profile.knownDefects ?? []) }
+      : acceptDefect(profile.knownDefects ?? [], parsed.data);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 422 });
 
   try {

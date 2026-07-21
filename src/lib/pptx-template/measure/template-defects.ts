@@ -64,6 +64,13 @@ export function acceptDefect(
   };
 }
 
+/** Bulk operator sign-off ("Acceptera alla" in the health report) — flips
+ *  every open defect to accepted in one pass. Design-generated templates
+ *  produce dozens of tiny-box defects; per-defect clicking does not scale. */
+export function acceptAllDefects(defects: TemplateDefect[]): TemplateDefect[] {
+  return defects.map((d) => (d.status === "open" ? { ...d, status: "accepted" as const } : d));
+}
+
 /** A gross-overflow defect (eval-side geometry predicate) manifests in
  *  deck:scan as a vertical-overflow finding on the same shape. */
 function checkMatches(defectCheckId: string, findingCheckId: string): boolean {

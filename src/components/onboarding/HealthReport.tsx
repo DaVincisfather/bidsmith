@@ -6,6 +6,7 @@ interface HealthReportProps {
   measurement: TemplateMeasurement;
   knownDefects: TemplateDefect[];
   onAccept: (sig: { slide: number; checkId: string; shape: string }) => void;
+  onAcceptAll: () => void;
   saving: boolean;
   uiError: string | null;
 }
@@ -13,7 +14,7 @@ interface HealthReportProps {
 /** Visas när measurement finns — resultatet av det lokala COM-mätpasset.
  *  Presentationell (mirror av SlotPanel/SummaryView): fetchen lever i
  *  wizarden, denna komponenten bara renderar props + anropar onAccept. */
-export function HealthReport({ measurement, knownDefects, onAccept, saving, uiError }: HealthReportProps) {
+export function HealthReport({ measurement, knownDefects, onAccept, onAcceptAll, saving, uiError }: HealthReportProps) {
   const open = knownDefects.filter((d) => d.status === "open");
   const warnings = Object.entries(measurement.slotWarnings).filter(([, w]) => w.length > 0);
 
@@ -42,6 +43,17 @@ export function HealthReport({ measurement, knownDefects, onAccept, saving, uiEr
                 Alla {knownDefects.length} malldefekter är accepterade.
               </p>
             </div>
+          )}
+          {open.length > 1 && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={onAcceptAll}
+              className="border border-rule py-1.5 px-3 rounded text-xs font-medium
+                         hover:border-accent disabled:opacity-50"
+            >
+              Acceptera alla ({open.length})
+            </button>
           )}
           <table className="w-full text-sm border border-rule rounded-lg overflow-hidden">
             <thead className="bg-paper-2">
