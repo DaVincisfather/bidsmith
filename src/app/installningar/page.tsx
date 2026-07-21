@@ -55,6 +55,19 @@ export default async function InstallningarPage() {
               Öppna Företagsprofil i arbetsytan →
             </Link>
           </section>
+
+          <section className="space-y-2">
+            <h2 className="text-lg font-display font-normal">Användare</h2>
+            <p className="text-sm text-ink-mute">
+              Bjud in kollegor och se vilka som har tillgång till arbetsytan.
+            </p>
+            <Link
+              href="/installningar/anvandare"
+              className="inline-block text-sm font-medium text-accent hover:underline"
+            >
+              Hantera användare →
+            </Link>
+          </section>
         </div>
       </div>
     </main>

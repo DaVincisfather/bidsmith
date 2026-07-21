@@ -3,6 +3,7 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { messageForOtpError } from "./otp-error";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -28,12 +29,12 @@ function LoginForm() {
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: redirectTo },
+      options: { emailRedirectTo: redirectTo, shouldCreateUser: false },
     });
 
     if (error) {
       setStatus("error");
-      setErrorMessage(error.message);
+      setErrorMessage(messageForOtpError(error.message));
       return;
     }
 

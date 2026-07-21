@@ -4,13 +4,52 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-20 — **WORKFLOWANALYSENS FIX-KEDJA MERGAD**: säkerhet
+_Senast uppdaterad: 2026-07-20 — **ACCESS-MODELLEN BYGGD → PR #95 (grön, oMERGAD)**
+på branch `feat/access-control` (spec + plan i `docs/superpowers/specs|plans/2026-07-20-access-control*`):
+stänger öppen Supabase-signup. Ny tabell `app_users` (migration 013) med roll (admin/member) +
+status (invited/active), self-read-RLS + unikt `lower(email)`-index (alla skrivningar via
+service-rollen). `/login` fick `shouldCreateUser:false` + "ej inbjuden"-copy; `/auth/callback` nekar
+konton utan app_users-rad (signOut + no_access) och flippar invited→active; `/setup` bootstrappar
+första admin (inert när tabellen har ≥1 rad); admin bjuder in medlemmar via `/installningar/anvandare`.
+**MIGRATION 013 APPLICERAD** i SQL Editor (verifierat: rls=true, policy=1, trigger=1, index=1 — den
+första körningen la bara tabell+RLS, resten reconcile:ades in). **PR-ROUTINEN (CRITICAL) fixad i PR:en:**
+(a) `messageForOtpError` flyttad ur `login/page.tsx` → `otp-error.ts` (page-export bröt `next build`;
+tsc+testkör såg det INTE — LÄRDOM i CLAUDE.md); (b) `createInvite` skickar nu `redirectTo=<origin>/auth/callback`
+så invite-länken inte dör på Site-URL-roten. Verifierat under CI-paritet: `next build` exit 0, tsc rent,
+1371 tester gröna, per-task + Opus-granskning, CI grön.
+**INVITE-SMOKE GRÖN 2026-07-20 (Stefan, live mot dev):** invite av andra-adress → 201, mejl fram,
+länken loggade in. Smoken avslöjade UPPGRADERINGSLUCKAN: `/setup`-bootstrap föll med 500
+`email_exists` för konton skapade FÖRE access-modellen (`inviteUserByEmail` vägrar befintlig mejl)
+— dvs. varje uppgraderingsinstallation (inkl. PRODUKTIONEN) hade låsts ute permanent
+(tom `app_users` + callback-nekning + evig 500 på `/setup`). **ADOPTIONSFIXEN (samma PR, TDD):**
+`createInvite` fångar `email_exists` → slår upp befintligt auth-konto via `listUsers` (paginerad,
+case-insensitiv) → skapar `app_users`-raden på befintliga id:t; returnerar `{appUser, adopted}`;
+`/setup`-sidan visar "logga in via /login"-copy i stället för "kolla mejlen" när `adopted` (inget
+mejl skickas vid adoption). Lagar också specens orphan-städning (återinvite i stället för
+dashboard-radering). Live-verifierad mot dev-Supabase (dev-smoke-kontot adopterat som member).
+DEV-NOT: Stefans admin-rad i dev seedades manuellt via service-rollen (utredningens unblock)
+INNAN fixen fanns — prod behöver INTE seedas, `/setup` adopterar nu. Fräsch-reviewer (Opus):
+APPROVE, 0 kritiska; cast-städ + page-2-pagineringstest åtgärdade i follow-up-commit. MEDVETEN
+TRADEOFF (reviewer-fynd, ingen kod): fel-men-existerande mejl i one-shot-`/setup` adopterar
+irreversibelt det kontot som admin (pre-fix: retrybar 500) — operatören har service-rollen och
+kan backa raden manuellt. Sedan: merga PR #95.
+**⚠️ REVOKERING (Opus-slutgranskning):**
+medlemskap enforce:as bara vid login-kanten (`/auth/callback`), INTE per request — middlewaren
+re-kollar inte `app_users`. Att ta bort en användare = **radera `auth.users`-raden** (kaskaderar
+`app_users` + invaliderar sessionen), INTE bara `app_users`-raden (den lämnar sessionen levande).
+V1-BACKLOG (medvetet utanför): (1) per-request medlemskaps-koll i `middleware.ts` så revokering
+slår igenom direkt (inte bara login-kanten); (2) roll-gejta admin-UI:t — `/installningar/anvandare`
++ länken på Inställningar-landningen syns för icke-admins (API:t nekar med 403, men sidan renderar
+tom; dölj via self-read-rollen); (3) återkalla/byta roll/återsända inbjudan från UI; (4) callback
+saknar try/catch (fail-closed idag, men rå 500 mid-auth); (5) Supabase built-in-mejlets rate-limits
+vid högre invite-volym. Nästa efter merge: **video → publicering**._
+
+_2026-07-20 — **WORKFLOWANALYSENS FIX-KEDJA MERGAD**: säkerhet
 (PR #92: zip-bomb-guard, content-type-hantering, JSON-bounds, open-redirect-guard),
 buggsvep (PR #93: server-side team-cap, atomisk CV-upsert, JSON-500-guards, tidszon),
 död kod-städ (PR #94, ~185 rader verifierat oanvänt). Residualer bokförda i
 backloggen (zip-bomb robust bounding + markitdown-vägen, engines-fältet,
-buggsvepets fyra kvarvarande). Nästa: **access-modellen** (invite-flow,
-publiceringsblockeraren — brainstormas före bygge) → video → publicering._
+buggsvepets fyra kvarvarande)._
 
 _2026-07-19 — **LAUNCH-POLISH LEVERERAD** (setup.sql + doctor,
 BUG-A/B fixade, foreign-flaggan default PÅ; nästa: workflowanalys → video →

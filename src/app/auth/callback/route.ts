@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase";
+import { getAppUser, activateAppUser } from "@/lib/access";
 
 /** Only allow same-origin relative paths as the post-login redirect target.
  *  A protocol-relative (`//evil.com`) or absolute URL in `next` would otherwise
@@ -25,6 +27,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       `${origin}/login?error=${encodeURIComponent(error.message)}`
     );
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.redirect(`${origin}/login?error=no_user`);
+  }
+
+  // Membership gate: a session without an app_users row is denied, never given
+  // default access. In normal operation this is unreachable (accounts are only
+  // ever created via /setup or an admin invite, both of which insert the row in
+  // the same call), so a missing row means an orphaned auth account — deny it.
+  const service = createServiceClient();
+  const appUser = await getAppUser(service, user.id);
+  if (!appUser) {
+    await supabase.auth.signOut();
+    return NextResponse.redirect(`${origin}/login?error=no_access`);
+  }
+  if (appUser.status === "invited") {
+    await activateAppUser(service, user.id);
   }
 
   return NextResponse.redirect(`${origin}${next}`);
