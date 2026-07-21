@@ -154,6 +154,17 @@ export function TemplateSection({ templates, activeTemplateId }: TemplateSection
                   <td className="px-4 py-3 text-ink-soft">{formatDate(t.created_at)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {/* Onboardad kundmall: permanent väg tillbaka till wizardens
+                          hälsorapport/mätvy — Onboarda-länken nedan försvinner när
+                          statusen når "onboarded". */}
+                      {t.onboarding_status === "onboarded" && (
+                        <Link
+                          href={`/installningar/mallar/${t.id}/onboarding`}
+                          className="text-xs font-medium px-3 py-1 rounded border border-rule hover:border-accent"
+                        >
+                          Hälsorapport
+                        </Link>
+                      )}
                       {t.id === activeTemplateId ? (
                         <span className="text-xs font-medium px-2 py-1 rounded bg-accent-soft text-accent-ink">
                           Aktiv

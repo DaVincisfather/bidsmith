@@ -34,6 +34,9 @@ interface BidEditorProps {
   /** Slot-metadata från mallprofilen (onboardade mallar) — null för inbyggda
    *  mallens anbud ⇒ dagens platta sektionsvy. */
   slotMeta: SlotMeta | null;
+  /** Anbudets mall — länkar till mallens hälsorapport för onboardade mallar
+   *  (slotMeta ≠ null). null för legacy-anbud utan template_id. */
+  templateId: string | null;
 }
 
 export function BidEditor({
@@ -49,6 +52,7 @@ export function BidEditor({
   initialFailedBundles,
   initialGenerationError,
   slotMeta,
+  templateId,
 }: BidEditorProps) {
   const [sections, setSections] = useState<BidSection[]>(initialSections);
   const [status, setStatus] = useState(initialStatus);
@@ -289,15 +293,30 @@ export function BidEditor({
       {/* Center panel — document view */}
       <main className="flex-1 overflow-y-auto bg-white">
         <div className="max-w-3xl mx-auto py-8 px-6 space-y-8">
-          {analysisId && (
+          {(analysisId || (slotMeta && templateId)) && (
             <nav className="flex items-center gap-4 text-xs font-mono text-ink-mute">
-              <Link href={`/analysis/${analysisId}`} className="hover:text-ink transition-colors">
-                ← Tillbaka till analys
-              </Link>
-              <span aria-hidden className="text-rule">|</span>
-              <Link href={`/analysis/${analysisId}#team`} className="hover:text-ink transition-colors">
-                Ändra team
-              </Link>
+              {analysisId && (
+                <>
+                  <Link href={`/analysis/${analysisId}`} className="hover:text-ink transition-colors">
+                    ← Tillbaka till analys
+                  </Link>
+                  <span aria-hidden className="text-rule">|</span>
+                  <Link href={`/analysis/${analysisId}#team`} className="hover:text-ink transition-colors">
+                    Ändra team
+                  </Link>
+                </>
+              )}
+              {slotMeta && templateId && (
+                <>
+                  {analysisId && <span aria-hidden className="text-rule">|</span>}
+                  <Link
+                    href={`/installningar/mallar/${templateId}/onboarding`}
+                    className="hover:text-ink transition-colors"
+                  >
+                    Mallens hälsorapport
+                  </Link>
+                </>
+              )}
             </nav>
           )}
 

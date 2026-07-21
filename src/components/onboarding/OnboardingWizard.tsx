@@ -214,6 +214,27 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
     }
   }
 
+  // Bulk-varianten: samma endpoint med { all: true } — svaret bär hela den
+  // uppdaterade knownDefects-listan precis som per-defekt-accepten.
+  async function acceptAllDefects() {
+    setSaving(true);
+    setUiError(null);
+    try {
+      const res = await fetch(`/api/templates/${templateId}/defects`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      const body = await res.json();
+      if (!res.ok) { setUiError(body.error ?? "kunde inte acceptera defekterna"); return; }
+      setData((d) => (d ? { ...d, knownDefects: body.knownDefects } : d));
+    } catch {
+      setUiError("nätverksfel — försök igen");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function complete() {
     setSaving(true);
     setUiError(null);
@@ -297,6 +318,7 @@ export function OnboardingWizard({ templateId }: { templateId: string }) {
           measurement={data.measurement}
           knownDefects={data.knownDefects ?? []}
           onAccept={acceptDefect}
+          onAcceptAll={acceptAllDefects}
           saving={saving}
           uiError={uiError}
         />

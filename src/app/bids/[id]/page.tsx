@@ -92,6 +92,7 @@ export default async function BidEditorPage({ params }: PageProps) {
       initialFailedBundles={(bid.failed_bundles as FailedBundle[]) ?? []}
       initialGenerationError={(bid.generation_error as string | null) ?? null}
       slotMeta={slotMeta}
+      templateId={templateId}
     />
   );
 }
