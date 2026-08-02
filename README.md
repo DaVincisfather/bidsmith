@@ -55,6 +55,40 @@ checks against the template's layout budget so the exported deck stays clean.
 </tr>
 </table>
 
+## Bring your own template (beta)
+
+Bidsmith ships with a bundled proposal template, but it can onboard your firm's own
+PowerPoint deck. Upload it under **Settings → Templates** and a guided wizard walks
+you through every text box — what it means and whether the AI should fill it. A
+**measurement pass** then scans the empty template for layout defects and calibrates
+a character budget for every text box by rendering it in real PowerPoint, and a
+**health report** in the app lists each defect the engine found in the template
+itself, letting you accept or fix it before the template is activated:
+
+```bash
+npm run onboarding:measure -- <templateId> --write   # requires Windows + PowerPoint
+```
+
+(The template id is in the address bar on the template's onboarding page.)
+
+If you use [Claude Code](https://claude.com/claude-code), you can hand it the whole
+inspection instead of running the steps yourself — paste something like:
+
+```text
+I uploaded my own PowerPoint template to Bidsmith and finished the onboarding wizard
+(template id: <id>). Run the onboarding measurement pass, walk me through the health
+report, and help me decide which defects to accept and which to fix in the template
+file. After my first generated bid, run deck:scan and deck:dupes on the exported
+.pptx and interpret the results for me.
+```
+
+**An honest caveat:** this pipeline is young. It has been battle-tested against our
+own test templates, not yet against the long tail of real agency decks. Expect the
+first onboarding of a complex template to take a couple of iterations — the health
+report will show you what the engine sees. If a template onboards badly, please open
+an issue (ideally with a stripped-down copy of the template): real-world templates
+are exactly the feedback this part of the roadmap is built on.
+
 ## How it's built
 
 - **Model strategy** — Claude Sonnet for extraction and matching (mechanical,
@@ -66,6 +100,39 @@ checks against the template's layout budget so the exported deck stays clean.
 - **Layout fidelity** — a three-layer corrector (prompt-level character budgets →
   post-generation verification with retry → flag-only review in the editor) keeps the
   PowerPoint output close to the source template.
+
+## Fighting hallucination: the evidence chain
+
+A bid built on invented experience is worse than no bid at all, so Bidsmith enforces
+evidence at the schema level and verifies it mechanically:
+
+- **Verbatim citations, schema-enforced.** Every requirement extracted from a tender
+  and every competence, project reference, and certification extracted from a CV must
+  carry a word-for-word quote from the source document. The response schema makes the
+  quote mandatory — the model cannot return a claim without pointing at the text it
+  came from.
+- **Mechanical verification — no LLM judge.** Each quote is string-matched against
+  the parsed source document (`src/lib/verify-evidence.ts`), normalised only for
+  typography and PDF artefacts. No second model grades the first, so there is nothing
+  to calibrate and nothing that can hallucinate an approval. This kills the entire
+  class of fabricated citations.
+- **A runtime guard that never lets unbacked claims through silently.** Claims that
+  fail verification get one batched re-citation attempt; whatever still lacks support
+  is stripped from the data and flagged (`src/lib/evidence-guard.ts`).
+- **Flagged claims are quarantined from every AI input.** Consultant matching,
+  go/no-go, and proposal writing only ever receive evidence-backed claims
+  (`src/lib/grounded-claims.ts`) — an unsupported claim cannot propagate into a match
+  score or a sentence in the bid.
+- **Source-linked UI.** Every claim carries a source chip; a source viewer shows the
+  quote in context with a coverage map and a link to the original file — symmetric
+  for tenders and CVs. "Where does this come from?" is always one click away.
+- **Replayable proof.** `npm run eval:zero-halluc` re-runs extraction against the
+  bundled fixtures (real API calls) and asserts that no unverified claim survives
+  the guard.
+
+What the machine guarantees is that every claim points at real text in your
+documents. Judging whether that text *fully* supports the claim remains a human
+call — which is exactly what the source viewer is for.
 
 ## What it costs to run
 
