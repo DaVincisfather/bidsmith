@@ -8,6 +8,10 @@ import { withBudgetRetry, type RetryBudget } from "../with-budget-retry";
 import { renderBudgetTable } from "../render-budget-table";
 import { deliverableRequirements } from "@/lib/requirement-kind";
 
+// OBS: fältordningen här och i SYSTEM_PROMPT:ens JSON-exempel måste vara identisk.
+// Structured outputs emitterar fälten i schemats ordning; ett exempel med annan
+// ordning läcker exempel-svansen in i sista strängfältet (t.ex.
+// `"shortDescription": "...','risks','placeholder'"`).
 export const PhasesV2Schema = z.object({
   phases: z
     .array(
@@ -54,7 +58,7 @@ VIKTIGT om realism:
 - Planera in de RFP-leveranser som listas nedan (om några) som deliverables i lämpliga
   faser — de är vad uppdraget faktiskt ska producera. Formulera om till fas-nivå vid behov.
 
-Svara med giltig JSON:
+Svara med giltig JSON (fältordningen nedan är exakt den ordning svaret ska ha):
 {
   "phases": [
     {
@@ -63,11 +67,11 @@ Svara med giltig JSON:
       "activities": ["Kort aktivitet 1", "Kort aktivitet 2"],
       "deliverables": ["Konkret leverabel"],
       "duration": "4 v",
+      "risks": ["Risk 1"],
+      "hoursEstimate": 80,
       "period": "M1-M2",
       "decisions": ["Vad styrgruppen beslutar vid faslut"],
-      "shortDescription": "Kort undertitel",
-      "risks": ["Risk 1"],
-      "hoursEstimate": 80
+      "shortDescription": "Kort undertitel"
     }
   ]
 }`;
