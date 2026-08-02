@@ -112,6 +112,12 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
 ---
 
 ## 🔜 NÄSTA (börja här)
+- [ ] **STEFAN (2026-08-03): klipp lanseringsvideon.** Råklipp: `bidsmith-launch/tmp/video/`
+      (6 scener, badge-fria). PPTX att filma i PowerPoint: `bidsmith-launch/tmp/demo-bid-v2.pptx`.
+      CapCut + GIF-version (till X + README). Postutkast för granskning:
+      `notes/2026-08-02-launch-posts.md`. Behövs appen: `npm run dev -- --port 3005` i
+      launch-worktreen (demo-DB uppe & städad: analys 33ae44b3 → anbud b4571d95).
+      → därefter publicering (annonsyta = Stefans val).
 - [x] **STEFANS SMOKE (KLAR 2026-07-07):** onboarding grön (137 bekräftade/84 pending
       av 221), generering 137/137 mekaniskt grön — men **slutprodukten katastrofal**:
       45 789 tecken prosa över 11 slides, 0 budgetChars satta, nio dubblett-"Om oss" på
