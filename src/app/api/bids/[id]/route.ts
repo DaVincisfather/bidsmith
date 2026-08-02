@@ -10,7 +10,9 @@ interface RouteContext {
 // POST /api/bids' maxDuration is 300 s — past that the platform has killed
 // the background job without reaching its failure handler. 7 min = the kill
 // point plus buffer, so a dead generation doesn't poll for long.
-const STALE_GENERATING_MS = 7 * 60 * 1000;
+// Video-recording branch: widened so the phases max_tokens-retry chain
+// (booked runaway bug) can finish instead of being guillotined mid-recording.
+const STALE_GENERATING_MS = 20 * 60 * 1000;
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id: rawId } = await params;
