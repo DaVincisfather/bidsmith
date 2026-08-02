@@ -4,7 +4,20 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-07-21 — **#95 + #96 + #97 MERGADE.** Access-modellen (#95) är på
+_Senast uppdaterad: 2026-08-02 — **FOREIGN-BESLUTET AVGJORT: PUBLICERING MED FÖRBEHÅLL
+(denna PR).** Ingen äkta byråmall finns att smoka mot — Stefans beslut: vänta inte,
+publicera; riktiga användares mallar ÄR real-mall-smoken (feedback-driven, post-launch).
+Genereringen för foreign-vägen BEHÅLLS (slopa-frågan stängd). Levererat i denna PR:
+README-sektionen "Bring your own template (beta)" (ärligt förbehåll + `onboarding:measure`-
+instruktion + Claude Code-prompt som kör inspektionen/hälsorapporten åt användaren),
+README-sektionen "Fighting hallucination: the evidence chain" (Stefans krav: evidenskedjan
+för matchning/källhänvisning klarlagd publikt — schema-tvingade ordagranna citat, mekanisk
+verifiering utan LLM-judge, runtime-vakt, kvarantän ur AI-input, käll-UI, eval:zero-halluc;
+ärlig gräns: relevansdomen är mänsklig), SETUP-pekare till sektionen.
+KVAR FÖRE PUBLICERING: video (verifiera att #83:s max_tokens-detektering löste
+phases-trunkeringen → ta om scen 5–6) → publicering (annonsyta = Stefans val)._
+
+_Historik (2026-07-21): **#95 + #96 + #97 MERGADE.** Access-modellen (#95) är på
 main och invite-smoken grön. Mallsmoke 2 (Design-genererad blankettmall, 195 slots/79 defekter)
 drev fram tre leveranser samma dag: **#96** utfalls-buggen (berikningsformuläret avmonterades av
 förälderns refetch innan anledning kunde fyllas i — refetch flyttad till save/skip/close, TDD),
