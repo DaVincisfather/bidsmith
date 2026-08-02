@@ -402,7 +402,19 @@ _Inga — #54–#68 mergade 2026-07-03/04._
   schema + promptexempel, (c) watchdog-fönster vs retry-budget, (d) status-reconcile
   när sen generering fullbordas post-watchdog, (e) omkörningsknapp för fallerade
   genereringar (produktlucka sedan juli). Kostnadsnot: runaway gör phases till
-  ~$1,05 av ~$1,5 per anbud.
+  ~$1,05 av ~$1,5 per anbud. **DELVIS ÅTGÄRDAD 2026-08-02 natt (PR #99, routine
+  APPROVE efter CRITICAL-klassning):** hypotes 2 bekräftad och fixad — exemplets
+  fältordning matchade inte schemats emissionsordning (structured outputs följer
+  schemaordningen; `z.toJSONSchema` bevarar nyckelordning) ⇒ exempel-svansen
+  blödde in i sista strängfältet. Livesmoke post-fix: phases i ETT anrop
+  (9 081 tokens/98 s), rena shortDescriptions, och `risks`/`hoursEstimate`
+  materialiseras nu (var alltid tomma pre-fix ⇒ {Risker}-boxen får innehåll).
+  KVAR av posten: 32k-runawayen (hypotes 1, effort max-tänkbudgeten — n=1 utan
+  runaway bevisar inget), watchdog-samspelet, status-reconcile, omkörningsknapp.
+- **Ordnings-invariant-test för bundle-exempel (polish, routine-förslag #99):**
+  enhetstest som parsar JSON-exemplet ur SYSTEM_PROMPT och asserterar
+  nyckelordning === `Object.keys(PhasesV2Schema.shape...)`; återanvänd mönstret
+  för övriga bundles med JSON-exempel i prompten.
 - **Routine-follow-ups #96 (polish):** (1) "Avbröts"-vägen i OutcomeSheet är en död ände
   (ingen refetch, inget formulär — raden ligger inert tills sheeten stängs), otestad;
   (2) efter Hoppa över/Spara flashar utfallsknapparna tillbaka tills refetchen landat —
