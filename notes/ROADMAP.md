@@ -4,7 +4,19 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-02 — **FOREIGN-BESLUTET AVGJORT: PUBLICERING MED FÖRBEHÅLL
+_Senast uppdaterad: 2026-08-02 kväll — **VIDEO-RÅKLIPPEN KLARA (alla 6 scener) +
+PHASES-RUNAWAY BELAGD.** Alla scener omtagna badge-fria mot demo-instansen; storyline:
+analys 33ae44b3 → anbud b4571d95 (exported; PPTX i launch-worktreens tmp/demo-bid-v2.pptx;
+deck-grindar: dupes inga över tröskeln, scan 0 FAIL). BRANCH-LOKALT på feat/launch-video
+(EJ main-material): `devIndicators:false` (Next-badgen låg i pixlarna på alla juli-klipp),
+watchdog 7→20 min + riggtimeout (utrymme för max_tokens-retry-kedjan). #83-VERIFIERINGEN:
+detekteringen FUNGERAR (räddade 2 av 4 genereringar) men grundbeteendet är värre än trott —
+se nya backlog-posten **Phases-runaway** nedan. Två fas-kortbeskrivningar med risk-läckage
+manuellt polerade i demo-anbudet (senior-konsult-flödet, bokfört i backlog-posten).
+KVAR: Stefan klipper (CapCut) + filmar PPTX:en i PowerPoint → publicering (annonsyta =
+Stefans val)._
+
+_Historik (2026-08-02 förmiddag): **FOREIGN-BESLUTET AVGJORT: PUBLICERING MED FÖRBEHÅLL
 (denna PR).** Ingen äkta byråmall finns att smoka mot — Stefans beslut: vänta inte,
 publicera; riktiga användares mallar ÄR real-mall-smoken (feedback-driven, post-launch).
 Genereringen för foreign-vägen BEHÅLLS (slopa-frågan stängd). Levererat i denna PR:
@@ -368,6 +380,23 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 _Inga — #54–#68 mergade 2026-07-03/04._
 
 ## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+- **PHASES-RUNAWAY (CORRECTNESS, kärnlogik — ta SYNKRONT med Stefan):** phases-bundlen
+  (Opus `writing`, `effort: "max"`, `maxTokens: 32000`) skenade till EXAKT 32k-output-taket
+  i 3 av 4 skarpa genereringar 2026-08-02 (272–277 s, ~$0,85/försök); i en körning skenade
+  ÄVEN #83-retryn ⇒ hård trunkering, phases fällde hela genereringen. Även FRISKA anrop
+  läcker risk-artefakter i `shortDescription` (`','risks','placeholder'` — samma signatur
+  som julibuggen). Hypoteser: (1) effort max-tänkbudgeten delar 32k-taket med outputen
+  (jfr ai-client-kommentaren om thinking-härledning ur max_tokens) — resonemanget äter
+  utrymmet; (2) `risks`/`hoursEstimate` är optional i schemat och med i promptens
+  JSON-exempel men saknar budgetnycklar — modellen förvirras runt fältet. Följdeffekt:
+  retry-kedjan kan äta 7-min-watchdogen (`STALE_GENERATING_MS`) ⇒ KOMPLETT anbud stämplas
+  failed ("Generation timed out" — take 1 missade fönstret med 15 s) och UI saknar
+  omkörningsknapp. Åtgärdskandidater: (a) lägre effort/eget tak för phases (OBS
+  grind-policyn: ändring av writing-rollens beteende ⇒ eval), (b) städa risks ur
+  schema + promptexempel, (c) watchdog-fönster vs retry-budget, (d) status-reconcile
+  när sen generering fullbordas post-watchdog, (e) omkörningsknapp för fallerade
+  genereringar (produktlucka sedan juli). Kostnadsnot: runaway gör phases till
+  ~$1,05 av ~$1,5 per anbud.
 - **Routine-follow-ups #96 (polish):** (1) "Avbröts"-vägen i OutcomeSheet är en död ände
   (ingen refetch, inget formulär — raden ligger inert tills sheeten stängs), otestad;
   (2) efter Hoppa över/Spara flashar utfallsknapparna tillbaka tills refetchen landat —
