@@ -10,10 +10,11 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// Template-free Markdown export. Same readiness guards as the PPTX route, but
-// deliberately does NOT flip status to 'exported': the PPTX is the formal
-// deliverable that counts as submitted in stats — Markdown is a lightweight
-// working artifact and must not affect outcome tracking.
+// Template-free Markdown export — the primary export path since the MD-first
+// decision (2026-08-03). Flips status to 'exported' exactly like the PPTX
+// route used to: this IS the formal deliverable that feeds outcome tracking
+// (INLÄMNADE / utfallsloggen). The PPTX route remains in the codebase but is
+// no longer reachable from the UI.
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "bid id");
@@ -59,6 +60,11 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   }
 
   const markdown = bidToMarkdown(bid.sections as BidSection[]);
+
+  await supabase
+    .from("bids")
+    .update({ status: "exported", exported_at: new Date().toISOString() })
+    .eq("id", id);
 
   return new NextResponse(markdown, {
     status: 200,
