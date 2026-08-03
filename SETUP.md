@@ -73,7 +73,7 @@ Optional feature flags (sane defaults — set only to change behavior):
 
 | Flag | Default | Effect |
 |---|---|---|
-| `BIDSMITH_FOREIGN_TEMPLATES` | on | Custom-template upload + onboarding wizard. Set `off` to hide the surface. Activation of an onboarded template is gated on the measurement pass (`npm run onboarding:measure`, requires Windows + PowerPoint) regardless of this flag. See ["Bring your own template"](README.md#bring-your-own-template-beta) in the README for the full flow and its current limits. |
+| `BIDSMITH_FOREIGN_TEMPLATES` | off | EXPERIMENTAL: custom-template upload + onboarding wizard for the PPTX engine. Set `on` to opt in. Activation of an onboarded template is gated on the measurement pass (`npm run onboarding:measure`, requires Windows + PowerPoint) regardless of this flag. The supported path for "our own format" is the Markdown export — see ["Your template stays yours"](README.md#your-template-stays-yours) in the README. |
 | `BIDSMITH_STRUCTURED_OUTPUTS` | on | Claude structured outputs for AI responses. Set `off` to fall back to freetext + JSON extraction. |
 
 ## 6. Enable email login in Supabase

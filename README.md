@@ -38,13 +38,15 @@ documents — which keeps prompts tight and cost predictable.
 2. **Consultant matching** — ranks your consultant pool against those requirements.
 3. **Go / No-Go** — estimates win probability and recommends whether to bid.
 4. **Bid generation** — drafts the full proposal (understanding, approach, phases,
-   team, quality assurance, references, certifications) into a PowerPoint template.
+   team, quality assurance, references, certifications) as structured sections.
 5. **RFP radar** — surfaces relevant new public tenders (TED) on a schedule.
 
-A built-in **bid editor** lets the consultant edit every section inline, with overflow
-checks against the template's layout budget so the exported deck stays clean. Export
-goes to your PowerPoint template — or to plain **Markdown** when you'd rather own the
-formatting yourself (paste into Word, Google Docs, or your own pipeline).
+A built-in **bid editor** lets the consultant edit every section inline. Export is
+structured **Markdown** — deliberately. Your firm already has a template and a way
+of working; a Markdown draft drops straight into it: paste it into Word or Google
+Docs, or hand it to the AI tool you already use (Claude, Copilot, a slide generator)
+together with your own template. Bidsmith does the tender-specific heavy lifting —
+the formatting last mile belongs to the tools that are already good at it.
 
 <table>
 <tr>
@@ -57,39 +59,29 @@ formatting yourself (paste into Word, Google Docs, or your own pipeline).
 </tr>
 </table>
 
-## Bring your own template (beta)
+## Your template stays yours
 
-Bidsmith ships with a bundled proposal template, but it can onboard your firm's own
-PowerPoint deck. Upload it under **Settings → Templates** and a guided wizard walks
-you through every text box — what it means and whether the AI should fill it. A
-**measurement pass** then scans the empty template for layout defects and calibrates
-a character budget for every text box by rendering it in real PowerPoint, and a
-**health report** in the app lists each defect the engine found in the template
-itself, letting you accept or fix it before the template is activated:
+Bidsmith deliberately does **not** try to render your firm's PowerPoint template.
+We built that engine — template onboarding, layout measurement, per-box character
+budgets, a defect health report — and learned the honest lesson: automated rendering
+into an arbitrary agency deck is never good enough to hand to a client without
+rework, and the calibration cost per template is real. Meanwhile, the tools you
+already use (Claude, Copilot, slide generators) turn a well-structured Markdown
+draft into your template better every month.
 
-```bash
-npm run onboarding:measure -- <templateId> --write   # requires Windows + PowerPoint
-```
-
-(The template id is in the address bar on the template's onboarding page.)
-
-If you use [Claude Code](https://claude.com/claude-code), you can hand it the whole
-inspection instead of running the steps yourself — paste something like:
+So the contract is: **Bidsmith owns the tender-specific work** — requirement
+extraction with verbatim source quotes, consultant matching, go/no-go, the draft
+itself — **and hands you structured Markdown** that any downstream tool can format.
+For example, with [Claude Code](https://claude.com/claude-code) or Claude Desktop:
 
 ```text
-I uploaded my own PowerPoint template to Bidsmith and finished the onboarding wizard
-(template id: <id>). Run the onboarding measurement pass, walk me through the health
-report, and help me decide which defects to accept and which to fix in the template
-file. After my first generated bid, run deck:scan and deck:dupes on the exported
-.pptx and interpret the results for me.
+Here is our proposal template (attached .pptx/.docx) and a draft proposal in
+Markdown from Bidsmith. Fill the template with the draft's content, keeping our
+formatting, fonts and slide layout exactly as they are.
 ```
 
-**An honest caveat:** this pipeline is young. It has been battle-tested against our
-own test templates, not yet against the long tail of real agency decks. Expect the
-first onboarding of a complex template to take a couple of iterations — the health
-report will show you what the engine sees. If a template onboards badly, please open
-an issue (ideally with a stripped-down copy of the template): real-world templates
-are exactly the feedback this part of the roadmap is built on.
+The PPTX engine still lives in the codebase behind `BIDSMITH_FOREIGN_TEMPLATES=on`
+as an experimental surface, for the curious and for contributors — see SETUP.md.
 
 ## How it's built
 
@@ -99,9 +91,9 @@ are exactly the feedback this part of the roadmap is built on.
 - **Quality** — an offline evaluation harness scores generated bids on structure,
   coverage, and hallucination, with synthetic fixtures included so you can run it
   out of the box.
-- **Layout fidelity** — a three-layer corrector (prompt-level character budgets →
-  post-generation verification with retry → flag-only review in the editor) keeps the
-  PowerPoint output close to the source template.
+- **Format-agnostic output** — the pipeline produces structured, typed sections
+  (validated against Zod schemas), serialized to Markdown at export. Nothing in the
+  core depends on a rendering target, which is what keeps the output portable.
 
 ## Fighting hallucination: the evidence chain
 
@@ -144,7 +136,7 @@ on the bundled synthetic data (July 2026, Sonnet 5 extraction + Opus 4.8 writing
 
 - **Onboarding 10 consultant CVs:** ≈ $0.19 total (about 2 cents per CV, one-time)
 - **One tender, end to end** — analysis, matching, go/no-go, full proposal draft,
-  PowerPoint export: **≈ $1.5–2**, most of it the Opus writing pass
+  Markdown export: **≈ $1.5–2**, most of it the Opus writing pass
 
 Costs stay predictable because each pipeline step receives the previous step's
 compressed output, never the raw documents.
@@ -152,7 +144,7 @@ compressed output, never the raw documents.
 ## Tech stack
 
 Next.js 16 (App Router) · TypeScript · Tailwind v4 · Supabase (PostgreSQL + Storage) ·
-[pptx-automizer](https://github.com/singerla/pptx-automizer) for PowerPoint rendering ·
+[pptx-automizer](https://github.com/singerla/pptx-automizer) for the experimental PPTX path ·
 Claude API · Vercel.
 
 ## Getting started
@@ -176,7 +168,7 @@ in numeric order as before — `setup.sql` is for fresh installs only.
 
 Want a populated workspace without hunting for documents? Seed the bundled synthetic
 demo data — ten consultant CVs and a public-sector tender run through the entire
-pipeline to an exported PowerPoint (≈ $2.5 in API usage):
+pipeline to an exported Markdown draft (≈ $2.5 in API usage):
 
 ```bash
 node scripts/demo-seed.mjs         # against a running dev server
@@ -200,7 +192,8 @@ src/lib/ai-client.ts        Centralised Claude calls (retry + JSON extraction)
 src/lib/ai-schemas.ts       Zod schemas validating every AI response
 src/lib/document-parser.ts  Document parsing (markitdown-js)
 src/lib/bid-generator/      Proposal generation: parallel AI calls + bundles
-src/lib/pptx-template/      PowerPoint template engine + layout corrector
+src/lib/bid-markdown.ts     Markdown serialization of bid sections (the export path)
+src/lib/pptx-template/      PowerPoint template engine (experimental, flag-gated)
 src/lib/eval/               Runtime evaluation (structure judge)
 evals/                      Offline evaluation harness
 supabase/migrations/        Database schema

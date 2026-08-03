@@ -10,10 +10,11 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// Template-free Markdown export. Same readiness guards as the PPTX route, but
-// deliberately does NOT flip status to 'exported': the PPTX is the formal
-// deliverable that counts as submitted in stats — Markdown is a lightweight
-// working artifact and must not affect outcome tracking.
+// Template-free Markdown export — the primary export path since the MD-first
+// decision (2026-08-03). Flips status to 'exported' exactly like the PPTX
+// route used to: this IS the formal deliverable that feeds outcome tracking
+// (INLÄMNADE / utfallsloggen). The PPTX route remains in the codebase but is
+// no longer reachable from the UI.
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "bid id");
@@ -26,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
   const { data: bid, error: bidError } = await supabase
     .from("bids")
-    .select("sections, status, failed_bundles")
+    .select("sections, status, failed_bundles, exported_at")
     .eq("id", id)
     .single();
 
@@ -59,6 +60,24 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   }
 
   const markdown = bidToMarkdown(bid.sections as BidSection[]);
+
+  // The flip IS the point of this route (it feeds outcome tracking) — a silent
+  // failure here would hand out the file while the bid never shows as submitted.
+  // exported_at is preserved on re-export: stats bucket by first submission.
+  const { error: updateError } = await supabase
+    .from("bids")
+    .update({
+      status: "exported",
+      exported_at: (bid.exported_at as string | null) ?? new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (updateError) {
+    console.error(`Failed to mark bid ${id} as exported:`, updateError);
+    return NextResponse.json(
+      { error: "Export could not be recorded. Try again." },
+      { status: 500 },
+    );
+  }
 
   return new NextResponse(markdown, {
     status: 200,
