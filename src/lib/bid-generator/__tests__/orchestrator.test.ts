@@ -177,6 +177,64 @@ describe("generateAllSections", () => {
     expect(result.failedBundles).toEqual([{ bundle: "phases", error: "boom" }]);
   });
 
+  it("swallows a rejecting onSectionComplete: generation still succeeds and the queue keeps serializing", async () => {
+    // A transient DB error on one progress write must not fail the whole
+    // (paid) generation, and the persist queue must keep processing
+    // subsequently-enqueued work rather than getting stuck on the rejection.
+    let callIndex = 0;
+    let active = 0;
+    let maxActive = 0;
+    const calls: string[] = [];
+    const onSectionComplete = vi.fn(async (s: BidSection) => {
+      callIndex += 1;
+      calls.push(s.key);
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((r) => setTimeout(r, 1));
+      active -= 1;
+      if (callIndex === 2) {
+        throw new Error("transient DB error");
+      }
+    });
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = await generateAllSections(baseCtx, manifest, onSectionComplete);
+
+    // The rejection is logged, not thrown. Assert before mockRestore(), which
+    // (like mockReset) clears recorded calls.
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    errorSpy.mockRestore();
+
+    // 1. Generation itself is unaffected by the persist failure.
+    expect(result.sections).toHaveLength(11);
+    expect(result.failedBundles).toEqual([]);
+
+    // 2. The queue keeps serializing after the swallowed rejection: every
+    // later-enqueued batch (the 5 bundles, 7 sections) still persists. The
+    // deterministic batch is one enqueued unit that loops over 4 sections
+    // with a plain `for...await`; when the 2nd call in that same loop
+    // rejects, the loop aborts and the batch's remaining 2 items are never
+    // invoked — but that does not break the chain for batches enqueued
+    // afterwards (removing the `.catch` makes this call count collapse and
+    // generateAllSections itself reject instead of resolving).
+    expect(onSectionComplete).toHaveBeenCalledTimes(9);
+    expect(calls).toEqual([
+      "cover",
+      "reference-v2",
+      "understanding-current",
+      "understanding-assignment",
+      "understanding-vision",
+      "phases",
+      "quality-assurance",
+      "requirement-matrix-v2",
+      "team-pricing",
+    ]);
+
+    // 3. Serialization survives the swallowed error — no persist call ever
+    // overlaps another, before or after the rejection.
+    expect(maxActive).toBe(1);
+  });
+
   it("never runs two persist callbacks concurrently", async () => {
     let active = 0;
     let maxActive = 0;
