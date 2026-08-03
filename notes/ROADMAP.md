@@ -4,7 +4,19 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-03 kväll — **MARKDOWN-EXPORT MERGAD (#100) + VIDEO v6 KLAR.**
+_Senast uppdaterad: 2026-08-03 natt — **MD-FIRST-PIVOTEN MERGAD (#101).** Stefans
+produktbeslut (argumenten: ALLA mallar är foreign ur en firmas perspektiv; utkast
+kräver ändå omarbetning; formaterings-sista-milen löses bättre av verktygen kunderna
+redan använder, matade med strukturerad Markdown): **Markdown är den formella
+leveransen** — enda exportknappen, flippar `exported`/`exported_at` (felkontrollerat,
+route-testat efter routine-fynd; `exported_at` bevaras vid re-export). PPTX-motorn
+PARKERAD bakom `BIDSMITH_FOREIGN_TEMPLATES` (default AV, fail closed) — radering är
+ett POST-LAUNCH-beslut med användardata. README: "Your template stays yours".
+Video v7: PPTX-beaten ersatt med scrollande MD-dokument i brand-typografi.
+Posterna omskrivna (ny vinkel: "kill your darlings"). Follow-up bokförd: flytta
+export-flippen från GET till POST (båda routerna). Lansering tis 2026-08-11 står._
+
+_Historik (2026-08-03 kväll): **MARKDOWN-EXPORT MERGAD (#100) + VIDEO v6 KLAR.**
 Stefans beslut: md-export som mallfritt komplement FÖRE lansering (PPTX förblir
 huvudspåret och den formella leveransen — omprioriteringsfrågan tas efter lansering med
 användardata). `GET /api/bids/[id]/export-md` + editor-knapp; exporten flippar INTE
@@ -430,6 +442,9 @@ _Inga — #54–#68 mergade 2026-07-03/04._
   materialiseras nu (var alltid tomma pre-fix ⇒ {Risker}-boxen får innehåll).
   KVAR av posten: 32k-runawayen (hypotes 1, effort max-tänkbudgeten — n=1 utan
   runaway bevisar inget), watchdog-samspelet, status-reconcile, omkörningsknapp.
+- **Export-flippen muterar DB på GET (routine-förslag #101):** flytta
+  statusflippen till POST eller separat "mark exported"-anrop — gäller båda
+  exportrouterna (md är primär, pptx parkerad).
 - **Export-routernas delade readiness-guards (polish, routine-förslag #100):** 404/
   generating/failed/failed_bundles-guarderna är nu duplicerade rad för rad mellan
   `export/route.ts` och `export-md/route.ts` — bryt ut till gemensam helper innan de
