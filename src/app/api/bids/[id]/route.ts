@@ -58,8 +58,6 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     outcome: data.outcome,
     exportedAt: data.exported_at,
     createdAt: data.created_at,
-    structureEval: data.structure_eval,
-    overflowFlags: data.overflow_flags ?? [],
     failedBundles: data.failed_bundles ?? [],
     generationError: data.generation_error ?? null,
   });
@@ -72,12 +70,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const id = idResult.data;
   const parsed = await parseBody(request, BidPatchSchema);
   if (!parsed.ok) return parsed.response;
-  const { outcome, sections, overflowFlags } = parsed.data;
+  const { outcome, sections } = parsed.data;
 
   const updates: Record<string, unknown> = {};
   if (outcome) updates.outcome = outcome;
   if (sections) updates.sections = sections;
-  if (overflowFlags !== undefined) updates.overflow_flags = overflowFlags;
 
   const supabase = await createClient();
 

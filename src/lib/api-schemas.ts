@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { ConsultantExtractionSchema } from "./ai-schemas";
-import { OverflowFlagSchema } from "./pptx-template/budget-types";
 import { TABLE_COLUMN_ROLES } from "./pptx-template/template-profile";
 import { MAX_TEAM_SIZE } from "./constants";
 
@@ -20,10 +19,9 @@ export const BidPatchSchema = z
     // .max caps the JSONB row size against an oversized client payload; a real
     // deck is well under this (our template is 17 slides).
     sections: z.array(z.unknown()).max(500).optional(),
-    overflowFlags: OverflowFlagSchema.array().optional(),
   })
   .refine(
-    (v) => v.outcome !== undefined || v.sections !== undefined || v.overflowFlags !== undefined,
+    (v) => v.outcome !== undefined || v.sections !== undefined,
     { message: "No valid fields to update" },
   );
 
@@ -89,18 +87,6 @@ export const ConsultantUpdateSchema = z.object({
       }),
     )
     .optional(),
-});
-
-// --- Bid: POST /api/bids/[id]/shorten ---
-//
-// Kortar om ett enskilt flaggat fälts text till ≤ budget via skrivmodellen.
-
-export const ShortenRequestSchema = z.object({
-  // Övre gräns: ett enskilt fält är aldrig enormt; skyddar mot att ett absurt
-  // långt innehåll trunkerar LLM-svaret mot maxTokens-taket (→ förvirrande 500).
-  text: z.string().min(1).max(8000),
-  budget: z.number().int().positive(),
-  fieldLabel: z.string().min(1),
 });
 
 // --- Go/No-Go: POST /api/go-no-go ---
