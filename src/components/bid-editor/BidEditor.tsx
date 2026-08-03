@@ -76,6 +76,7 @@ export function BidEditor({
   const [shorteningKey, setShorteningKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingMd, setDownloadingMd] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -255,6 +256,29 @@ export function BidEditor({
     }
   }
 
+  async function downloadMarkdown() {
+    setDownloadingMd(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/bids/${bidId}/export-md`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Export failed");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `anbud-${bidId.substring(0, 8)}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export misslyckades");
+    } finally {
+      setDownloadingMd(false);
+    }
+  }
+
   const isReady = status === "draft" || status === "exported";
   const needsTimpris = sections.some(
     (s) => s.content?.format === "team-pricing"
@@ -386,7 +410,7 @@ export function BidEditor({
 
           {/* Footer actions */}
           {isReady && (
-            <div className="pt-4 border-t border-rule">
+            <div className="pt-4 border-t border-rule space-y-2">
               <button
                 onClick={downloadPptx}
                 disabled={downloading}
@@ -394,6 +418,14 @@ export function BidEditor({
                            hover:bg-accent-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 {downloading ? "Exporterar..." : "Ladda ner PowerPoint"}
+              </button>
+              <button
+                onClick={downloadMarkdown}
+                disabled={downloadingMd}
+                className="w-full border border-rule text-ink px-4 py-3 rounded-lg text-sm font-medium
+                           hover:border-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {downloadingMd ? "Exporterar..." : "Ladda ner Markdown"}
               </button>
             </div>
           )}

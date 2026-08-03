@@ -42,7 +42,9 @@ documents — which keeps prompts tight and cost predictable.
 5. **RFP radar** — surfaces relevant new public tenders (TED) on a schedule.
 
 A built-in **bid editor** lets the consultant edit every section inline, with overflow
-checks against the template's layout budget so the exported deck stays clean.
+checks against the template's layout budget so the exported deck stays clean. Export
+goes to your PowerPoint template — or to plain **Markdown** when you'd rather own the
+formatting yourself (paste into Word, Google Docs, or your own pipeline).
 
 <table>
 <tr>
