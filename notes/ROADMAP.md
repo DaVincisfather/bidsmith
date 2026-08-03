@@ -4,7 +4,19 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-02 kväll — **VIDEO-RÅKLIPPEN KLARA (alla 6 scener) +
+_Senast uppdaterad: 2026-08-03 kväll — **MARKDOWN-EXPORT MERGAD (#100) + VIDEO v6 KLAR.**
+Stefans beslut: md-export som mallfritt komplement FÖRE lansering (PPTX förblir
+huvudspåret och den formella leveransen — omprioriteringsfrågan tas efter lansering med
+användardata). `GET /api/bids/[id]/export-md` + editor-knapp; exporten flippar INTE
+status (outcome-statistiken förblir PPTX-bunden). Routinen fällde först PR:en
+(CRITICAL/REQUEST CHANGES: blankrads-separatorerna filtrerades bort av lines() ⇒
+run-on-stycken i CommonMark) — fixat + strukturtester i follow-up-commit, båda
+routine-follow-ups bokförda i backloggen. Video v6 (67 s, långsammare tempo +
+accentkant-chips efter fru-testet) + radar-beat med riktig TED-data (87 hämtade/20
+Haiku-scorade — kompetens-seed + CRON_SECRET tillagda i demo-miljön) + musik
+(Pixabay/Rockot) + 15s-GIF för X. Lansering enligt plan tis 2026-08-11._
+
+_Historik (2026-08-02 kväll): **VIDEO-RÅKLIPPEN KLARA (alla 6 scener) +
 PHASES-RUNAWAY BELAGD.** Alla scener omtagna badge-fria mot demo-instansen; storyline:
 analys 33ae44b3 → anbud b4571d95 (exported; PPTX i launch-worktreens tmp/demo-bid-v2.pptx;
 deck-grindar: dupes inga över tröskeln, scan 0 FAIL). BRANCH-LOKALT på feat/launch-video
@@ -418,6 +430,13 @@ _Inga — #54–#68 mergade 2026-07-03/04._
   materialiseras nu (var alltid tomma pre-fix ⇒ {Risker}-boxen får innehåll).
   KVAR av posten: 32k-runawayen (hypotes 1, effort max-tänkbudgeten — n=1 utan
   runaway bevisar inget), watchdog-samspelet, status-reconcile, omkörningsknapp.
+- **Export-routernas delade readiness-guards (polish, routine-förslag #100):** 404/
+  generating/failed/failed_bundles-guarderna är nu duplicerade rad för rad mellan
+  `export/route.ts` och `export-md/route.ts` — bryt ut till gemensam helper innan de
+  glider isär.
+- **Markdown-escaping av AI-fritext (polish, routine-förslag #100):** rader i AI-text
+  som börjar med `#`, `*`, `` ` `` blir oavsiktlig struktur i md-exporten — billig
+  escape-pass i `bid-markdown.ts`.
 - **Ordnings-invariant-test för bundle-exempel (polish, routine-förslag #99):**
   enhetstest som parsar JSON-exemplet ur SYSTEM_PROMPT och asserterar
   nyckelordning === `Object.keys(PhasesV2Schema.shape...)`; återanvänd mönstret
