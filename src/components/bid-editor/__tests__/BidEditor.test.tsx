@@ -80,4 +80,21 @@ describe("BidEditor (dokumentvyn)", () => {
     expect(screen.getByText(/kunde\s+inte genereras/)).toBeInTheDocument();
     expect(screen.getByText(/Faser/)).toBeInTheDocument();
   });
+
+  it("visar förväntade kapitel som väntande under generering", () => {
+    renderEditor({ initialSections: [], initialStatus: "generating" });
+    expect(screen.getByText("Framsida")).toBeInTheDocument();
+    expect(screen.getByText("Kravuppfyllnad")).toBeInTheDocument();
+    expect(screen.getByLabelText("Kapitel under generering")).toBeInTheDocument();
+  });
+
+  it("markerar fallerad bundles kapitel under generering", () => {
+    renderEditor({
+      initialSections: [],
+      initialStatus: "generating",
+      initialFailedBundles: [{ bundle: "phases", error: "boom" }],
+    });
+    const item = screen.getByText("Genomförande");
+    expect(item.closest("div")).toHaveClass("text-red-600", "line-through");
+  });
 });

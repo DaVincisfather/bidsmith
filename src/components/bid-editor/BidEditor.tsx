@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { BidSection, StyleGuide } from "@/lib/types";
 import { failedUnitLabel, type FailedUnit } from "@/lib/bundle-labels";
+import { buildChapterList } from "@/lib/bid-editor/expected-chapters";
 import { SectionNav } from "./SectionNav";
+import { GeneratingChapterList } from "./GeneratingChapterList";
 import { SectionRenderer } from "./renderers";
 import { ForgeLoader } from "../ForgeLoader";
 
@@ -45,6 +47,16 @@ export function BidEditor({
   useEffect(() => {
     sectionsRef.current = sections;
   }, [sections]);
+
+  // While generating: full expected structure up front, sections slotting in
+  // as they persist. null on finished bids — SectionNav owns that state.
+  const chapterList = useMemo(
+    () => (status === "generating" ? buildChapterList(sections, failedBundles) : null),
+    [status, sections, failedBundles],
+  );
+  const displaySections = chapterList
+    ? chapterList.flatMap((c) => (c.section ? [c.section] : []))
+    : sections;
 
   // Poll while generating
   const poll = useCallback(async () => {
@@ -151,15 +163,19 @@ export function BidEditor({
       <aside className="w-56 shrink-0 border-r border-rule overflow-y-auto p-3">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-xs font-mono font-bold uppercase tracking-wide text-ink-mute">Kapitel</h2>
-          <span className="text-[10px] text-ink-mute">{sections.length}</span>
+          <span className="text-[10px] text-ink-mute">{chapterList ? chapterList.length : sections.length}</span>
         </div>
-        <SectionNav
-          sections={sections}
-          activeSectionKey={activeSectionKey}
-          onSectionClick={scrollToSection}
-          onReorder={handleReorder}
-          onRemoveSection={handleRemoveSection}
-        />
+        {chapterList ? (
+          <GeneratingChapterList items={chapterList} />
+        ) : (
+          <SectionNav
+            sections={sections}
+            activeSectionKey={activeSectionKey}
+            onSectionClick={scrollToSection}
+            onReorder={handleReorder}
+            onRemoveSection={handleRemoveSection}
+          />
+        )}
       </aside>
 
       {/* Center panel — document view */}
@@ -214,7 +230,7 @@ export function BidEditor({
             </div>
           )}
 
-          {sections.map((section) => (
+          {displaySections.map((section) => (
             <div
               key={section.key}
               ref={(el) => { sectionRefs.current[section.key] = el; }}
