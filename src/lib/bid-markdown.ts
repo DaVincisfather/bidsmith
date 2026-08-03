@@ -31,7 +31,7 @@ FORMATANPASSNING
 - Textdokument (t.ex. Word): behåll rubrikhierarkin som rubriknivåer/styles.
 - Presentation (t.ex. PowerPoint): ett "## "-kapitel motsvarar en sektion om
   en eller flera slides; kondensera prosa till punkter utan att ändra
-  sakinnehål.
+  sakinnehåll.
 - Annat verktyg: bevara struktur och fakta; formen är fri.
 -->`;
 
