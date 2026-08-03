@@ -112,12 +112,19 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **STEFAN (2026-08-03): klipp lanseringsvideon.** Råklipp: `bidsmith-launch/tmp/video/`
-      (6 scener, badge-fria). PPTX att filma i PowerPoint: `bidsmith-launch/tmp/demo-bid-v2.pptx`.
-      CapCut + GIF-version (till X + README). Postutkast för granskning:
-      `notes/2026-08-02-launch-posts.md`. Behövs appen: `npm run dev -- --port 3005` i
-      launch-worktreen (demo-DB uppe & städad: analys 33ae44b3 → anbud b4571d95).
-      → därefter publicering (annonsyta = Stefans val).
+- [ ] **PUBLICERING TISDAG 2026-08-11 (beslutat 2026-08-03):** LinkedIn ~07:45 (svensk
+      B2B-morgon, semestern slut), X ~14:30 samma dag (US-östkustens morgon).
+      VIDEON ÄR KLAR (v5, 51 s, klippt programmatiskt via ffmpeg — CapCut behövs ej):
+      `bidsmith-launch/tmp/videocut/bidsmith-launch-draft.mp4` (med musik: Pixabay
+      "Corporate Ambient Piano"/Rockot, fri kommersiell licens) + `bidsmith-15s.gif`
+      (X, 2,3 MB) + full-GIF. Innehåll: hook → upload → smideloader → krav →
+      källvisar-frys (hallucinationsbeviset) → matchning + frys → go/no-go + frys →
+      smide → editor → PPTX-pan → radar (RIKTIG TED-data: 87 hämtade, 20 Haiku-scorade,
+      kompetens-seed + CRON_SECRET nu i demo-miljön) → endcard. Ombygge: `build.ps1` +
+      `render-cards.mjs` i tmp/videocut/. KVAR FÖR STEFAN: godkänn slutversionen,
+      justera [JUSTERA] i `notes/2026-08-02-launch-posts.md`, posta (repo-länk i första
+      kommentaren på LinkedIn). Keep-alive-rutin pingar demo-Supabase sön 9/8 09:00
+      (claude.ai/code/routines) så den inte pausar före lansering.
 - [x] **STEFANS SMOKE (KLAR 2026-07-07):** onboarding grön (137 bekräftade/84 pending
       av 221), generering 137/137 mekaniskt grön — men **slutprodukten katastrofal**:
       45 789 tecken prosa över 11 slides, 0 budgetChars satta, nio dubblett-"Om oss" på
