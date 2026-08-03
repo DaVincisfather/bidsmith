@@ -27,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
   const { data: bid, error: bidError } = await supabase
     .from("bids")
-    .select("sections, status, failed_bundles")
+    .select("sections, status, failed_bundles, exported_at")
     .eq("id", id)
     .single();
 
@@ -61,10 +61,23 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
   const markdown = bidToMarkdown(bid.sections as BidSection[]);
 
-  await supabase
+  // The flip IS the point of this route (it feeds outcome tracking) — a silent
+  // failure here would hand out the file while the bid never shows as submitted.
+  // exported_at is preserved on re-export: stats bucket by first submission.
+  const { error: updateError } = await supabase
     .from("bids")
-    .update({ status: "exported", exported_at: new Date().toISOString() })
+    .update({
+      status: "exported",
+      exported_at: (bid.exported_at as string | null) ?? new Date().toISOString(),
+    })
     .eq("id", id);
+  if (updateError) {
+    console.error(`Failed to mark bid ${id} as exported:`, updateError);
+    return NextResponse.json(
+      { error: "Export could not be recorded. Try again." },
+      { status: 500 },
+    );
+  }
 
   return new NextResponse(markdown, {
     status: 200,
