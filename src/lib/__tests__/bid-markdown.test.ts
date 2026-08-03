@@ -164,3 +164,26 @@ describe("bidToMarkdown", () => {
     expect(md).toContain("| A \\| B | Roll |");
   });
 });
+
+describe("BID_MD_PREAMBLE", () => {
+  const md = bidToMarkdown([
+    section("cover", "Framsida", {
+      format: "cover", title: "Titel", client: "Kund", date: "2026-08-03",
+    }),
+  ]);
+
+  it("opens the export as a valid HTML comment, H1 right after", () => {
+    expect(md.startsWith("<!--\n")).toBe(true);
+    const closeIdx = md.indexOf("-->");
+    expect(closeIdx).toBeGreaterThan(0);
+    // Exactly one comment terminator — free text with --> would truncate it.
+    expect(md.indexOf("-->", closeIdx + 3)).toBe(-1);
+    expect(md.slice(closeIdx + 3).trimStart().startsWith("# Titel")).toBe(true);
+  });
+
+  it("carries the three instruction parts", () => {
+    expect(md).toContain("DOKUMENTETS SEMANTIK");
+    expect(md).toContain("FAKTA ÄR LÅSTA");
+    expect(md).toContain("FORMATANPASSNING");
+  });
+});
