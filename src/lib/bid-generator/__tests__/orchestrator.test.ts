@@ -139,4 +139,56 @@ describe("generateAllSections", () => {
     expect(keys).toContain("understanding-current");
     expect(keys).toContain("reference-v2");
   });
+
+  it("persists each bundle's sections as it settles, not after all complete", async () => {
+    const persisted: string[] = [];
+    const onSectionComplete = vi.fn(async (s: BidSection) => { persisted.push(s.key); });
+
+    // team resolves immediately; understanding hangs until released.
+    let releaseUnderstanding!: () => void;
+    vi.mocked(buildUnderstandingBundle).mockImplementation(
+      () => new Promise((resolve) => {
+        releaseUnderstanding = () => resolve({
+          sections: [mockSection("understanding-current", "understanding-current")],
+          overflowFlags: [],
+        });
+      }),
+    );
+
+    const resultPromise = generateAllSections(baseCtx, manifest, onSectionComplete);
+    // Give the fast bundles a macrotask to settle and persist.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(persisted).toContain("team-pricing");
+    expect(persisted).not.toContain("understanding-current");
+
+    releaseUnderstanding();
+    await resultPromise;
+    expect(persisted).toContain("understanding-current");
+  });
+
+  it("reports a failed bundle via onUnitFailed while others persist", async () => {
+    const failures: string[] = [];
+    vi.mocked(buildPhasesBundle).mockRejectedValue(new Error("boom"));
+
+    const result = await generateAllSections(baseCtx, manifest, undefined, async (f) => {
+      failures.push(f.bundle);
+    });
+    expect(failures).toEqual(["phases"]);
+    expect(result.failedBundles).toEqual([{ bundle: "phases", error: "boom" }]);
+  });
+
+  it("never runs two persist callbacks concurrently", async () => {
+    let active = 0;
+    let maxActive = 0;
+    const onSectionComplete = vi.fn(async () => {
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((r) => setTimeout(r, 1));
+      active -= 1;
+    });
+    await generateAllSections(baseCtx, manifest, onSectionComplete);
+    expect(maxActive).toBe(1);
+    // 4 deterministic + 7 bundle sections in the default mocks.
+    expect(onSectionComplete).toHaveBeenCalledTimes(11);
+  });
 });

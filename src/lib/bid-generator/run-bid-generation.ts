@@ -12,11 +12,6 @@ import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
 import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
 import { isForeignProfile, hasMappedTable } from "@/lib/pptx-template/template-profile";
 import type { BidSection } from "@/lib/types";
-import {
-  judgeBidStructure,
-  buildStructureEvalSummary,
-  RUNTIME_MANDATORY_SECTIONS,
-} from "@/lib/eval/bid-structure";
 
 // Same cap as generateAllSections' GLOBAL_RETRY_CAP (bid-generator/index.ts) —
 // the bundle path shares one budget across 5 concurrent bundles; here it's a
@@ -51,6 +46,23 @@ export async function runBidGeneration(
     await supabase.from("bids").update({ sections: currentSections }).eq("id", bidId);
   };
 
+  // Incremental failure marking: lets the editor's chapter list flag a failed
+  // bundle's chapters mid-generation. Serialized by generateAllSections' queue
+  // (never concurrent with persistSection). Final write overwrites with the
+  // complete list.
+  const persistFailedUnit = async (failure: FailedBundle) => {
+    const { data: currentBid } = await supabase
+      .from("bids")
+      .select("failed_bundles")
+      .eq("id", bidId)
+      .single();
+    const current = (currentBid?.failed_bundles as FailedBundle[]) ?? [];
+    await supabase
+      .from("bids")
+      .update({ failed_bundles: [...current, failure] })
+      .eq("id", bidId);
+  };
+
   let sections: BidSection[];
   let overflowFlags: OverflowFlag[];
   // Both paths report failures the same way to the caller: the failed_bundles
@@ -59,12 +71,6 @@ export async function runBidGeneration(
   // path and the export route's "has failed sections → refuse" check.
   let failedUnits: (FailedBundle | FailedSection)[];
   let totalWipeout: boolean;
-  // Strukturjuryn (buildStructureEvalSummary) mäter mot VÅR v2-malls 11
-  // obligatoriska format — meningslöst för en främmande mall vars sektioner alla
-  // är generic-prose. Utan denna grind skulle varje foreign-bid få rött
-  // struktur-badge även när den är perfekt (routine-fynd #68). Per-mall-facit är
-  // en egen backlog-post; här persisteras structure_eval null = "ej utvärderad".
-  let onProfilePath = false;
   try {
     // A FOREIGN template's manifest is near-empty (upload introspection
     // excludes unrecognised slides), so the profile is the only truth for
@@ -72,7 +78,6 @@ export async function runBidGeneration(
     // → the type-driven bundle path, unchanged.
     const storedProfile = await loadTemplateProfile(template.id);
     if (storedProfile && isForeignProfile(storedProfile)) {
-      onProfilePath = true;
       const result = await generateSectionsFromProfile(storedProfile, ctx, persistSection);
       sections = result.sections;
       overflowFlags = [];
@@ -125,7 +130,12 @@ export async function runBidGeneration(
       // empty bid.
       totalWipeout = sections.length === 0 && failedUnits.length > 0;
     } else {
-      const result = await generateAllSections(ctx, template.manifest, persistSection);
+      const result = await generateAllSections(
+        ctx,
+        template.manifest,
+        persistSection,
+        persistFailedUnit,
+      );
       sections = result.sections;
       overflowFlags = result.overflowFlags;
       failedUnits = result.failedBundles;
@@ -158,20 +168,6 @@ export async function runBidGeneration(
     console.warn("bid generation partial — some bundles failed:", failedBundles);
   }
 
-  // Eval failure must never block the bid save — sections took 2-5 min to
-  // generate and we'd rather show "ej utvärderad" than lose them. Skippas helt på
-  // profil-vägen (foreign mall → v2-facit gäller inte, se ovan).
-  let structureEval: ReturnType<typeof buildStructureEvalSummary> | null = null;
-  if (!onProfilePath) {
-    try {
-      structureEval = buildStructureEvalSummary(
-        judgeBidStructure(sections, RUNTIME_MANDATORY_SECTIONS),
-      );
-    } catch (err) {
-      console.error("structure-judge failed (sections still saved):", err);
-    }
-  }
-
   // Guarded on status: if the stale-generating watchdog already marked this
   // bid 'failed' (runner outlived the window), 'failed' is terminal — a late
   // finish must not resurrect the bid the user was told to re-run.
@@ -180,7 +176,6 @@ export async function runBidGeneration(
     .update({
       sections,
       status: "draft",
-      structure_eval: structureEval,
       overflow_flags: overflowFlags,
       failed_bundles: failedBundles,
     })

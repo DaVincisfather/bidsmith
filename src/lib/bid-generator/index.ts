@@ -58,13 +58,16 @@ export interface GenerateAllSectionsResult {
  * throw away the (expensive Opus) output of the five that succeeded. Rejections
  * are returned in `failedBundles` for the caller to surface.
  *
- * onSectionComplete is invoked sequentially in v2-template section order,
- * awaited per call (blocks overall completion).
+ * onSectionComplete and onUnitFailed are invoked as each bundle settles (not
+ * batched after all complete), via a serialized queue: persistSection upstream
+ * is read-modify-write on the bid row, so callbacks must never run
+ * concurrently. Both are flushed before this function returns.
  */
 export async function generateAllSections(
   ctx: BidContext,
   manifest: TemplateManifest,
   onSectionComplete?: (section: BidSection) => void | Promise<void>,
+  onUnitFailed?: (failure: FailedBundle) => void | Promise<void>,
 ): Promise<GenerateAllSectionsResult> {
   const plan: BudgetPlan = { budgets: manifest.budgets, fieldSlides: manifest.fieldSlides };
   const retryBudget: RetryBudget = { remaining: GLOBAL_RETRY_CAP };
@@ -82,13 +85,58 @@ export async function generateAllSections(
   const confidentiality = buildConfidentialitySection(ctx.analysis);
   const reference = buildReferenceSection();
 
+  // Serialized side-effect queue: persistSection upstream is read-modify-write
+  // on the bid row, so callbacks must never run concurrently. Entries swallow
+  // their own errors — a failed progress write must not fail the generation
+  // (the final ordered write in run-bid-generation is the source of truth).
+  let queue: Promise<void> = Promise.resolve();
+  const enqueue = (work: () => Promise<void>) => {
+    queue = queue.then(work).catch((err) => {
+      console.error("incremental persist failed (final write recovers):", err);
+    });
+  };
+  const persistSections = (secs: BidSection[]) => {
+    if (!onSectionComplete) return;
+    enqueue(async () => {
+      for (const s of secs) await onSectionComplete(s);
+    });
+  };
+
+  // Deterministic sections are ready now — persist up front so the editor's
+  // chapter list shows them landed from the first poll. Intermediate DB order
+  // is settle order; the final write reasserts document order.
+  persistSections([cover, reference, confidentiality, certifications]);
+
+  const instrumented = (
+    p: Promise<{ sections: BidSection[]; overflowFlags: OverflowFlag[] }>,
+    label: (typeof BUNDLE_LABELS)[number],
+  ) =>
+    p.then(
+      (r) => {
+        persistSections(r.sections);
+        return r;
+      },
+      (err: unknown) => {
+        if (onUnitFailed) {
+          enqueue(async () => {
+            await onUnitFailed({
+              bundle: label,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          });
+        }
+        throw err;
+      },
+    );
+
   const settled = await Promise.allSettled([
-    buildUnderstandingBundle(ctx, plan, retryBudget),
-    buildPhasesBundle(ctx, plan, retryBudget),
-    buildQualityBundle(ctx, plan, retryBudget),
-    buildRequirementMatrixBundle(ctx, plan, retryBudget),
-    buildTeamBundle(ctx, plan, retryBudget),
+    instrumented(buildUnderstandingBundle(ctx, plan, retryBudget), "understanding"),
+    instrumented(buildPhasesBundle(ctx, plan, retryBudget), "phases"),
+    instrumented(buildQualityBundle(ctx, plan, retryBudget), "quality"),
+    instrumented(buildRequirementMatrixBundle(ctx, plan, retryBudget), "requirement-matrix"),
+    instrumented(buildTeamBundle(ctx, plan, retryBudget), "team"),
   ]);
+  await queue; // flush progress writes before returning
 
   const bundleResults: { sections: BidSection[]; overflowFlags: OverflowFlag[] }[] = [];
   const failedBundles: FailedBundle[] = [];
@@ -114,12 +162,6 @@ export async function generateAllSections(
   ];
 
   const overflowFlags: OverflowFlag[] = bundleResults.flatMap((r) => r.overflowFlags);
-
-  if (onSectionComplete) {
-    for (const s of sections) {
-      await onSectionComplete(s);
-    }
-  }
 
   return { sections, overflowFlags, failedBundles };
 }
