@@ -3,8 +3,11 @@
 // template engine, no layout constraints. Section order = document order.
 import { BidSection, BidSectionContent } from "@/lib/types";
 
+// "" entries are deliberate blank-line separators — only null (conditional
+// blocks) is filtered. Dropping "" would glue paragraphs/labels together,
+// which CommonMark renders as one run-on paragraph (routine finding, PR #100).
 function lines(...parts: Array<string | null>): string {
-  return parts.filter((p): p is string => p !== null && p !== "").join("\n");
+  return parts.filter((p): p is string => p !== null).join("\n");
 }
 
 function bullets(items: string[]): string | null {
@@ -18,7 +21,8 @@ function cell(text: string): string {
 }
 
 function coverMd(c: Extract<BidSectionContent, { format: "cover" }>): string {
-  return lines(`# ${c.title}`, "", `**Till:** ${c.client}`, `**Datum:** ${c.date}`);
+  // One line: consecutive label lines would soft-wrap into a single paragraph.
+  return lines(`# ${c.title}`, "", `**Till:** ${c.client} · **Datum:** ${c.date}`);
 }
 
 function phasesMd(c: Extract<BidSectionContent, { format: "phases" }>): string {
@@ -74,16 +78,17 @@ function teamMd(c: Extract<BidSectionContent, { format: "team-pricing" }>): stri
 }
 
 function referencesMd(c: Extract<BidSectionContent, { format: "reference-v2" }>): string {
+  // Bullet list, not bare label lines — those would soft-wrap into one paragraph.
   const blocks = c.references.map((r) =>
     lines(
       `### ${r.clientName} — ${r.contextLine}`,
       "",
-      `**Organisation:** ${r.organisation}`,
-      `**Period:** ${r.startDate} – ${r.endDate}`,
-      `**Omfattning:** ${r.scope}`,
-      `**Roll och leverans:** ${r.roleAndDelivery}`,
-      `**Resultat:** ${r.result}`,
-      `**Referensperson:** ${r.contact.name} (${r.contact.titlePhoneEmail})`,
+      `- **Organisation:** ${r.organisation}`,
+      `- **Period:** ${r.startDate} – ${r.endDate}`,
+      `- **Omfattning:** ${r.scope}`,
+      `- **Roll och leverans:** ${r.roleAndDelivery}`,
+      `- **Resultat:** ${r.result}`,
+      `- **Referensperson:** ${r.contact.name} (${r.contact.titlePhoneEmail})`,
     ),
   );
   return blocks.join("\n\n");

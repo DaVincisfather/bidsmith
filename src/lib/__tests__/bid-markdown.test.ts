@@ -17,8 +17,10 @@ describe("bidToMarkdown", () => {
       }),
     ]);
     expect(md).toContain("# Optimering av bemanning");
-    expect(md).toContain("**Till:** Vikstads kommun");
-    expect(md).toContain("**Datum:** 2026-08-02");
+    // One metadata line — separate label lines would soft-wrap into one paragraph.
+    expect(md).toContain("**Till:** Vikstads kommun · **Datum:** 2026-08-02");
+    // Blank line between H1 and metadata (paragraph boundary).
+    expect(md).toContain("# Optimering av bemanning\n\n**Till:**");
     expect(md).not.toContain("## Framsida");
   });
 
@@ -45,8 +47,50 @@ describe("bidToMarkdown", () => {
     expect(md).toContain("## Genomförande");
     expect(md).toContain("### Fas 1: Kartläggning (M1-M3 · 8 v · 85 h)");
     expect(md).toContain("**Aktiviteter:**\n- Intervjuer\n- Datainsamling");
+    // Blank line between a list's last item and the next label — without it,
+    // CommonMark swallows the label into the list item as lazy continuation.
+    expect(md).toContain("- Datainsamling\n\n**Leveranser:**");
+    expect(md).toContain("- Nulägesrapport\n\n**Beslut vid faslut:**");
     expect(md).toContain("**Beslut vid faslut:**\n- Godkänna nulägesbild");
     expect(md).toContain("**Risker:**\n- Begränsad datatillgång");
+  });
+
+  it("separates understanding-current label paragraphs with blank lines", () => {
+    const md = bidToMarkdown([
+      section("understanding-current", "Kunden idag", {
+        format: "understanding-current",
+        organisation: "Vikstads kommun.",
+        system: "Timecare nämns.",
+        processer: "Drift och uthyrning.",
+        smärtpunkter: ["Ingen samlad nulägesbild"],
+      }),
+    ]);
+    expect(md).toContain("**Organisation:** Vikstads kommun.\n\n**System:** Timecare nämns.");
+    expect(md).toContain("**Processer:** Drift och uthyrning.\n\n**Smärtpunkter:**");
+  });
+
+  it("renders reference fields as a bullet list so they do not merge into one paragraph", () => {
+    const md = bidToMarkdown([
+      section("reference-v2", "Referensuppdrag", {
+        format: "reference-v2",
+        references: [
+          {
+            clientName: "Göteborgs stad",
+            contextLine: "Bemanningsoptimering",
+            organisation: "Idrottsförvaltningen",
+            startDate: "01/2023",
+            endDate: "12/2023",
+            scope: "Tre faser",
+            contact: { name: "N N", titlePhoneEmail: "Titel · tel · epost" },
+            roleAndDelivery: "Analys och verktyg",
+            result: "Beslutad bemanningsplan",
+          },
+        ],
+      }),
+    ]);
+    expect(md).toContain("### Göteborgs stad — Bemanningsoptimering");
+    expect(md).toContain("- **Organisation:** Idrottsförvaltningen\n- **Period:** 01/2023 – 12/2023");
+    expect(md).toContain("- **Resultat:** Beslutad bemanningsplan");
   });
 
   it("renders requirement matrix rows with per-consultant coverage", () => {
