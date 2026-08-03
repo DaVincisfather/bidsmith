@@ -98,11 +98,13 @@ v2-dokumentordning (mellanlägets DB-ordning får vara settle-ordning; nav:en so
 via den förväntade planen under generering). Innehåll, prompter, modeller, retry:er:
 noll ändring ⇒ ingen eval-grind.
 
-**Strukturjudgen bort ur runtime (godkänt):** `judgeBidStructure`/
+**Strukturjudgen bort ur runtime (godkänt; RÄTTAD MOTIVERING):** `judgeBidStructure`/
 `buildStructureEvalSummary`-anropet + `structure_eval`-skrivningen tas bort ur
-`run-bid-generation.ts` (kostade ett judge-anrop per generering; enda konsumenten var
-badgen som ryker). `src/lib/eval/bid-structure.ts` behålls för offline-evals.
-GET-routen slutar returnera `structureEval`.
+`run-bid-generation.ts`. RÄTTELSE efter kodläsning (2026-08-03, planfasen): judgen är
+en MEKANISK kontroll (format-närvaro/tomma fält), INTE ett AI-anrop — $0.
+Kostnadsargumentet i brainstormen var fel; borttagningen motiveras enbart av död
+konsument (badgen ryker ⇒ kolumnen blir oläst). `src/lib/eval/bid-structure.ts`
+behålls för offline-evals. GET-routen slutar returnera `structureEval`.
 
 ### 3. Instruktionsblocket i MD-exporten
 
@@ -158,5 +160,6 @@ DB-schemat (ingen migration), onboarding-wizarden (mallmekanik bakom flaggan).
 4. MD-exporten inleds med HTML-kommentars-preamblen och renderar rent (preamblen
    osynlig) i en MD-viewer.
 5. `BidEditor.tsx` väsentligt bantad (~425 → riktvärde ≤ 200 rader).
-6. Ingen generering anropar strukturjudgen (verifieras i kod + kostnadsloggen).
+6. Ingen generering anropar strukturjudgen (verifieras i kod — mekanisk kontroll,
+   ingen kostnadspåverkan).
 7. Lint + test + tsc + `next build` gröna; visuell verifiering genomförd.
