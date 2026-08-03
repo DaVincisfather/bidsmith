@@ -24,7 +24,6 @@ import { loadTemplateProfile } from "../src/lib/pptx-template/profile-store";
 import { isForeignProfile } from "../src/lib/pptx-template/template-profile";
 import { renderFromProfile } from "../src/lib/pptx-template/render-from-profile";
 import { buildMasterContext } from "../src/app/api/bids/[id]/export/build-master-context";
-import { buildSlotMeta } from "../src/lib/bid-editor/slot-meta";
 import { readPptxSlides } from "../src/lib/pptx-template/introspect/read-pptx";
 import { prefixKey, readFontScalesByPrefix } from "../src/lib/pptx-template/calibrate/font-scales";
 import {
@@ -34,7 +33,7 @@ import {
 import { buildReport } from "../src/lib/pptx-template/measure/report";
 import { SEVERITIES } from "../src/lib/pptx-template/measure/types";
 import type { Finding, MeasurementFile } from "../src/lib/pptx-template/measure/types";
-import { collectDuplicates, collectFill, totalProseChars } from "../src/lib/overflow-eval/text-metrics";
+import { totalProseChars } from "../src/lib/overflow-eval/text-metrics";
 import { applyGates } from "../src/lib/overflow-eval/gates";
 import { loadFixturesFile } from "../src/lib/overflow-eval/fixtures";
 import { buildRunReport, renderMarkdown } from "../src/lib/overflow-eval/report";
@@ -278,7 +277,7 @@ async function main() {
       `overflow:eval förutsätter foreign-mall-vägen (profile-driven generation + renderFromProfile).`,
     );
   }
-  const slotMeta = buildSlotMeta(storedProfile);
+  // TODO: slotMeta removed with slot-meta.ts deletion in Task 1
   const orgProfile = await loadActiveProfile();
 
   const runDir = runDirFor(varv);
@@ -385,8 +384,9 @@ async function main() {
         "utf8",
       );
 
-      const duplicates = collectDuplicates(sections, slotMeta);
-      const fill = collectFill(sections, slotMeta);
+      // TODO: collectDuplicates and collectFill removed with slot-meta in Task 1
+      const duplicates: import("../src/lib/overflow-eval/types").DuplicatePair[] = [];
+      const fill: import("../src/lib/overflow-eval/types").FillEntry[] = [];
       const totalChars = totalProseChars(sections);
 
       const bidMeasurement: BidMeasurement = {
