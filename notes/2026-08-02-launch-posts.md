@@ -14,8 +14,8 @@ Video bifogas båda; GIF-versionen till X + README. Demosidan (Fas 2) är inte b
 
 Jag är managementkonsult, inte utvecklare. De senaste månaderna har jag ändå byggt
 och släppt ett open source-projekt: **Bidsmith** — en AI-agent som tar en offentlig
-upphandling plus era konsultprofiler och smider fram ett anbudsutkast i er egen
-PowerPoint-mall.
+upphandling plus era konsultprofiler och smider fram ett strukturerat anbudsutkast
+som ni tar rakt in i er egen mall, med de AI-verktyg ni redan använder.
 
 Det började med en välbekant frustration: anbudsarbete är timmar av mekanik — läsa
 förfrågningsunderlag, plocka krav, matcha konsulter, skriva samma slags grundtext —
@@ -38,8 +38,11 @@ Tre saker bygget lärt mig om AI på riktigt:
    jag själv den ena 7 gånger av 8 — medan en AI-domare föredrog den andra nästan
    varje gång. Utan kalibrering mot mänsklig bedömning är en AI-domare bara en
    åsikt till.
-3. **Funktion före finish.** Varje vecka något deploybart; polish sist. Det är
-   samma disciplin som i ett bra konsultuppdrag. [JUSTERA/STRYK efter smak]
+3. **Våga döda din egen darling.** Jag byggde en hel motor för att rendera anbud
+   direkt i valfri PowerPoint-mall — mallonboarding, layoutmätning, kalibrering.
+   Sen insåg jag att sista milen (formateringen) redan löses bättre av verktygen
+   alla ändå använder, och bytte till strukturerad Markdown ut. Äg det
+   domänspecifika, låt ekosystemet äga resten. [JUSTERA/STRYK efter smak]
 
 Bidsmith är fritt och open source (Apache 2.0). Ingen prismodell, ingen tjänst att
 prenumerera på — du kör den själv och betalar bara din egen API-kostnad, ungefär
@@ -57,7 +60,8 @@ Repo: https://github.com/DaVincisfather/bidsmith
 
 I'm a management consultant, not a developer. Over the past few months I built and
 open-sourced Bidsmith — an AI agent that turns a public tender + your consultant
-CVs into a draft proposal deck, in your own PowerPoint template.
+CVs into a structured, evidence-backed proposal draft you can pipe into any
+template or tool.
 
 Built entirely with Claude Code. Free, Apache 2.0.
 
@@ -67,7 +71,7 @@ What I learned about building agentic pipelines 🧵
 
 1/ Pipeline design: every step gets the *compressed output* of the previous step,
 never the raw documents. Keeps prompts tight and cost predictable — a full tender
-(analysis → matching → go/no-go → full draft → PPTX export) runs ≈ $1.5–2 in API.
+(analysis → matching → go/no-go → full draft → Markdown export) runs ≈ $1.5–2 in API.
 
 2/ Model strategy is per role, not per app: Sonnet for extraction and matching
 (mechanical JSON work), Opus where the bid is won or lost (writing). One model
@@ -85,6 +89,12 @@ quarantined from every downstream AI input.
 5/ Evals as gates, not vibes: an offline eval harness with synthetic fixtures ships
 in the repo, so you can run the whole pipeline without any real tender data.
 
+6/ Kill your darlings: I built a full engine that renders bids into arbitrary
+PowerPoint templates — template onboarding, layout measurement, calibration loops.
+Then I cut it. The formatting last mile is already solved by the tools people use
+daily; the output is structured Markdown instead. Own the domain-specific work,
+let the ecosystem own the rest.
+
 Repo: https://github.com/DaVincisfather/bidsmith
 
 [GIF/video i huvudposten]
@@ -93,7 +103,7 @@ Repo: https://github.com/DaVincisfather/bidsmith
 
 ## Publiceringschecklista
 
-- [ ] Stefan: klipp videon (CapCut) + filma PPTX:en i PowerPoint → GIF-version
+- [x] Videon klar (v7, MD-first, klippt programmatiskt — `bidsmith-launch/tmp/videocut/`)
 - [ ] Justera [JUSTERA]-ställena i LinkedIn-utkastet till egen röst
 - [ ] LinkedIn-post med video
 - [ ] X-post med GIF + tråd
