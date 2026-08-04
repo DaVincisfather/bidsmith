@@ -320,9 +320,16 @@ export function AnalysisMatchSection({
             <GoNoGoResultView
               result={goNoGoResult}
               assessmentId={goNoGoId}
-              onUnlock={unlockTeam}
-              onProceedToBid={proceedToBid}
-              bidLoading={bidLoading}
+              actions={
+                <button
+                  onClick={proceedToBid}
+                  disabled={bidLoading}
+                  className="flex-1 bg-ink text-white px-4 py-2 rounded-lg text-sm font-medium
+                             hover:bg-accent-ink disabled:bg-rule disabled:cursor-not-allowed transition-colors"
+                >
+                  {bidLoading ? "Genererar anbud..." : "Gå vidare till anbud"}
+                </button>
+              }
             />
           )}
 
