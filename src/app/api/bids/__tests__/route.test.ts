@@ -7,6 +7,10 @@ const h = vi.hoisted(() => {
     updatePayloads: [] as Record<string, unknown>[],
     insertPayloads: [] as Record<string, unknown>[],
     afterCallbacks: [] as (() => unknown)[],
+    replaceResult: { data: [{ id: "b-1" }], error: null } as {
+      data: { id: string }[] | null;
+      error: { message: string } | null;
+    },
   };
   return { state };
 });
@@ -40,7 +44,13 @@ vi.mock("@/lib/supabase", () => ({
           },
           update: (payload: Record<string, unknown>) => {
             h.state.updatePayloads.push(payload);
-            return { eq: () => Promise.resolve({ error: null }) };
+            return {
+              eq: () => ({
+                eq: () => ({
+                  select: () => Promise.resolve(h.state.replaceResult),
+                }),
+              }),
+            };
           },
         };
       }
@@ -82,6 +92,7 @@ beforeEach(() => {
   h.state.updatePayloads = [];
   h.state.insertPayloads = [];
   h.state.afterCallbacks = [];
+  h.state.replaceResult = { data: [{ id: "b-1" }], error: null };
 });
 
 describe("POST /api/bids — one bid per analysis", () => {
@@ -106,6 +117,8 @@ describe("POST /api/bids — one bid per analysis", () => {
     expect(payload.failed_bundles).toEqual([]);
     expect(payload.generation_error).toBeNull();
     expect(payload.status).toBe("generating");
+    expect(typeof payload.created_at).toBe("string");
+    expect(payload.created_at).toBeTruthy();
     expect(h.state.afterCallbacks).toHaveLength(1);
   });
 
@@ -132,5 +145,13 @@ describe("POST /api/bids — one bid per analysis", () => {
     expect(res.status).toBe(409);
     expect((await res.json()).error).toContain("fryst");
     expect(h.state.updatePayloads).toHaveLength(0);
+  });
+
+  it("409s when the replace loses a concurrent race (zero rows matched)", async () => {
+    h.state.existingBids = [{ id: "b-1", status: "draft", exported_at: null }];
+    h.state.replaceResult = { data: [], error: null };
+    const res = await POST(makeRequest(BODY));
+    expect(res.status).toBe(409);
+    expect(h.state.afterCallbacks).toHaveLength(0);
   });
 });

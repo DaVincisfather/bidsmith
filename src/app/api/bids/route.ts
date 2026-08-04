@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
   let bidId: string;
   if (existing) {
     // Replace the draft in place: the id survives so existing links stay valid.
-    const { error: replaceError } = await supabase
+    const { data: replaced, error: replaceError } = await supabase
       .from("bids")
       .update({
         assessment_id: assessmentId || null,
@@ -100,10 +100,24 @@ export async function POST(request: NextRequest) {
         sections: [],
         failed_bundles: [],
         generation_error: null,
+        // created_at doubles as the generation-start timestamp for the
+        // stale-generating watchdog in GET /api/bids/[id] — reset it so a
+        // replaced bid isn't instantly flagged as timed out.
+        created_at: new Date().toISOString(),
       })
-      .eq("id", existing.id);
+      .eq("id", existing.id)
+      // CAS: only replace the exact state we read — a concurrent request
+      // that already flipped the row to "generating" wins, we 409.
+      .eq("status", existing.status)
+      .select("id");
     if (replaceError) {
       return NextResponse.json({ error: replaceError.message }, { status: 500 });
+    }
+    if (!replaced || replaced.length === 0) {
+      return NextResponse.json(
+        { error: "Generering pågår redan för den här analysen." },
+        { status: 409 },
+      );
     }
     bidId = existing.id;
   } else {
