@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseBody, parseUuidParam } from "@/lib/api-helpers";
 import { BidPatchSchema } from "@/lib/api-schemas";
+import { STALE_GENERATING_MS } from "@/lib/bid-status";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
-
-// POST /api/bids' maxDuration is 300 s — past that the platform has killed
-// the background job without reaching its failure handler. 7 min = the kill
-// point plus buffer, so a dead generation doesn't poll for long.
-const STALE_GENERATING_MS = 7 * 60 * 1000;
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id: rawId } = await params;

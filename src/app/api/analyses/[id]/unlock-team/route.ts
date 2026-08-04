@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { parseUuidParam, internalError } from "@/lib/api-helpers";
+import { isActivelyGenerating } from "@/lib/bid-status";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -23,26 +24,31 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
     const { data: bids, error: bidsError } = await supabase
       .from("bids")
-      .select("id, status, exported_at")
+      .select("id, status, exported_at, created_at")
       .eq("analysis_id", analysisId);
     if (bidsError) {
       return NextResponse.json({ error: bidsError.message }, { status: 500 });
     }
 
-    const rows = (bids ?? []) as { id: string; status: string; exported_at: string | null }[];
+    const rows = (bids ?? []) as { id: string; status: string; exported_at: string | null; created_at: string | null }[];
     if (rows.some((b) => b.exported_at || b.status === "exported")) {
       return NextResponse.json(
         { error: "Anbudet är inlämnat — teamet kan inte låsas upp." },
         { status: 409 },
       );
     }
-    if (rows.some((b) => b.status === "generating")) {
+    if (rows.some((b) => isActivelyGenerating(b))) {
       return NextResponse.json(
         { error: "Generering pågår — vänta tills den är klar." },
         { status: 409 },
       );
     }
 
+    // Deletion order is FK-mandated: bids.assessment_id references
+    // go_no_go_assessments(id) (no cascade), so bids must go first.
+    // Partial failure (bids deleted, assessments not) leaves the flow locked
+    // but is healed by retrying this endpoint: with no bids left, the guards
+    // pass and the assessments delete runs alone.
     const { error: delBidsError } = await supabase
       .from("bids")
       .delete()
@@ -56,7 +62,10 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       .delete()
       .eq("analysis_id", analysisId);
     if (delAssessError) {
-      return NextResponse.json({ error: delAssessError.message }, { status: 500 });
+      return NextResponse.json(
+        { error: `Upplåsningen slutfördes inte — försök igen. (${delAssessError.message})` },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({ ok: true });

@@ -106,7 +106,7 @@ describe("POST /api/bids — one bid per analysis", () => {
   });
 
   it("replaces a draft in place: same id, wiped sections/failures, regeneration queued", async () => {
-    h.state.existingBids = [{ id: "b-1", status: "draft", exported_at: null }];
+    h.state.existingBids = [{ id: "b-1", status: "draft", exported_at: null, created_at: new Date().toISOString() }];
     const res = await POST(makeRequest(BODY));
     expect(res.status).toBe(202);
     expect((await res.json()).id).toBe("b-1");
@@ -123,14 +123,14 @@ describe("POST /api/bids — one bid per analysis", () => {
   });
 
   it("replaces a failed bid the same way (rerun path)", async () => {
-    h.state.existingBids = [{ id: "b-1", status: "failed", exported_at: null }];
+    h.state.existingBids = [{ id: "b-1", status: "failed", exported_at: null, created_at: new Date().toISOString() }];
     const res = await POST(makeRequest(BODY));
     expect(res.status).toBe(202);
     expect((await res.json()).id).toBe("b-1");
   });
 
   it("409s while a generation is running, touching nothing", async () => {
-    h.state.existingBids = [{ id: "b-1", status: "generating", exported_at: null }];
+    h.state.existingBids = [{ id: "b-1", status: "generating", exported_at: null, created_at: new Date().toISOString() }];
     const res = await POST(makeRequest(BODY));
     expect(res.status).toBe(409);
     expect(h.state.updatePayloads).toHaveLength(0);
@@ -139,7 +139,7 @@ describe("POST /api/bids — one bid per analysis", () => {
 
   it("409s on an exported (frozen) bid, touching nothing", async () => {
     h.state.existingBids = [
-      { id: "b-1", status: "exported", exported_at: "2026-08-01T10:00:00Z" },
+      { id: "b-1", status: "exported", exported_at: "2026-08-01T10:00:00Z", created_at: new Date().toISOString() },
     ];
     const res = await POST(makeRequest(BODY));
     expect(res.status).toBe(409);
@@ -148,10 +148,22 @@ describe("POST /api/bids — one bid per analysis", () => {
   });
 
   it("409s when the replace loses a concurrent race (zero rows matched)", async () => {
-    h.state.existingBids = [{ id: "b-1", status: "draft", exported_at: null }];
+    h.state.existingBids = [{ id: "b-1", status: "draft", exported_at: null, created_at: new Date().toISOString() }];
     h.state.replaceResult = { data: [], error: null };
     const res = await POST(makeRequest(BODY));
     expect(res.status).toBe(409);
     expect(h.state.afterCallbacks).toHaveLength(0);
+  });
+
+  it("replaces a stale generating bid (dead job) instead of blocking", async () => {
+    h.state.existingBids = [{
+      id: "b-1", status: "generating", exported_at: null,
+      created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    }];
+    const res = await POST(makeRequest(BODY));
+    expect(res.status).toBe(202);
+    expect((await res.json()).id).toBe("b-1");
+    expect(h.state.updatePayloads).toHaveLength(1);
+    expect(h.state.afterCallbacks).toHaveLength(1);
   });
 });

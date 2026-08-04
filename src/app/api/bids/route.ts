@@ -10,6 +10,7 @@ import { RfpAnalysis, ScoredConsultant, GoNoGoResult } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
 import { parseBody, internalError } from "@/lib/api-helpers";
 import { BidCreateSchema } from "@/lib/api-schemas";
+import { isActivelyGenerating } from "@/lib/bid-status";
 
 // 6 parallel Opus calls take 2–5 min — far beyond the default serverless
 // timeout. The response returns immediately; generation continues via after()
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       fetchConsultantsByIds(supabase, teamConsultantIds),
       supabase
         .from("bids")
-        .select("id, status, exported_at")
+        .select("id, status, exported_at, created_at")
         .eq("analysis_id", analysisId)
         .order("created_at", { ascending: false })
         .limit(1),
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
   }
 
   const existing = existingBidResult.data?.[0] as
-    | { id: string; status: string; exported_at: string | null }
+    | { id: string; status: string; exported_at: string | null; created_at: string | null }
     | undefined;
   if (existing && (existing.exported_at || existing.status === "exported")) {
     return NextResponse.json(
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       { status: 409 },
     );
   }
-  if (existing && existing.status === "generating") {
+  if (existing && isActivelyGenerating(existing)) {
     return NextResponse.json(
       { error: "Generering pågår redan för den här analysen." },
       { status: 409 },

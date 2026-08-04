@@ -5,6 +5,7 @@ const h = vi.hoisted(() => {
   const state = {
     bids: [] as unknown[],
     deletedFrom: [] as string[],
+    deleteErrors: {} as Record<string, { message: string } | null>,
   };
   return { state };
 });
@@ -18,7 +19,7 @@ vi.mock("@/lib/supabase", () => ({
       delete: () => ({
         eq: () => {
           h.state.deletedFrom.push(table);
-          return Promise.resolve({ error: null });
+          return Promise.resolve({ error: h.state.deleteErrors[table] ?? null });
         },
       }),
     }),
@@ -40,26 +41,26 @@ function ctx(id: string) {
 beforeEach(() => {
   h.state.bids = [];
   h.state.deletedFrom = [];
+  h.state.deleteErrors = {};
 });
 
 describe("POST /api/analyses/[id]/unlock-team — hard reset", () => {
   it("deletes assessments and draft bids for the analysis", async () => {
-    h.state.bids = [{ id: "b-1", status: "draft", exported_at: null }];
+    h.state.bids = [{ id: "b-1", status: "draft", exported_at: null, created_at: new Date().toISOString() }];
     const res = await POST(makeRequest(), ctx(VALID_ID));
     expect(res.status).toBe(200);
-    expect(h.state.deletedFrom).toContain("bids");
-    expect(h.state.deletedFrom).toContain("go_no_go_assessments");
+    expect(h.state.deletedFrom).toEqual(["bids", "go_no_go_assessments"]);
   });
 
   it("resets an analysis with an assessment but no bid yet", async () => {
     const res = await POST(makeRequest(), ctx(VALID_ID));
     expect(res.status).toBe(200);
-    expect(h.state.deletedFrom).toContain("go_no_go_assessments");
+    expect(h.state.deletedFrom).toEqual(["bids", "go_no_go_assessments"]);
   });
 
   it("409s when the bid is exported (frozen flow), deleting nothing", async () => {
     h.state.bids = [
-      { id: "b-1", status: "exported", exported_at: "2026-08-01T10:00:00Z" },
+      { id: "b-1", status: "exported", exported_at: "2026-08-01T10:00:00Z", created_at: new Date().toISOString() },
     ];
     const res = await POST(makeRequest(), ctx(VALID_ID));
     expect(res.status).toBe(409);
@@ -67,10 +68,29 @@ describe("POST /api/analyses/[id]/unlock-team — hard reset", () => {
   });
 
   it("409s while generation is running, deleting nothing", async () => {
-    h.state.bids = [{ id: "b-1", status: "generating", exported_at: null }];
+    h.state.bids = [{ id: "b-1", status: "generating", exported_at: null, created_at: new Date().toISOString() }];
     const res = await POST(makeRequest(), ctx(VALID_ID));
     expect(res.status).toBe(409);
     expect(h.state.deletedFrom).toHaveLength(0);
+  });
+
+  it("deletes everything when the only generating bid is a stale dead job", async () => {
+    h.state.bids = [{
+      id: "b-1", status: "generating", exported_at: null,
+      created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    }];
+    const res = await POST(makeRequest(), ctx(VALID_ID));
+    expect(res.status).toBe(200);
+    expect(h.state.deletedFrom).toEqual(["bids", "go_no_go_assessments"]);
+  });
+
+  it("500s with retry copy when the assessments delete fails after bids were deleted", async () => {
+    h.state.bids = [{ id: "b-1", status: "draft", exported_at: null, created_at: new Date().toISOString() }];
+    h.state.deleteErrors = { go_no_go_assessments: { message: "connection lost" } };
+    const res = await POST(makeRequest(), ctx(VALID_ID));
+    expect(res.status).toBe(500);
+    expect((await res.json()).error).toContain("försök igen");
+    expect(h.state.deletedFrom).toEqual(["bids", "go_no_go_assessments"]);
   });
 
   it("400s on a malformed id", async () => {
