@@ -78,14 +78,28 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("bids")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
+  // Server-side edit lock: while status='generating' the generation runner's
+  // final write owns the sections array — a stale client PATCH (second tab,
+  // late debounce) would silently truncate it. The editor's UI lock is not
+  // enough on its own (routine finding, PR #102).
+  let query = supabase.from("bids").update(updates).eq("id", id);
+  if (sections) query = query.neq("status", "generating");
+  const { data, error } = await query.select().single();
 
   if (error || !data) {
+    if (sections) {
+      const { data: current } = await supabase
+        .from("bids")
+        .select("status")
+        .eq("id", id)
+        .single();
+      if (current?.status === "generating") {
+        return NextResponse.json(
+          { error: "Anbudet genereras fortfarande — redigering är låst tills utkastet är klart." },
+          { status: 409 }
+        );
+      }
+    }
     return NextResponse.json(
       { error: error?.message ?? "Bid not found" },
       { status: 404 }
