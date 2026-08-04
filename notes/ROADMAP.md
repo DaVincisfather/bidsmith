@@ -7,7 +7,8 @@
 _Senast uppdaterad: 2026-08-04 — **BID EDITOR MD-FIRST-OMTÄNKET LEVERERAT (denna PR).**
 Stefans beslut (brainstorm 2026-08-03): editorn = överblick + export, avsnitt/kapitel enda
 strukturen, kapitelindelningen ÄR överblicken (inga ord-/teckenmått). Levererat:
-(1) EDITORN EN DOKUMENTVY — BidEditor 425→~165 rader; raderat: budget-props/overflow-
+(1) EDITORN EN DOKUMENTVY — BidEditor 425→272 rader (riktvärdet ≤200 missades — ärlig
+siffra); raderat: budget-props/overflow-
 omräkning/OverflowChecklist/teckenräknare/SlideNav/SlideGroupedSections/slot-meta-
 gruppering i editorn/StructureEvalBadge/hälsorapport-länken/`/shorten`-routen (+ orphan-
 schemas); PATCH tar inte overflowFlags, GET returnerar inte structureEval/overflowFlags.
