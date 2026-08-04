@@ -21,17 +21,28 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 /** Polls GET /api/bids/[id] until status leaves 'generating'. Returns null if
- *  the component unmounted (generation continues server-side). */
+ *  the component unmounted (generation continues server-side). A single failed
+ *  poll must NOT surface as "generation failed" — the generation continues
+ *  server-side; only give up after several failures in a row. */
 async function pollBidUntilDone(
   bidId: string,
   isMounted: () => boolean,
 ): Promise<{ status: string } | null> {
+  let consecutiveFailures = 0;
   for (;;) {
     if (!isMounted()) return null;
     const res = await fetch(`/api/bids/${bidId}`);
     if (res.ok) {
+      consecutiveFailures = 0;
       const bid = (await res.json()) as { status: string };
       if (bid.status !== "generating") return bid;
+    } else {
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= 5) {
+        throw new Error(
+          "Kunde inte följa genereringen — den fortsätter i bakgrunden. Ladda om sidan om en stund.",
+        );
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }
