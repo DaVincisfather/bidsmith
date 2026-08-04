@@ -57,6 +57,7 @@ export function BidEditor({
   const displaySections = chapterList
     ? chapterList.flatMap((c) => (c.section ? [c.section] : []))
     : sections;
+  const isReady = status === "draft" || status === "exported";
 
   // Poll while generating
   const poll = useCallback(async () => {
@@ -151,7 +152,6 @@ export function BidEditor({
     }
   }
 
-  const isReady = status === "draft" || status === "exported";
   const needsTimpris = sections.some(
     (s) => s.content?.format === "team-pricing"
       && s.content.members?.some((m) => m.timpris === null)
@@ -240,7 +240,7 @@ export function BidEditor({
               <SectionRenderer
                 section={section}
                 style={styleGuide}
-                onSectionChange={(updated) => handleSectionChange(section.key, updated)}
+                onSectionChange={isReady ? (updated) => handleSectionChange(section.key, updated) : undefined}
               />
             </div>
           ))}

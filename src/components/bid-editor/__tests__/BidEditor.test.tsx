@@ -97,4 +97,22 @@ describe("BidEditor (dokumentvyn)", () => {
     const item = screen.getByText("Genomförande");
     expect(item.closest("div")).toHaveClass("text-red-600", "line-through");
   });
+
+  it("låser en landad sektion för redigering medan generering pågår (stale autosave kan trunkera anbudet)", () => {
+    renderEditor({
+      initialSections: [proseSection("intro", "Inledning", "Vi är en konsultfirma.")],
+      initialStatus: "generating",
+    });
+    const textarea = screen.getByDisplayValue("Vi är en konsultfirma.");
+    expect(textarea).toHaveAttribute("readonly");
+  });
+
+  it("tillåter redigering av samma sektion när status är draft", () => {
+    renderEditor({
+      initialSections: [proseSection("intro", "Inledning", "Vi är en konsultfirma.")],
+      initialStatus: "draft",
+    });
+    const textarea = screen.getByDisplayValue("Vi är en konsultfirma.");
+    expect(textarea).not.toHaveAttribute("readonly");
+  });
 });
