@@ -90,7 +90,8 @@ export async function POST(request: NextRequest) {
   let bidId: string;
   if (existing) {
     // Replace the draft in place: the id survives so existing links stay valid.
-    const { data: replaced, error: replaceError } = await supabase
+    const newCreatedAt = new Date().toISOString();
+    let replaceQuery = supabase
       .from("bids")
       .update({
         assessment_id: assessmentId || null,
@@ -104,13 +105,18 @@ export async function POST(request: NextRequest) {
         // created_at doubles as the generation-start timestamp for the
         // stale-generating watchdog in GET /api/bids/[id] — reset it so a
         // replaced bid isn't instantly flagged as timed out.
-        created_at: new Date().toISOString(),
+        created_at: newCreatedAt,
       })
       .eq("id", existing.id)
-      // CAS: only replace the exact state we read — a concurrent request
-      // that already flipped the row to "generating" wins, we 409.
-      .eq("status", existing.status)
-      .select("id");
+      // CAS: only replace the exact state we read. status alone is not
+      // enough — a stale-generating replace sets status to the same value
+      // it read — so created_at (re-stamped by every replace) is included
+      // as the invariant that always changes across a legitimate replace.
+      .eq("status", existing.status);
+    if (existing.created_at) {
+      replaceQuery = replaceQuery.eq("created_at", existing.created_at);
+    }
+    const { data: replaced, error: replaceError } = await replaceQuery.select("id");
     if (replaceError) {
       return NextResponse.json({ error: replaceError.message }, { status: 500 });
     }

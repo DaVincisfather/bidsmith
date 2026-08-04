@@ -7,6 +7,7 @@ const h = vi.hoisted(() => {
     updatePayloads: [] as Record<string, unknown>[],
     insertPayloads: [] as Record<string, unknown>[],
     afterCallbacks: [] as (() => unknown)[],
+    casPredicates: [] as [string, unknown][][],
     replaceResult: { data: [{ id: "b-1" }], error: null } as {
       data: { id: string }[] | null;
       error: { message: string } | null;
@@ -44,13 +45,18 @@ vi.mock("@/lib/supabase", () => ({
           },
           update: (payload: Record<string, unknown>) => {
             h.state.updatePayloads.push(payload);
-            return {
-              eq: () => ({
-                eq: () => ({
-                  select: () => Promise.resolve(h.state.replaceResult),
-                }),
-              }),
+            const eqArgs: [string, unknown][] = [];
+            const chain = {
+              eq: (col: string, v: unknown) => {
+                eqArgs.push([col, v]);
+                return chain;
+              },
+              select: () => {
+                h.state.casPredicates.push(eqArgs);
+                return Promise.resolve(h.state.replaceResult);
+              },
             };
+            return chain;
           },
         };
       }
@@ -92,6 +98,7 @@ beforeEach(() => {
   h.state.updatePayloads = [];
   h.state.insertPayloads = [];
   h.state.afterCallbacks = [];
+  h.state.casPredicates = [];
   h.state.replaceResult = { data: [{ id: "b-1" }], error: null };
 });
 
@@ -120,6 +127,7 @@ describe("POST /api/bids — one bid per analysis", () => {
     expect(typeof payload.created_at).toBe("string");
     expect(payload.created_at).toBeTruthy();
     expect(h.state.afterCallbacks).toHaveLength(1);
+    expect(h.state.casPredicates[0].some(([col]) => col === "created_at")).toBe(true);
   });
 
   it("replaces a failed bid the same way (rerun path)", async () => {
@@ -165,5 +173,8 @@ describe("POST /api/bids — one bid per analysis", () => {
     expect((await res.json()).id).toBe("b-1");
     expect(h.state.updatePayloads).toHaveLength(1);
     expect(h.state.afterCallbacks).toHaveLength(1);
+    const predicate = h.state.casPredicates[0];
+    expect(predicate).toContainEqual(["status", "generating"]);
+    expect(predicate.some(([col]) => col === "created_at")).toBe(true);
   });
 });

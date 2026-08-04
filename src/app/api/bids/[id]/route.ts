@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseBody, parseUuidParam } from "@/lib/api-helpers";
 import { BidPatchSchema } from "@/lib/api-schemas";
-import { STALE_GENERATING_MS } from "@/lib/bid-status";
+import { isActivelyGenerating } from "@/lib/bid-status";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -28,10 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  if (
-    data.status === "generating" &&
-    Date.now() - new Date(data.created_at).getTime() > STALE_GENERATING_MS
-  ) {
+  if (data.status === "generating" && !isActivelyGenerating({ status: data.status, created_at: (data.created_at as string | null) ?? null })) {
     // Watchdog: without this, a bid whose generator died (maxDuration
     // exceeded, deploy, crash) stays 'generating' and polls forever.
     const { data: failed } = await supabase
