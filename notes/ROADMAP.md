@@ -451,6 +451,28 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   materialiseras nu (var alltid tomma pre-fix ⇒ {Risker}-boxen får innehåll).
   KVAR av posten: 32k-runawayen (hypotes 1, effort max-tänkbudgeten — n=1 utan
   runaway bevisar inget), watchdog-samspelet, status-reconcile, omkörningsknapp.
+- **NAVIGERING I KÄRNFLÖDET analys → go/no-go → editor (UX-lucka, Stefans fynd
+  2026-08-04):** flödet är enkelriktat och tappas vid sidladdning — teamlås +
+  go/no-go-resultat är enbart klient-state (`analysis-match-section.tsx`: useState,
+  rehydreras aldrig ur DB), analysvyn länkar ALDRIG till existerande anbud (enda
+  vägarna till editorn: redirect efter lyckad generering, "Öppna utkastet ändå" för
+  partiella, Pipens SubmittedRow — bara inlämnade), så vägen tillbaka blir "generera
+  nytt anbud" = nytt bid + ny API-kostnad. STEFANS SKISS (riktning — brainstorm/spec
+  före bygge): navigationsrad överst med stegen Analys/Team → Go/No-Go (egen sida,
+  teamkorten överst) → Bid editor; ej genomförda steg utgråade/oklickbara;
+  fram-och-tillbaka-navigering mellan genomförda. Relaterat: "Ändra team skapar
+  nytt anbud"-posten. Beslutsfråga: före eller efter 11/8 (kärnflödet = demovägen).
+- **Foreign-generering gejtas INTE av flaggan (fynd 2026-08-04, "195 kapitel"-
+  mysteriet):** `BIDSMITH_FOREIGN_TEMPLATES` gejtar bara onboarding-ytorna +
+  ny-uppladdning; POST /api/bids tar aktiva mallen och `run-bid-generation.ts:80`
+  routar enbart på `isForeignProfile(sparad profil)` — en AKTIV foreign-mall
+  genererar profilvägen (195 generic-prose-sektioner, ~$0,5+/anbud) fast flaggan
+  är av, och editorn visar dem som platt 195-kapitelslista. Belagt i dev:
+  blankettmallen (9e3e084a, mallsmoke 2) stod som aktiv mall → Stefans färska
+  anbud f5c49d28 fick 195 kapitel. Symptomet åtgärdat (aktiv mall åter
+  anbudsmall-v2 via workspace_settings). Kvarvarande beslut: gejta genereringen
+  på flaggan (fail closed vid POST med tydligt fel) eller UI-varning när aktiv
+  mall är foreign med flaggan av.
 - **Export-flippen muterar DB på GET (routine-förslag #101):** flytta
   statusflippen till POST eller separat "mark exported"-anrop — gäller båda
   exportrouterna (md är primär, pptx parkerad).
