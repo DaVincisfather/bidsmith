@@ -4,7 +4,17 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-04 — **BID EDITOR MD-FIRST-OMTÄNKET LEVERERAT (denna PR).**
+_Senast uppdaterad: 2026-08-04 (em) — **BACKLOG-TRIAGE EFTER MD-PIVOTEN.** Backloggen
+omsorterad i tre högar: **LIVE efter MD-pivoten** (MD-vägen + kärnan, se Backlog),
+**Parkerat med PPTX-motorn** (väcks bara om post-launch-beslutet väcker motorn) och
+**Struket** (verifierat inaktuellt: max_tokens-detekteringen FINNS i ai-client sedan
+go/no-go-passet; PR-routinen bevisat aktiv på #99–#101). Beslut (Stefan 2026-08-04):
+Markdown-escaping av AI-fritext uppgraderad polish → FÖRE LANSERING (MD är den formella
+leveransen och preamblen pekar nedströms-AI på strukturen). Öppna poster ur 🔜 NÄSTA
+(citat-täckning, loop-validering, Supabase-pausen) flyttade till live-backloggen;
+NÄSTA = enbart publiceringen. Mall-uppladdningsspåret markerat parkerat._
+
+_Historik (2026-08-04 fm): **BID EDITOR MD-FIRST-OMTÄNKET LEVERERAT (#102).**
 Stefans beslut (brainstorm 2026-08-03): editorn = överblick + export, avsnitt/kapitel enda
 strukturen, kapitelindelningen ÄR överblicken (inga ord-/teckenmått). Levererat:
 (1) EDITORN EN DOKUMENTVY — BidEditor 425→272 rader (riktvärdet ≤200 missades — ärlig
@@ -320,11 +330,6 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       formulaiska svar (radhöjds-explosion). KVAR (v2/backlog): bullets-delen av
       slice 6, pris-/bemanningsroller, cellnivå-mätning, cell-`sz` i radestimatet,
       parallell bundle-körning, UI-varning vid flera tabeller per slide.
-- [ ] **Skip-generation för intent-tomma slots (routine-förslag PR #87, polish):**
-      generationssidan motarbetar fortfarande "lämnas tom"-slots — re-asken
-      kräver "lämna inte tomt" och bränner ett betalt anrop. Flytta
-      EMPTY_SANCTIONED_INTENT till delad modul + hoppa över sloten i wave-1
-      och re-ask.
 - [x] **GO/NO-GO-LATENS — LEVERERAD 2026-07-15 (ärligt utfall: måttlig latensvinst,
       värdet är härdningen):** index-refererade ska-krav (server-hydrering, publikt
       format orört, live-verifierad mot RetailTech: hydreringen håller med riktig
@@ -334,19 +339,6 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       36→25 s, input 8 262→7 780, output 1 285→1 238. Promptvikten sitter i TEAM-texten
       (5k tecken belagda claims — beslutsrelevant, bantas ej) + systemprompt; vidare
       latensjakt = UX-spår (streaming/progress i UI:t), inte prompt-bantning.
-- [ ] **Radrum-mallfixar (VÅR testmall — håll isär från loop-fixar):** bredda
-      bolagsnamnsboxen (slide 1), flytta upp boxarna (slide 2/3/9), statboxarna slide 4,
-      högerspalten slide 8; byt M365-cloudfonter → installerade (klick-i-textbox ändrar
-      font/storlek = autofit-omräkning med substitutfont, se evaluation-noten).
-- [ ] **deck:dupes-trösklarna för höga för LLM-parafras:** katastrofdecket passerade
-      0,5/0,7-gaten (parafras ≈ 0,3–0,45 trigram). Kalibrera mot fler riktiga deck innan
-      gaten får beslutsvikt; parvis mätning vid 0,3 är tills vidare jämföraren.
-- [ ] **Supabase free-tier-pausen:** dev + drift går ner efter 7 d inaktivitet
-      (~5 min boot efter restore). STEFANS BESLUT 2026-07-19: accepteras som den är
-      inför publiceringen (dokumenterad i SETUP.md + doctor-hinten); betald
-      tier/veckoping förblir öppen option, ingen blockerare.
-- [ ] **PR-ROUTINEN triggade inte på #76** — kolla körloggen/återskapa triggern
-      (jfr agentic-dealflow-fallet: pull_request.opened, draft=false, base main).
 - [x] **RADRUM-GRÖNT-VARV (KLART 2026-07-07, varv 5):** 117/117 sektioner, 0 failade,
       150 s väggklocka, export + PowerPoint gröna. Krävde #72–#76 — hela kedjan och
       API-lärdomarna dokumenterade i verifieringsdokumentets TILLÄGG 2.
@@ -369,15 +361,6 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       claims där citatet bara täcker en del ("håll dig till källan, don't infer");
       4 fall ren inferens (Riskguardian-rating värst); CV-referensernas roll-etiketter
       saknar källförankring. → Föder CITAT-TÄCKNINGS-fixen nedan.
-- [ ] **CITAT-TÄCKNING i extraktionen (nytt, ur stickprovet — Stefan prioriterar mot
-      budgetChars):** (1) extraktionsprompt: atomära claims, citatet ska täcka ALLA led,
-      inkludera listpunkter när citatet slutar på kolon, specificera aldrig utöver källan;
-      (2) billig mekanisk flagga för kolon-trunkerade citat; (3) CV-referensernas
-      roll-etiketter härleds ur källans formulering; (4) om-mät på sample (baslinje 78 %).
-      Fallen i stickprovsdokumentet är färdiga testfixturer.
-- [ ] **LOOP-VALIDERING (operatör, BETALD, under $20-tak, vid behov):** om-kör
-      `npm run eval:zero-halluc [-- --target=cv]` för stabil grön post-vakt + coverage mot
-      goldens. Spårkostnad hittills ~$5 av $20.
 
 ## Levererat 2026-07-06 kväll (operatörsverifiering + F1/F2-fix, denna PR)
 **Operatörsverifiering mot riktig kundmall** (Radrum, 12 slides/221 kandidater — Claude
@@ -420,7 +403,7 @@ profil-driven generering för onboardade mallar (#68, stänger #49-follow-up). M
 009/010/011 + bucket `consultant-cvs` KÖRDA av operatören. Design-doc:
 `notes/2026-07-03-zero-hallucination-loop.md`.
 
-## Mall-uppladdning (godtyckliga bolagsmallar) — aktiv feature
+## Mall-uppladdning (godtyckliga bolagsmallar) — PARKERAD med PPTX-motorn (2026-08-03, #101)
 Design-doc: `notes/2026-07-02-template-upload-architecture.md` (A+C-combo, B inkrementellt).
 Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profil.
 - [x] Slice 1 — mall-profil-schema + migration 008 (#42, merged)
@@ -430,7 +413,7 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 - [x] Slice 5a — profil-persistens (`profile-store.ts`) + upload deriverar & sparar startprofil
 - [x] Slice 5b — auto-klassificering (`propose-injection-plan`) + generic-prose-inkoppling (`generateSectionsFromProfile` + all-generic-routing, Sonnet 5)
 - [x] Slice 5-UI — onboarding-wizard (introspektion + intervju + redigerbar profil) (#70, 2026-07-06)
-- [ ] Slice 6 — B inkrementellt: bullets, sedan godtyckliga table-rows. OBS: text i
+- [ ] Slice 6 — **PARKERAD 2026-08-04 med PPTX-motorn** — B inkrementellt: bullets, sedan godtyckliga table-rows. OBS: text i
       tabeller (`a:tbl`/graphicFrame) deltar INTE i onboardingen idag (inte kandidat, inte
       i wireframe, kan inte instrumenteras) — kravmatris-liknande slides blir statiska
       tills detta byggs (dokumenterad begränsning i #70)
@@ -438,7 +421,11 @@ Beslut: kapabilitets-baserad motor, onboarding ≠ rendering, durabel mall-profi
 ## Öppna PR:er (väntar review)
 _Inga — #54–#68 mergade 2026-07-03/04._
 
-## Backlog (verifiera mot kod före start — kan vara inaktuellt)
+## Backlog — LIVE efter MD-pivoten (verifiera mot kod före start)
+
+_Triage 2026-08-04: PPTX-bundna poster flyttade till "Parkerat med PPTX-motorn" nedan,
+verifierat inaktuella till "Struket". Kvar här = MD-vägen + kärnan (generering,
+extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
 - **PHASES-RUNAWAY (CORRECTNESS, kärnlogik — ta SYNKRONT med Stefan):** phases-bundlen
   (Opus `writing`, `effort: "max"`, `maxTokens: 32000`) skenade till EXAKT 32k-output-taket
   i 3 av 4 skarpa genereringar 2026-08-02 (272–277 s, ~$0,85/försök); i en körning skenade
@@ -471,13 +458,30 @@ _Inga — #54–#68 mergade 2026-07-03/04._
   generating/failed/failed_bundles-guarderna är nu duplicerade rad för rad mellan
   `export/route.ts` och `export-md/route.ts` — bryt ut till gemensam helper innan de
   glider isär.
-- **Markdown-escaping av AI-fritext (polish, routine-förslag #100):** rader i AI-text
-  som börjar med `#`, `*`, `` ` `` blir oavsiktlig struktur i md-exporten — billig
-  escape-pass i `bid-markdown.ts`.
+- **Markdown-escaping av AI-fritext (UPPGRADERAD polish → FÖRE LANSERING, Stefans
+  beslut 2026-08-04; routine-förslag #100):** rader i AI-text som börjar med `#`, `*`,
+  `` ` `` blir oavsiktlig struktur i md-exporten — billig escape-pass i
+  `bid-markdown.ts`. Skäl för uppgraderingen: MD är nu den formella leveransen och
+  MD-preamblen (#102) pekar uttryckligen nedströms-AI på dokumentstrukturen —
+  oavsiktlig struktur är ett correctness-fel i slutprodukten, inte polish.
 - **Ordnings-invariant-test för bundle-exempel (polish, routine-förslag #99):**
   enhetstest som parsar JSON-exemplet ur SYSTEM_PROMPT och asserterar
   nyckelordning === `Object.keys(PhasesV2Schema.shape...)`; återanvänd mönstret
   för övriga bundles med JSON-exempel i prompten.
+- **CITAT-TÄCKNING i extraktionen (ur stickprovet; flyttad hit ur NÄSTA vid
+  MD-triagen):** (1) extraktionsprompt: atomära claims, citatet ska täcka ALLA led,
+  inkludera listpunkter när citatet slutar på kolon, specificera aldrig utöver källan;
+  (2) billig mekanisk flagga för kolon-trunkerade citat; (3) CV-referensernas
+  roll-etiketter härleds ur källans formulering; (4) om-mät på sample (baslinje 78 %).
+  Fallen i stickprovsdokumentet är färdiga testfixturer.
+- **LOOP-VALIDERING (operatör, BETALD, under $20-tak, vid behov):** om-kör
+  `npm run eval:zero-halluc [-- --target=cv]` för stabil grön post-vakt + coverage mot
+  goldens. Spårkostnad hittills ~$5 av $20.
+- **Supabase free-tier-pausen (accepterat beslut):** dev + drift går ner efter 7 d
+  inaktivitet (~5 min boot efter restore). STEFANS BESLUT 2026-07-19: accepteras som
+  den är inför publiceringen (dokumenterad i SETUP.md + doctor-hinten); betald
+  tier/veckoping förblir öppen option, ingen blockerare. Keep-alive-rutinen pingar
+  demo-Supabase sön 9/8 inför lanseringen.
 - **Routine-follow-ups #96 (polish):** (1) "Avbröts"-vägen i OutcomeSheet är en död ände
   (ingen refetch, inget formulär — raden ligger inert tills sheeten stängs), otestad;
   (2) efter Hoppa över/Spara flashar utfallsknapparna tillbaka tills refetchen landat —
@@ -485,7 +489,10 @@ _Inga — #54–#68 mergade 2026-07-03/04._
   i st.f. `as`-cast i OutcomeSheet.test.
 - **Routine-follow-ups #97 (polish):** (1) wizardens `refresh()` sväljer icke-ok-svar
   tyst — med `BIDSMITH_FOREIGN_TEMPLATES=off` 404:ar GET-routen och de permanenta
-  Hälsorapport-länkarna landar i evigt "Laddar…"; `else setUiError(...)` räcker;
+  Hälsorapport-länkarna landar i evigt "Laddar…"; `else setUiError(...)` räcker.
+  OBS 2026-08-04: flaggan är numera AV som default (MD-pivoten) — verifiera om
+  Hälsorapport-länkar renderas i Inställningar-mallistan med flaggan av; i så fall är
+  evigt "Laddar…" default-upplevelsen och fixen hör hemma här (annars parkera posten);
   (2) ~~BidEditor.tsx saknar helt testfil~~ — KLAR 2026-08-04 (editor-omtänket:
   BidEditor.test.tsx + expected-chapters.test.ts; navlänken den testade är borttagen).
 - **Zip-bomb-skyddet robust (säkerhetsauditen + #92-granskningen, MEDIUM):**
@@ -499,6 +506,56 @@ _Inga — #54–#68 mergade 2026-07-03/04._
 - **Node-krav maskinkontrollerat (PR #91-routinen):** `engines`-fält i package.json;
   `deck:scan`-scriptet använder fortfarande `--env-file-if-exists` (Node ≥22.9) —
   antingen samma script-interna env-laddning som doctor, eller höjt dokumenterat krav.
+- **A11y-pass editorn/genereringen (rest av #82, polish):** GeneratingChapterList är
+  div-rader i nav utan textuell state-cue (slutreview-minor 2026-08-04) + SectionNav
+  aria-current i den mån den finns kvar post-#102. Wizard-delarna av #82
+  (fetch-boilerplate, statusradens aria-live) flyttade till Parkerat-sektionen.
+- ~~**UX: anbudsmallar går inte att RADERA**~~ — KLART: `DELETE /api/templates/[id]` + radera-knapp i TemplateSection (vägrar aktiv mall / mall som anbud refererar / bundlad mall med 409; storage-städning icke-fatal; template_profiles kaskaderar) (2026-07-04)
+- [x] ~~**UX: företagsprofilen** — flytta till arbetsytan + gör PÅVERKAN begriplig~~ — FLYTTAD till `/arbetsyta/profil` (kort på arbetsyta-landningen + pekare kvar i Inställningar); ny `ProfileImpactPanel` visar var profilen injiceras (6 skrivbundlar, härlett ur `formatContext`), vad tomma fält betyder, och fyllnadsgrad per fält. Fyllnadslogik ren + enhetstestad, drift-vaktad mot `BUNDLE_LABELS`. Visuell polish itereras live med Stefan. (2026-07-04)
+- Pre-fas-C-lagrade matchmotiveringar (`ScoredConsultant.reasoning` i DB) kan citera obelagda claims och flödar in i go/no-go + anbudskontext tills om-matchning — samma temporala residual, annan väg (routine #64). ANNOTERAT 2026-07-04: med `extraction_version` på konsult-raden är staleness nu DETEKTERBAR. Ingen kod behövs nu — om-matchning av en post-feature-konsult regenererar reasoning via den versions-medvetna grinden. Kvar som backlog bara om aktiv invalidering önskas.
+- `consultant.summary` är overifierad friyta in i alla tre AI-inputs — nästa naturliga yta för noll-hallucinationsspåret (routine #64)
+- [x] ~~Extraktions-versions-diskriminator: all-strippad post-feature-konsult (fel fil) är i datat identisk med legacy → grinden släpper igenom~~ — LEVERERAD 2026-07-04 (offline-testad, inga API-anrop): `consultants.extraction_version` (migration 011, nullable; NULL=legacy, 1=evidens-generationen). `EXTRACTION_VERSION` i `src/lib/extraction-version.ts`; `upsertConsultant` stämplar den (insert + update). `groundedConsultantClaims` + UI-grinden (`showEvidenceBadges`, `TrustReceipt`) tar valfri `extractionVersion`: non-null ⇒ grinden ALLTID på (all-strippad → noll grundade claims in i AI-input + all-amber i UI); null ⇒ union-heuristik (äkta legacy). Migration 011 KÖRD av operatören 2026-07-04. Residualen nu temporal + krympande: bara rader extraherade post-feature men FÖRE 011 förblir tvetydiga tills om-uppladdning (ingen backfill — versionen kan ej härledas i efterhand).
+- [x] ~~`consultants/upload` sanerar inte filnamn (ingen storage-nyckel-yta idag, men om det ändras)~~ — AKTIVERAD + LÖST: originalfilen persisteras nu, så en storage-nyckel-yta finns; `buildCvKey` slugar filnamnet (gemener, åäö behålls, allt annat → "-", sökväg strippas) som mall-uploaden och behåller den whitelistade extensionen
+- [x] ~~generic-prose kör Opus + effort max per okänd slot~~ — LÖST 2026-07-03: egen roll `writingGeneric` = Sonnet 5 ($2/$10 intro → $3/$15 efter 2026-08-31; bump-påminnelse i ai-cost.ts)
+- [x] ~~**BUG-A:** leveranser hamnar i ska-krav i analysvyn~~ — FIXAD 2026-07-19
+  (launch-polish): rotorsak = `.default("qualification")` gjorde `kind` utelämnbart i
+  structured outputs; nu OBLIGATORISKT i modell-output (utelämnad klassning omöjlig).
+  Legacy-analyser utan fältet renderas som förr — om-analys är vägen.
+- [x] ~~**BUG-B:** analyserad RFP syns inte i dashboarden~~ — FIXAD 2026-07-19
+  (launch-polish): deadline-lösa analyser ingår nu i Pipen (sorteras sist,
+  "deadline saknas"), och railen har permanent "Alla analyser →"-länk till
+  /arbetsyta/analyser (passerade deadlines ägs fortsatt av den listan).
+- "Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera — semantik att se över
+- T15 manuell smoke + runtime hallucination/coverage-kalibrering (kräver riktig RFP-data / Ekan-adoption)
+- [x] ~~Flagg-vägen i `loader.ts` deriverar profilen ur manifestet per render i st.f. `loadTemplateProfile`~~ — LÖST: flagg-vägen laddar nu den persisterade profilen (fallback till manifest-härledd för bundlade mallen utan rad) (routine-follow-up #49)
+- [x] **Manuell PowerPoint-smoke:** GENOMFÖRD 2026-07-03 — riktig anbudsmall-v2 instrumenterad, öppnad i PowerPoint via COM utan reparation, slide exporterad + visuellt verifierad (token med ärvd formatering). instrumentTemplate är verifierad mot syntetisk mini-pptx; xmldoms serialisering (ns-redeklarationer, attributordning) är obeprövad mot riktiga kundmallar + att PowerPoint faktiskt öppnar den instrumenterade kopian (routine-follow-up #51)
+- Grind-policyns "smoke" som körbar grej: `skipIf(!process.env.ANTHROPIC_API_KEY)`-gated test som gör ETT riktigt API-anrop per roll i models.ts — exakt gapet som släppte igenom temperature-blockeraren på #53 (routine-follow-up)
+- **Ny blindfacit-validering (förutsättning för judge-byte till Sonnet 5):** ska vara PLANERAD denna gång (Stefan 2026-07-03) — generera ENBART sektioner som faktiskt AI-genereras i produktion; fas 1-rundan inkluderade sektioner som numera är deterministiska (referenser, certifieringar, cover) och judgade därmed delvis text som aldrig shippas
+
+## Parkerat med PPTX-motorn (triage 2026-08-04)
+
+> PPTX-motorn är parkerad bakom `BIDSMITH_FOREIGN_TEMPLATES` (default AV, fail closed)
+> sedan MD-first-pivoten (#101); radering av motorn är ett post-launch-beslut med
+> användardata. Posterna nedan är bundna till motorn (foreign-generering,
+> kalibrering/mätning, deck-gates, onboarding-wizarden, mallfixar) och väcks ENDAST
+> om det beslutet väcker motorn. Ingen av dem blockerar MD-vägen eller lanseringen.
+> Texterna flyttade oförändrade ur backloggen/NÄSTA — verifiera mot kod före
+> återupptagande.
+
+- **Skip-generation för intent-tomma slots (routine-förslag PR #87, polish):**
+  generationssidan motarbetar fortfarande "lämnas tom"-slots — re-asken kräver
+  "lämna inte tomt" och bränner ett betalt anrop. Flytta EMPTY_SANCTIONED_INTENT
+  till delad modul + hoppa över sloten i wave-1 och re-ask.
+- **Radrum-mallfixar (VÅR testmall — håll isär från loop-fixar):** bredda
+  bolagsnamnsboxen (slide 1), flytta upp boxarna (slide 2/3/9), statboxarna slide 4,
+  högerspalten slide 8; byt M365-cloudfonter → installerade (klick-i-textbox ändrar
+  font/storlek = autofit-omräkning med substitutfont, se evaluation-noten).
+- **deck:dupes-trösklarna för höga för LLM-parafras:** katastrofdecket passerade
+  0,5/0,7-gaten (parafras ≈ 0,3–0,45 trigram). Kalibrera mot fler riktiga deck innan
+  gaten får beslutsvikt; parvis mätning vid 0,3 är tills vidare jämföraren.
+- **Slice 6-resterna (tabelldelen #90, v2/backlog):** bullets-delen, pris-/
+  bemanningsroller, cellnivå-mätning, cell-`sz` i radestimatet, parallell
+  bundle-körning, UI-varning vid flera tabeller per slide.
 - **Mätpassets follow-ups (PR #89-routinen, polish):** (1) bära uppmätt detail in i
   FAIL-defekternas suggestion — kräver medvetet beslut om eval-JSON:ens frysning
   (EmptyScanDefect serialiseras rakt av i bootstrap); (2) validera `precount`-payloaden
@@ -506,12 +563,9 @@ _Inga — #54–#68 mergade 2026-07-03/04._
   annotateKnownDefects i stället för detail-strängprefixet; (4) accept utan CAS-guard
   (single-operator-risk, låg); (5) engines-rad i package.json (Node ≥22.9 för
   --env-file-if-exists); (6) OnboardingWizard.tsx 378 rader — bryt ut draft-vyn.
-- **Editor-slimningens follow-ups (PR #82) — MESTADELS OBSOLETA 2026-08-04
-  (editor-omtänket raderade grupperade vyn/räknarna/SlideNav):** kvar är endast
-  (3) `decideSlide`/`decide` delar fetch-boilerplate — gemensam `patchOnboarding`
-  (wizarden, orörd) och (4, delvis) a11y-pass SectionNav (aria-current) + wizardens
-  statusrad (aria-live). Nytt a11y-embryo: GeneratingChapterList är div-rader i nav
-  utan textuell state-cue (slutreview-minor 2026-08-04).
+- **Editor-slimningens wizard-rester (PR #82):** `decideSlide`/`decide` delar
+  fetch-boilerplate — gemensam `patchOnboarding` (wizarden); wizardens statusrad
+  saknar aria-live.
 - **Re-ask-residualer (F6, PR #72-routinen):**
   - chunka re-asken vid stora tomt-set (>30 targets -> flera batchar) sa F6-monstret skalar med bredare mallar
   - stickprovsrutinen bor marka re-ask-fyllda sektioner i underlaget (hallucinationsrisken koncentrerad dit)
@@ -549,35 +603,28 @@ _Inga — #54–#68 mergade 2026-07-03/04._
     aria-label för placerad tom textruta
   - route-nivå-integrationstester för onboarding-endpoints saknas (logiken enhets-/kedjetestad)
   - tyst catch utan loggning när korrupt utkast fångas i draftPayload (felsökbarhet)
-- ~~**UX: anbudsmallar går inte att RADERA**~~ — KLART: `DELETE /api/templates/[id]` + radera-knapp i TemplateSection (vägrar aktiv mall / mall som anbud refererar / bundlad mall med 409; storage-städning icke-fatal; template_profiles kaskaderar) (2026-07-04)
-- [x] ~~**UX: företagsprofilen** — flytta till arbetsytan + gör PÅVERKAN begriplig~~ — FLYTTAD till `/arbetsyta/profil` (kort på arbetsyta-landningen + pekare kvar i Inställningar); ny `ProfileImpactPanel` visar var profilen injiceras (6 skrivbundlar, härlett ur `formatContext`), vad tomma fält betyder, och fyllnadsgrad per fält. Fyllnadslogik ren + enhetstestad, drift-vaktad mot `BUNDLE_LABELS`. Visuell polish itereras live med Stefan. (2026-07-04)
-- Pre-fas-C-lagrade matchmotiveringar (`ScoredConsultant.reasoning` i DB) kan citera obelagda claims och flödar in i go/no-go + anbudskontext tills om-matchning — samma temporala residual, annan väg (routine #64). ANNOTERAT 2026-07-04: med `extraction_version` på konsult-raden är staleness nu DETEKTERBAR. Ingen kod behövs nu — om-matchning av en post-feature-konsult regenererar reasoning via den versions-medvetna grinden. Kvar som backlog bara om aktiv invalidering önskas.
-- `consultant.summary` är overifierad friyta in i alla tre AI-inputs — nästa naturliga yta för noll-hallucinationsspåret (routine #64)
-- [x] ~~Extraktions-versions-diskriminator: all-strippad post-feature-konsult (fel fil) är i datat identisk med legacy → grinden släpper igenom~~ — LEVERERAD 2026-07-04 (offline-testad, inga API-anrop): `consultants.extraction_version` (migration 011, nullable; NULL=legacy, 1=evidens-generationen). `EXTRACTION_VERSION` i `src/lib/extraction-version.ts`; `upsertConsultant` stämplar den (insert + update). `groundedConsultantClaims` + UI-grinden (`showEvidenceBadges`, `TrustReceipt`) tar valfri `extractionVersion`: non-null ⇒ grinden ALLTID på (all-strippad → noll grundade claims in i AI-input + all-amber i UI); null ⇒ union-heuristik (äkta legacy). Migration 011 KÖRD av operatören 2026-07-04. Residualen nu temporal + krympande: bara rader extraherade post-feature men FÖRE 011 förblir tvetydiga tills om-uppladdning (ingen backfill — versionen kan ej härledas i efterhand).
 - Statisk TOC-sidnumrering desyncar (hårdkodad; matris-paginering + tomma referenser förskjuter riktiga nummer)
 - `met`/JA-fältet vestigialt i matris-schemat (coverage = sanningskälla) — städbar
-- ai-client detekterar inte `stop_reason: "max_tokens"` → alla bundles re-trunkerar identiskt (bredare härdning)
-- [x] ~~`consultants/upload` sanerar inte filnamn (ingen storage-nyckel-yta idag, men om det ändras)~~ — AKTIVERAD + LÖST: originalfilen persisteras nu, så en storage-nyckel-yta finns; `buildCvKey` slugar filnamnet (gemener, åäö behålls, allt annat → "-", sökväg strippas) som mall-uploaden och behåller den whitelistade extensionen
 - Profil-renderarens `variant` castas `as ProseVariant` utan validering (render-from-profile.ts) — härda när slice 5/6 låter främmande mallar sätta godtyckliga variant-strängar
-- [x] ~~generic-prose kör Opus + effort max per okänd slot~~ — LÖST 2026-07-03: egen roll `writingGeneric` = Sonnet 5 ($2/$10 intro → $3/$15 efter 2026-08-31; bump-påminnelse i ai-cost.ts)
-- [x] ~~**BUG-A:** leveranser hamnar i ska-krav i analysvyn~~ — FIXAD 2026-07-19
-  (launch-polish): rotorsak = `.default("qualification")` gjorde `kind` utelämnbart i
-  structured outputs; nu OBLIGATORISKT i modell-output (utelämnad klassning omöjlig).
-  Legacy-analyser utan fältet renderas som förr — om-analys är vägen.
-- [x] ~~**BUG-B:** analyserad RFP syns inte i dashboarden~~ — FIXAD 2026-07-19
-  (launch-polish): deadline-lösa analyser ingår nu i Pipen (sorteras sist,
-  "deadline saknas"), och railen har permanent "Alla analyser →"-länk till
-  /arbetsyta/analyser (passerade deadlines ägs fortsatt av den listan).
-- "Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera — semantik att se över
-- T15 manuell smoke + runtime hallucination/coverage-kalibrering (kräver riktig RFP-data / Ekan-adoption)
 - Profil-schema vs renderare: `SlideProfile.capability` är optional ("a slide may mix capabilities") men `applicatorForCapability` dispatchar bara på slide-nivå och kastar på undefined — per-slot-dispatch eller skärpt schema krävs innan främmande profiler renderas (Fable-review 2026-07-03)
 - generic-prose saknar budget-enforcement vid rendering — soft-cap mot `slot.budgetChars` i generic-prose-applikatorn (jfr `_soft-cap.ts`) innan främmande mallar fylls på riktigt
-- [x] ~~Flagg-vägen i `loader.ts` deriverar profilen ur manifestet per render i st.f. `loadTemplateProfile`~~ — LÖST: flagg-vägen laddar nu den persisterade profilen (fallback till manifest-härledd för bundlade mallen utan rad) (routine-follow-up #49)
-- [x] **Manuell PowerPoint-smoke:** GENOMFÖRD 2026-07-03 — riktig anbudsmall-v2 instrumenterad, öppnad i PowerPoint via COM utan reparation, slide exporterad + visuellt verifierad (token med ärvd formatering). instrumentTemplate är verifierad mot syntetisk mini-pptx; xmldoms serialisering (ns-redeklarationer, attributordning) är obeprövad mot riktiga kundmallar + att PowerPoint faktiskt öppnar den instrumenterade kopian (routine-follow-up #51)
 - budgetChars för främmande slots: förslags-lagret lämnar budget osatt — koppla compute-budgets geometri→tecken-matten till ProposedSlot innan generic-prose-fyllning av riktiga kundmallar (annars ingen längdstyrning)
 - Re-onboarding av delvis instrumenterad mall: förslags-lagret inkluderar token-bärande slides som static-passthrough (försvinner inte ur rendern) men deras BEFINTLIGA tokens fylls inte — kräver profil-merge mot tidigare sparad profil (routine-follow-up #52)
-- Grind-policyns "smoke" som körbar grej: `skipIf(!process.env.ANTHROPIC_API_KEY)`-gated test som gör ETT riktigt API-anrop per roll i models.ts — exakt gapet som släppte igenom temperature-blockeraren på #53 (routine-follow-up)
-- **Ny blindfacit-validering (förutsättning för judge-byte till Sonnet 5):** ska vara PLANERAD denna gång (Stefan 2026-07-03) — generera ENBART sektioner som faktiskt AI-genereras i produktion; fas 1-rundan inkluderade sektioner som numera är deterministiska (referenser, certifieringar, cover) och judgade därmed delvis text som aldrig shippas
+- **MD-editorns foreign-visning (två kända, accepterade begränsningar 2026-08-04):**
+  (1) foreign-anbud med flaggan PÅ visar 11 eviga väntande-kapitel under generering
+  (expected-listan är v2-bunden); (2) befintliga foreign-anbud renderas som platt
+  landed-only-kapitellista — ett blankettmalls-anbud (mallsmoke 2) blir 195 kapitel
+  i dokumentvyn (`expected-chapters.ts`, extras-vägen; verifierat i dev 2026-08-04).
+  Foreign är experimentell yta — åtgärdas bara om motorn väcks.
+
+## Struket vid MD-triagen 2026-08-04 (verifierat inaktuellt)
+
+- ~~ai-client detekterar inte `stop_reason: "max_tokens"` → alla bundles re-trunkerar
+  identiskt (bredare härdning)~~ — FALSKT sedan go/no-go-latenspasset: detektering +
+  EN höjnings-/omkörnings-retry finns i `src/lib/ai-client.ts` (MaxTokensError-vägen);
+  2026-08-02-körningarna bevisade den live (räddade 2 av 4 genereringar).
+- ~~PR-ROUTINEN triggade inte på #76 — kolla körloggen/återskapa triggern~~ —
+  routinen har bevisat triggat och granskat #99, #100 och #101; ingen åtgärd kvar.
 
 ## Strategiska spår (större, senare)
 - Kapacitetsgap-kartan (vilka ska-krav firman återkommande inte uppfyller)
