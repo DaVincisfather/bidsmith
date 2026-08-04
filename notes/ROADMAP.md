@@ -461,7 +461,11 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   före bygge): navigationsrad överst med stegen Analys/Team → Go/No-Go (egen sida,
   teamkorten överst) → Bid editor; ej genomförda steg utgråade/oklickbara;
   fram-och-tillbaka-navigering mellan genomförda. Relaterat: "Ändra team skapar
-  nytt anbud"-posten. Beslutsfråga: före eller efter 11/8 (kärnflödet = demovägen).
+  nytt anbud"-posten. BESLUTAT 2026-08-04 (samma kväll): tas FÖRE lanseringen.
+  Design godkänd i brainstorm (en analys = ETT anbud; utkast ersätts/exporterade
+  fryses; hård reset vid upplåsning med bekräftelsedialog; stegnav + egen
+  go/no-go-sida) — spec: `docs/superpowers/specs/2026-08-04-flow-navigation-design.md`.
+  Stänger även "Ändra team"- och omkörningsknapp-posterna när den landar.
 - **Foreign-generering gejtas INTE av flaggan (fynd 2026-08-04, "195 kapitel"-
   mysteriet):** `BIDSMITH_FOREIGN_TEMPLATES` gejtar bara onboarding-ytorna +
   ny-uppladdning; POST /api/bids tar aktiva mallen och `run-bid-generation.ts:80`
