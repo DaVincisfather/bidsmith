@@ -28,23 +28,48 @@ export async function POST(request: NextRequest) {
   const userId = await getUserId(authed);
   const supabase = createServiceClient();
 
-  // Fetch all context in parallel
-  const [analysisResult, assessmentResult, matchResult, teamConsultants] = await Promise.all([
-    supabase.from("analyses").select("analysis").eq("id", analysisId).single(),
-    assessmentId
-      ? supabase.from("go_no_go_assessments").select("result").eq("id", assessmentId).single()
-      : Promise.resolve({ data: null, error: null }),
-    supabase
-      .from("matches")
-      .select("team_proposal")
-      .eq("analysis_id", analysisId)
-      .order("created_at", { ascending: false })
-      .limit(1),
-    fetchConsultantsByIds(supabase, teamConsultantIds),
-  ]);
+  // Fetch all context in parallel — including the analysis' existing bid:
+  // one analysis owns at most one bid (spec 2026-08-04). Drafts are replaced
+  // in place, exported bids are frozen.
+  const [analysisResult, assessmentResult, matchResult, teamConsultants, existingBidResult] =
+    await Promise.all([
+      supabase.from("analyses").select("analysis").eq("id", analysisId).single(),
+      assessmentId
+        ? supabase.from("go_no_go_assessments").select("result").eq("id", assessmentId).single()
+        : Promise.resolve({ data: null, error: null }),
+      supabase
+        .from("matches")
+        .select("team_proposal")
+        .eq("analysis_id", analysisId)
+        .order("created_at", { ascending: false })
+        .limit(1),
+      fetchConsultantsByIds(supabase, teamConsultantIds),
+      supabase
+        .from("bids")
+        .select("id, status, exported_at")
+        .eq("analysis_id", analysisId)
+        .order("created_at", { ascending: false })
+        .limit(1),
+    ]);
 
   if (analysisResult.error || !analysisResult.data) {
     return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
+  }
+
+  const existing = existingBidResult.data?.[0] as
+    | { id: string; status: string; exported_at: string | null }
+    | undefined;
+  if (existing && (existing.exported_at || existing.status === "exported")) {
+    return NextResponse.json(
+      { error: "Anbudet är inlämnat och fryst — utfallet spårar det." },
+      { status: 409 },
+    );
+  }
+  if (existing && existing.status === "generating") {
+    return NextResponse.json(
+      { error: "Generering pågår redan för den här analysen." },
+      { status: 409 },
+    );
   }
 
   const rfpAnalysis = analysisResult.data.analysis as RfpAnalysis;
@@ -61,25 +86,49 @@ export async function POST(request: NextRequest) {
     loadActiveProfile(),
   ]);
 
-  // Create bid record
-  const { data: bid, error: bidError } = await supabase
-    .from("bids")
-    .insert({
-      analysis_id: analysisId,
-      assessment_id: assessmentId || null,
-      created_by: userId,
-      team_consultant_ids: teamConsultantIds,
-      template_id: template.id,
-      // Pinna profilen anbudet skrivs med (som template_id) — export måste
-      // återanvända samma, annars kan bolagsnamn/röst divergera om profilen ändras.
-      profile_id: profile?.id ?? null,
-      status: "generating",
-    })
-    .select()
-    .single();
-
-  if (bidError || !bid) {
-    return NextResponse.json({ error: bidError?.message ?? "Failed to create bid" }, { status: 500 });
+  let bidId: string;
+  if (existing) {
+    // Replace the draft in place: the id survives so existing links stay valid.
+    const { error: replaceError } = await supabase
+      .from("bids")
+      .update({
+        assessment_id: assessmentId || null,
+        team_consultant_ids: teamConsultantIds,
+        template_id: template.id,
+        profile_id: profile?.id ?? null,
+        status: "generating",
+        sections: [],
+        failed_bundles: [],
+        generation_error: null,
+      })
+      .eq("id", existing.id);
+    if (replaceError) {
+      return NextResponse.json({ error: replaceError.message }, { status: 500 });
+    }
+    bidId = existing.id;
+  } else {
+    const { data: bid, error: bidError } = await supabase
+      .from("bids")
+      .insert({
+        analysis_id: analysisId,
+        assessment_id: assessmentId || null,
+        created_by: userId,
+        team_consultant_ids: teamConsultantIds,
+        template_id: template.id,
+        // Pinna profilen anbudet skrivs med (som template_id) — export måste
+        // återanvända samma, annars kan bolagsnamn/röst divergera om profilen ändras.
+        profile_id: profile?.id ?? null,
+        status: "generating",
+      })
+      .select()
+      .single();
+    if (bidError || !bid) {
+      return NextResponse.json(
+        { error: bidError?.message ?? "Failed to create bid" },
+        { status: 500 },
+      );
+    }
+    bidId = bid.id;
   }
 
   const ctx: BidContext = {
@@ -88,15 +137,15 @@ export async function POST(request: NextRequest) {
     scoredConsultants: allScoredConsultants,
     goNoGoResult: goNoGoResult ?? EMPTY_GO_NO_GO,
     userId,
-    bidId: bid.id,
+    bidId,
     profile,
   };
 
   // Generation runs after the response is sent (Vercel: waitUntil). The
   // client polls GET /api/bids/[id] until status leaves 'generating'.
-  after(() => runBidGeneration(supabase, bid.id, ctx, template));
+  after(() => runBidGeneration(supabase, bidId, ctx, template));
 
-  return NextResponse.json({ id: bid.id, status: "generating" }, { status: 202 });
+  return NextResponse.json({ id: bidId, status: "generating" }, { status: 202 });
   } catch (err) {
     return internalError(err);
   }
