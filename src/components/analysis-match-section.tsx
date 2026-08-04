@@ -129,7 +129,7 @@ export function AnalysisMatchSection({
     <div className="border-t border-rule pt-8 mt-8 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-display font-normal">Teammatchning</h2>
-        {!locked && (
+        {!locked && !goNoGoRunning && (
           <button
             onClick={triggerMatching}
             disabled={loading}
@@ -157,7 +157,7 @@ export function AnalysisMatchSection({
             scoredConsultants={match.scoredConsultants}
             selectedIds={selectedIds}
             onToggle={handleToggle}
-            disabled={locked}
+            disabled={locked || goNoGoRunning}
             maxTeamSize={MAX_TEAM_SIZE}
           />
 

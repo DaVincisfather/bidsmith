@@ -65,6 +65,7 @@ export default async function AnalysisPage({ params }: PageProps) {
           fileName={document.file_name}
           analysisId={id}
         />
+        {/* #team anchor — the bid editor's "Ändra team" link scrolls here. */}
         <div id="team" className="scroll-mt-6">
           <AnalysisMatchSection
             analysisId={id}
