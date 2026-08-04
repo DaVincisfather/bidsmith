@@ -35,6 +35,9 @@ export async function loadFlowState(analysisId: string): Promise<FlowState> {
   const supabase = await createClient();
 
   const [matchRes, assessmentRes, bidRes] = await Promise.all([
+    // Deliberately inline rather than fetchLatestTeamProposal (lib/supabase):
+    // the flow needs the match id, which the helper's ScoredConsultant[]
+    // contract omits. Keep ordering semantics identical to the helper.
     supabase
       .from("matches")
       .select("id, team_proposal")
@@ -54,6 +57,16 @@ export async function loadFlowState(analysisId: string): Promise<FlowState> {
       .order("created_at", { ascending: false })
       .limit(1),
   ]);
+
+  for (const [label, res] of [
+    ["matches", matchRes],
+    ["go_no_go_assessments", assessmentRes],
+    ["bids", bidRes],
+  ] as const) {
+    if (res.error) {
+      throw new Error(`loadFlowState(${analysisId}): ${label} query failed: ${res.error.message}`);
+    }
+  }
 
   const m = matchRes.data?.[0];
   const a = assessmentRes.data?.[0];
