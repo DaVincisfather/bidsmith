@@ -25,6 +25,18 @@ describe("BidPatchSchema", () => {
   });
 });
 
+describe("BidPatchSchema (MD-first)", () => {
+  it("rejects overflowFlags-only payloads — the field is gone", () => {
+    const parsed = BidPatchSchema.safeParse({ overflowFlags: [] });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("accepts sections-only payloads", () => {
+    const parsed = BidPatchSchema.safeParse({ sections: [] });
+    expect(parsed.success).toBe(true);
+  });
+});
+
 describe("OutcomePatchSchema", () => {
   it("accepts outcome=won with no extras", () => {
     expect(OutcomePatchSchema.safeParse({ outcome: "won" }).success).toBe(true);

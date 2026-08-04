@@ -1,7 +1,6 @@
 "use client";
 
 import { BidSection, BidSectionContent, StyleGuide } from "@/lib/types";
-import type { FieldBudgets } from "@/lib/pptx-template/budget-types";
 import { CoverRenderer } from "./CoverRenderer";
 
 type TeamPricingContent = Extract<BidSectionContent, { format: "team-pricing" }>;
@@ -27,13 +26,9 @@ interface SectionRendererProps {
   section: BidSection;
   style: StyleGuide;
   onSectionChange?: (updated: BidSection) => void;
-  budgets?: FieldBudgets;
-  /** Slot-metadata för generic-prose (profil-drivna anbud): intent-etikett +
-   *  teckenräknare mot budgetChars. Utan meta = dagens beteende exakt. */
-  meta?: { intent: string; budgetChars?: number };
 }
 
-export function SectionRenderer({ section, style, onSectionChange, budgets, meta }: SectionRendererProps) {
+export function SectionRenderer({ section, style, onSectionChange }: SectionRendererProps) {
   const content = section.content;
 
   function setContent(next: BidSectionContent) {
@@ -68,7 +63,6 @@ export function SectionRenderer({ section, style, onSectionChange, budgets, meta
           phases={content.phases}
           style={style}
           onChange={onSectionChange ? (phases) => updateContent({ phases }) : undefined}
-          budgets={budgets}
         />
       );
     case "understanding-current":
@@ -89,7 +83,6 @@ export function SectionRenderer({ section, style, onSectionChange, budgets, meta
           content={content}
           style={style}
           onChange={onSectionChange ? setContent : undefined}
-          budgets={budgets}
         />
       );
     case "team-pricing":
@@ -158,35 +151,21 @@ export function SectionRenderer({ section, style, onSectionChange, budgets, meta
           content={content}
           style={style}
           onChange={onSectionChange ? setContent : undefined}
-          budgets={budgets}
         />
       );
-    case "generic-prose": {
+    case "generic-prose":
       // Fallback prose for a non-specialised slot (template-upload slice 4).
-      // With meta (profile-driven bids): intent label + char counter vs budget.
-      const intent = meta?.intent.trim();
-      const label = intent ? intent : content.placeholder;
-      const over =
-        meta?.budgetChars !== undefined && content.text.length > meta.budgetChars;
       return (
         <div className="space-y-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <div className="text-xs text-neutral-500">{label}</div>
-            {meta?.budgetChars !== undefined && (
-              <div className={`text-[10px] tabular-nums ${over ? "text-red-600 font-medium" : "text-neutral-400"}`}>
-                {content.text.length}/{meta.budgetChars}
-              </div>
-            )}
-          </div>
+          <div className="text-xs text-neutral-500">{content.placeholder}</div>
           <textarea
-            className={`w-full min-h-[8rem] rounded border p-2 text-sm ${over ? "border-red-400" : "border-neutral-300"}`}
+            className="w-full min-h-[8rem] rounded border p-2 text-sm border-neutral-300"
             value={content.text}
             readOnly={!onSectionChange}
             onChange={onSectionChange ? (e) => updateContent({ text: e.target.value }) : undefined}
           />
         </div>
       );
-    }
     default: {
       const _exhaustive: never = content;
       return <div className="text-red-500 text-sm">Unknown format: {JSON.stringify(_exhaustive)}</div>;

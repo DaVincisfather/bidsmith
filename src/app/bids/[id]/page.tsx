@@ -1,13 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { BidEditor } from "@/components/bid-editor/BidEditor";
 import { BidSection, StyleGuide } from "@/lib/types";
-import type { StructureEvalSummary } from "@/lib/eval/bid-structure";
-import { loadTemplateForBid } from "@/lib/pptx-template/active-template";
-import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
-import { isForeignProfile } from "@/lib/pptx-template/template-profile";
-import { buildSlotMeta, type SlotMeta } from "@/lib/bid-editor/slot-meta";
-import type { OverflowFlag } from "@/lib/pptx-template/budget-types";
-import type { FailedBundle } from "@/lib/bundle-labels";
+import type { FailedUnit } from "@/lib/bundle-labels";
 import { notFound } from "next/navigation";
 
 const DEFAULT_STYLE_GUIDE: StyleGuide = {
@@ -54,45 +48,15 @@ export default async function BidEditorPage({ params }: PageProps) {
   const styleGuide: StyleGuide =
     (workspace?.style_guide as StyleGuide) ?? DEFAULT_STYLE_GUIDE;
 
-  // Budgets/fieldSlides come from the bid's own template so the editor's
-  // overflow hints match what generation/export used; legacy bids fall back
-  // to bundled anbudsmall-v2 v1.
-  const templateId = (bid.template_id as string | null) ?? null;
-
-  // Profil-join för onboardade mallar: editorn får slide/kortfält/intent per
-  // placeholder (design 2026-07-15). Saknad/ej-generic profil eller läsfel ⇒
-  // null ⇒ dagens platta editor — fallbacken är alltid den synliga vägen.
-  // Två oberoende Supabase-anrop — körs parallellt istället för sekventiellt.
-  const templatePromise = loadTemplateForBid(templateId);
-  const slotMetaPromise: Promise<SlotMeta | null> = templateId
-    ? (async () => {
-        try {
-          const profile = await loadTemplateProfile(templateId);
-          return profile && isForeignProfile(profile) ? buildSlotMeta(profile) : null;
-        } catch (err) {
-          console.error("slotMeta: kunde inte läsa mallprofilen", err);
-          return null;
-        }
-      })()
-    : Promise.resolve(null);
-
-  const [template, slotMeta] = await Promise.all([templatePromise, slotMetaPromise]);
-
   return (
     <BidEditor
       bidId={bid.id}
       analysisId={(bid.analysis_id as string | null) ?? null}
       initialSections={bid.sections as BidSection[]}
       initialStatus={bid.status}
-      initialStructureEval={(bid.structure_eval as StructureEvalSummary | null) ?? null}
       styleGuide={styleGuide}
-      budgets={template.manifest.budgets}
-      fieldSlides={template.manifest.fieldSlides}
-      initialOverflowFlags={(bid.overflow_flags as OverflowFlag[]) ?? []}
-      initialFailedBundles={(bid.failed_bundles as FailedBundle[]) ?? []}
+      initialFailedBundles={(bid.failed_bundles as FailedUnit[]) ?? []}
       initialGenerationError={(bid.generation_error as string | null) ?? null}
-      slotMeta={slotMeta}
-      templateId={templateId}
     />
   );
 }

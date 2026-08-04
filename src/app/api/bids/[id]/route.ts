@@ -58,8 +58,6 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     outcome: data.outcome,
     exportedAt: data.exported_at,
     createdAt: data.created_at,
-    structureEval: data.structure_eval,
-    overflowFlags: data.overflow_flags ?? [],
     failedBundles: data.failed_bundles ?? [],
     generationError: data.generation_error ?? null,
   });
@@ -72,23 +70,36 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const id = idResult.data;
   const parsed = await parseBody(request, BidPatchSchema);
   if (!parsed.ok) return parsed.response;
-  const { outcome, sections, overflowFlags } = parsed.data;
+  const { outcome, sections } = parsed.data;
 
   const updates: Record<string, unknown> = {};
   if (outcome) updates.outcome = outcome;
   if (sections) updates.sections = sections;
-  if (overflowFlags !== undefined) updates.overflow_flags = overflowFlags;
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("bids")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
+  // Server-side edit lock: while status='generating' the generation runner's
+  // final write owns the sections array — a stale client PATCH (second tab,
+  // late debounce) would silently truncate it. The editor's UI lock is not
+  // enough on its own (routine finding, PR #102).
+  let query = supabase.from("bids").update(updates).eq("id", id);
+  if (sections) query = query.neq("status", "generating");
+  const { data, error } = await query.select().single();
 
   if (error || !data) {
+    if (sections) {
+      const { data: current } = await supabase
+        .from("bids")
+        .select("status")
+        .eq("id", id)
+        .single();
+      if (current?.status === "generating") {
+        return NextResponse.json(
+          { error: "Anbudet genereras fortfarande — redigering är låst tills utkastet är klart." },
+          { status: 409 }
+        );
+      }
+    }
     return NextResponse.json(
       { error: error?.message ?? "Bid not found" },
       { status: 404 }

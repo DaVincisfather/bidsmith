@@ -1,6 +1,5 @@
 "use client";
 import type { BidSectionContent, StyleGuide } from "@/lib/types";
-import type { FieldBudgets } from "@/lib/pptx-template/budget-types";
 import { EditableText } from "../EditableText";
 
 type CertContent = Extract<BidSectionContent, { format: "certifications" }>;
@@ -10,13 +9,11 @@ export function CertificationsRenderer({
   content,
   style,
   onChange,
-  budgets,
 }: {
   title: string;
   content: CertContent;
   style: StyleGuide;
   onChange?: (next: CertContent) => void;
-  budgets?: FieldBudgets;
 }) {
   const editable = !!onChange;
   const defaultNames = ["ISO 9001", "ISO 27001", "ISO 14001"];
@@ -55,8 +52,6 @@ export function CertificationsRenderer({
                       onChange={(v) => updateCert(i, { description: v })}
                       as="span"
                       placeholder="Beskrivning"
-                      dataFieldPath={`certs[${i}].description`}
-                      budget={budgets?.["certs[*].description"]}
                     />
                   ) : c.description}
                 </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback } from "react";
 
 interface EditableTextProps {
   value: string;
@@ -9,8 +9,6 @@ interface EditableTextProps {
   className?: string;
   placeholder?: string;
   style?: React.CSSProperties;
-  budget?: number;
-  dataFieldPath?: string;
 }
 
 export function EditableText({
@@ -20,27 +18,20 @@ export function EditableText({
   className = "",
   placeholder = "",
   style,
-  budget,
-  dataFieldPath,
 }: EditableTextProps) {
   const ref = useRef<HTMLElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const lastValueRef = useRef(value);
-  const [length, setLength] = useState(value.length);
 
   // Sync external value changes (e.g. AI regeneration) into the DOM
   useEffect(() => {
     if (ref.current && value !== lastValueRef.current) {
       ref.current.textContent = value;
       lastValueRef.current = value;
-      setLength(value.length);
     }
   }, [value]);
 
   const handleInput = useCallback(() => {
-    if (ref.current) {
-      setLength(ref.current.textContent?.length ?? 0);
-    }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       const text = ref.current?.textContent ?? "";
@@ -69,36 +60,11 @@ export function EditableText({
       onBlur={handleBlur}
       className={`outline-none focus:ring-2 focus:ring-accent-soft focus:ring-offset-1 rounded px-0.5 -mx-0.5 ${className}`}
       data-placeholder={placeholder}
-      data-field-path={dataFieldPath}
       style={style}
     >
       {value}
     </Tag>
   );
 
-  // No wrapper when there's no counter to position — keeps HTML clean for the
-  // ~40+ EditableText instances that don't pass a budget.
-  if (budget === undefined) {
-    return tagElement;
-  }
-
-  // Wrapper element must match Tag's display context to keep HTML valid in both
-  // directions: <span> Tag inside <p> needs span wrapper (div-in-p invalid);
-  // <h4>/<p>/<li> Tag needs div wrapper (block-in-span invalid). CSS class
-  // controls actual display, the element name controls validity.
-  const Wrapper = Tag === "span" ? "span" : "div";
-
-  return (
-    <Wrapper className="relative inline-block w-full">
-      {tagElement}
-      <span
-        data-testid="char-counter"
-        className={`absolute -bottom-4 right-0 text-[10px] tabular-nums ${
-          length > budget ? "text-red-600 font-medium" : "text-ink-mute"
-        }`}
-      >
-        {length}/{budget}
-      </span>
-    </Wrapper>
-  );
+  return tagElement;
 }

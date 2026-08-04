@@ -4,7 +4,29 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-03 natt — **MD-FIRST-PIVOTEN MERGAD (#101).** Stefans
+_Senast uppdaterad: 2026-08-04 — **BID EDITOR MD-FIRST-OMTÄNKET LEVERERAT (denna PR).**
+Stefans beslut (brainstorm 2026-08-03): editorn = överblick + export, avsnitt/kapitel enda
+strukturen, kapitelindelningen ÄR överblicken (inga ord-/teckenmått). Levererat:
+(1) EDITORN EN DOKUMENTVY — BidEditor 425→272 rader (riktvärdet ≤200 missades — ärlig
+siffra); raderat: budget-props/overflow-
+omräkning/OverflowChecklist/teckenräknare/SlideNav/SlideGroupedSections/slot-meta-
+gruppering i editorn/StructureEvalBadge/hälsorapport-länken/`/shorten`-routen (+ orphan-
+schemas); PATCH tar inte overflowFlags, GET returnerar inte structureEval/overflowFlags.
+(2) FÖRVÄNTADE KAPITEL FRÅN START — `expected-chapters.ts` (ur RUNTIME_MANDATORY_SECTIONS)
++ read-only GeneratingChapterList under generering; per-bundle-persist i generateAllSections
+(serialiserad kö — persistSection är RMW; fel-slukning testad) + inkrementell failed_bundles-
+märkning. Live-verifierad: full 11-kapitelslista sekund ett, väntande→klar löpande.
+(3) STRUKTURJUDGEN UR RUNTIME — RÄTTELSE: judgen är MEKANISK ($0), borttagen som död
+konsument (badgen ryker), INTE kostnad; lib/eval/bid-structure kvar för offline-evals.
+(4) MD-PREAMBLE — nedströms-AI-instruktion som HTML-kommentar först i varje export
+(semantik + fakta-låst-invarianten + formatgrenar Word/PPT/annat); verifierad i skarp export.
+KÄND BEGRÄNSNING: foreign-anbud (flaggan på) visar 11 eviga väntande-kapitel under
+generering (expected-listan är v2-bunden) — acceptabelt, foreign är experimentell yta.
+Spec/plan: `docs/superpowers/specs|plans/2026-08-03-bid-editor-md-first-*`. Grindar:
+1393 tester, lint 0 fel, tsc rent, `next build` exit 0, visuell verifiering + skarp
+MD-export läst._
+
+_Historik (2026-08-03 natt): **MD-FIRST-PIVOTEN MERGAD (#101).** Stefans
 produktbeslut (argumenten: ALLA mallar är foreign ur en firmas perspektiv; utkast
 kräver ändå omarbetning; formaterings-sista-milen löses bättre av verktygen kunderna
 redan använder, matade med strukturerad Markdown): **Markdown är den formella
@@ -464,7 +486,8 @@ _Inga — #54–#68 mergade 2026-07-03/04._
 - **Routine-follow-ups #97 (polish):** (1) wizardens `refresh()` sväljer icke-ok-svar
   tyst — med `BIDSMITH_FOREIGN_TEMPLATES=off` 404:ar GET-routen och de permanenta
   Hälsorapport-länkarna landar i evigt "Laddar…"; `else setUiError(...)` räcker;
-  (2) BidEditor.tsx saknar helt testfil (navlänken slotMeta && templateId otestad).
+  (2) ~~BidEditor.tsx saknar helt testfil~~ — KLAR 2026-08-04 (editor-omtänket:
+  BidEditor.test.tsx + expected-chapters.test.ts; navlänken den testade är borttagen).
 - **Zip-bomb-skyddet robust (säkerhetsauditen + #92-granskningen, MEDIUM):**
   `assertZipWithinLimits` litar på zip-huvudets DEKLARERADE uncompressedSize —
   en förfalskad mall kan underrapportera den och ändå inflatera till GB (bevisat
@@ -483,13 +506,12 @@ _Inga — #54–#68 mergade 2026-07-03/04._
   annotateKnownDefects i stället för detail-strängprefixet; (4) accept utan CAS-guard
   (single-operator-risk, låg); (5) engines-rad i package.json (Node ≥22.9 för
   --env-file-if-exists); (6) OnboardingWizard.tsx 378 rader — bryt ut draft-vyn.
-- **Editor-slimningens follow-ups (PR #82, routine + slutreview 2026-07-15 — polish om
-  inte annat anges):** (1) enrads-notis "N kortfält döljs — genereras och exporteras
-  ändå" i grupperade vyn (`hiddenShortFields` finns redan i `GroupedSections`);
-  (2) BidEditor.tsx 403 rader — extrahera flat/grupperad-branchen + branchtest;
-  (3) `decideSlide`/`decide` delar fetch-boilerplate — gemensam `patchOnboarding`;
-  (4) a11y-pass SectionNav/SlideNav (aria-current) + wizardens statusrad (aria-live);
-  (5) hus-token-pass på räknaren (`text-neutral-400` → `text-ink-mute`)
+- **Editor-slimningens follow-ups (PR #82) — MESTADELS OBSOLETA 2026-08-04
+  (editor-omtänket raderade grupperade vyn/räknarna/SlideNav):** kvar är endast
+  (3) `decideSlide`/`decide` delar fetch-boilerplate — gemensam `patchOnboarding`
+  (wizarden, orörd) och (4, delvis) a11y-pass SectionNav (aria-current) + wizardens
+  statusrad (aria-live). Nytt a11y-embryo: GeneratingChapterList är div-rader i nav
+  utan textuell state-cue (slutreview-minor 2026-08-04).
 - **Re-ask-residualer (F6, PR #72-routinen):**
   - chunka re-asken vid stora tomt-set (>30 targets -> flera batchar) sa F6-monstret skalar med bredare mallar
   - stickprovsrutinen bor marka re-ask-fyllda sektioner i underlaget (hallucinationsrisken koncentrerad dit)

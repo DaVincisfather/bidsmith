@@ -1,7 +1,6 @@
 "use client";
 
 import { ExecutionPhase, StyleGuide } from "@/lib/types";
-import type { FieldBudgets } from "@/lib/pptx-template/budget-types";
 import { EditableText } from "../EditableText";
 
 const PHASE_COLORS = ["#7A2230", "#9A3340", "#B65560", "#5E1822", "#C98A90"];
@@ -10,10 +9,9 @@ interface PhasesRendererProps {
   phases: ExecutionPhase[];
   style: StyleGuide;
   onChange?: (phases: ExecutionPhase[]) => void;
-  budgets?: FieldBudgets;
 }
 
-export function PhasesRenderer({ phases, style: _style, onChange, budgets }: PhasesRendererProps) {
+export function PhasesRenderer({ phases, style: _style, onChange }: PhasesRendererProps) {
   const editable = !!onChange;
 
   function updatePhase(i: number, patch: Partial<ExecutionPhase>) {
@@ -57,8 +55,6 @@ export function PhasesRenderer({ phases, style: _style, onChange, budgets }: Pha
                   onChange={(v) => updatePhase(i, { name: v })}
                   as="h4"
                   className="font-bold text-white text-sm"
-                  dataFieldPath={`phases[${i}].name`}
-                  budget={budgets?.["phases[*].name"]}
                 />
               ) : (
                 <h4 className="font-bold text-white text-sm">{phase.name}</h4>
@@ -85,8 +81,6 @@ export function PhasesRenderer({ phases, style: _style, onChange, budgets }: Pha
                     onChange={(v) => updatePhase(i, { objective: v })}
                     as="p"
                     className="text-gray-700"
-                    dataFieldPath={`phases[${i}].objective`}
-                    budget={budgets?.["phases[*].objective"]}
                   />
                 ) : (
                   <p className="text-gray-700">{phase.objective}</p>
@@ -103,8 +97,6 @@ export function PhasesRenderer({ phases, style: _style, onChange, budgets }: Pha
                           value={d}
                           onChange={(v) => updateDeliverable(i, j, v)}
                           as="span"
-                          dataFieldPath={`phases[${i}].deliverables[${j}]`}
-                          budget={budgets?.["phases[*].deliverables[*]"]}
                         />
                       ) : d}
                     </li>
@@ -153,8 +145,6 @@ export function PhasesRenderer({ phases, style: _style, onChange, budgets }: Pha
                           value={phase.period}
                           onChange={(v) => updatePhase(i, { period: v })}
                           as="span"
-                          dataFieldPath={`phases[${i}].period`}
-                          budget={budgets?.["phases[*].period"]}
                         />
                       ) : phase.period}
                     </>
