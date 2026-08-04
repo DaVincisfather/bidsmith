@@ -3,6 +3,8 @@ import { BidEditor } from "@/components/bid-editor/BidEditor";
 import { BidSection, StyleGuide } from "@/lib/types";
 import type { FailedUnit } from "@/lib/bundle-labels";
 import { notFound } from "next/navigation";
+import { FlowNav } from "@/components/flow-nav";
+import { loadFlowState } from "@/lib/flow-state";
 
 const DEFAULT_STYLE_GUIDE: StyleGuide = {
   colors: {
@@ -48,15 +50,29 @@ export default async function BidEditorPage({ params }: PageProps) {
   const styleGuide: StyleGuide =
     (workspace?.style_guide as StyleGuide) ?? DEFAULT_STYLE_GUIDE;
 
+  const analysisId = (bid.analysis_id as string | null) ?? null;
+  const flow = analysisId ? await loadFlowState(analysisId) : null;
+
   return (
-    <BidEditor
-      bidId={bid.id}
-      analysisId={(bid.analysis_id as string | null) ?? null}
-      initialSections={bid.sections as BidSection[]}
-      initialStatus={bid.status}
-      styleGuide={styleGuide}
-      initialFailedBundles={(bid.failed_bundles as FailedUnit[]) ?? []}
-      initialGenerationError={(bid.generation_error as string | null) ?? null}
-    />
+    <>
+      {analysisId && flow && (
+        <FlowNav
+          analysisId={analysisId}
+          active="bid"
+          gonogoEnabled={flow.assessment !== null}
+          bidId={bid.id}
+          bidFailed={bid.status === "failed"}
+        />
+      )}
+      <BidEditor
+        bidId={bid.id}
+        analysisId={analysisId}
+        initialSections={bid.sections as BidSection[]}
+        initialStatus={bid.status}
+        styleGuide={styleGuide}
+        initialFailedBundles={(bid.failed_bundles as FailedUnit[]) ?? []}
+        initialGenerationError={(bid.generation_error as string | null) ?? null}
+      />
+    </>
   );
 }

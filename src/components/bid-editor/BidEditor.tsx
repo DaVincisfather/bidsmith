@@ -187,7 +187,7 @@ export function BidEditor({
                 ← Tillbaka till analys
               </Link>
               <span aria-hidden className="text-rule">|</span>
-              <Link href={`/analysis/${analysisId}#team`} className="hover:text-ink transition-colors">
+              <Link href={`/analysis/${analysisId}/go-no-go`} className="hover:text-ink transition-colors">
                 Ändra team
               </Link>
             </nav>
