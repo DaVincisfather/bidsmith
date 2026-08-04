@@ -194,6 +194,15 @@ describe("runBidGeneration routing", () => {
     await runBidGeneration(client, "bid-1", ctx, template);
 
     expect(generateAllSections).toHaveBeenCalledTimes(1);
+    // Both the per-section and per-bundle persist callbacks must be wired
+    // through — otherwise sections that land mid-generation never get
+    // saved and stale-poll autosave (BidEditor) can silently drop them.
+    expect(generateAllSections).toHaveBeenCalledWith(
+      ctx,
+      template.manifest,
+      expect.any(Function),
+      expect.any(Function),
+    );
     expect(generateSectionsFromProfile).not.toHaveBeenCalled();
   });
 
