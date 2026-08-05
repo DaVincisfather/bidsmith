@@ -51,29 +51,32 @@ export async function POST(request: NextRequest) {
         .from("bids")
         .select("id, status, exported_at, created_at")
         .eq("analysis_id", analysisId)
-        .order("created_at", { ascending: false })
-        .limit(1),
+        .order("created_at", { ascending: false }),
     ]);
 
   if (analysisResult.error || !analysisResult.data) {
     return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
   }
 
-  const existing = existingBidResult.data?.[0] as
-    | { id: string; status: string; exported_at: string | null; created_at: string | null }
-    | undefined;
-  if (existing && (existing.exported_at || existing.status === "exported")) {
+  const bidRows = (existingBidResult.data ?? []) as {
+    id: string; status: string; exported_at: string | null; created_at: string | null;
+  }[];
+  // Freeze on ANY exported row (same rule as unlock-team — the outcome loop
+  // tracks every submitted bid, not just the latest); replace targets the
+  // latest row; any actively generating row blocks a new run.
+  if (bidRows.some((b) => b.exported_at || b.status === "exported")) {
     return NextResponse.json(
       { error: "Anbudet är inlämnat och fryst — utfallet spårar det." },
       { status: 409 },
     );
   }
-  if (existing && isActivelyGenerating(existing)) {
+  if (bidRows.some((b) => isActivelyGenerating(b))) {
     return NextResponse.json(
       { error: "Generering pågår redan för den här analysen." },
       { status: 409 },
     );
   }
+  const existing = bidRows[0];
 
   const rfpAnalysis = analysisResult.data.analysis as RfpAnalysis;
   const goNoGoResult = (assessmentResult.data?.result as GoNoGoResult) ?? null;
@@ -123,8 +126,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: replaceError.message }, { status: 500 });
     }
     if (!replaced || replaced.length === 0) {
+      // The row changed between our read and the CAS update (concurrent
+      // replace, watchdog flip, export) — an honest generic conflict beats
+      // guessing which one it was.
       return NextResponse.json(
-        { error: "Generering pågår redan för den här analysen." },
+        { error: "Anbudet ändrades samtidigt av en annan förfrågan — ladda om sidan och försök igen." },
         { status: 409 },
       );
     }

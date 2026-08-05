@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
-import { parseUuidParam, internalError } from "@/lib/api-helpers";
+import { createClient } from "@/lib/supabase/server";
+import { parseUuidParam, internalError, requireUser } from "@/lib/api-helpers";
 import { isActivelyGenerating } from "@/lib/bid-status";
 
 interface RouteContext {
@@ -19,6 +20,13 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     const idResult = parseUuidParam(rawId, "analysis id");
     if (!idResult.ok) return idResult.response;
     const analysisId = idResult.data;
+
+    // Route-level auth: middleware fails open when the anon key is missing,
+    // and this endpoint deletes with the service role (RLS bypass) — a
+    // destructive route never relies on middleware alone.
+    const authed = await createClient();
+    const auth = await requireUser(authed);
+    if (!auth.ok) return auth.response;
 
     const supabase = createServiceClient();
 

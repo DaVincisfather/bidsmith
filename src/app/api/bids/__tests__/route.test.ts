@@ -30,9 +30,7 @@ vi.mock("@/lib/supabase", () => ({
         return {
           select: () => ({
             eq: () => ({
-              order: () => ({
-                limit: () => Promise.resolve({ data: h.state.existingBids, error: null }),
-              }),
+              order: () => Promise.resolve({ data: h.state.existingBids, error: null }),
             }),
           }),
           insert: (payload: Record<string, unknown>) => {
@@ -160,7 +158,19 @@ describe("POST /api/bids — one bid per analysis", () => {
     h.state.replaceResult = { data: [], error: null };
     const res = await POST(makeRequest(BODY));
     expect(res.status).toBe(409);
+    expect((await res.json()).error).toContain("ändrades samtidigt");
     expect(h.state.afterCallbacks).toHaveLength(0);
+  });
+
+  it("409s when an older exported bid exists even though the latest is a draft (legacy data)", async () => {
+    h.state.existingBids = [
+      { id: "b-2", status: "draft", exported_at: null, created_at: new Date().toISOString() },
+      { id: "b-1", status: "exported", exported_at: "2026-08-01T10:00:00Z", created_at: "2026-08-01T09:00:00Z" },
+    ];
+    const res = await POST(makeRequest(BODY));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toContain("fryst");
+    expect(h.state.updatePayloads).toHaveLength(0);
   });
 
   it("replaces a stale generating bid (dead job) instead of blocking", async () => {

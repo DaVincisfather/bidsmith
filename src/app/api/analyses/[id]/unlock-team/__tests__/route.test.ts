@@ -7,6 +7,7 @@ const h = vi.hoisted(() => {
     deletedFrom: [] as string[],
     deleteErrors: {} as Record<string, { message: string } | null>,
     deleteFilters: [] as { table: string; filters: [string, string, unknown][] }[],
+    unauthed: false,
   };
   return { state };
 });
@@ -37,6 +38,18 @@ vi.mock("@/lib/supabase", () => ({
   }),
 }));
 
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({}) }));
+vi.mock("@/lib/org", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/org")>();
+  return {
+    ...actual,
+    getUserId: async () => {
+      if (h.state.unauthed) throw new actual.NotAuthenticatedError();
+      return "user-1";
+    },
+  };
+});
+
 import { POST } from "../route";
 
 const VALID_ID = "11111111-1111-1111-1111-111111111111";
@@ -54,6 +67,7 @@ beforeEach(() => {
   h.state.deletedFrom = [];
   h.state.deleteErrors = {};
   h.state.deleteFilters = [];
+  h.state.unauthed = false;
 });
 
 describe("POST /api/analyses/[id]/unlock-team — hard reset", () => {
@@ -111,5 +125,13 @@ describe("POST /api/analyses/[id]/unlock-team — hard reset", () => {
   it("400s on a malformed id", async () => {
     const res = await POST(makeRequest(), ctx("not-a-uuid"));
     expect(res.status).toBe(400);
+  });
+
+  it("401s an unauthenticated call without touching anything", async () => {
+    h.state.unauthed = true;
+    h.state.bids = [{ id: "b-1", status: "draft", exported_at: null, created_at: new Date().toISOString() }];
+    const res = await POST(makeRequest(), ctx(VALID_ID));
+    expect(res.status).toBe(401);
+    expect(h.state.deletedFrom).toHaveLength(0);
   });
 });
