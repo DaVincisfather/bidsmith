@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { TeamProposal } from "./team-proposal";
-import { GoNoGoResultView } from "./go-no-go-result";
-import { GoNoGoResult } from "@/lib/types";
-import { BUNDLE_LABELS_SV, type FailedBundle } from "@/lib/bundle-labels";
 import { MAX_TEAM_SIZE } from "@/lib/constants";
 import { ForgeLoader } from "./ForgeLoader";
 
@@ -25,6 +23,10 @@ interface MatchData {
 interface AnalysisMatchSectionProps {
   analysisId: string;
   latestMatch: MatchData | null;
+  /** true when a go/no-go assessment exists — the team is locked server-side */
+  locked: boolean;
+  /** the locked team from the latest assessment (null when unlocked) */
+  lockedTeamIds: string[] | null;
 }
 
 function buildDefaultTeamIds(scored: ScoredConsultant[]): Set<string> {
@@ -33,81 +35,28 @@ function buildDefaultTeamIds(scored: ScoredConsultant[]): Set<string> {
   return new Set(top.map((c) => c.consultantId));
 }
 
-interface BidStatus {
-  status: string;
-  failedBundles: FailedBundle[];
-  generationError: string | null;
-}
-
-// POST /api/bids returns 202 before generation finishes (it runs server-side
-// in the background). Poll until the bid leaves 'generating' so the
-// partial/failure UX below still applies. Returns null if the component
-// unmounted mid-poll — generation continues server-side, nothing to do here.
-// A single failed poll must NOT surface as "generation failed" (the user
-// would re-run and pay for a duplicate) — only give up after several in a row.
-async function pollBidUntilDone(
-  bidId: string,
-  isMounted: () => boolean,
-): Promise<BidStatus | null> {
-  let consecutiveFailures = 0;
-  for (;;) {
-    await new Promise((resolve) => setTimeout(resolve, 4000));
-    if (!isMounted()) return null;
-    try {
-      const res = await fetch(`/api/bids/${bidId}`);
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      consecutiveFailures = 0;
-      const bid: BidStatus = await res.json();
-      if (bid.status !== "generating") return bid;
-    } catch {
-      consecutiveFailures += 1;
-      if (consecutiveFailures >= 5) {
-        throw new Error("Kunde inte hämta anbudsstatus");
-      }
-    }
-  }
-}
-
 export function AnalysisMatchSection({
   analysisId,
   latestMatch,
+  locked,
+  lockedTeamIds,
 }: AnalysisMatchSectionProps) {
   const router = useRouter();
-  // The bid poll runs for minutes; without this guard it would setState on an
-  // unmounted component and yank the user to /bids/{id} long after they left.
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
   const [match, setMatch] = useState<MatchData | null>(latestMatch);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    latestMatch ? buildDefaultTeamIds(latestMatch.scoredConsultants) : new Set()
+    lockedTeamIds
+      ? new Set(lockedTeamIds)
+      : latestMatch
+        ? buildDefaultTeamIds(latestMatch.scoredConsultants)
+        : new Set(),
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Go/No-Go state
-  const [teamLocked, setTeamLocked] = useState(false);
-  const [goNoGoLoading, setGoNoGoLoading] = useState(false);
-  const [goNoGoResult, setGoNoGoResult] = useState<GoNoGoResult | null>(null);
-  const [goNoGoId, setGoNoGoId] = useState<string | null>(null);
-
-  // Bid state
-  const [bidLoading, setBidLoading] = useState(false);
-  const [partialBid, setPartialBid] = useState<{
-    id: string;
-    failedBundles: FailedBundle[];
-  } | null>(null);
+  const [goNoGoRunning, setGoNoGoRunning] = useState(false);
 
   async function triggerMatching() {
     setLoading(true);
     setError(null);
-    setTeamLocked(false);
-    setGoNoGoResult(null);
-    setGoNoGoId(null);
 
     try {
       const response = await fetch(`/api/matches/${analysisId}`, {
@@ -153,11 +102,8 @@ export function AnalysisMatchSection({
       setError("Välj minst en konsult för teamet.");
       return;
     }
-
-    setTeamLocked(true);
-    setGoNoGoLoading(true);
+    setGoNoGoRunning(true);
     setError(null);
-
     try {
       const response = await fetch("/api/go-no-go", {
         method: "POST",
@@ -167,76 +113,15 @@ export function AnalysisMatchSection({
           teamConsultantIds: Array.from(selectedIds),
         }),
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || "Go/No-Go evaluation failed");
       }
-
-      const data = await response.json();
-      setGoNoGoResult(data.result);
-      setGoNoGoId(data.id);
+      router.push(`/analysis/${analysisId}/go-no-go`);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
-      setTeamLocked(false);
-    } finally {
-      setGoNoGoLoading(false);
-    }
-  }
-
-  function unlockTeam() {
-    setTeamLocked(false);
-    setGoNoGoResult(null);
-    setGoNoGoId(null);
-  }
-
-  async function proceedToBid() {
-    if (goNoGoId) {
-      await fetch(`/api/go-no-go/${goNoGoId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision: "go" }),
-      });
-    }
-
-    setBidLoading(true);
-    setError(null);
-    setPartialBid(null);
-
-    try {
-      const response = await fetch("/api/bids", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          analysisId,
-          assessmentId: goNoGoId,
-          teamConsultantIds: Array.from(selectedIds),
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Bid generation failed");
-      }
-
-      const data = await response.json();
-      const bid = await pollBidUntilDone(data.id, () => mountedRef.current);
-      if (!bid) return; // user left the page; generation continues server-side
-      if (bid.status === "failed") {
-        throw new Error(bid.generationError || "Bid generation failed");
-      }
-      if (bid.failedBundles.length > 0) {
-        // Partiellt utkast: navigera inte tyst till ett ofullständigt anbud —
-        // visa vilka sektioner som saknas och låt användaren öppna det medvetet.
-        setPartialBid({ id: data.id, failedBundles: bid.failedBundles });
-        setBidLoading(false);
-        return;
-      }
-      router.push(`/bids/${data.id}`);
-    } catch (err) {
-      if (!mountedRef.current) return;
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setBidLoading(false);
+      setGoNoGoRunning(false);
     }
   }
 
@@ -244,7 +129,7 @@ export function AnalysisMatchSection({
     <div className="border-t border-rule pt-8 mt-8 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-display font-normal">Teammatchning</h2>
-        {!teamLocked && (
+        {!locked && !goNoGoRunning && (
           <button
             onClick={triggerMatching}
             disabled={loading}
@@ -266,40 +151,17 @@ export function AnalysisMatchSection({
         </div>
       )}
 
-      {partialBid && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded text-sm space-y-2">
-          <p className="font-medium">
-            {partialBid.failedBundles.length}{" "}
-            {partialBid.failedBundles.length === 1 ? "sektion" : "sektioner"} kunde inte genereras
-          </p>
-          <p>
-            Utkastet sparades utan:{" "}
-            {partialBid.failedBundles
-              .map((f) => BUNDLE_LABELS_SV[f.bundle] ?? f.bundle)
-              .join(", ")}
-            . Öppna utkastet för att granska, eller kör anbudsgenereringen igen för att försöka på nytt.
-          </p>
-          <button
-            onClick={() => router.push(`/bids/${partialBid.id}`)}
-            className="bg-ink text-white px-4 py-2 rounded-lg text-xs font-medium
-                       hover:bg-accent-ink transition-colors"
-          >
-            Öppna utkastet ändå
-          </button>
-        </div>
-      )}
-
       {match && (
         <>
           <TeamProposal
             scoredConsultants={match.scoredConsultants}
             selectedIds={selectedIds}
             onToggle={handleToggle}
-            disabled={teamLocked}
+            disabled={locked || goNoGoRunning}
             maxTeamSize={MAX_TEAM_SIZE}
           />
 
-          {!teamLocked && !goNoGoLoading && (
+          {!locked && !goNoGoRunning && (
             <button
               onClick={lockTeamAndEvaluate}
               disabled={selectedIds.size === 0}
@@ -310,26 +172,20 @@ export function AnalysisMatchSection({
             </button>
           )}
 
-          {goNoGoLoading && (
+          {goNoGoRunning && (
             <div className="py-8 flex justify-center">
               <ForgeLoader />
             </div>
           )}
 
-          {goNoGoResult && goNoGoId && (
-            <GoNoGoResultView
-              result={goNoGoResult}
-              assessmentId={goNoGoId}
-              onUnlock={unlockTeam}
-              onProceedToBid={proceedToBid}
-              bidLoading={bidLoading}
-            />
-          )}
-
-          {bidLoading && (
-            <div className="py-8 flex justify-center">
-              <ForgeLoader />
-            </div>
+          {locked && (
+            <Link
+              href={`/analysis/${analysisId}/go-no-go`}
+              className="block w-full border border-rule text-ink-soft px-4 py-3 rounded-lg text-sm
+                         font-medium text-center hover:border-accent hover:text-ink transition-colors"
+            >
+              Teamet är låst — visa Go/No-Go-bedömningen →
+            </Link>
           )}
         </>
       )}

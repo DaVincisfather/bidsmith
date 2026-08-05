@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseBody, parseUuidParam } from "@/lib/api-helpers";
 import { BidPatchSchema } from "@/lib/api-schemas";
+import { isActivelyGenerating } from "@/lib/bid-status";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
-
-// POST /api/bids' maxDuration is 300 s — past that the platform has killed
-// the background job without reaching its failure handler. 7 min = the kill
-// point plus buffer, so a dead generation doesn't poll for long.
-const STALE_GENERATING_MS = 7 * 60 * 1000;
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id: rawId } = await params;
@@ -32,10 +28,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  if (
-    data.status === "generating" &&
-    Date.now() - new Date(data.created_at).getTime() > STALE_GENERATING_MS
-  ) {
+  if (data.status === "generating" && !isActivelyGenerating({ status: data.status, created_at: (data.created_at as string | null) ?? null })) {
+    // bids.created_at is NOT NULL (setup.sql) — the missing-created_at fail-safe branch in isActivelyGenerating is unreachable here; a future nullable created_at would resurrect infinite-poll for corrupt rows.
     // Watchdog: without this, a bid whose generator died (maxDuration
     // exceeded, deploy, crash) stays 'generating' and polls forever.
     const { data: failed } = await supabase

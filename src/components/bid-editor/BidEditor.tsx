@@ -158,7 +158,7 @@ export function BidEditor({
   );
 
   return (
-    <div className="flex h-[calc(100vh-57px)]">
+    <div className="flex min-h-0 flex-1">
       {/* Left panel — chapter navigation */}
       <aside className="w-56 shrink-0 border-r border-rule overflow-y-auto p-3">
         <div className="mb-3 flex items-center justify-between">
@@ -187,7 +187,7 @@ export function BidEditor({
                 ← Tillbaka till analys
               </Link>
               <span aria-hidden className="text-rule">|</span>
-              <Link href={`/analysis/${analysisId}#team`} className="hover:text-ink transition-colors">
+              <Link href={`/analysis/${analysisId}/go-no-go`} className="hover:text-ink transition-colors">
                 Ändra team
               </Link>
             </nav>
@@ -208,7 +208,7 @@ export function BidEditor({
           {status === "failed" && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
               Genereringen misslyckades{generationError ? `: ${generationError}` : ""}.
-              Gå tillbaka till analysen och kör anbudsgenereringen igen.
+              Gå till Go/No-Go-steget och generera om anbudet.
             </div>
           )}
 

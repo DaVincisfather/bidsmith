@@ -5,9 +5,8 @@ import { GoNoGoResult, GoNoGoRecommendation } from "@/lib/types";
 interface GoNoGoResultProps {
   result: GoNoGoResult;
   assessmentId: string;
-  onUnlock: () => void;
-  onProceedToBid: () => void;
-  bidLoading?: boolean;
+  /** Page-level action buttons (generate/open/unlock) — supplied by the caller. */
+  actions: React.ReactNode;
 }
 
 function recommendationLabel(rec: GoNoGoRecommendation): string {
@@ -39,12 +38,7 @@ function probabilityColor(p: number): string {
   return "text-red-700 bg-red-50";
 }
 
-export function GoNoGoResultView({
-  result,
-  onUnlock,
-  onProceedToBid,
-  bidLoading,
-}: GoNoGoResultProps) {
+export function GoNoGoResultView({ result, actions }: GoNoGoResultProps) {
   const allMustMet = result.mustRequirements.every((r) => r.met);
 
   return (
@@ -159,23 +153,7 @@ export function GoNoGoResultView({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3">
-        <button
-          onClick={onUnlock}
-          className="flex-1 border border-rule text-ink-soft px-4 py-2 rounded-lg text-sm font-medium
-                     hover:bg-paper-2 transition-colors"
-        >
-          Tillbaka till team
-        </button>
-        <button
-          onClick={onProceedToBid}
-          disabled={bidLoading}
-          className="flex-1 bg-ink text-white px-4 py-2 rounded-lg text-sm font-medium
-                     hover:bg-accent-ink disabled:bg-rule disabled:cursor-not-allowed transition-colors"
-        >
-          {bidLoading ? "Genererar anbud..." : "Gå vidare till anbud"}
-        </button>
-      </div>
+      <div className="flex gap-3">{actions}</div>
     </div>
   );
 }
