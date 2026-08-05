@@ -450,8 +450,27 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   (9 081 tokens/98 s), rena shortDescriptions, och `risks`/`hoursEstimate`
   materialiseras nu (var alltid tomma pre-fix ⇒ {Risker}-boxen får innehåll).
   KVAR av posten: 32k-runawayen (hypotes 1, effort max-tänkbudgeten — n=1 utan
-  runaway bevisar inget), watchdog-samspelet, status-reconcile, omkörningsknapp.
-- **NAVIGERING I KÄRNFLÖDET analys → go/no-go → editor (UX-lucka, Stefans fynd
+  runaway bevisar inget), watchdog-samspelet, status-reconcile.
+  ~~omkörningsknapp~~ — KLAR 2026-08-05 (flow-navigation-PR:en): go/no-go-sidans
+  "Generera om" ersätter utkastet på samma rad; stale generating (>7 min) räknas
+  som död och ersätts i stället för att 409:a (delad regel i `lib/bid-status.ts`
+  som GET-vakthunden också använder — watchdog-samspelet därmed delvis mildrat).
+- [x] **NAVIGERING I KÄRNFLÖDET — LEVERERAD 2026-08-05 (denna PR,
+  feat/flow-navigation):** stegnav Analys & team → Go/No-Go (egen sida) → Anbud
+  på alla tre sidorna, server-rehydrerad ur `lib/flow-state.ts` (sidladdning
+  tappar inget längre); EN ANALYS = ETT ANBUD (POST /api/bids ersätter utkast
+  på samma rad; CAS på status+created_at stänger dubbelgenererings-race; 409
+  vid pågående/fryst); hård reset via POST /api/analyses/[id]/unlock-team
+  (bekräftelsedialoger, FK-ordnad radering, retry-läkbar partial failure);
+  delad stale-generating-regel i `lib/bid-status.ts` (GET-vakthund + POST +
+  unlock — död generering blockerar aldrig flödet); editorhöjden flex-baserad
+  + kalibrerad mot verkliga 61px-naven (gammal 4px-overflow borta). Full
+  UI-livesmoke (playwright, 31/32→höjdfix→grönt): rehydrering efter reload,
+  båda dialogerna, hård reset, omkörning (nytt 11-kapitelsanbud på RFP 1),
+  fryst läge. 8 tasks subagent-drivet med per-task-review (10 Important-fynd
+  fixade under vägen). Plan: docs/superpowers/plans/2026-08-04-flow-navigation.md.
+  Ursprunglig postbeskrivning nedan för historik._
+  _(UX-lucka, Stefans fynd
   2026-08-04):** flödet är enkelriktat och tappas vid sidladdning — teamlås +
   go/no-go-resultat är enbart klient-state (`analysis-match-section.tsx`: useState,
   rehydreras aldrig ur DB), analysvyn länkar ALDRIG till existerande anbud (enda
@@ -465,7 +484,7 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   Design godkänd i brainstorm (en analys = ETT anbud; utkast ersätts/exporterade
   fryses; hård reset vid upplåsning med bekräftelsedialog; stegnav + egen
   go/no-go-sida) — spec: `docs/superpowers/specs/2026-08-04-flow-navigation-design.md`.
-  Stänger även "Ändra team"- och omkörningsknapp-posterna när den landar.
+  Stänger även "Ändra team"- och omkörningsknapp-posterna när den landar.)_
 - **Foreign-generering gejtas INTE av flaggan (fynd 2026-08-04, "195 kapitel"-
   mysteriet):** `BIDSMITH_FOREIGN_TEMPLATES` gejtar bara onboarding-ytorna +
   ny-uppladdning; POST /api/bids tar aktiva mallen och `run-bid-generation.ts:80`
@@ -551,7 +570,10 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   (launch-polish): deadline-lösa analyser ingår nu i Pipen (sorteras sist,
   "deadline saknas"), och railen har permanent "Alla analyser →"-länk till
   /arbetsyta/analyser (passerade deadlines ägs fortsatt av den listan).
-- "Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera — semantik att se över
+- [x] ~~"Ändra team" skapar nytt anbud (POST /api/bids) i st.f. att regenerera~~ —
+  KLAR 2026-08-05 (flow-navigation-PR:en): en analys äger ETT anbud; POST ersätter
+  utkast på samma rad, exporterade fryses; "Ändra team" går via go/no-go-sidans
+  hårda reset.
 - T15 manuell smoke + runtime hallucination/coverage-kalibrering (kräver riktig RFP-data / Ekan-adoption)
 - [x] ~~Flagg-vägen i `loader.ts` deriverar profilen ur manifestet per render i st.f. `loadTemplateProfile`~~ — LÖST: flagg-vägen laddar nu den persisterade profilen (fallback till manifest-härledd för bundlade mallen utan rad) (routine-follow-up #49)
 - [x] **Manuell PowerPoint-smoke:** GENOMFÖRD 2026-07-03 — riktig anbudsmall-v2 instrumenterad, öppnad i PowerPoint via COM utan reparation, slide exporterad + visuellt verifierad (token med ärvd formatering). instrumentTemplate är verifierad mot syntetisk mini-pptx; xmldoms serialisering (ns-redeklarationer, attributordning) är obeprövad mot riktiga kundmallar + att PowerPoint faktiskt öppnar den instrumenterade kopian (routine-follow-up #51)
