@@ -158,7 +158,7 @@ export function BidEditor({
   );
 
   return (
-    <div className="flex h-[calc(100vh-57px)]">
+    <div className="flex min-h-0 flex-1">
       {/* Left panel — chapter navigation */}
       <aside className="w-56 shrink-0 border-r border-rule overflow-y-auto p-3">
         <div className="mb-3 flex items-center justify-between">

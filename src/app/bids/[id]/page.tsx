@@ -54,7 +54,7 @@ export default async function BidEditorPage({ params }: PageProps) {
   const flow = analysisId ? await loadFlowState(analysisId) : null;
 
   return (
-    <>
+    <div className="flex h-[calc(100vh-57px)] flex-col">
       {analysisId && flow && (
         <FlowNav
           analysisId={analysisId}
@@ -73,6 +73,6 @@ export default async function BidEditorPage({ params }: PageProps) {
         initialFailedBundles={(bid.failed_bundles as FailedUnit[]) ?? []}
         initialGenerationError={(bid.generation_error as string | null) ?? null}
       />
-    </>
+    </div>
   );
 }
