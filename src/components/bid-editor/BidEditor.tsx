@@ -208,7 +208,7 @@ export function BidEditor({
           {status === "failed" && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
               Genereringen misslyckades{generationError ? `: ${generationError}` : ""}.
-              Gå tillbaka till analysen och kör anbudsgenereringen igen.
+              Gå till Go/No-Go-steget och generera om anbudet.
             </div>
           )}
 

@@ -14,7 +14,9 @@ import { isActivelyGenerating } from "@/lib/bid-status";
 
 // 6 parallel Opus calls take 2–5 min — far beyond the default serverless
 // timeout. The response returns immediately; generation continues via after()
-// up to maxDuration. 300 s is the Vercel Hobby ceiling (raise to 800 on Pro).
+// up to maxDuration. 300 s is the Vercel Hobby ceiling (raise to 800 on Pro)
+// (if you raise this, raise STALE_GENERATING_MS in lib/bid-status.ts
+// accordingly — see its invariant note).
 // If the platform still kills the function, the stale-generating watchdog in
 // GET /api/bids/[id] marks the bid 'failed' instead of leaving it stuck.
 export const maxDuration = 300;

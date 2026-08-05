@@ -52,7 +52,13 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     const { error: delBidsError } = await supabase
       .from("bids")
       .delete()
-      .eq("analysis_id", analysisId);
+      .eq("analysis_id", analysisId)
+      // Never destroy a submitted bid: an export can land between the guard
+      // read above and this delete (two tabs doing opposite things). A
+      // surviving exported row makes a retry 409 with the frozen copy —
+      // coherent recovery, no data loss.
+      .is("exported_at", null)
+      .neq("status", "exported");
     if (delBidsError) {
       return NextResponse.json({ error: delBidsError.message }, { status: 500 });
     }

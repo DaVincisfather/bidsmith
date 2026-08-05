@@ -6,6 +6,7 @@ const h = vi.hoisted(() => {
     bids: [] as unknown[],
     deletedFrom: [] as string[],
     deleteErrors: {} as Record<string, { message: string } | null>,
+    deleteFilters: [] as { table: string; filters: [string, string, unknown][] }[],
   };
   return { state };
 });
@@ -16,12 +17,22 @@ vi.mock("@/lib/supabase", () => ({
       select: () => ({
         eq: () => Promise.resolve({ data: h.state.bids, error: null }),
       }),
-      delete: () => ({
-        eq: () => {
-          h.state.deletedFrom.push(table);
-          return Promise.resolve({ error: h.state.deleteErrors[table] ?? null });
-        },
-      }),
+      delete: () => {
+        const filters: [string, string, unknown][] = [];
+        const chain = {
+          eq: (c: string, v: unknown) => { filters.push(["eq", c, v]); return chain; },
+          is: (c: string, v: unknown) => { filters.push(["is", c, v]); return chain; },
+          neq: (c: string, v: unknown) => { filters.push(["neq", c, v]); return chain; },
+          then: (
+            resolve: (v: { error: { message: string } | null }) => void,
+          ) => {
+            h.state.deletedFrom.push(table);
+            h.state.deleteFilters.push({ table, filters });
+            resolve({ error: h.state.deleteErrors?.[table] ?? null });
+          },
+        };
+        return chain;
+      },
     }),
   }),
 }));
@@ -42,6 +53,7 @@ beforeEach(() => {
   h.state.bids = [];
   h.state.deletedFrom = [];
   h.state.deleteErrors = {};
+  h.state.deleteFilters = [];
 });
 
 describe("POST /api/analyses/[id]/unlock-team — hard reset", () => {
@@ -50,6 +62,9 @@ describe("POST /api/analyses/[id]/unlock-team — hard reset", () => {
     const res = await POST(makeRequest(), ctx(VALID_ID));
     expect(res.status).toBe(200);
     expect(h.state.deletedFrom).toEqual(["bids", "go_no_go_assessments"]);
+    const bidsDelete = h.state.deleteFilters.find((d) => d.table === "bids");
+    expect(bidsDelete?.filters).toContainEqual(["is", "exported_at", null]);
+    expect(bidsDelete?.filters).toContainEqual(["neq", "status", "exported"]);
   });
 
   it("resets an analysis with an assessment but no bid yet", async () => {

@@ -31,10 +31,16 @@ async function pollBidUntilDone(
   let consecutiveFailures = 0;
   for (;;) {
     if (!isMounted()) return null;
-    const res = await fetch(`/api/bids/${bidId}`);
-    if (res.ok) {
+    let bid: { status: string } | null = null;
+    try {
+      const res = await fetch(`/api/bids/${bidId}`);
+      if (res.ok) bid = (await res.json()) as { status: string };
+    } catch {
+      // Network rejection (dropped wifi, laptop sleep) — counted below,
+      // exactly like a non-ok response.
+    }
+    if (bid) {
       consecutiveFailures = 0;
-      const bid = (await res.json()) as { status: string };
       if (bid.status !== "generating") return bid;
     } else {
       consecutiveFailures += 1;
