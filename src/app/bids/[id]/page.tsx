@@ -53,8 +53,10 @@ export default async function BidEditorPage({ params }: PageProps) {
   const analysisId = (bid.analysis_id as string | null) ?? null;
   const flow = analysisId ? await loadFlowState(analysisId) : null;
 
+  // 61px = the global nav's measured height (the old 57px calc overflowed the
+  // page by 4px — and by a full 61px before the flex refactor).
   return (
-    <div className="flex h-[calc(100vh-57px)] flex-col">
+    <div className="flex h-[calc(100vh-61px)] flex-col">
       {analysisId && flow && (
         <FlowNav
           analysisId={analysisId}
