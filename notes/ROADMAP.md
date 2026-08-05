@@ -496,6 +496,22 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   anbudsmall-v2 via workspace_settings). Kvarvarande beslut: gejta genereringen
   på flaggan (fail closed vid POST med tydligt fel) eller UI-varning när aktiv
   mall är foreign med flaggan av.
+- **Flow-navigation follow-ups (slutgranskningen 2026-08-05 — polish om inget
+  annat anges):** (1) extrahera `flowNavProps(flow)`-helper (bidId/bidFailed
+  dupliceras mellan analys-/go-no-go-sidan; editorn utelämnar hasFailures —
+  aligna vid samma tillfälle); (2) FlowNav a11y: disabled-stegs tooltip ej
+  tangentbordsnåbar; (3) CAS-409-copyn vid exported-interleaving → neutral
+  "Anbudet ändrades samtidigt — ladda om"; (4) unlock-409-copyn vid legacy
+  osynlig exporterad dubblett; (5) go/no-go-sidan visar ingen pågår-status vid
+  reload mitt i generering (409-backstoppad); (6) `GoNoGoResultView` död
+  `assessmentId`-prop; (7) 61px-magin → låt layouten äga höjdkedjan (h-screen
+  flex); (8) svensk-copy-svep över engelska felfallbacks i kärnflödet;
+  (9) POST-ANBUD (post-launch, kräver dev-datastädning + migration): partiell
+  unik index på `bids(analysis_id)` så en-anbuds-regeln bor i DB:n, stänger
+  concurrent-create-dubbelinsert som specen medvetet accepterade;
+  (10) utöka `fetchLatestTeamProposal` med id → pensionera flow-states
+  inline-matches-query; (11) test-kosmetik: bid-status boundary-test,
+  watchdogUpdatePayloads-dubbelbokföring.
 - **Export-flippen muterar DB på GET (routine-förslag #101):** flytta
   statusflippen till POST eller separat "mark exported"-anrop — gäller båda
   exportrouterna (md är primär, pptx parkerad).
