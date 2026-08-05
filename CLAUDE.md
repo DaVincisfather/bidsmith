@@ -87,6 +87,10 @@ Vid ändringar i befintlig kod:
   `=on` är enda opt-in-värdet, fail closed).
 - Ny migration ⇒ kör `npm run gen:setup-sql` och committa `supabase/setup.sql`
   (drift-testet fäller sviten annars). `npm run doctor` = preflight för installationer.
+- **Destruktiva/muterande API-routes: `requireUser` (api-helpers) på route-nivå
+  FÖRE `createServiceClient()`** — lita aldrig på middlewaren ensam; den failar
+  ÖPPET om anon-nyckeln saknas i miljön, och service-klienten kringgår RLS.
+  (PR-routinens fynd på #103 — unlock-team saknade route-auth.)
 - **`tsc --noEmit` + testsviten fångar INTE Next:s page/route-export-typvakt** — bara
   `next build` gör det (den lever i `.next/types`, genereras vid bygget). Ett otillåtet
   export ur en `page.tsx`/`route.ts` (bara kända fält tillåts) ger grön CI men bruten

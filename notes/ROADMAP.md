@@ -4,7 +4,18 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-04 (em) — **BACKLOG-TRIAGE EFTER MD-PIVOTEN.** Backloggen
+_Senast uppdaterad: 2026-08-05 — **FLOW-NAVIGATION MERGAD (#103, squash 98ea3d3).**
+Kärnflödet navigerbart + reload-säkert: stegnav Analys & team → Go/No-Go (egen sida) →
+Anbud; en analys = ETT anbud (ersätt utkast/frys exporterade, CAS-skyddat); hård reset
+med dialoger; delad stale-regel `lib/bid-status.ts`; omkörningsknapp-luckan stängd.
+Full detalj i backlog-postens LEVERERAD-notis. Granskningskedjan (per-task + slutreview
++ PR-routinen) fångade 13 äkta fynd — routinens REQUEST CHANGES (route-auth på
+unlock-team + frys-vakt-alignering + CAS-copy) fixade i 2521e27 före merge. Ny
+CLAUDE.md-regel: requireUser på route-nivå för destruktiva routes. Follow-ups bokförda
+i live-backloggen. KVAR: Stefans egen klick-smoke i dev (planerad 5/8 kväll) — därefter
+åter lanseringsspåret (posterna + 11/8)._
+
+_Historik (2026-08-04 em): **BACKLOG-TRIAGE EFTER MD-PIVOTEN.** Backloggen
 omsorterad i tre högar: **LIVE efter MD-pivoten** (MD-vägen + kärnan, se Backlog),
 **Parkerat med PPTX-motorn** (väcks bara om post-launch-beslutet väcker motorn) och
 **Struket** (verifierat inaktuellt: max_tokens-detekteringen FINNS i ai-client sedan
