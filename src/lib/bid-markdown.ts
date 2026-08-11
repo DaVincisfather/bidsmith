@@ -42,19 +42,47 @@ function lines(...parts: Array<string | null>): string {
   return parts.filter((p): p is string => p !== null).join("\n");
 }
 
-function bullets(items: string[]): string | null {
-  if (items.length === 0) return null;
-  return items.map((i) => `- ${i}`).join("\n");
+// Chars with inline meaning (* _ ` ~) are escaped one by one — escaping only the
+// first would leave "**" behind to pair with emphasis later in the paragraph.
+// For # - = the leading backslash alone kills the block opener.
+function escapeRun(_match: string, indent: string, run: string): string {
+  return indent + (/^[-=#]/.test(run) ? `\\${run}` : run.replace(/./g, "\\$&"));
 }
 
-/** Escape pipes so free text can't break table rows. */
-function cell(text: string): string {
-  return text.replace(/\|/g, "\\|");
+/**
+ * Escape block openers in model-written text: a "## " line would become a false
+ * chapter, "---" a false chapter rule, and a ``` fence would swallow the rest of
+ * the export — all three collide with the semantics the preamble promises
+ * downstream AI. Applied per line to free text only, never to our own structure.
+ * Deliberately untouched: list markers (escaping them soft-wraps a real list into
+ * one run-on paragraph — the PR #100 failure mode), plus inline emphasis and
+ * inline code, which render as the model meant and carry no structural meaning.
+ */
+function text(value: string): string {
+  return value
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(/^(\s*)(#{1,6})(?=\s|$)/, escapeRun)
+        .replace(/^(\s*)([-*_]{3,}|=+)(?=\s*$)/, escapeRun)
+        .replace(/^(\s*)([`~]{3,})/, escapeRun),
+    )
+    .join("\n");
+}
+
+function bullets(items: string[]): string | null {
+  if (items.length === 0) return null;
+  return items.map((i) => `- ${text(i)}`).join("\n");
+}
+
+/** Flatten to one line and escape pipes so free text can't break table rows. */
+function cell(value: string): string {
+  return value.replace(/\s*\n\s*/g, " ").replace(/\|/g, "\\|");
 }
 
 function coverMd(c: Extract<BidSectionContent, { format: "cover" }>): string {
   // One line: consecutive label lines would soft-wrap into a single paragraph.
-  return lines(`# ${c.title}`, "", `**Till:** ${c.client} · **Datum:** ${c.date}`);
+  return lines(`# ${text(c.title)}`, "", `**Till:** ${text(c.client)} · **Datum:** ${text(c.date)}`);
 }
 
 function phasesMd(c: Extract<BidSectionContent, { format: "phases" }>): string {
@@ -63,9 +91,9 @@ function phasesMd(c: Extract<BidSectionContent, { format: "phases" }>): string {
       .filter(Boolean)
       .join(" · ");
     return lines(
-      `### ${p.name}${meta ? ` (${meta})` : ""}`,
+      `### ${text(p.name)}${meta ? ` (${meta})` : ""}`,
       "",
-      p.objective,
+      text(p.objective),
       "",
       "**Aktiviteter:**",
       bullets(p.activities),
@@ -82,14 +110,14 @@ function phasesMd(c: Extract<BidSectionContent, { format: "phases" }>): string {
 function matrixMd(c: Extract<BidSectionContent, { format: "requirement-matrix-v2" }>): string {
   const blocks = c.rows.map((row, i) => {
     const coverage = row.coverage.map(
-      (cov) => `- ${cov.consultantName}: **${cov.status}** — ${cov.evidence}`,
+      (cov) => `- ${text(cov.consultantName)}: **${text(cov.status)}** — ${text(cov.evidence)}`,
     );
     return lines(
-      `### ${i + 1}. ${row.requirement}`,
+      `### ${i + 1}. ${text(row.requirement)}`,
       "",
-      row.hurUppfylls,
+      text(row.hurUppfylls),
       "",
-      `**Referens:** ${row.referens}`,
+      `**Referens:** ${text(row.referens)}`,
       coverage.length > 0 ? lines("", "**Täckning per konsult:**", coverage.join("\n")) : null,
     );
   });
@@ -113,14 +141,14 @@ function referencesMd(c: Extract<BidSectionContent, { format: "reference-v2" }>)
   // Bullet list, not bare label lines — those would soft-wrap into one paragraph.
   const blocks = c.references.map((r) =>
     lines(
-      `### ${r.clientName} — ${r.contextLine}`,
+      `### ${text(r.clientName)} — ${text(r.contextLine)}`,
       "",
-      `- **Organisation:** ${r.organisation}`,
-      `- **Period:** ${r.startDate} – ${r.endDate}`,
-      `- **Omfattning:** ${r.scope}`,
-      `- **Roll och leverans:** ${r.roleAndDelivery}`,
-      `- **Resultat:** ${r.result}`,
-      `- **Referensperson:** ${r.contact.name} (${r.contact.titlePhoneEmail})`,
+      `- **Organisation:** ${text(r.organisation)}`,
+      `- **Period:** ${text(r.startDate)} – ${text(r.endDate)}`,
+      `- **Omfattning:** ${text(r.scope)}`,
+      `- **Roll och leverans:** ${text(r.roleAndDelivery)}`,
+      `- **Resultat:** ${text(r.result)}`,
+      `- **Referensperson:** ${text(r.contact.name)} (${text(r.contact.titlePhoneEmail)})`,
     ),
   );
   return blocks.join("\n\n");
@@ -132,17 +160,17 @@ function sectionBody(content: BidSectionContent): string {
       return coverMd(content);
     case "understanding-current":
       return lines(
-        `**Organisation:** ${content.organisation}`,
+        `**Organisation:** ${text(content.organisation)}`,
         "",
-        `**System:** ${content.system}`,
+        `**System:** ${text(content.system)}`,
         "",
-        `**Processer:** ${content.processer}`,
+        `**Processer:** ${text(content.processer)}`,
         "",
         "**Smärtpunkter:**",
         bullets(content.smärtpunkter),
       );
     case "understanding-assignment":
-      return content.stycken.join("\n\n");
+      return content.stycken.map(text).join("\n\n");
     case "understanding-vision":
       return lines(
         "**Identifierade utmaningar:**",
@@ -155,13 +183,13 @@ function sectionBody(content: BidSectionContent): string {
       return phasesMd(content);
     case "quality-assurance":
       return lines(
-        content.qaProcess.join("\n\n"),
+        content.qaProcess.map(text).join("\n\n"),
         "",
-        `**Ansvarig kvalitetsledare:** ${content.qualityLead.name} — ${content.qualityLead.roleAndMandate} (${content.qualityLead.contact})`,
+        `**Ansvarig kvalitetsledare:** ${text(content.qualityLead.name)} — ${text(content.qualityLead.roleAndMandate)} (${text(content.qualityLead.contact)})`,
         "",
-        `**Eskalering:** ${content.escalation.process}`,
+        `**Eskalering:** ${text(content.escalation.process)}`,
         "",
-        `**Rapportering:** ${content.escalation.reporting}`,
+        `**Rapportering:** ${text(content.escalation.reporting)}`,
         "",
         "**Avstämningspunkter:**",
         bullets(content.checkpoints),
@@ -174,13 +202,13 @@ function sectionBody(content: BidSectionContent): string {
       return referencesMd(content);
     case "confidentiality":
       return lines(
-        content.oslReference,
+        text(content.oslReference),
         content.secrecyRows.length > 0
           ? lines(
               "",
               "**Sekretessbegäran:**",
               content.secrecyRows
-                .map((r) => `- ${r.reference} — ${r.scope}: ${r.justification}`)
+                .map((r) => `- ${text(r.reference)} — ${text(r.scope)}: ${text(r.justification)}`)
                 .join("\n"),
             )
           : null,
@@ -192,10 +220,10 @@ function sectionBody(content: BidSectionContent): string {
             .filter(Boolean)
             .join(" · "),
         )
-        .map((line) => `- ${line}`)
+        .map((line) => `- ${text(line)}`)
         .join("\n");
     case "generic-prose":
-      return content.text;
+      return text(content.text);
   }
 }
 
@@ -205,7 +233,7 @@ export function bidToMarkdown(sections: BidSection[]): string {
     if (!section.content) continue; // placeholder sections carry nothing exportable
     const body = sectionBody(section.content);
     // The cover renders its own H1 — no duplicate section heading on top.
-    parts.push(section.content.format === "cover" ? body : lines(`## ${section.title}`, "", body));
+    parts.push(section.content.format === "cover" ? body : lines(`## ${text(section.title)}`, "", body));
   }
   return BID_MD_PREAMBLE + "\n\n" + parts.join("\n\n---\n\n") + "\n";
 }
