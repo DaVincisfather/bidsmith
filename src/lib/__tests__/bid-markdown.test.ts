@@ -194,6 +194,50 @@ describe("escaping of AI free text", () => {
     expect(md).toContain("\\===");
   });
 
+  it("escapes short setext underlines — CommonMark needs only one dash", () => {
+    const md = prose("Sammanfattning\n--\n\nBrödtext.");
+    expect(md).toContain("\\--");
+  });
+
+  it("escapes thematic breaks written with spaces between the marks", () => {
+    const md = prose("Del ett.\n\n- - -\n\nDel två.");
+    expect(md.split("\n\n---\n\n")).toHaveLength(1);
+    expect(md).toContain("\\- - -");
+  });
+
+  it("flattens newlines in headings so free text cannot break the heading line", () => {
+    const md = bidToMarkdown([
+      section("phases", "Genomförande", {
+        format: "phases",
+        phases: [
+          {
+            name: "Fas 1\nEtablering",
+            objective: "Mål.",
+            activities: ["A"],
+            deliverables: ["D"],
+            duration: "8 v",
+            period: "M1-M3",
+            shortDescription: "Kort",
+          },
+        ],
+      }),
+    ]);
+    expect(md).toContain("### Fas 1 Etablering (M1-M3 · 8 v)");
+  });
+
+  it("keeps the cover metadata on one line when free text contains newlines", () => {
+    const md = bidToMarkdown([
+      section("cover", "Framsida", {
+        format: "cover",
+        title: "Titel\nmed radbrytning",
+        client: "Vikstads\nkommun",
+        date: "2026-08-11",
+      }),
+    ]);
+    expect(md).toContain("# Titel med radbrytning");
+    expect(md).toContain("**Till:** Vikstads kommun · **Datum:** 2026-08-11");
+  });
+
   it("escapes code fences in prose so they cannot swallow the rest of the document", () => {
     const md = prose("Exempel:\n\n```\nkod\n```\n\nSlut.");
     expect(md).not.toContain("\n```");

@@ -46,7 +46,9 @@ function lines(...parts: Array<string | null>): string {
 // first would leave "**" behind to pair with emphasis later in the paragraph.
 // For # - = the leading backslash alone kills the block opener.
 function escapeRun(_match: string, indent: string, run: string): string {
-  return indent + (/^[-=#]/.test(run) ? `\\${run}` : run.replace(/./g, "\\$&"));
+  // Only non-whitespace is escaped: "\ " is not a valid CommonMark escape and
+  // would render as a literal backslash in a spaced break like "* * *".
+  return indent + (/^[-=#]/.test(run) ? `\\${run}` : run.replace(/\S/g, "\\$&"));
 }
 
 /**
@@ -64,10 +66,27 @@ function text(value: string): string {
     .map((line) =>
       line
         .replace(/^(\s*)(#{1,6})(?=\s|$)/, escapeRun)
-        .replace(/^(\s*)([-*_]{3,}|=+)(?=\s*$)/, escapeRun)
+        // Dashes and equals take 1+, not 3+: a setext underline needs only one
+        // ("Rubrik\n--" is an H2). Asterisk/underscore breaks need 3, and the
+        // marks may be spaced ("- - -" is a valid thematic break).
+        .replace(/^(\s*)((?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*)+|=+)(?=[ \t]*$)/, escapeRun)
         .replace(/^(\s*)([`~]{3,})/, escapeRun),
     )
     .join("\n");
+}
+
+/** Collapse newlines to spaces — free text that must stay on one line. */
+function flatten(value: string): string {
+  return value.replace(/\s*\n\s*/g, " ");
+}
+
+/**
+ * Free text in a single-line context: a heading, or the cover's metadata line.
+ * A newline there would break the line in two — the heading loses its tail and
+ * the remainder becomes a stray paragraph.
+ */
+function inline(value: string): string {
+  return flatten(text(value));
 }
 
 function bullets(items: string[]): string | null {
@@ -77,21 +96,22 @@ function bullets(items: string[]): string | null {
 
 /** Flatten to one line and escape pipes so free text can't break table rows. */
 function cell(value: string): string {
-  return value.replace(/\s*\n\s*/g, " ").replace(/\|/g, "\\|");
+  return flatten(value).replace(/\|/g, "\\|");
 }
 
 function coverMd(c: Extract<BidSectionContent, { format: "cover" }>): string {
   // One line: consecutive label lines would soft-wrap into a single paragraph.
-  return lines(`# ${text(c.title)}`, "", `**Till:** ${text(c.client)} · **Datum:** ${text(c.date)}`);
+  return lines(`# ${inline(c.title)}`, "", `**Till:** ${inline(c.client)} · **Datum:** ${inline(c.date)}`);
 }
 
 function phasesMd(c: Extract<BidSectionContent, { format: "phases" }>): string {
   const blocks = c.phases.map((p) => {
     const meta = [p.period, p.duration, p.hoursEstimate !== undefined ? `${p.hoursEstimate} h` : null]
-      .filter(Boolean)
+      .filter((part): part is string => Boolean(part))
+      .map(inline)
       .join(" · ");
     return lines(
-      `### ${text(p.name)}${meta ? ` (${meta})` : ""}`,
+      `### ${inline(p.name)}${meta ? ` (${meta})` : ""}`,
       "",
       text(p.objective),
       "",
@@ -113,7 +133,7 @@ function matrixMd(c: Extract<BidSectionContent, { format: "requirement-matrix-v2
       (cov) => `- ${text(cov.consultantName)}: **${text(cov.status)}** — ${text(cov.evidence)}`,
     );
     return lines(
-      `### ${i + 1}. ${text(row.requirement)}`,
+      `### ${i + 1}. ${inline(row.requirement)}`,
       "",
       text(row.hurUppfylls),
       "",
@@ -141,7 +161,7 @@ function referencesMd(c: Extract<BidSectionContent, { format: "reference-v2" }>)
   // Bullet list, not bare label lines — those would soft-wrap into one paragraph.
   const blocks = c.references.map((r) =>
     lines(
-      `### ${text(r.clientName)} — ${text(r.contextLine)}`,
+      `### ${inline(r.clientName)} — ${inline(r.contextLine)}`,
       "",
       `- **Organisation:** ${text(r.organisation)}`,
       `- **Period:** ${text(r.startDate)} – ${text(r.endDate)}`,
@@ -233,7 +253,7 @@ export function bidToMarkdown(sections: BidSection[]): string {
     if (!section.content) continue; // placeholder sections carry nothing exportable
     const body = sectionBody(section.content);
     // The cover renders its own H1 — no duplicate section heading on top.
-    parts.push(section.content.format === "cover" ? body : lines(`## ${text(section.title)}`, "", body));
+    parts.push(section.content.format === "cover" ? body : lines(`## ${inline(section.title)}`, "", body));
   }
   return BID_MD_PREAMBLE + "\n\n" + parts.join("\n\n---\n\n") + "\n";
 }

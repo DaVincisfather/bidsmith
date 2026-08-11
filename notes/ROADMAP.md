@@ -572,8 +572,16 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   uppräkning modellen menade — escaping vore alltså en regression. Inline-emfas/
   kod bär ingen strukturell betydelse här och escaping ger synliga bakstreck i
   verktyg som visar rå text. 7 nya tester (TDD, RED verifierad), varav ett
-  guard-test som fäller framtida över-escaping av listor. Grindar: 1434 tester,
-  lint 0 fel, tsc rent.
+  guard-test som fäller framtida över-escaping av listor.
+  PR-ROUTINENS TVÅ CORRECTNESS-FYND FIXADE I PR:EN (routinen: COMMENT, inga hårda
+  blockerare — men båda var äkta): (1) setext-underline behöver bara ETT streck i
+  CommonMark, så `Rubrik\n--` blev en falsk H2 — dash/equals-grenen tar nu 1+ i
+  stället för 3+, och spärrade breaks (`- - -`, `* * *`) täcks samtidigt (escapeRun
+  escapar bara icke-whitespace: `\ ` är ingen giltig CommonMark-escape);
+  (2) nyrader i ENRADSKONTEXTER bröt rubrikrader (`### Fas 1\nEtablering`) — ny
+  `inline()`-helper (text + plattning, delar plattningsregexen med `cell()`) på alla
+  rubriker, coverns enradiga metadatarad och fas-metan. 5 tester till.
+  Grindar efter fixarna: 1438 tester, lint 0 fel, tsc rent.
 - **Ordnings-invariant-test för bundle-exempel (polish, routine-förslag #99):**
   enhetstest som parsar JSON-exemplet ur SYSTEM_PROMPT och asserterar
   nyckelordning === `Object.keys(PhasesV2Schema.shape...)`; återanvänd mönstret
