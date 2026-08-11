@@ -116,7 +116,9 @@ console.log(`\n    bid ${bid.id} → ${bid.status}`);
 
 // 6. Export the PPTX to verify the full chain end-to-end.
 console.log("6/6 Exporting PPTX …");
-const exportRes = await call(`/api/bids/${bid.id}/export`, {}, false);
+// POST, not GET: the export flips the bid to 'exported' (and freezes it), so the
+// route refuses safe methods.
+const exportRes = await call(`/api/bids/${bid.id}/export`, { method: "POST" }, false);
 const out = arg("--out", "tmp/demo-bid.pptx");
 writeFileSync(out, Buffer.from(await exportRes.arrayBuffer()));
 console.log(`    saved ${out}`);

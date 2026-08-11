@@ -556,6 +556,16 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   ett brott mot HTTP-semantiken. Nytt regressionstest asserterar att routen inte
   exporterar någon GET-handler alls. Grindar: 1428 tester, lint 0 fel, tsc rent,
   `next build` exit 0 (route-export-ändring ⇒ byggvakten obligatorisk).
+  PR-ROUTINENS FYND FIXAT I PR:EN: `scripts/demo-seed.mjs:119` anropade
+  PPTX-exporten med GET och hade kraschat med 405 på steg 6/6 — jag hade sökt
+  call sites bara i `src/`, och seedern är demo-instansens byggare + enda
+  e2e-smoken. Routinens polish-förslag också taget: den parkerade PPTX-routen fick
+  en egen no-GET-assert (den saknade testfil helt, så en återinförd GET hade
+  passerat tyst). LÄRDOM (ny CLAUDE.md-regel föreslagen): sök call sites i HELA
+  repot — `scripts/`, `evals/`, docs — inte bara `src/`, vid ändrat API-kontrakt.
+  BONUSVÄRDE som routinen belade: Supabase-cookien är SameSite=Lax, så en
+  cross-site toppnivånavigering (länk i mejl) bar auth till GET-exporten — den var
+  i praktiken CSRF-bar. POST utan cookie-medföljning stänger även det.
   KVARSTÅR (medvetet utanför): PPTX-routens statusflipp är fortfarande
   fire-and-forget (ingen felkontroll, till skillnad från md-routens) — den ytan är
   parkerad med motorn och orörd här.
