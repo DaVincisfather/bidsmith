@@ -44,8 +44,11 @@ Innan "klart": lint + test + typecheck, visa output (se global verifieringsregel
   stilbias, se `evals/results-bid-model-comparison.md`)
 - **LLM-judge-tally får ingen beslutsvikt** utan validering mot blindfacit-paren
   (kalibreringsdata från fas 1 — 8 människomärkta par)
-- **Extraction (Sonnet 5) körs med temperature 0** sedan fas 1 — samma underlag ska ge
-  samma kravlista (reproducerbarhet gäller INOM en modellversion); **matchning/go-no-go/
+- **Extraction har INTE deterministisk output längre.** `consultant-extractor.ts` sätter
+  `temperature: 0`, men Sonnet 5 avvisar sampling-parametrar (400) så `ai-client.ts`
+  strippar den centralt (`NO_SAMPLING_MODELS`). Samma underlag kan alltså ge olika
+  kravlistor mellan körningar — lova inte reproducerbarhet i UI, dokumentation eller
+  eval-design. (Denna rad påstod motsatsen fram till 2026-08-11.) **Matchning/go-no-go/
   writingSupport/writingGeneric:** Sonnet 5 (sedan 2026-07-03); **prefilter/radar:** Haiku;
   **judge:** Sonnet 4-6 (kalibreringsbunden, se grind-policyn)
 - **Princip:** Varje steg får föregående stegs komprimerade output, inte rådokumenten
