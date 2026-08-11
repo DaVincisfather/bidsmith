@@ -526,9 +526,26 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   är av, och editorn visar dem som platt 195-kapitelslista. Belagt i dev:
   blankettmallen (9e3e084a, mallsmoke 2) stod som aktiv mall → Stefans färska
   anbud f5c49d28 fick 195 kapitel. Symptomet åtgärdat (aktiv mall åter
-  anbudsmall-v2 via workspace_settings). Kvarvarande beslut: gejta genereringen
-  på flaggan (fail closed vid POST med tydligt fel) eller UI-varning när aktiv
-  mall är foreign med flaggan av.
+  anbudsmall-v2 via workspace_settings).
+  **BESLUTAT + LEVERERAT 2026-08-11 (denna PR) — Stefans val: fail closed + väg ut.**
+  POST /api/bids laddar den sparade profilen för den aktiva mallen och vägrar med
+  403 när `isForeignProfile(profil) && !foreignTemplatesEnabled()` — grinden ligger
+  FÖRE varje skrivning (inget anbud skapas/ersätts, ingen `after()`-körning köas)
+  och använder SAMMA predikat som routern i `run-bid-generation.ts`, så grind och
+  routing inte kan glida isär. Vägen ut står i felmeddelandet, som klienten
+  (`go-no-go-section.tsx`) renderar ordagrant: byt aktiv mall under Inställningar →
+  Anbudsmallar, eller sätt `BIDSMITH_FOREIGN_TEMPLATES=on`. Alternativet "bara
+  UI-varning" valdes bort (kan klickas förbi ⇒ kostnaden kan fortfarande brännas).
+  MEDVETEN KONSEKVENS: den som onboardade en mall medan flaggan var default PÅ
+  (19/7–3/8) blir stoppad tills hen byter mall eller sätter flaggan — accepterat
+  pris för att en avstängd yta inte ska kunna spendera pengar.
+  Kostnad: en extra profil-select per generering (försumbar mot 2–5 min generering).
+  PR-routinen: APPROVE, ett polish-fynd fixat i PR:en (`foreign-flag.ts`-docstringen
+  påstod fortfarande att generering aldrig gejtas — osant efter denna ändring).
+  Routinens follow-up-förslag (egen PR, ej öppnad): skicka `storedProfile` som
+  argument in i `runBidGeneration` i stället för att den laddar om profilen —
+  tar bort dubbel-selecten och stänger TOCTOU-glipan där grind och router läser
+  varsin snapshot.
 - **Flow-navigation follow-ups (slutgranskningen 2026-08-05 — polish om inget
   annat anges):** (1) extrahera `flowNavProps(flow)`-helper (bidId/bidFailed
   dupliceras mellan analys-/go-no-go-sidan; editorn utelämnar hasFailures —

@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserId } from "@/lib/org";
 import { runBidGeneration } from "@/lib/bid-generator/run-bid-generation";
 import { loadActiveTemplate } from "@/lib/pptx-template/active-template";
+import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
+import { isForeignProfile } from "@/lib/pptx-template/template-profile";
+import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-flag";
 import { loadActiveProfile } from "@/lib/org-profile";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
@@ -91,6 +94,27 @@ export async function POST(request: NextRequest) {
     loadActiveTemplate(),
     loadActiveProfile(),
   ]);
+
+  // BIDSMITH_FOREIGN_TEMPLATES gated onboarding, upload and the wizard — but not
+  // generation. run-bid-generation routes purely on isForeignProfile(stored
+  // profile), so an ALREADY-ACTIVE foreign template kept generating down the
+  // profile path with the surface switched off: ~195 generic-prose sections for
+  // ~$0.5, rendered as a flat 195-chapter list in the editor (Stefan's dev
+  // finding 2026-08-04). Fail closed before any write, using the same predicate
+  // the router uses, and name both ways out in the message — the client renders
+  // `error` verbatim, so this text IS the recovery path the user sees.
+  const storedProfile = await loadTemplateProfile(template.id);
+  if (storedProfile && isForeignProfile(storedProfile) && !foreignTemplatesEnabled()) {
+    return NextResponse.json(
+      {
+        error:
+          "Den aktiva anbudsmallen är en egen uppladdad mall, och den vägen är avstängd. "
+          + "Byt aktiv mall under Inställningar → Anbudsmallar, eller sätt "
+          + "BIDSMITH_FOREIGN_TEMPLATES=on för att slå på den experimentella vägen.",
+      },
+      { status: 403 },
+    );
+  }
 
   let bidId: string;
   if (existing) {

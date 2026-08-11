@@ -12,6 +12,7 @@ const h = vi.hoisted(() => {
       data: { id: string }[] | null;
       error: { message: string } | null;
     },
+    storedProfile: null as unknown,
   };
   return { state };
 });
@@ -82,6 +83,11 @@ vi.mock("@/lib/pptx-template/active-template", () => ({
 vi.mock("@/lib/bid-generator/run-bid-generation", () => ({
   runBidGeneration: vi.fn(async () => undefined),
 }));
+// isForeignProfile is NOT mocked — it is the real routing discriminator, and a
+// gate that disagreed with it would be worse than no gate at all.
+vi.mock("@/lib/pptx-template/profile-store", () => ({
+  loadTemplateProfile: async () => h.state.storedProfile,
+}));
 
 import { POST } from "../route";
 
@@ -98,6 +104,70 @@ beforeEach(() => {
   h.state.afterCallbacks = [];
   h.state.casPredicates = [];
   h.state.replaceResult = { data: [{ id: "b-1" }], error: null };
+  h.state.storedProfile = null;
+  delete process.env.BIDSMITH_FOREIGN_TEMPLATES;
+});
+
+// The flag gated onboarding and upload but never generation: an already-active
+// foreign template still routed down the profile path in run-bid-generation,
+// producing a ~195-chapter bid for ~$0.5 on a surface that is switched off.
+describe("POST /api/bids — foreign templates are gated by the flag", () => {
+  const foreignProfile = {
+    profileVersion: 1,
+    templateId: "tpl-1",
+    name: "kundmall",
+    version: 1,
+    slides: [
+      {
+        source: 1,
+        capability: "generic-prose",
+        slots: [
+          { placeholder: "{A}", capability: "generic-prose", format: "prose", intent: "i", status: "generic" },
+        ],
+      },
+      { source: 2, capability: "static", slots: [] },
+    ],
+  };
+
+  it("refuses to generate with the flag off, writing nothing and queueing nothing", async () => {
+    h.state.storedProfile = foreignProfile;
+
+    const res = await POST(makeRequest(BODY));
+
+    expect(res.status).toBe(403);
+    expect(h.state.insertPayloads).toHaveLength(0);
+    expect(h.state.updatePayloads).toHaveLength(0);
+    expect(h.state.afterCallbacks).toHaveLength(0);
+  });
+
+  it("names both ways out in the error — swap the active template, or set the flag", async () => {
+    h.state.storedProfile = foreignProfile;
+
+    const res = await POST(makeRequest(BODY));
+
+    const { error } = await res.json();
+    expect(error).toContain("Anbudsmallar");
+    expect(error).toContain("BIDSMITH_FOREIGN_TEMPLATES");
+  });
+
+  it("generates as usual when the flag is on", async () => {
+    h.state.storedProfile = foreignProfile;
+    process.env.BIDSMITH_FOREIGN_TEMPLATES = "on";
+
+    const res = await POST(makeRequest(BODY));
+
+    expect(res.status).toBe(202);
+    expect(h.state.afterCallbacks).toHaveLength(1);
+  });
+
+  it("leaves our own template untouched — no stored profile, flag irrelevant", async () => {
+    h.state.storedProfile = null;
+
+    const res = await POST(makeRequest(BODY));
+
+    expect(res.status).toBe(202);
+    expect(h.state.afterCallbacks).toHaveLength(1);
+  });
 });
 
 describe("POST /api/bids — one bid per analysis", () => {
