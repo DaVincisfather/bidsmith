@@ -540,6 +540,12 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   (19/7–3/8) blir stoppad tills hen byter mall eller sätter flaggan — accepterat
   pris för att en avstängd yta inte ska kunna spendera pengar.
   Kostnad: en extra profil-select per generering (försumbar mot 2–5 min generering).
+  PR-routinen: APPROVE, ett polish-fynd fixat i PR:en (`foreign-flag.ts`-docstringen
+  påstod fortfarande att generering aldrig gejtas — osant efter denna ändring).
+  Routinens follow-up-förslag (egen PR, ej öppnad): skicka `storedProfile` som
+  argument in i `runBidGeneration` i stället för att den laddar om profilen —
+  tar bort dubbel-selecten och stänger TOCTOU-glipan där grind och router läser
+  varsin snapshot.
 - **Flow-navigation follow-ups (slutgranskningen 2026-08-05 — polish om inget
   annat anges):** (1) extrahera `flowNavProps(flow)`-helper (bidId/bidFailed
   dupliceras mellan analys-/go-no-go-sidan; editorn utelämnar hasFailures —
