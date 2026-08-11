@@ -32,8 +32,14 @@ Innan "klart": lint + test + typecheck, visa output (se global verifieringsregel
 
 - **`src/lib/models.ts` är enda sanningskällan** — roller (extraction/prefilter/matching/
   gonogo/radar/writing/writingSupport/writingGeneric/writingChallenger/judge), aldrig
-  hårdkodade modellsträngar. Varje modell måste ha prisrad i `ai-cost.ts` (testat i
-  `models.test.ts`).
+  hårdkodade modellsträngar. Varje modell måste ha prisrad i `ai-cost.ts` OCH rad i
+  `MODEL_LIMITS` (båda testade i `models.test.ts`).
+- **`max_tokens` är ett tak på TÄNKANDE + svarstext.** Vid `effort: "max"`/`"xhigh"` tar
+  tänkandet en stor del av budgeten — därför kräver `callClaude` att maxTokens når
+  modellens `highEffortFloor` (64000 på Opus/Sonnet) och kastar annars före anropet.
+  Sätt aldrig ett tak dimensionerat för enbart svaret: symptomet är förrädiskt, ett
+  trunkerat svar rapporteras som `stop_reason: "max_tokens"` på EXAKT takets värde och
+  läses lätt som ett skenande anrop (phases-bundlen, 2026-08-02).
 - **Grind per modellbyte (policy ändrad 2026-07-03, Stefan):** samma modellfamilj uppåt
   (t.ex. Sonnet 4-6 → 5) = enradsändring + smoke + stickprov på outputs, ingen eval.
   Familjebyte eller ändring av `writing`-rollen = eval-körning (fas 1-lärdomen: bättre

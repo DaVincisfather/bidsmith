@@ -37,6 +37,61 @@ beforeEach(() => {
   vi.mocked(logAiCall).mockClear();
 });
 
+// max_tokens är ett hårt tak på TÄNKANDE + svarstext tillsammans. Vid effort
+// "max"/"xhigh" tar tänkandet en stor del av budgeten, så ett tak avsett för
+// enbart svaret klipper svaret mitt i — det syns som stop_reason "max_tokens"
+// på exakt takets värde, vilket läses som ett skenande anrop snarare än som
+// trunkering. Fånga felkonfigurationen före anropet, som temperature-vakten.
+describe("callClaude — effort mot maxTokens", () => {
+  const schema = z.object({ ok: z.boolean() });
+
+  function call(overrides: { effort?: "low" | "medium" | "high" | "xhigh" | "max"; maxTokens: number; model?: string }) {
+    return callClaude({
+      model: overrides.model ?? "claude-opus-4-8",
+      maxTokens: overrides.maxTokens,
+      system: "s",
+      userContent: "u",
+      schema,
+      label: "phases bundle",
+      ...(overrides.effort ? { effort: overrides.effort } : {}),
+    });
+  }
+
+  it("vägrar effort max under modellens golv, utan att röra API:t", async () => {
+    await expect(call({ effort: "max", maxTokens: 32000 })).rejects.toThrow(/64000/);
+    expect(mockStream).not.toHaveBeenCalled();
+  });
+
+  it("vägrar effort xhigh på samma grund", async () => {
+    await expect(call({ effort: "xhigh", maxTokens: 16000 })).rejects.toThrow(/xhigh/);
+    expect(mockStream).not.toHaveBeenCalled();
+  });
+
+  it("nämner både labeln och det satta taket så felet går att placera", async () => {
+    await expect(call({ effort: "max", maxTokens: 32000 })).rejects.toThrow(
+      /phases bundle.*32000/,
+    );
+  });
+
+  it("släpper igenom hög effort när taket räcker", async () => {
+    await expect(call({ effort: "max", maxTokens: 64000 })).rejects.toThrow();
+    // Nådde API-anropet (och föll på mockens tomma svar), inte vakten.
+    expect(mockStream).toHaveBeenCalled();
+  });
+
+  it("lämnar låg och medelhög effort i fred — golvet gäller bara max/xhigh", async () => {
+    await expect(call({ effort: "high", maxTokens: 4000 })).rejects.toThrow();
+    expect(mockStream).toHaveBeenCalled();
+  });
+
+  it("gäller inte modeller utan effort-golv", async () => {
+    await expect(
+      call({ effort: "max", maxTokens: 2000, model: "claude-haiku-4-5-20251001" }),
+    ).rejects.toThrow();
+    expect(mockStream).toHaveBeenCalled();
+  });
+});
+
 describe("extractJson", () => {
   it("returns null when no object is present", () => {
     expect(extractJson("no json here")).toBeNull();
@@ -217,11 +272,12 @@ describe("callClaude — max_tokens-trunkering (härdning)", () => {
     expect(mockCreate).toHaveBeenCalledTimes(2);
   });
 
-  it("maxTokens redan vid/över taket (16384): EN omförsök med SAMMA maxTokens, sedan lyckas", async () => {
-    // Stora bundles (phases/understanding/generic-prose på 32000, quality på
-    // 16000) ligger redan vid/över taket — ingen per-modell-output-gräns finns
-    // att höja mot, så omförsöket kör med IDENTISK maxTokens (inte hårdfail
-    // direkt, det skulle regressa dessa bundlar mot fas 0-beteendet).
+  it("maxTokens redan vid modellens tak: EN omförsök med SAMMA maxTokens, sedan lyckas", async () => {
+    // Ett anrop som redan ligger vid modellens output-tak har inget kvar att
+    // höja mot, så omförsöket kör med IDENTISK maxTokens (inte hårdfail direkt,
+    // det skulle regressa de stora bundlarna mot fas 0-beteendet).
+    // Taket kommer numera ur MODEL_LIMITS i stället för den gamla
+    // modelloberoende gissningen 16384 — därav 128000 här.
     mockCreate
       .mockReturnValueOnce(streamOf({
         content: [{ type: "text", text: '{"a": 1' }],
@@ -234,11 +290,11 @@ describe("callClaude — max_tokens-trunkering (härdning)", () => {
         stop_reason: "end_turn",
       }));
 
-    const result = await callClaude({ ...baseArgs, maxTokens: 20000 });
+    const result = await callClaude({ ...baseArgs, maxTokens: 128000 });
     expect(result).toEqual({ a: 1 });
     expect(mockCreate).toHaveBeenCalledTimes(2);
-    expect((mockCreate.mock.calls[0][0] as { max_tokens: number }).max_tokens).toBe(20000);
-    expect((mockCreate.mock.calls[1][0] as { max_tokens: number }).max_tokens).toBe(20000);
+    expect((mockCreate.mock.calls[0][0] as { max_tokens: number }).max_tokens).toBe(128000);
+    expect((mockCreate.mock.calls[1][0] as { max_tokens: number }).max_tokens).toBe(128000);
   });
 
   it("maxTokens redan vid/över taket: trunkerad även efter omförsöket — kastar beskrivande fel, inga fler försök", async () => {
@@ -248,15 +304,15 @@ describe("callClaude — max_tokens-trunkering (härdning)", () => {
       stop_reason: "max_tokens",
     }));
 
-    const err = await callClaude({ ...baseArgs, maxTokens: 20000 }).catch((e) => e);
+    const err = await callClaude({ ...baseArgs, maxTokens: 128000 }).catch((e) => e);
     expect(err).toBeInstanceOf(Error);
     expect((err as Error).message).toMatch(
-      /test: output trunkerad \(max_tokens 20000\) även efter omförsök med samma maxTokens — öka maxTokens eller minska outputen/
+      /test: output trunkerad \(max_tokens 128000\) även efter omförsök med samma maxTokens — öka maxTokens eller minska outputen/
     );
     expect(mockCreate).toHaveBeenCalledTimes(2);
   });
 
-  it("fördubbling klipps vid taket (16384) — inte 2×maxTokens rakt av", async () => {
+  it("fördubbling klipps vid modellens tak — inte 2×maxTokens rakt av", async () => {
     mockCreate
       .mockReturnValueOnce(streamOf({
         content: [{ type: "text", text: '{"a": 1' }],
@@ -269,9 +325,10 @@ describe("callClaude — max_tokens-trunkering (härdning)", () => {
         stop_reason: "end_turn",
       }));
 
-    const result = await callClaude({ ...baseArgs, maxTokens: 10000 });
+    const result = await callClaude({ ...baseArgs, maxTokens: 100000 });
     expect(result).toEqual({ a: 1 });
-    expect((mockCreate.mock.calls[1][0] as { max_tokens: number }).max_tokens).toBe(16384);
+    // 2×100000 klipps till modellens tak, inte till 200000.
+    expect((mockCreate.mock.calls[1][0] as { max_tokens: number }).max_tokens).toBe(128000);
   });
 
   it("trunkering på sista tillåtna attempt (efter två formatfel): terminalfelet lovar ingen retry", async () => {

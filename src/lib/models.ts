@@ -48,3 +48,46 @@ export const MODELS = {
 } as const;
 
 export type ModelRole = keyof typeof MODELS;
+
+export interface ModelLimits {
+  /** Modellens tak för output-tokens. Täcker tänkande OCH svarstext. */
+  maxOutputTokens: number;
+  /**
+   * Lägsta maxTokens som får kombineras med effort "max"/"xhigh"; null för
+   * modeller som inte tar effort alls (ett golv där vore påhittat).
+   *
+   * Varför ett golv behövs: max_tokens är ett hårt tak på tänkande PLUS
+   * svarstext. Vid hög effort tar tänkandet en stor del av budgeten, så ett tak
+   * dimensionerat för enbart svaret klipper svaret mitt i. Anthropics
+   * migrationsguide för Opus 4.7/4.8 anger 64000 som golv. Symptomet är
+   * förrädiskt: stop_reason "max_tokens" på EXAKT takets värde, vilket läses
+   * som ett skenande anrop i stället för som trunkering (bidsmith 2026-08-02,
+   * phases-bundlen: 3 av 4 skarpa genereringar).
+   */
+  highEffortFloor: number | null;
+}
+
+/**
+ * Kapabiliteter per modell. Bor bredvid MODELS med flit: ett modellbyte ska
+ * förbli en enradsändring, och det förutsätter att tokentaken är DATA i stället
+ * för magiska tal utspridda i bundlarna. models.test.ts kräver en rad per modell
+ * registryt kan peka på, så ett byte som glömmer taken fälls av sviten i stället
+ * för att visa sig som trunkerad output i drift.
+ *
+ * Nya modeller får läggas in innan de tas i bruk — då är själva bytet en rad i
+ * MODELS. Ett byte av `writing`-rollen kräver ändå eval (CLAUDE.md-policyn).
+ */
+export const MODEL_LIMITS: Record<string, ModelLimits> = {
+  "claude-opus-5": { maxOutputTokens: 128000, highEffortFloor: 64000 },
+  "claude-opus-4-8": { maxOutputTokens: 128000, highEffortFloor: 64000 },
+  "claude-fable-5": { maxOutputTokens: 128000, highEffortFloor: 64000 },
+  "claude-sonnet-5": { maxOutputTokens: 128000, highEffortFloor: 64000 },
+  "claude-sonnet-4-6": { maxOutputTokens: 128000, highEffortFloor: 64000 },
+  // Haiku avvisar effort-parametern — inget golv att sätta.
+  "claude-haiku-4-5-20251001": { maxOutputTokens: 64000, highEffortFloor: null },
+};
+
+/** Kapabiliteter för en modell, eller undefined när modellen är okänd. */
+export function limitsFor(model: string): ModelLimits | undefined {
+  return MODEL_LIMITS[model];
+}

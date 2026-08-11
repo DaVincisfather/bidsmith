@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { MODELS } from "@/lib/models";
+import { MODELS, MODEL_LIMITS, limitsFor } from "@/lib/models";
 import { getModelPricing, _resetWarnedModelsForTests } from "@/lib/ai-cost";
 
 describe("MODELS registry", () => {
@@ -68,5 +68,34 @@ describe("MODELS registry", () => {
     }
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+// Kapabiliteterna bor bredvid modell-ID:t så ett modellbyte förblir en
+// enradsändring: utan registret måste varje bundles hårdkodade tokentak
+// granskas om vid varje byte, och det som glöms syns först som trunkerad
+// output i drift.
+describe("MODEL_LIMITS", () => {
+  it("har en rad för varje modell registryt kan peka på", () => {
+    // Fäller bytet som lägger till en modell i MODELS men glömmer taken —
+    // samma självunderhållande mönster som prisrads-testet ovan.
+    for (const model of new Set(Object.values(MODELS))) {
+      expect(MODEL_LIMITS, `saknar limits för ${model}`).toHaveProperty(model);
+    }
+  });
+
+  it("ger skrivmodellens tak och golv för hög effort", () => {
+    const limits = limitsFor(MODELS.writing);
+    expect(limits?.maxOutputTokens).toBe(128000);
+    expect(limits?.highEffortFloor).toBe(64000);
+  });
+
+  it("returnerar undefined för okänd modell i stället för att gissa ett tak", () => {
+    expect(limitsFor("claude-not-a-real-model")).toBeUndefined();
+  });
+
+  it("sätter inget golv för modeller som inte tar effort", () => {
+    // Haiku avvisar effort-parametern helt — ett golv där vore påhittat.
+    expect(limitsFor(MODELS.prefilter)?.highEffortFloor).toBeNull();
   });
 });

@@ -493,8 +493,32 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   blödde in i sista strängfältet. Livesmoke post-fix: phases i ETT anrop
   (9 081 tokens/98 s), rena shortDescriptions, och `risks`/`hoursEstimate`
   materialiseras nu (var alltid tomma pre-fix ⇒ {Risker}-boxen får innehåll).
-  KVAR av posten: 32k-runawayen (hypotes 1, effort max-tänkbudgeten — n=1 utan
-  runaway bevisar inget), watchdog-samspelet, status-reconcile.
+  **HYPOTES 1 BELAGD + ÅTGÄRDAD 2026-08-11 (denna PR) — och den var aldrig en
+  runaway.** Anthropics migrationsguide för Opus 4.7/4.8 har en BLOCKS-punkt:
+  vid `effort: "max"`/`"xhigh"` ska `max_tokens` vara ≥ 64000, eftersom taket är
+  ett hårt tak på TÄNKANDE + svarstext tillsammans. phases körde `max` med 32000
+  ⇒ tänkandet åt utrymmet och svaret klipptes. "Skenade till EXAKT 32k" var
+  ledtråden: ett skenande anrop stannar inte på ett jämnt tal, ett avklippt gör
+  det. Två bundles till bröt mot samma regel utan att ha fällt en generering:
+  `understanding` (max/32000) och `quality` (max/16000 — värst ställd).
+  Följdfyndet förklarar varför #83-retryn inte räddade den: `MAX_TOKENS_RETRY_CAP`
+  var en modelloberoende gissning på 16384, så bundlarna låg redan över
+  retry-taket och kördes om på SAMMA tak — och trunkerade likadant.
+  LEVERERAT (Stefans val: effort ner OCH tak upp): alla tre bundles `max` → `high`
+  med tak 64000; **kapabilitetsregister `MODEL_LIMITS` i `models.ts`** (output-tak
+  + golv för hög effort per modell, med `claude-opus-5` förberedd) så ett
+  modellbyte förblir en enradsändring i stället för en granskning av varje
+  hårdkodat tokentak; **runtime-vakt i `callClaude`** som vägrar hög effort under
+  modellens golv innan anropet går iväg (samma mönster som temperature-vakten) —
+  buggklassen kan därmed inte återinföras; retry-taket kommer nu ur registret i
+  stället för gissningen (okänd modell faller tillbaka på 16384).
+  ⚠️ **EVAL EJ KÖRD — PR:en får inte mergas utan den.** Effort-ändringen rör
+  `writing`-rollens beteende, vilket enligt grind-policyn kräver eval-körning
+  (fas 1-lärdomen: bättre på pappret ≠ bättre anbudstext).
+  KVAR av posten: watchdog-samspelet och status-reconcile (latensvinsten från
+  `high` mildrar men löser inte); Opus 5-bytet är nu en radändring men eget
+  beslut med egen eval — buntas medvetet INTE ihop med effort-ändringen, då
+  mäter evalen två saker samtidigt.
   ~~omkörningsknapp~~ — KLAR 2026-08-05 (flow-navigation-PR:en): go/no-go-sidans
   "Generera om" ersätter utkastet på samma rad; stale generating (>7 min) räknas
   som död och ersätts i stället för att 409:a (delad regel i `lib/bid-status.ts`
