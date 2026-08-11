@@ -4,7 +4,15 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-05 — **FLOW-NAVIGATION MERGAD (#103, squash 98ea3d3).**
+_Senast uppdaterad: 2026-08-11 — **LANSERINGEN SKJUTS FRAM (Stefans beslut 2026-08-11):**
+inget datum satt; produkten byggs klar först och lanseringsdatumet sätts när den håller.
+Videon, GIF:en och postutkasten ligger kvar som de är (`notes/2026-08-02-launch-posts.md`,
+4 `[JUSTERA]` kvar) och kan återanvändas — inget av materialet är datumbundet.
+Konsekvens för prioriteringen: "FÖRE LANSERING"-etiketten upphör som styrsignal;
+posterna sorteras nu på correctness → produktlucka → polish. Levererat samma dag:
+**MD-ESCAPING** (denna PR) — sista posten som bar den etiketten._
+
+_Historik (2026-08-05): **FLOW-NAVIGATION MERGAD (#103, squash 98ea3d3).**
 Kärnflödet navigerbart + reload-säkert: stegnav Analys & team → Go/No-Go (egen sida) →
 Anbud; en analys = ETT anbud (ersätt utkast/frys exporterade, CAS-skyddat); hård reset
 med dialoger; delad stale-regel `lib/bid-status.ts`; omkörningsknapp-luckan stängd.
@@ -179,8 +187,20 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
 ---
 
 ## 🔜 NÄSTA (börja här)
-- [ ] **PUBLICERING TISDAG 2026-08-11 (beslutat 2026-08-03):** LinkedIn ~07:45 (svensk
-      B2B-morgon, semestern slut), X ~14:30 samma dag (US-östkustens morgon).
+- [ ] **PRODUKTHÄRDNING FÖRE LANSERING (Stefans beslut 2026-08-11).** Lanseringen är
+      framflyttad utan nytt datum — produkten ska vara bra nog först. Ingen deadline
+      styr prioriteringen längre; ordningen är correctness → produktluckor → polish.
+      Öppna correctness-poster i live-backloggen, störst först:
+      (1) **32k-runawayen i phases-bundlen** (synkront med Stefan, kräver eval enligt
+      grind-policyn eftersom `writing`-rollen berörs) — den enda kvarvarande posten som
+      kan fälla en hel generering; (2) **foreign-genereringen gejtas inte av flaggan**
+      (aktiv foreign-mall genererar profilvägen med flaggan av → 195 kapitel + ~$0,5
+      i onödan); (3) **export-flippen muterar DB på GET** (båda exportrouterna).
+      Därefter: Stefans klick-smoke i dev på kärnflödet (aldrig kvitterad efter #103).
+      ~~Markdown-escaping av AI-fritext~~ — KLAR 2026-08-11 (denna PR).
+- [ ] **PUBLICERING — FRAMFLYTTAD 2026-08-11, INGET NYTT DATUM.** Ursprungsplanen
+      (tisdag 2026-08-11, LinkedIn ~07:45 svensk B2B-morgon, X ~14:30 US-östkustens
+      morgon) står kvar som mall för tidpunkterna när datumet sätts om.
       VIDEON ÄR KLAR (v5, 51 s, klippt programmatiskt via ffmpeg — CapCut behövs ej):
       `bidsmith-launch/tmp/videocut/bidsmith-launch-draft.mp4` (med musik: Pixabay
       "Corporate Ambient Piano"/Rockot, fri kommersiell licens) + `bidsmith-15s.gif`
@@ -190,8 +210,10 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       kompetens-seed + CRON_SECRET nu i demo-miljön) → endcard. Ombygge: `build.ps1` +
       `render-cards.mjs` i tmp/videocut/. KVAR FÖR STEFAN: godkänn slutversionen,
       justera [JUSTERA] i `notes/2026-08-02-launch-posts.md`, posta (repo-länk i första
-      kommentaren på LinkedIn). Keep-alive-rutin pingar demo-Supabase sön 9/8 09:00
-      (claude.ai/code/routines) så den inte pausar före lansering.
+      kommentaren på LinkedIn). OBS efter framflyttningen: keep-alive-rutinen kördes
+      sön 9/8 09:00 (claude.ai/code/routines) inför det gamla datumet — demo-Supabasen
+      pausar igen efter ~7 d inaktivitet, så den behöver pingas om inför nytt datum
+      (eller inför varje demo/inspelning).
 - [x] **STEFANS SMOKE (KLAR 2026-07-07):** onboarding grön (137 bekräftade/84 pending
       av 221), generering 137/137 mekaniskt grön — men **slutprodukten katastrofal**:
       45 789 tecken prosa över 11 slides, 0 budgetChars satta, nio dubblett-"Om oss" på
@@ -530,12 +552,36 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   generating/failed/failed_bundles-guarderna är nu duplicerade rad för rad mellan
   `export/route.ts` och `export-md/route.ts` — bryt ut till gemensam helper innan de
   glider isär.
-- **Markdown-escaping av AI-fritext (UPPGRADERAD polish → FÖRE LANSERING, Stefans
-  beslut 2026-08-04; routine-förslag #100):** rader i AI-text som börjar med `#`, `*`,
-  `` ` `` blir oavsiktlig struktur i md-exporten — billig escape-pass i
-  `bid-markdown.ts`. Skäl för uppgraderingen: MD är nu den formella leveransen och
-  MD-preamblen (#102) pekar uttryckligen nedströms-AI på dokumentstrukturen —
-  oavsiktlig struktur är ett correctness-fel i slutprodukten, inte polish.
+- [x] **Markdown-escaping av AI-fritext — LEVERERAD 2026-08-11 (denna PR).**
+  Ursprungsposten (uppgraderad polish → FÖRE LANSERING, Stefan 2026-08-04;
+  routine-förslag #100): rader i AI-text som börjar med `#`, `*`, `` ` `` blir
+  oavsiktlig struktur i md-exporten. Skälet för uppgraderingen står: MD är den
+  formella leveransen och MD-preamblen (#102) pekar uttryckligen nedströms-AI på
+  dokumentstrukturen — oavsiktlig struktur är ett correctness-fel i slutprodukten.
+  LEVERERAT: `text()` i `bid-markdown.ts` escapar radvis de blocköppnare som
+  KOLLIDERAR med dokumentets egen semantik — ATX-rubriker (`#`–`######`, falskt
+  kapitel), thematic breaks + setext-understrykningar (`---`/`***`/`___`/`===`,
+  falsk kapitelgräns — `---` är vår egen avgränsare), och kodfence
+  (```` ``` ````/`~~~`, sväljer resten av exporten). Applicerat på varje
+  fritextvärde + alla bullet-items; `cell()` plattar dessutom nyrader till
+  mellanslag (fritext med radbrytning bröt tabellraden — samma felklass, hittad
+  under bygget). **MEDVETET INTE ESCAPADE — avsteg från postens `*`:**
+  listmarkörer, inline-emfas och inline-backtick. Skäl för listmarkörerna är
+  tekniskt, inte smak: `\- a\n\- b` mjukradbryts till EN run-on-paragraf (exakt
+  felet PR-routinen fällde #100 för), medan en oescapad lista renderar som den
+  uppräkning modellen menade — escaping vore alltså en regression. Inline-emfas/
+  kod bär ingen strukturell betydelse här och escaping ger synliga bakstreck i
+  verktyg som visar rå text. 7 nya tester (TDD, RED verifierad), varav ett
+  guard-test som fäller framtida över-escaping av listor.
+  PR-ROUTINENS TVÅ CORRECTNESS-FYND FIXADE I PR:EN (routinen: COMMENT, inga hårda
+  blockerare — men båda var äkta): (1) setext-underline behöver bara ETT streck i
+  CommonMark, så `Rubrik\n--` blev en falsk H2 — dash/equals-grenen tar nu 1+ i
+  stället för 3+, och spärrade breaks (`- - -`, `* * *`) täcks samtidigt (escapeRun
+  escapar bara icke-whitespace: `\ ` är ingen giltig CommonMark-escape);
+  (2) nyrader i ENRADSKONTEXTER bröt rubrikrader (`### Fas 1\nEtablering`) — ny
+  `inline()`-helper (text + plattning, delar plattningsregexen med `cell()`) på alla
+  rubriker, coverns enradiga metadatarad och fas-metan. 5 tester till.
+  Grindar efter fixarna: 1438 tester, lint 0 fel, tsc rent.
 - **Ordnings-invariant-test för bundle-exempel (polish, routine-förslag #99):**
   enhetstest som parsar JSON-exemplet ur SYSTEM_PROMPT och asserterar
   nyckelordning === `Object.keys(PhasesV2Schema.shape...)`; återanvänd mönstret

@@ -165,6 +165,121 @@ describe("bidToMarkdown", () => {
   });
 });
 
+// Free text from the model must never become document structure: Markdown is the
+// formal deliverable and the preamble points downstream AI at "## = chapter" and
+// "--- separates chapters". A stray heading or rule in prose is a correctness bug
+// in the deliverable, not cosmetics (Stefan 2026-08-04).
+describe("escaping of AI free text", () => {
+  function prose(text: string): string {
+    return bidToMarkdown([
+      section("slot-1", "Om oss", { format: "generic-prose", placeholder: "p", text }),
+    ]);
+  }
+
+  it("escapes ATX headings in prose so they cannot open a false chapter", () => {
+    const md = prose("Vi levererar kvalitet.\n\n## Våra värderingar\n\nDe är tre.");
+    expect(md).toContain("\\## Våra värderingar");
+    expect(md).not.toContain("\n## Våra värderingar");
+  });
+
+  it("escapes thematic breaks in prose so they cannot split the document into chapters", () => {
+    const md = prose("Del ett.\n\n---\n\nDel två.");
+    // A single-section export has no chapter rules at all — the prose must not add one.
+    expect(md.split("\n\n---\n\n")).toHaveLength(1);
+    expect(md).toContain("\\---");
+  });
+
+  it("escapes setext underlines in prose", () => {
+    const md = prose("Sammanfattning\n===\n\nBrödtext.");
+    expect(md).toContain("\\===");
+  });
+
+  it("escapes short setext underlines — CommonMark needs only one dash", () => {
+    const md = prose("Sammanfattning\n--\n\nBrödtext.");
+    expect(md).toContain("\\--");
+  });
+
+  it("escapes thematic breaks written with spaces between the marks", () => {
+    const md = prose("Del ett.\n\n- - -\n\nDel två.");
+    expect(md.split("\n\n---\n\n")).toHaveLength(1);
+    expect(md).toContain("\\- - -");
+  });
+
+  it("flattens newlines in headings so free text cannot break the heading line", () => {
+    const md = bidToMarkdown([
+      section("phases", "Genomförande", {
+        format: "phases",
+        phases: [
+          {
+            name: "Fas 1\nEtablering",
+            objective: "Mål.",
+            activities: ["A"],
+            deliverables: ["D"],
+            duration: "8 v",
+            period: "M1-M3",
+            shortDescription: "Kort",
+          },
+        ],
+      }),
+    ]);
+    expect(md).toContain("### Fas 1 Etablering (M1-M3 · 8 v)");
+  });
+
+  it("keeps the cover metadata on one line when free text contains newlines", () => {
+    const md = bidToMarkdown([
+      section("cover", "Framsida", {
+        format: "cover",
+        title: "Titel\nmed radbrytning",
+        client: "Vikstads\nkommun",
+        date: "2026-08-11",
+      }),
+    ]);
+    expect(md).toContain("# Titel med radbrytning");
+    expect(md).toContain("**Till:** Vikstads kommun · **Datum:** 2026-08-11");
+  });
+
+  it("escapes code fences in prose so they cannot swallow the rest of the document", () => {
+    const md = prose("Exempel:\n\n```\nkod\n```\n\nSlut.");
+    expect(md).not.toContain("\n```");
+    expect(md).toContain("\\`\\`\\`");
+  });
+
+  it("escapes free text inside bullet items", () => {
+    const md = bidToMarkdown([
+      section("understanding-current", "Kunden idag", {
+        format: "understanding-current",
+        organisation: "Kommunen.",
+        system: "Timecare.",
+        processer: "Drift.",
+        smärtpunkter: ["# Ingen samlad nulägesbild"],
+      }),
+    ]);
+    expect(md).toContain("- \\# Ingen samlad nulägesbild");
+  });
+
+  it("leaves intentional bullet lists in prose renderable", () => {
+    // Escaping list markers would be a regression, not a fix: "\- a\n\- b" soft-wraps
+    // into one run-on paragraph (the PR #100 finding) while an unescaped list renders
+    // as the enumeration the model meant. Only structure that collides with the
+    // document's own semantics gets escaped.
+    const md = prose("Tre pelare:\n\n- Uppföljning\n- Processer\n- Förbättring");
+    expect(md).toContain("\n- Uppföljning\n- Processer");
+    expect(md).not.toContain("\\-");
+  });
+
+  it("keeps table rows intact when free text contains newlines", () => {
+    const md = bidToMarkdown([
+      section("team-pricing", "Team", {
+        format: "team-pricing",
+        members: [
+          { name: "Anna\nLindström", role: "Roll", omfattningPct: 10, timpris: 1000, timmar: 10, total: 10000 },
+        ],
+      }),
+    ]);
+    expect(md).toContain("| Anna Lindström | Roll |");
+  });
+});
+
 describe("BID_MD_PREAMBLE", () => {
   const md = bidToMarkdown([
     section("cover", "Framsida", {
