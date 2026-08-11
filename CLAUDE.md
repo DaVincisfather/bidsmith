@@ -97,6 +97,11 @@ Vid ändringar i befintlig kod:
   deploy. **Verifiera page/route/auth-ändringar med ett riktigt `next build`.** OBS:
   Turbopack-bygget kan inte följa en node_modules-**junction** (symlink-out-of-root) —
   kör `npm ci` i worktreen först om node_modules är en junction till en annan worktree.
+- **Ändrat API-kontrakt (metod, path, payload) ⇒ sök call sites i HELA repot**, inte
+  bara `src/`. `scripts/` innehåller demo-seedern, som är demo-instansens byggare OCH
+  enda e2e-smoken — den anropar routes över HTTP och syns varken för `tsc`, sviten
+  eller `next build`. (PR-routinens fynd på #105: GET→POST lämnade `demo-seed.mjs`
+  med en 405 på sista steget trots att alla grindar var gröna.)
 
 ## Tech-stack
 

@@ -11,11 +11,14 @@ interface RouteContext {
 }
 
 // Template-free Markdown export — the primary export path since the MD-first
-// decision (2026-08-03). Flips status to 'exported' exactly like the PPTX
-// route used to: this IS the formal deliverable that feeds outcome tracking
-// (INLÄMNADE / utfallsloggen). The PPTX route remains in the codebase but is
-// no longer reachable from the UI.
-export async function GET(_request: NextRequest, { params }: RouteContext) {
+// decision (2026-08-03). Flips status to 'exported': this IS the formal
+// deliverable that feeds outcome tracking (INLÄMNADE / utfallsloggen).
+//
+// POST, not GET, precisely BECAUSE of that flip. Since #103 an exported bid is
+// frozen (one analysis = one bid), so a browser prefetch, a link-preview unfurl
+// or a security scanner following the URL would freeze a user's draft and count
+// it as submitted. A state change may not ride on a safe method.
+export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "bid id");
   if (!idResult.ok) return idResult.response;

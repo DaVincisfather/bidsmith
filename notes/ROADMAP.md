@@ -545,9 +545,30 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   (10) utöka `fetchLatestTeamProposal` med id → pensionera flow-states
   inline-matches-query; (11) test-kosmetik: bid-status boundary-test,
   watchdogUpdatePayloads-dubbelbokföring.
-- **Export-flippen muterar DB på GET (routine-förslag #101):** flytta
-  statusflippen till POST eller separat "mark exported"-anrop — gäller båda
-  exportrouterna (md är primär, pptx parkerad).
+- [x] **Export-flippen muterar DB på GET — LEVERERAD 2026-08-11 (denna PR;
+  routine-förslag #101).** Båda exportrouterna (`export-md` primär, `export`
+  parkerad) exporterar nu `POST` i stället för `GET`; `BidEditor.downloadMarkdown`
+  skickar `method: "POST"` (klienten använde redan `fetch`, så ingen
+  nedladdningsmekanik ändrades). SKÄRPT MOTIVERING sedan #103: en exporterad
+  anbudsrad är FRYST (en analys = ett anbud), så en webbläsar-prefetch, en
+  länkförhandsvisning eller en säkerhetsskanner som följde URL:en kunde frysa
+  användarens utkast OCH räkna det som inlämnat i utfallsstatistiken — inte bara
+  ett brott mot HTTP-semantiken. Nytt regressionstest asserterar att routen inte
+  exporterar någon GET-handler alls. Grindar: 1428 tester, lint 0 fel, tsc rent,
+  `next build` exit 0 (route-export-ändring ⇒ byggvakten obligatorisk).
+  PR-ROUTINENS FYND FIXAT I PR:EN: `scripts/demo-seed.mjs:119` anropade
+  PPTX-exporten med GET och hade kraschat med 405 på steg 6/6 — jag hade sökt
+  call sites bara i `src/`, och seedern är demo-instansens byggare + enda
+  e2e-smoken. Routinens polish-förslag också taget: den parkerade PPTX-routen fick
+  en egen no-GET-assert (den saknade testfil helt, så en återinförd GET hade
+  passerat tyst). LÄRDOM (ny CLAUDE.md-regel föreslagen): sök call sites i HELA
+  repot — `scripts/`, `evals/`, docs — inte bara `src/`, vid ändrat API-kontrakt.
+  BONUSVÄRDE som routinen belade: Supabase-cookien är SameSite=Lax, så en
+  cross-site toppnivånavigering (länk i mejl) bar auth till GET-exporten — den var
+  i praktiken CSRF-bar. POST utan cookie-medföljning stänger även det.
+  KVARSTÅR (medvetet utanför): PPTX-routens statusflipp är fortfarande
+  fire-and-forget (ingen felkontroll, till skillnad från md-routens) — den ytan är
+  parkerad med motorn och orörd här.
 - **Export-routernas delade readiness-guards (polish, routine-förslag #100):** 404/
   generating/failed/failed_bundles-guarderna är nu duplicerade rad för rad mellan
   `export/route.ts` och `export-md/route.ts` — bryt ut till gemensam helper innan de
