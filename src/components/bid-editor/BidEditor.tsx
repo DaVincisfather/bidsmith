@@ -132,7 +132,7 @@ export function BidEditor({
     setDownloadingMd(true);
     setError(null);
     try {
-      const res = await fetch(`/api/bids/${bidId}/export-md`);
+      const res = await fetch(`/api/bids/${bidId}/export-md`, { method: "POST" });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Export failed");

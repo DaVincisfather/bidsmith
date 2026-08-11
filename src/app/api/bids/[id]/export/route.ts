@@ -16,7 +16,10 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_request: NextRequest, { params }: RouteContext) {
+// POST, not GET: this route flips the bid to 'exported' (frozen since #103), and
+// a state change may not ride on a method prefetchers treat as safe. Mirrors the
+// Markdown route, which is the reachable export path.
+export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "bid id");
   if (!idResult.ok) return idResult.response;
