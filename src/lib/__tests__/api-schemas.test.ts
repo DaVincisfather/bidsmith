@@ -8,7 +8,13 @@ import {
   GoNoGoDecisionPatchSchema,
   OpportunityStatusPatchSchema,
   OnboardingDecisionSchema,
+  ApplySwapSchema,
 } from "@/lib/api-schemas";
+import { MAX_TEAM_SIZE } from "@/lib/constants";
+
+const ASSESSMENT_ID = "11111111-1111-1111-1111-111111111111";
+const REMOVE_ID = "22222222-2222-2222-2222-222222222222";
+const ADD_ID = "33333333-3333-3333-3333-333333333333";
 
 describe("BidPatchSchema", () => {
   it("accepts outcome alone", () => {
@@ -111,6 +117,40 @@ describe("GoNoGoCreateSchema", () => {
   });
   it("rejects missing analysisId", () => {
     expect(GoNoGoCreateSchema.safeParse({}).success).toBe(false);
+  });
+  it("rejects more than MAX_TEAM_SIZE team ids (rider: closes the late-failure gap)", () => {
+    const r = GoNoGoCreateSchema.safeParse({
+      analysisId: "a",
+      teamConsultantIds: Array.from({ length: MAX_TEAM_SIZE + 1 }, (_, i) => `c${i}`),
+    });
+    expect(r.success).toBe(false);
+  });
+});
+
+describe("ApplySwapSchema", () => {
+  it("parses an add-only body (no removeId key)", () => {
+    const r = ApplySwapSchema.safeParse({ assessmentId: ASSESSMENT_ID, addId: ADD_ID });
+    expect(r.success).toBe(true);
+  });
+  it("parses an add-only body with removeId explicitly null", () => {
+    const r = ApplySwapSchema.safeParse({
+      assessmentId: ASSESSMENT_ID,
+      removeId: null,
+      addId: ADD_ID,
+    });
+    expect(r.success).toBe(true);
+  });
+  it("still parses a full swap body", () => {
+    const r = ApplySwapSchema.safeParse({
+      assessmentId: ASSESSMENT_ID,
+      removeId: REMOVE_ID,
+      addId: ADD_ID,
+    });
+    expect(r.success).toBe(true);
+  });
+  it("rejects a body missing addId", () => {
+    const r = ApplySwapSchema.safeParse({ assessmentId: ASSESSMENT_ID, removeId: REMOVE_ID });
+    expect(r.success).toBe(false);
   });
 });
 

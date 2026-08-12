@@ -7,6 +7,7 @@ import { RfpAnalysis, ScoredConsultant } from "@/lib/types";
 import { parseBody, parseUuidParam, internalError, requireUser } from "@/lib/api-helpers";
 import { ApplySwapSchema } from "@/lib/api-schemas";
 import { isActivelyGenerating } from "@/lib/bid-status";
+import { MAX_TEAM_SIZE } from "@/lib/constants";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -46,7 +47,8 @@ async function refuseBidConflicts(
 
 /**
  * Applies a go/no-go improvement suggestion: swaps removeId → addId in the
- * locked team, re-runs the assessment and INSERTS a new assessment row.
+ * locked team (or, when removeId is absent/null, appends addId — a pure
+ * add), re-runs the assessment and INSERTS a new assessment row.
  * The previous row is deliberately kept — loadFlowState is latest-row-wins,
  * and the surviving row is what feeds the before/after comparison in the UI.
  * The draft bid is deleted (it was generated for the old team); the client
@@ -93,7 +95,21 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const teamIds = (latest.team_consultant_ids as string[]) ?? [];
-    if (!teamIds.includes(removeId) || teamIds.includes(addId)) {
+    const isAdd = removeId == null;
+    if (isAdd) {
+      if (teamIds.includes(addId)) {
+        return NextResponse.json(
+          { error: "Konsulten är redan i teamet — ladda om sidan." },
+          { status: 409 },
+        );
+      }
+      if (teamIds.length >= MAX_TEAM_SIZE) {
+        return NextResponse.json(
+          { error: `Teamet är fullt — max ${MAX_TEAM_SIZE} konsulter.` },
+          { status: 409 },
+        );
+      }
+    } else if (!teamIds.includes(removeId) || teamIds.includes(addId)) {
       return NextResponse.json(
         { error: "Förslaget matchar inte det låsta teamet — ladda om sidan." },
         { status: 409 },
@@ -130,7 +146,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const newTeamIds = teamIds.map((id) => (id === removeId ? addId : id));
+    const newTeamIds = isAdd
+      ? [...teamIds, addId]
+      : teamIds.map((id) => (id === removeId ? addId : id));
     const teamConsultants = await fetchConsultantsByIds(supabase, newTeamIds);
 
     // Evaluate BEFORE deleting the draft: an AI failure must not cost the user
