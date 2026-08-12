@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GoNoGoResultView } from "./go-no-go-result";
 import { ForgeLoader } from "./ForgeLoader";
-import { deriveSwapComparison } from "@/lib/team-diff";
+import { deriveSwapComparison, deriveUndoSwapSignature } from "@/lib/team-diff";
 import type { FlowAssessment, FlowBid, FlowMatch } from "@/lib/flow-state";
 import type { ImprovementSuggestion } from "@/lib/types";
 
@@ -86,6 +86,8 @@ export function GoNoGoSection({
     previousAssessment && match
       ? deriveSwapComparison(previousAssessment, assessment, match.scoredConsultants)
       : null;
+  const undoSignature =
+    previousAssessment ? deriveUndoSwapSignature(previousAssessment, assessment) : null;
 
   async function generate() {
     if (bid && !window.confirm("Detta ersätter det befintliga utkastet med ett nytt. Fortsätt?")) {
@@ -277,6 +279,7 @@ export function GoNoGoSection({
         actions={actions}
         onApplySwap={frozen ? undefined : applySwap}
         swapDisabled={working !== null || isRefreshing}
+        undoSwapSignature={undoSignature}
       />
     </div>
   );

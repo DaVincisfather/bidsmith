@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveSwapComparison } from "../team-diff";
+import { deriveSwapComparison, deriveUndoSwapSignature } from "../team-diff";
 import type { ScoredConsultant } from "../types";
 
 const pool = [
@@ -32,5 +32,29 @@ describe("deriveSwapComparison", () => {
     const cmp = deriveSwapComparison(prev(["a", "c"], 42), { teamConsultantIds: ["b"] }, pool);
     expect(cmp?.removed).toEqual(["Sara Norén", "Magnus Holmqvist"]);
     expect(cmp?.added).toEqual(["Aram Tahbaz"]);
+  });
+});
+
+describe("deriveUndoSwapSignature", () => {
+  it("returns null when the teams are identical", () => {
+    expect(
+      deriveUndoSwapSignature({ teamConsultantIds: ["a", "c"] }, { teamConsultantIds: ["a", "c"] }),
+    ).toBeNull();
+  });
+
+  it("returns the reverse signature for a single swap", () => {
+    const sig = deriveUndoSwapSignature(
+      { teamConsultantIds: ["a", "c"] },
+      { teamConsultantIds: ["b", "c"] },
+    );
+    expect(sig).toEqual({ removeId: "b", addId: "a" });
+  });
+
+  it("returns null for a two-member diff", () => {
+    const sig = deriveUndoSwapSignature(
+      { teamConsultantIds: ["a", "c"] },
+      { teamConsultantIds: ["b"] },
+    );
+    expect(sig).toBeNull();
   });
 });

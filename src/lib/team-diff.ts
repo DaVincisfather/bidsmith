@@ -28,3 +28,25 @@ export function deriveSwapComparison(
     prevWinProbability: prev.result.winProbability,
   };
 }
+
+export interface SwapSignature {
+  removeId: string;
+  addId: string;
+}
+
+/**
+ * The swapIds signature a suggestion would carry if it proposed UNDOING the
+ * swap that produced `current` from `prev`. Non-null only when the diff is
+ * exactly one-out/one-in — multi-member diffs (legacy history) never suppress.
+ */
+export function deriveUndoSwapSignature(
+  prev: { teamConsultantIds: string[] },
+  current: { teamConsultantIds: string[] },
+): SwapSignature | null {
+  const prevIds = new Set(prev.teamConsultantIds);
+  const currIds = new Set(current.teamConsultantIds);
+  const removed = prev.teamConsultantIds.filter((id) => !currIds.has(id));
+  const added = current.teamConsultantIds.filter((id) => !prevIds.has(id));
+  if (removed.length !== 1 || added.length !== 1) return null;
+  return { removeId: added[0], addId: removed[0] };
+}
