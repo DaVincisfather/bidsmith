@@ -651,7 +651,11 @@ Expected: 4 PASS.
 
 **`src/components/go-no-go-section.tsx`:**
 1. Props: add `previousAssessment: FlowAssessment | null;` to `GoNoGoSectionProps` (import type from `@/lib/flow-state` — check how `assessment`/`match` types are imported today and follow it).
-2. Widen working state: `useState<"generate" | "unlock" | "swap" | null>(null)`.
+2. Widen working state: `useState<"generate" | "unlock" | "swap" | null>(null)`, and add a transition for the post-swap refresh (import `useTransition` from `react`):
+
+```tsx
+  const [isRefreshing, startTransition] = useTransition();
+```
 3. Add the handler (place after `unlock()`):
 
 ```tsx
@@ -676,7 +680,15 @@ Expected: 4 PASS.
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || "Bytet kunde inte genomföras");
       }
-      router.refresh();
+      // router.refresh() fires the RSC refetch and returns immediately — it
+      // does not await completion. Resetting `working` synchronously here
+      // would hide the loader and re-enable the swap buttons while the page
+      // still renders the pre-swap assessment (double-submit window on a
+      // stale assessment id). startTransition keeps isPending true until the
+      // refreshed render commits; the loader and disabled states key on it.
+      startTransition(() => {
+        router.refresh();
+      });
       if (!mountedRef.current) return;
       setWorking(null);
     } catch (err) {
@@ -703,7 +715,7 @@ Expected: 4 PASS.
           )}
         </div>
       )}
-      {working === "swap" && (
+      {(working === "swap" || isRefreshing) && (
         <div className="flex justify-center py-6">
           <ForgeLoader size={64} />
         </div>
@@ -723,7 +735,11 @@ with, near the top of the component body:
 
 ```tsx
       onApplySwap={frozen ? undefined : applySwap}
-      swapDisabled={working !== null}
+      swapDisabled={working !== null || isRefreshing}
+
+(and the `generate`/`unlock` buttons' `disabled={working !== null}` become
+`disabled={working !== null || isRefreshing}` — no action may run while the
+post-swap refresh is still rendering stale props)
 ```
 
 **`src/components/go-no-go-result.tsx`:**
