@@ -111,6 +111,13 @@ Vid ändringar i befintlig kod:
   enda e2e-smoken — den anropar routes över HTTP och syns varken för `tsc`, sviten
   eller `next build`. (PR-routinens fynd på #105: GET→POST lämnade `demo-seed.mjs`
   med en 405 på sista steget trots att alla grindar var gröna.)
+- **Route-fil finns men svarar HTML-404 i dev** (`Unexpected token '<'` i klienten):
+  misstänk stale `.next`-cache — stoppa dev, radera `.next`, starta om, INNAN du
+  felsöker koden. En gammal cache kan fälla en hel route-klass permanent (2026-08-12:
+  allt nästlat under `[id]/`-mappar 404:ade; touch/HMR räckte inte). Diskriminator:
+  autentiserad probe med slumpad UUID — routens egen JSON = handlern körs,
+  `<!DOCTYPE`-HTML = router-miss. Oautentiserad probe duger inte (middleware-307:an
+  maskerar missen).
 
 ## Tech-stack
 
