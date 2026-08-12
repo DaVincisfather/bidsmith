@@ -4,7 +4,18 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-11 — **LANSERINGEN SKJUTS FRAM (Stefans beslut 2026-08-11):**
+_Senast uppdaterad: 2026-08-11 kväll — **FYRA PR:AR SAMMA KVÄLL, TRE MERGADE.**
+#104 MD-escaping, #105 export-flippen till POST, #106 foreign-genereringen fail closed —
+alla med PR-routine-fynd åtgärdade i respektive PR. #107 (kapabilitetsregister +
+effort-fixen) ligger som **DRAFT** och får inte mergas förrän eval körts: den ändrar
+`writing`-rollens beteende. Denna PR: prisnoten i `ai-cost.ts` var tidsinställt fel —
+Sonnet 5:s $2/$10 skulle enligt noten "bumpas" till $3/$15 efter 2026-08-31, men
+Anthropic har gjort $2/$10 till standardpris och höjningen sker inte; en bump hade
+ÖVERskattat kostnaderna 1,5×. Prisrad för `claude-opus-5` tillagd (samma tier som
+Opus 4.8 — ett rollbyte dit kostar inget extra). Båda låsta med test.
+Modellrapporten för Stefan: `notes/2026-08-11-modellrapport-opus5-sonnet5.md`._
+
+_Historik (2026-08-11): **LANSERINGEN SKJUTS FRAM (Stefans beslut 2026-08-11):**
 inget datum satt; produkten byggs klar först och lanseringsdatumet sätts när den håller.
 Videon, GIF:en och postutkasten ligger kvar som de är (`notes/2026-08-02-launch-posts.md`,
 4 `[JUSTERA]` kvar) och kan återanvändas — inget av materialet är datumbundet.

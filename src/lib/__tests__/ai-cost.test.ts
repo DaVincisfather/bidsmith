@@ -28,6 +28,20 @@ describe("getModelPricing", () => {
     expect(p.outputPerMTok).toBe(25);
   });
 
+  it("prissätter claude-opus-5 som Opus 4.8 — samma tier, inget pristillägg", () => {
+    // Ligger här före ett eventuellt rollbyte så att bytet blir en rad i
+    // MODELS i stället för en rad här också.
+    expect(getModelPricing("claude-opus-5")).toEqual({ inputPerMTok: 5, outputPerMTok: 25 });
+  });
+
+  it("håller Sonnet 5 på $2/$10 — den planerade höjningen ställdes in", () => {
+    // Raden bar tidigare en påminnelse om att bumpa till $3/$15 efter
+    // 2026-08-31. Anthropic har meddelat att $2/$10 blivit standardpriset och
+    // att höjningen inte sker; en "bump" hade överskattat kostnaderna 1,5×.
+    // Verifierat mot platform.claude.com/docs/en/about-claude/pricing 2026-08-11.
+    expect(getModelPricing("claude-sonnet-5")).toEqual({ inputPerMTok: 2, outputPerMTok: 10 });
+  });
+
   it("returns Opus 4.6 pricing", () => {
     const p = getModelPricing("claude-opus-4-6");
     expect(p.inputPerMTok).toBe(5);
