@@ -3,6 +3,7 @@ import { RfpAnalysisSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
 import { MODELS } from "./models";
 import { runEvidenceGuard } from "./evidence-guard";
+import { dedupeRequirements } from "./requirement-dedupe";
 
 const SYSTEM_PROMPT = `Du är en expert på att analysera förfrågningsunderlag (RFP:er) för konsultuppdrag.
 Du läser ett RFP-dokument och producerar en strukturerad analys i JSON-format.
@@ -47,6 +48,13 @@ Var noggrann med att:
   Mappa svenska termer: ska-krav/skall-krav/skall/ska → "must",
   bör-krav/bör → "should", kan-krav/kan/önskemål → "nice-to-have".
   Använd aldrig svenska värden eller andra varianter i fältet.
+- KLASSNINGEN MÅSTE FÖRANKRAS I UNDERLAGETS EGEN MARKERING. Upphandlingar anger i
+  regel uttryckligen vad som är ska-krav respektive bör-krav — ofta i en kravmatris
+  eller med orden "ska"/"skall"/"obligatoriskt" i kravmeningen eller dess rubrik.
+  Sätt "must" ENDAST när en sådan uttrycklig markering finns i underlaget för just
+  det kravet. Saknas uttrycklig markering, eller är den tvetydig, klassa som
+  "should" — ALDRIG "must" på egen bedömning av hur viktigt kravet verkar vara.
+  När markören står i löptexten: låt evidence-citatet omfatta den.
 - kind klassar VARJE post:
   - "qualification" = krav PÅ anbudsgivaren som bedöms/måste uppfyllas för att kvalificera
     (kompetens, certifieringar, erfarenhet, uteslutningsgrunder, obligatoriska villkor,
@@ -104,6 +112,14 @@ export async function analyzeRfp(
     temperature: 0,
     userId,
   });
+
+  const beforeDedupe = analysis.requirements.length;
+  analysis.requirements = dedupeRequirements(analysis.requirements);
+  if (analysis.requirements.length < beforeDedupe) {
+    console.warn(
+      `[rfp-analyzer] (${label}) dropped ${beforeDedupe - analysis.requirements.length} duplicate requirement(s), kept first occurrences`,
+    );
+  }
 
   // RUNTIME-EVIDENSVAKT (delad mekanik med CV-extraktionen, se evidence-guard.ts).
   // Gratis sträng-matchning: finns varje kravs citat ordagrant i underlaget?
