@@ -30,8 +30,9 @@ mot Vercels 300 s._
 _Historik (2026-08-11 kväll): **FYRA PR:AR SAMMA KVÄLL, TRE MERGADE.**
 #104 MD-escaping, #105 export-flippen till POST, #106 foreign-genereringen fail closed —
 alla med PR-routine-fynd åtgärdade i respektive PR. #107 (kapabilitetsregister +
-effort-fixen) ligger som **DRAFT** och får inte mergas förrän eval körts: den ändrar
-`writing`-rollens beteende. Denna PR: prisnoten i `ai-cost.ts` var tidsinställt fel —
+effort-fixen) ~~ligger som DRAFT och får inte mergas förrän eval körts~~ — grinden
+frångicks 2026-08-12 och ersattes av en live-smoke, se headern.
+Denna PR: prisnoten i `ai-cost.ts` var tidsinställt fel —
 Sonnet 5:s $2/$10 skulle enligt noten "bumpas" till $3/$15 efter 2026-08-31, men
 Anthropic har gjort $2/$10 till standardpris och höjningen sker inte; en bump hade
 ÖVERskattat kostnaderna 1,5×. Prisrad för `claude-opus-5` tillagd (samma tier som
@@ -495,6 +496,11 @@ _Inga — #54–#68 mergade 2026-07-03/04._
 _Triage 2026-08-04: PPTX-bundna poster flyttade till "Parkerat med PPTX-motorn" nedan,
 verifierat inaktuella till "Struket". Kvar här = MD-vägen + kärnan (generering,
 extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
+- **generic-prose kör `high`/32000 på Sonnet 5 (routine-follow-up på #107, polish):**
+  runtime-vakten gejtar bara `max`/`xhigh`, vilket är rätt mot Anthropics dokumenterade
+  golv — men samma mekanism (tänkandet delar taket med svaret) gäller i mildare form
+  även på `high`. Ligger på foreign-/profilvägen, som är parkerad med PPTX-motorn, så
+  posten väcks när den ytan aktiveras igen: höj taket där eller utvidga golvtanken.
 - **PHASES-RUNAWAY (CORRECTNESS, kärnlogik — ta SYNKRONT med Stefan):** phases-bundlen
   (Opus `writing`, `effort: "max"`, `maxTokens: 32000`) skenade till EXAKT 32k-output-taket
   i 3 av 4 skarpa genereringar 2026-08-02 (272–277 s, ~$0,85/försök); i en körning skenade
