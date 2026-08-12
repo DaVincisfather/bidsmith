@@ -57,6 +57,37 @@ const scored: ScoredConsultant[] = [
   { consultantId: "c1", consultantName: "Anna", level: "senior", score: 40, reasoning: "ok" },
 ];
 
+function makeConsultant(id: string, name: string): Consultant {
+  return {
+    id,
+    name,
+    level: "senior",
+    yearsExperience: 10,
+    summary: "Lead",
+    rawCvText: null,
+    competencies: [],
+    references: [],
+    createdAt: "",
+    updatedAt: "",
+  };
+}
+
+// Team fixtures for the add-suggestion filter tests: size relative to
+// MAX_TEAM_SIZE (5) decides whether a "add" suggestion has a free slot.
+const teamOfThree: Consultant[] = [
+  makeConsultant("c1", "Anna"),
+  makeConsultant("c2", "Bo"),
+  makeConsultant("c3", "Cecilia"),
+];
+
+const teamOfFive: Consultant[] = [
+  makeConsultant("c1", "Anna"),
+  makeConsultant("c2", "Bo"),
+  makeConsultant("c3", "Cecilia"),
+  makeConsultant("c4", "David"),
+  makeConsultant("c5", "Erik"),
+];
+
 function mockResponse(payload: unknown) {
   mockCreate.mockResolvedValueOnce({
     content: [{ type: "text", text: JSON.stringify(payload) }],
@@ -78,6 +109,7 @@ describe("evaluateGoNoGo post-processing", () => {
       strengths: [],
       gaps: ["Saknar projektledning"],
       improvements: [],
+      poolGap: null,
       recommendation: "no-go",
       reasoning: "—",
     });
@@ -95,6 +127,7 @@ describe("evaluateGoNoGo post-processing", () => {
       strengths: [],
       gaps: [],
       improvements: [],
+      poolGap: null,
       recommendation: "go",
       reasoning: "—",
     });
@@ -124,6 +157,7 @@ describe("evaluateGoNoGo post-processing", () => {
       strengths: ["Stark senior"],
       gaps: [],
       improvements: [],
+      poolGap: null,
       recommendation: "go",
       reasoning: "—",
     });
@@ -143,6 +177,7 @@ describe("evaluateGoNoGo post-processing", () => {
       strengths: [],
       gaps: ["Lucka"],
       improvements: [],
+      poolGap: null,
       recommendation: "no-go",
       reasoning: "—",
     });
@@ -163,24 +198,28 @@ describe("evaluateGoNoGo post-processing", () => {
       gaps: [],
       improvements: [
         {
+          kind: "swap",
           swap: { remove: "Anna", add: "Bo" },
           swapIds: { removeId: "c1", addId: "c2" },
           estimatedImpact: "+0%",
           reason: "Bo täcker bör-krav men Anna bidrar med juridik — bytet ger ingen nettoeffekt",
         },
         {
+          kind: "swap",
           swap: { remove: "Anna", add: "Cecilia" },
           swapIds: { removeId: "c1", addId: "c3" },
           estimatedImpact: "+10%",
           reason: "Cecilia har starkare referens",
         },
         {
+          kind: "swap",
           swap: { remove: "Anna", add: "David" },
           swapIds: { removeId: "c1", addId: "c4" },
           estimatedImpact: "-5%",
           reason: "David är junior — försämring",
         },
       ],
+      poolGap: null,
       recommendation: "go",
       reasoning: "—",
     });
@@ -189,6 +228,151 @@ describe("evaluateGoNoGo post-processing", () => {
     const result = await evaluateGoNoGo(analysis, team, scored);
     expect(result.improvements).toHaveLength(1);
     expect(result.improvements[0].estimatedImpact).toBe("+10%");
+  });
+
+  it("keeps a valid add suggestion when the team has a free slot", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 72,
+      winProbabilityReasoning: "Bra team med en ledig plats",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "add",
+          swap: { remove: null, add: "Aram" },
+          swapIds: { removeId: null, addId: "id-aram" },
+          estimatedImpact: "+12%",
+          reason: "Aram täcker ska-krav Z som ingen i teamet täcker; teamet har en ledig plats",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, teamOfThree, scored);
+    expect(result.improvements).toHaveLength(1);
+    expect(result.improvements[0].kind).toBe("add");
+  });
+
+  it("drops an add suggestion when the team is at MAX_TEAM_SIZE", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 72,
+      winProbabilityReasoning: "Bra team men fullt",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "add",
+          swap: { remove: null, add: "Aram" },
+          swapIds: { removeId: null, addId: "id-aram" },
+          estimatedImpact: "+12%",
+          reason: "Aram täcker ska-krav Z, men teamet har inga lediga platser",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, teamOfFive, scored);
+    expect(result.improvements).toHaveLength(0);
+  });
+
+  it("drops an add suggestion with non-positive or unparseable impact", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 72,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "add",
+          swap: { remove: null, add: "Aram" },
+          swapIds: { removeId: null, addId: "id-aram" },
+          estimatedImpact: "+0%",
+          reason: "Ingen nettoeffekt",
+        },
+        {
+          kind: "add",
+          swap: { remove: null, add: "Bea" },
+          swapIds: { removeId: null, addId: "id-bea" },
+          estimatedImpact: "täcker ska-krav 2",
+          reason: "Ej numerisk impact — modellen svarade i klartext",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, teamOfThree, scored);
+    expect(result.improvements).toHaveLength(0);
+  });
+
+  it("drops a kind:add entry that still carries a remove (malformed)", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 72,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "add",
+          swap: { remove: "Anna", add: "Aram" },
+          swapIds: { removeId: "c1", addId: "id-aram" },
+          estimatedImpact: "+12%",
+          reason: "Malformed: kind add men remove satt",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, teamOfThree, scored);
+    expect(result.improvements).toHaveLength(0);
+  });
+
+  it("passes poolGap through and tolerates null", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 72,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: ["Timecare-erfarenhet saknas"],
+      improvements: [],
+      poolGap: "Gapet kräver Timecare-erfarenhet som saknas i poolen",
+      recommendation: "go-with-reservations",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const withGap = await evaluateGoNoGo(analysis, team, scored);
+    expect(withGap.poolGap).toBe("Gapet kräver Timecare-erfarenhet som saknas i poolen");
+
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 72,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const withoutGap = await evaluateGoNoGo(analysis, team, scored);
+    expect(withoutGap.poolGap).toBeNull();
   });
 });
 
@@ -205,6 +389,7 @@ describe("evaluateGoNoGo — index-hydrering av mustRequirements", () => {
       strengths: [],
       gaps: [],
       improvements: [],
+      poolGap: null,
       recommendation: "go",
       reasoning: "—",
     });
@@ -229,6 +414,7 @@ describe("evaluateGoNoGo — index-hydrering av mustRequirements", () => {
       strengths: [],
       gaps: [],
       improvements: [],
+      poolGap: null,
       recommendation: "go",
       reasoning: "—",
     });
@@ -257,6 +443,7 @@ describe("evaluateGoNoGo — index-hydrering av mustRequirements", () => {
       strengths: [],
       gaps: [],
       improvements: [],
+      poolGap: null,
       recommendation: "go",
       reasoning: "—",
     });
@@ -278,6 +465,7 @@ describe("evaluateGoNoGo — index-hydrering av mustRequirements", () => {
       strengths: [],
       gaps: ["Saknar projektledning"],
       improvements: [],
+      poolGap: null,
       recommendation: "no-go",
       reasoning: "—",
     });
@@ -313,6 +501,7 @@ describe("evaluateGoNoGo — bantad prompt (kostnad/latens)", () => {
       strengths: [],
       gaps: [],
       improvements: [],
+      poolGap: null,
       recommendation: "go",
       reasoning: "—",
     });
@@ -334,6 +523,7 @@ describe("evaluateGoNoGo — bantad prompt (kostnad/latens)", () => {
       strengths: [],
       gaps: [],
       improvements: [],
+      poolGap: null,
       recommendation: "go",
       reasoning: "—",
     });
@@ -353,6 +543,7 @@ describe("evaluateGoNoGo — bantad prompt (kostnad/latens)", () => {
       strengths: [],
       gaps: [],
       improvements: [],
+      poolGap: null,
       recommendation: "go",
       reasoning: "—",
     });

@@ -125,6 +125,10 @@ export interface MustRequirementCheck {
 }
 
 export interface ImprovementSuggestion {
+  // "swap" (byte) or "add" (tillägg — add without a remove). Optional: legacy
+  // persisted rows predate the discriminator and are always swap-shaped (the
+  // old filter guaranteed non-null remove+add), so an absent kind ⇒ "swap".
+  kind?: "swap" | "add";
   // Nullable throughout when the suggestion isn't a concrete consultant swap;
   // the evaluator filters these out so persisted/rendered improvements always
   // have a real remove/add pair.
@@ -143,6 +147,9 @@ export interface GoNoGoResult {
   strengths: string[];
   gaps: string[];
   improvements: ImprovementSuggestion[];
+  // Short description of a requirement gap no pool consultant covers (via
+  // swap or add) — or null. Optional: legacy persisted rows predate the signal.
+  poolGap?: string | null;
   recommendation: GoNoGoRecommendation;
   reasoning: string;
 }

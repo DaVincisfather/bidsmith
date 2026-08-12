@@ -12,6 +12,7 @@ import { callClaude } from "./ai-client";
 import { MODELS } from "./models";
 import { qualificationRequirements } from "./requirement-kind";
 import { groundedConsultantClaims } from "./grounded-claims";
+import { MAX_TEAM_SIZE } from "@/lib/constants";
 
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
 Du får en RFP-analys, en numrerad kravlista, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
@@ -22,7 +23,7 @@ Din uppgift:
 3. Bedöm bör-krav (should) och önskemål (nice-to-have) för sannolikhetsbedömningen.
 4. Vikta utvärderingskriterierna som anges i RFP:en.
 5. Beakta red flags.
-6. Generera förbättringsförslag genom att jämföra teamets luckor mot tillgängliga konsulter i poolen. Föreslå konkreta byten med uppskattad påverkan.
+6. Generera förbättringsförslag genom att jämföra teamets luckor mot tillgängliga konsulter i poolen. Två typer: BYTE (kind "swap") och TILLÄGG (kind "add" — lägg till en konsult utan att ta bort någon, bara när teamet har lediga platser enligt raden "Teamstorlek" nedan). Föreslå tillägg i första hand när ett ska-krav står otäckt och en poolkonsult täcker det; tillägg för bör-krav-luckor är också tillåtna. Föreslå konkreta förslag med uppskattad påverkan.
 7. Ge en rekommendation: go, no-go, eller go-with-reservations.
 
 Svara ALLTID med giltig JSON som matchar detta schema:
@@ -40,12 +41,21 @@ Svara ALLTID med giltig JSON som matchar detta schema:
   "gaps": ["Lucka 1", "Lucka 2"],
   "improvements": [
     {
+      "kind": "swap",
       "swap": { "remove": "Konsult A", "add": "Konsult B" },
       "swapIds": { "removeId": "uuid-a", "addId": "uuid-b" },
       "estimatedImpact": "+15%",
       "reason": "Konsult B har erfarenhet av X som täcker ska-krav Y"
+    },
+    {
+      "kind": "add",
+      "swap": { "remove": null, "add": "Konsult C" },
+      "swapIds": { "removeId": null, "addId": "uuid-c" },
+      "estimatedImpact": "+12%",
+      "reason": "Konsult C täcker ska-krav Z som ingen i teamet täcker; teamet har en ledig plats"
     }
   ],
+  "poolGap": null,
   "recommendation": "go",
   "reasoning": "Sammanfattande motivering av rekommendationen"
 }
@@ -56,6 +66,8 @@ Regler:
 - improvements: sortera efter estimatedImpact (högst först). Du får BARA referera till konsulter som finns i listan "Övriga tillgängliga konsulter" nedan. Använd EXAKT namn och ID från den listan. Hitta INTE PÅ konsulter. Om inga tillgängliga konsulter förbättrar teamet, returnera en tom improvements-lista.
 - improvements MÅSTE ha reell positiv impact. Om ett byte INTE löser ett ouppfyllt ska-krav och winProbability redan är 0, kommer bytet fortfarande resultera i 0% — ta INTE med det som förbättringsförslag. Varje förslag ska vara ett byte som faktiskt höjer winProbability. Inkludera ALDRIG förslag med +0% impact.
 - estimatedImpact: beräkna genom att tänka igenom vad winProbability skulle bli med det nya teamet. Om nuvarande winProbability är 0 pga ouppfyllt ska-krav, och bytet löser det kravet, uppskatta den nya winProbability baserat på resterande ska-krav + bör-krav + viktning. Om bytet INTE löser alla ouppfyllda ska-krav förblir det 0% — inkludera inte förslaget.
+- kind: "swap" kräver både remove och add (removeId och addId). kind: "add" kräver add/addId och remove/removeId ska vara null. Föreslå ALDRIG "add" när teamet är fullt.
+- poolGap: om ett ouppfyllt krav inte kan täckas av NÅGON konsult i poolen — varken via byte eller tillägg — beskriv gapet kort och konkret (t.ex. "Gapet kräver dokumenterad Timecare-erfarenhet som ingen i poolen har"). Annars EXAKT null. Aldrig tom sträng.
 - coveredBy: använd EXAKT namn från teamlistan.
 - strengths/gaps: koppla till specifika krav i RFP:en, inte generella påståenden.
 - reasoning: 2-4 meningar, professionell ton.`;
@@ -156,6 +168,7 @@ ${JSON.stringify(compactAnalysis)}
 ${requirementsList}
 
 ## Låst team
+Teamstorlek: ${teamConsultants.length} av ${MAX_TEAM_SIZE} platser fyllda.
 ${teamText}
 
 ## Övriga tillgängliga konsulter (för förbättringsförslag)
@@ -182,16 +195,24 @@ ${poolText}`,
     result.winProbability = 0;
   }
 
-  // Suppress improvements that aren't actionable: a null swap (no concrete
-  // consultant change) or non-positive impact. The prompt forbids 0 % swaps
-  // but the LLM still produces "+0 %" suggestions where it argues against
-  // itself in the reason field — confusing for the user.
-  result.improvements = result.improvements.filter(
-    (imp) =>
-      imp.swap?.remove != null &&
-      imp.swap?.add != null &&
-      parseImpactPct(imp.estimatedImpact) > 0,
-  );
+  // Suppress improvements that aren't actionable, per kind. Both kinds
+  // require positive impact (the prompt forbids 0 % swaps but the LLM still
+  // produces "+0 %" suggestions where it argues against itself in the reason
+  // field — confusing for the user). "add" additionally requires an add-only
+  // shape (no remove) and a free team slot; "swap" requires a real
+  // remove+add pair (unchanged from the original swap-only filter).
+  result.improvements = result.improvements.filter((imp) => {
+    if (!(parseImpactPct(imp.estimatedImpact) > 0)) return false;
+    if (imp.kind === "add") {
+      return (
+        imp.swap?.add != null &&
+        imp.swapIds?.addId != null &&
+        imp.swap?.remove == null &&
+        teamConsultants.length < MAX_TEAM_SIZE
+      );
+    }
+    return imp.swap?.remove != null && imp.swap?.add != null;
+  });
 
   return result;
 }

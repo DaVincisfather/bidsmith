@@ -225,6 +225,7 @@ describe("GoNoGoAiResponseSchema — mustRequirements bär index, inte kravtext"
     strengths: [],
     gaps: [],
     improvements: [],
+    poolGap: null,
     recommendation: "go" as const,
     reasoning: "r",
   };
@@ -262,5 +263,80 @@ describe("GoNoGoAiResponseSchema — mustRequirements bär index, inte kravtext"
         mustRequirements: [{ requirement: "Minst 5 års erfarenhet", met: true, coveredBy: null }],
       }),
     ).toThrow();
+  });
+});
+
+describe("GoNoGoAiResponseSchema — improvements.kind och poolGap (BUG-A: required, inte optional)", () => {
+  const base = {
+    mustRequirements: [{ index: 1, met: true, coveredBy: null }],
+    winProbability: 72,
+    winProbabilityReasoning: "r",
+    strengths: [],
+    gaps: [],
+    recommendation: "go" as const,
+    reasoning: "r",
+  };
+
+  it("avvisar en improvements-post UTAN kind — discriminatorn måste vara obligatorisk (BUG-A)", () => {
+    expect(() =>
+      GoNoGoAiResponseSchema.parse({
+        ...base,
+        improvements: [
+          {
+            swap: { remove: "A", add: "B" },
+            swapIds: { removeId: "a", addId: "b" },
+            estimatedImpact: "+10%",
+            reason: "r",
+          },
+        ],
+        poolGap: null,
+      }),
+    ).toThrow();
+  });
+
+  it("accepterar en improvements-post med kind: \"add\"", () => {
+    const parsed = GoNoGoAiResponseSchema.parse({
+      ...base,
+      improvements: [
+        {
+          kind: "add",
+          swap: { remove: null, add: "C" },
+          swapIds: { removeId: null, addId: "c" },
+          estimatedImpact: "+12%",
+          reason: "r",
+        },
+      ],
+      poolGap: null,
+    });
+    expect(parsed.improvements[0].kind).toBe("add");
+  });
+
+  it("avvisar payload utan poolGap-nyckeln — fältet är required-nullable (BUG-A)", () => {
+    expect(() =>
+      GoNoGoAiResponseSchema.parse({
+        ...base,
+        improvements: [],
+      }),
+    ).toThrow();
+  });
+
+  it("accepterar poolGap: null", () => {
+    const parsed = GoNoGoAiResponseSchema.parse({
+      ...base,
+      improvements: [],
+      poolGap: null,
+    });
+    expect(parsed.poolGap).toBeNull();
+  });
+
+  it("accepterar poolGap som sträng", () => {
+    const parsed = GoNoGoAiResponseSchema.parse({
+      ...base,
+      improvements: [],
+      poolGap: "Gapet kräver dokumenterad Timecare-erfarenhet som ingen i poolen har",
+    });
+    expect(parsed.poolGap).toBe(
+      "Gapet kräver dokumenterad Timecare-erfarenhet som ingen i poolen har",
+    );
   });
 });
