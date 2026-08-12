@@ -529,7 +529,10 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   flow-state-testtiteln säger "limit 1" trots assessments limit 2; isRefreshing kan
   teoretiskt fastna om RSC-refetchen aldrig löser (inherent i useTransition-mönstret,
   accepterat); oanvändbar fallback "föreslaget byte" i swapText (knappen renderas bara
-  när swap.remove/add finns).
+  när swap.remove/add finns). PR-ROUTINENS FOLLOW-UP (#109, APPROVE): CAS:en skyddar
+  mot stale vy men inte mot två samtidiga swaps från samma färska vy — dubbel
+  AI-kostnad, koherent slutläge; åtgärdas (insert villkorad på att assessmentId ännu
+  är senaste raden, t.ex. RPC) först om det observeras i praktiken.
 - **generic-prose kör `high`/32000 på Sonnet 5 (routine-follow-up på #107, polish):**
   runtime-vakten gejtar bara `max`/`xhigh`, vilket är rätt mot Anthropics dokumenterade
   golv — men samma mekanism (tänkandet delar taket med svaret) gäller i mildare form
