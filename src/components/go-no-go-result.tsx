@@ -135,52 +135,66 @@ export function GoNoGoResultView({
       )}
 
       {/* Improvement suggestions */}
-      {result.improvements.length > 0 && (
+      {(result.improvements.length > 0 || result.poolGap) && (
         <div>
-          <h4 className="text-sm font-semibold text-ink-soft mb-2">
-            Förbättringsförslag
-          </h4>
-          <div className="space-y-2">
-            {result.improvements.map((imp, i) => {
-              if (!imp.swap?.remove || !imp.swap?.add) return null;
-              const isUndo =
-                !!undoSwapSignature &&
-                imp.swapIds?.removeId === undoSwapSignature.removeId &&
-                imp.swapIds?.addId === undoSwapSignature.addId;
-              return (
-                <div
-                  key={i}
-                  className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm"
-                >
-                  <div className="font-medium text-blue-900">
-                    Byt {imp.swap.remove} → {imp.swap.add}{" "}
-                    <span className="text-blue-600">{imp.estimatedImpact}</span>
-                  </div>
-                  <p className="text-blue-800 mt-1">{imp.reason}</p>
-                  {isUndo ? (
-                    <p className="mt-2 text-xs italic text-blue-700">
-                      Detta skulle ångra bytet du just gjorde — skillnaden ligger inom
-                      bedömningens brusnivå.
-                    </p>
-                  ) : (
-                    onApplySwap &&
-                    imp.swapIds?.removeId &&
-                    imp.swapIds?.addId && (
-                      <button
-                        onClick={() => onApplySwap(imp)}
-                        disabled={swapDisabled}
-                        className="mt-2 border border-blue-300 text-blue-900 px-3 py-1.5 rounded-lg
-                                   text-sm font-medium hover:bg-blue-100 disabled:opacity-50
-                                   disabled:cursor-not-allowed transition-colors"
-                      >
-                        Testa bytet
-                      </button>
-                    )
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {result.improvements.length > 0 && (
+            <>
+              <h4 className="text-sm font-semibold text-ink-soft mb-2">
+                Förbättringsförslag
+              </h4>
+              <div className="space-y-2">
+                {result.improvements.map((imp, i) => {
+                  const isAdd = imp.swap?.add != null && imp.swap?.remove == null;
+                  if (!imp.swap?.add || (!isAdd && !imp.swap?.remove)) return null;
+                  const isUndo =
+                    !!undoSwapSignature &&
+                    imp.swapIds?.removeId === undoSwapSignature.removeId &&
+                    imp.swapIds?.addId === undoSwapSignature.addId;
+                  return (
+                    <div
+                      key={i}
+                      className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm"
+                    >
+                      <div className="font-medium text-blue-900">
+                        {isAdd ? (
+                          <>Lägg till {imp.swap.add}</>
+                        ) : (
+                          <>Byt {imp.swap.remove} → {imp.swap.add}</>
+                        )}{" "}
+                        <span className="text-blue-600">{imp.estimatedImpact}</span>
+                      </div>
+                      <p className="text-blue-800 mt-1">{imp.reason}</p>
+                      {isUndo ? (
+                        <p className="mt-2 text-xs italic text-blue-700">
+                          Detta skulle ångra bytet du just gjorde — skillnaden ligger inom
+                          bedömningens brusnivå.
+                        </p>
+                      ) : (
+                        onApplySwap &&
+                        imp.swapIds?.addId &&
+                        (isAdd || imp.swapIds?.removeId) && (
+                          <button
+                            onClick={() => onApplySwap(imp)}
+                            disabled={swapDisabled}
+                            className="mt-2 border border-blue-300 text-blue-900 px-3 py-1.5 rounded-lg
+                                       text-sm font-medium hover:bg-blue-100 disabled:opacity-50
+                                       disabled:cursor-not-allowed transition-colors"
+                          >
+                            {isAdd ? "Testa tillägget" : "Testa bytet"}
+                          </button>
+                        )
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {result.poolGap && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-900">
+              <span className="font-medium">Poolen räcker inte:</span> {result.poolGap}
+            </div>
+          )}
         </div>
       )}
 
