@@ -93,7 +93,11 @@ export const ConsultantUpdateSchema = z.object({
 
 export const GoNoGoCreateSchema = z.object({
   analysisId: z.string().min(1),
-  teamConsultantIds: z.array(z.string()).max(200).optional(),
+  // Capped at MAX_TEAM_SIZE, not a generous upper bound: this is the first
+  // server-side team-growing feature (apply-swap's add path), which closes
+  // the late-failure gap a larger cap would leave open — the UI picker
+  // already caps at MAX_TEAM_SIZE, but the server must not trust the client.
+  teamConsultantIds: z.array(z.string()).max(MAX_TEAM_SIZE).optional(),
 });
 
 // --- Go/No-Go: PATCH /api/go-no-go/[id] ---
@@ -108,7 +112,8 @@ export const GoNoGoDecisionPatchSchema = z.object({
 // z.guid() is the top-level replacement for the deprecated z.string().guid().
 export const ApplySwapSchema = z.object({
   assessmentId: z.guid(),
-  removeId: z.guid(),
+  // Absent or null ⇒ add (no consultant leaves the team); present ⇒ swap.
+  removeId: z.guid().nullable().optional(),
   addId: z.guid(),
 });
 

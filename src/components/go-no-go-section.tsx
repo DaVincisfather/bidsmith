@@ -147,12 +147,14 @@ export function GoNoGoSection({
 
   async function applySwap(imp: ImprovementSuggestion) {
     const ids = imp.swapIds;
-    if (!ids?.removeId || !ids?.addId) return;
-    const swapText =
-      imp.swap?.remove && imp.swap?.add ? `${imp.swap.remove} → ${imp.swap.add}` : "föreslaget byte";
+    if (!ids?.addId || (imp.swap?.remove != null && !ids.removeId)) return;
+    const isAdd = ids.removeId == null;
+    const actionText = isAdd
+      ? `tillägget ${imp.swap?.add ?? "föreslagen konsult"}`
+      : `bytet ${imp.swap?.remove && imp.swap?.add ? `${imp.swap.remove} → ${imp.swap.add}` : "föreslaget byte"}`;
     const message = bid
-      ? `Detta raderar anbudsutkastet och kör en ny bedömning med bytet ${swapText}. Fortsätt?`
-      : `Detta kör en ny bedömning med bytet ${swapText}. Fortsätt?`;
+      ? `Detta raderar anbudsutkastet och kör en ny bedömning med ${actionText}. Fortsätt?`
+      : `Detta kör en ny bedömning med ${actionText}. Fortsätt?`;
     if (!window.confirm(message)) return;
     setWorking("swap");
     setError(null);
@@ -160,7 +162,11 @@ export function GoNoGoSection({
       const res = await fetch(`/api/analyses/${analysisId}/apply-swap`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assessmentId: assessment.id, removeId: ids.removeId, addId: ids.addId }),
+        body: JSON.stringify({
+          assessmentId: assessment.id,
+          ...(isAdd ? {} : { removeId: ids.removeId }),
+          addId: ids.addId,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -264,6 +270,9 @@ export function GoNoGoSection({
           <span className="font-medium">{assessment.result.winProbability} %</span>
           {comparison.removed.length > 0 && comparison.added.length > 0 && (
             <> · byte: {comparison.removed.join(", ")} → {comparison.added.join(", ")}</>
+          )}
+          {comparison.removed.length === 0 && comparison.added.length > 0 && (
+            <> · tillägg: {comparison.added.join(", ")}</>
           )}
         </div>
       )}

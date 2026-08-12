@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { NextRequest } from "next/server";
+import { MAX_TEAM_SIZE } from "@/lib/constants";
 
 const h = vi.hoisted(() => {
   const state = {
@@ -251,5 +252,58 @@ describe("POST /api/analyses/[id]/apply-swap", () => {
     h.state.insertError = { message: "connection lost" };
     const res = await POST(makeRequest(validBody()), ctx(ANALYSIS_ID));
     expect(res.status).toBe(500);
+  });
+
+  it("applies an ADD: appends the consultant, keeps everyone, inserts new assessment", async () => {
+    const res = await POST(
+      makeRequest({ assessmentId: ASSESSMENT_ID, addId: ADD_ID }),
+      ctx(ANALYSIS_ID),
+    );
+    expect(res.status).toBe(200);
+    // append, order preserved — nobody already in the team is dropped
+    expect(h.state.fetchCalls[0]).toEqual([KEEP_ID, REMOVE_ID, ADD_ID]);
+    expect(h.state.inserted[0]).toMatchObject({
+      analysis_id: ANALYSIS_ID,
+      team_consultant_ids: [KEEP_ID, REMOVE_ID, ADD_ID],
+    });
+  });
+
+  it("409s an ADD when the team is already at MAX_TEAM_SIZE", async () => {
+    h.state.assessments = [
+      {
+        id: ASSESSMENT_ID,
+        team_consultant_ids: Array.from({ length: MAX_TEAM_SIZE }, (_, i) => `member-${i}`),
+      },
+    ];
+    const res = await POST(
+      makeRequest({ assessmentId: ASSESSMENT_ID, addId: ADD_ID }),
+      ctx(ANALYSIS_ID),
+    );
+    expect(res.status).toBe(409);
+    expect(h.state.evalCalls).toHaveLength(0);
+  });
+
+  it("409s an ADD whose consultant is already in the team", async () => {
+    h.state.assessments = [{ id: ASSESSMENT_ID, team_consultant_ids: [KEEP_ID, ADD_ID] }];
+    const res = await POST(
+      makeRequest({ assessmentId: ASSESSMENT_ID, addId: ADD_ID }),
+      ctx(ANALYSIS_ID),
+    );
+    expect(res.status).toBe(409);
+    expect(h.state.evalCalls).toHaveLength(0);
+  });
+
+  it("still 400s when addId is missing entirely", async () => {
+    const res = await POST(makeRequest({ assessmentId: ASSESSMENT_ID }), ctx(ANALYSIS_ID));
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts removeId: null as ADD (client sends explicit null)", async () => {
+    const res = await POST(
+      makeRequest({ assessmentId: ASSESSMENT_ID, removeId: null, addId: ADD_ID }),
+      ctx(ANALYSIS_ID),
+    );
+    expect(res.status).toBe(200);
+    expect(h.state.fetchCalls[0]).toEqual([KEEP_ID, REMOVE_ID, ADD_ID]);
   });
 });

@@ -131,6 +131,13 @@ export const GoNoGoResultSchema = z.object({
   gaps: z.array(z.string()),
   improvements: z.array(
     z.object({
+      // "swap" (byte av en teammedlem) eller "add" (tillägg — lägg till en
+      // konsult utan att ta bort någon). OBLIGATORISKT i modell-output (samma
+      // BUG-A-resonemang som RfpRequirementSchema.kind ovan: structured
+      // outputs UTELÄMNAR optional-fält, så en optional discriminator hade
+      // gjort filtret nedan opålitligt). Läs-typen ImprovementSuggestion.kind
+      // förblir valfri (legacy-rader saknar den och är alltid swap-formade).
+      kind: z.enum(["swap", "add"]),
       // Nullable throughout: when there's no concrete swap to suggest (strong
       // team / "go"), the model returns either swap:null or an object with null
       // leaves (e.g. { remove: null, add: null }). The evaluator drops these
@@ -145,6 +152,11 @@ export const GoNoGoResultSchema = z.object({
       reason: z.string(),
     })
   ),
+  // Kort beskrivning av en kravlucka som INGEN konsult i poolen täcker —
+  // varken via byte eller tillägg — annars EXAKT null. OBLIGATORISKT-nullable
+  // i modell-output (BUG-A: samma resonemang som kind ovan). Läs-typen
+  // GoNoGoResult.poolGap förblir valfri (legacy-rader saknar fältet).
+  poolGap: z.string().nullable(),
   recommendation: z.enum(["go", "no-go", "go-with-reservations"]),
   reasoning: z.string(),
 });
