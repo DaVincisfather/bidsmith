@@ -4,7 +4,30 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-11 kväll — **FYRA PR:AR SAMMA KVÄLL, TRE MERGADE.**
+_Senast uppdaterad: 2026-08-12 — **#107 (DENNA PR): HÖGEFFORT-BUNDLARNA TRUNKERADE, DE
+SKENADE ALDRIG.** `max_tokens` är ett tak på tänkande PLUS svarstext. Tre bundles körde
+`effort: "max"` under Anthropics golv på 64000 (phases 32k, understanding 32k, quality 16k)
+⇒ tänkandet åt budgeten och svaret klipptes. Det bokfördes som ett skenande anrop eftersom
+outputen stannade på exakt 32k — men ett skenande anrop stannar inte på ett jämnt tal, ett
+avklippt gör det. Fixen är ett kapabilitetsregister (`MODEL_LIMITS` i models.ts, testtvingat
+per modell) + runtime-vakt i `callClaude` + retry-tak ur registret i stället för gissningen
+16384; bundlarna går till `effort: "high"` med tak 64000.
+**EVAL-GRINDEN FRÅNGÅNGEN MEDVETET (Stefans beslut 2026-08-12):** evals pausas tills
+produkten är färdig — planerad senare är en TREVÄGS (Opus 5@high, Opus 5@xhigh, Sonnet 5)
+mot befintlig output, alltså en modellfråga, inte en effort-jämförelse på 4.8. Alternativet
+var att låta en känd trunkeringsbugg stå kvar under hela härdningen. Ersättningsgrind =
+LIVE-SMOKE (4 bid-generator-fixturer × 1 rep genom `generateAllSections`, produktens egen
+`ai_call_logs` som mätinstrument): **24 anrop, 0 fel, $1,32 totalt = $0,33/anbud, 6 min 35 s
+väggklocka för alla fyra (~99 s/anbud)**. Inget bundle nuddade sitt tak: phases 1 262–1 658
+output-tokens (tak 64 000), 24,4–25,6 s, $0,074 i snitt; understanding ≤1 208/23,6 s;
+quality ≤452/11,2 s; requirement-matrix ≤7 366/63,5 s (störst nu). Baslinjen 2026-08-02:
+phases på EXAKT 32 000 i 3 av 4 genereringar, 272–277 s, ~$1,05 av ~$1,5 per anbud, och i
+en körning skenade även retryn ⇒ hela genereringen fälld. `shortDescription` är rena och
+`risks`/`hoursEstimate` materialiseras. OBS för framtida eval: `max` med 64k-taket är en
+MÄTARM, inte en driftkandidat — den ger modellen dubbelt tänkutrymme och driver latensen
+mot Vercels 300 s._
+
+_Historik (2026-08-11 kväll): **FYRA PR:AR SAMMA KVÄLL, TRE MERGADE.**
 #104 MD-escaping, #105 export-flippen till POST, #106 foreign-genereringen fail closed —
 alla med PR-routine-fynd åtgärdade i respektive PR. #107 (kapabilitetsregister +
 effort-fixen) ligger som **DRAFT** och får inte mergas förrän eval körts: den ändrar
@@ -201,14 +224,16 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
 - [ ] **PRODUKTHÄRDNING FÖRE LANSERING (Stefans beslut 2026-08-11).** Lanseringen är
       framflyttad utan nytt datum — produkten ska vara bra nog först. Ingen deadline
       styr prioriteringen längre; ordningen är correctness → produktluckor → polish.
-      Öppna correctness-poster i live-backloggen, störst först:
-      (1) **32k-runawayen i phases-bundlen** (synkront med Stefan, kräver eval enligt
-      grind-policyn eftersom `writing`-rollen berörs) — den enda kvarvarande posten som
-      kan fälla en hel generering; (2) **foreign-genereringen gejtas inte av flaggan**
-      (aktiv foreign-mall genererar profilvägen med flaggan av → 195 kapitel + ~$0,5
-      i onödan); (3) **export-flippen muterar DB på GET** (båda exportrouterna).
-      Därefter: Stefans klick-smoke i dev på kärnflödet (aldrig kvitterad efter #103).
-      ~~Markdown-escaping av AI-fritext~~ — KLAR 2026-08-11 (denna PR).
+      **ALLA TRE CORRECTNESS-POSTERNA ÄR NU STÄNGDA:**
+      ~~(1) 32k-runawayen i phases-bundlen~~ — KLAR 2026-08-12 (#107): det var trunkering,
+      inte runaway; se headern. ~~(2) foreign-genereringen gejtas inte av flaggan~~ —
+      KLAR 2026-08-11 (#106, fail closed). ~~(3) export-flippen muterar DB på GET~~ —
+      KLAR 2026-08-11 (#105, POST i båda exportrouterna).
+      ~~Markdown-escaping av AI-fritext~~ — KLAR 2026-08-11 (#104).
+      **NÄSTA STEG ÄR DÄRMED STEFANS KLICK-SMOKE i dev på kärnflödet** (aldrig kvitterad
+      efter #103) — den avgör vad härdningen tar sig an härnäst. Öppna poster som INTE är
+      correctness ligger kvar i live-backloggen (watchdog-samspel, status-reconcile,
+      routine-follow-ups från #96/#97, onboarding-mätpassets v1-lucka).
 - [ ] **PUBLICERING — FRAMFLYTTAD 2026-08-11, INGET NYTT DATUM.** Ursprungsplanen
       (tisdag 2026-08-11, LinkedIn ~07:45 svensk B2B-morgon, X ~14:30 US-östkustens
       morgon) står kvar som mall för tidpunkterna när datumet sätts om.
@@ -512,9 +537,17 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   modellens golv innan anropet går iväg (samma mönster som temperature-vakten) —
   buggklassen kan därmed inte återinföras; retry-taket kommer nu ur registret i
   stället för gissningen (okänd modell faller tillbaka på 16384).
-  ⚠️ **EVAL EJ KÖRD — PR:en får inte mergas utan den.** Effort-ändringen rör
-  `writing`-rollens beteende, vilket enligt grind-policyn kräver eval-körning
-  (fas 1-lärdomen: bättre på pappret ≠ bättre anbudstext).
+  **GRINDEN: EVAL FRÅNGÅNGEN, LIVE-SMOKE I STÄLLET (Stefans beslut 2026-08-12).**
+  Effort-ändringen rör `writing`-rollens beteende och krävde enligt policyn en eval,
+  men Stefan pausade alla evals tills produkten är färdig; alternativet var att låta
+  trunkeringen stå kvar under hela härdningen. Ersättningsgrinden kördes i stället:
+  4 bid-generator-fixturer × 1 rep genom `generateAllSections`, mätt med produktens
+  egen `ai_call_logs` — 24 anrop, **0 fel, 4/4 utan trunkering**, $1,32 totalt
+  ($0,33/anbud mot ~$1,5), 6 min 35 s för alla fyra. phases: 1 262–1 658 output-tokens
+  mot taket 64 000 och 24,4–25,6 s mot baslinjens 272–277 s; `shortDescription` rena,
+  `risks`/`hoursEstimate` materialiserade. Kvar omätt: anbudsTEXTENS kvalitet vid
+  `high` vs `max` — den frågan ställs aldrig av Stefans planerade trevägs (Opus 5@high,
+  Opus 5@xhigh, Sonnet 5 mot befintlig output), så den är medvetet obesvarad.
   KVAR av posten: watchdog-samspelet och status-reconcile (latensvinsten från
   `high` mildrar men löser inte); Opus 5-bytet är nu en radändring men eget
   beslut med egen eval — buntas medvetet INTE ihop med effort-ändringen, då
