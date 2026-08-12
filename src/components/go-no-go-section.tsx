@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GoNoGoResultView } from "./go-no-go-result";
@@ -76,6 +76,7 @@ export function GoNoGoSection({
 
   const [working, setWorking] = useState<"generate" | "unlock" | "swap" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, startTransition] = useTransition();
 
   const team = (match?.scoredConsultants ?? []).filter((c) =>
     assessment.teamConsultantIds.includes(c.consultantId),
@@ -163,7 +164,15 @@ export function GoNoGoSection({
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || "Bytet kunde inte genomföras");
       }
-      router.refresh();
+      // router.refresh() fires the RSC refetch and returns immediately — it
+      // does not await completion. Resetting `working` synchronously here
+      // would hide the loader and re-enable the swap buttons while the page
+      // still renders the pre-swap assessment (double-submit window on a
+      // stale assessment id). startTransition keeps isPending true until the
+      // refreshed render commits; the loader and disabled states key on it.
+      startTransition(() => {
+        router.refresh();
+      });
       if (!mountedRef.current) return;
       setWorking(null);
     } catch (err) {
@@ -190,7 +199,7 @@ export function GoNoGoSection({
     <>
       <button
         onClick={unlock}
-        disabled={working !== null}
+        disabled={working !== null || isRefreshing}
         className="flex-1 border border-rule text-ink-soft px-4 py-2 rounded-lg text-sm font-medium
                    hover:bg-paper-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
@@ -207,7 +216,7 @@ export function GoNoGoSection({
       )}
       <button
         onClick={generate}
-        disabled={working !== null}
+        disabled={working !== null || isRefreshing}
         className="flex-1 bg-ink text-white px-4 py-2 rounded-lg text-sm font-medium
                    hover:bg-accent-ink disabled:bg-rule disabled:cursor-not-allowed transition-colors"
       >
@@ -256,7 +265,7 @@ export function GoNoGoSection({
           )}
         </div>
       )}
-      {working === "swap" && (
+      {(working === "swap" || isRefreshing) && (
         <div className="flex justify-center py-6">
           <ForgeLoader size={64} />
         </div>
@@ -267,7 +276,7 @@ export function GoNoGoSection({
         assessmentId={assessment.id}
         actions={actions}
         onApplySwap={frozen ? undefined : applySwap}
-        swapDisabled={working !== null}
+        swapDisabled={working !== null || isRefreshing}
       />
     </div>
   );
