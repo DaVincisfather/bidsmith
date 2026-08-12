@@ -1,14 +1,18 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GoNoGoResultView } from "./go-no-go-result";
+import { ForgeLoader } from "./ForgeLoader";
+import { deriveSwapComparison, deriveUndoSwapSignature } from "@/lib/team-diff";
 import type { FlowAssessment, FlowBid, FlowMatch } from "@/lib/flow-state";
+import type { ImprovementSuggestion } from "@/lib/types";
 
 interface GoNoGoSectionProps {
   analysisId: string;
   assessment: FlowAssessment;
+  previousAssessment: FlowAssessment | null;
   match: FlowMatch | null;
   bid: FlowBid | null;
 }
@@ -54,7 +58,13 @@ async function pollBidUntilDone(
   }
 }
 
-export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSectionProps) {
+export function GoNoGoSection({
+  analysisId,
+  assessment,
+  previousAssessment,
+  match,
+  bid,
+}: GoNoGoSectionProps) {
   const router = useRouter();
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -64,13 +74,20 @@ export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSect
     };
   }, []);
 
-  const [working, setWorking] = useState<"generate" | "unlock" | null>(null);
+  const [working, setWorking] = useState<"generate" | "unlock" | "swap" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, startTransition] = useTransition();
 
   const team = (match?.scoredConsultants ?? []).filter((c) =>
     assessment.teamConsultantIds.includes(c.consultantId),
   );
   const frozen = bid !== null && (bid.exportedAt !== null || bid.status === "exported");
+  const comparison =
+    previousAssessment && match
+      ? deriveSwapComparison(previousAssessment, assessment, match.scoredConsultants)
+      : null;
+  const undoSignature =
+    previousAssessment ? deriveUndoSwapSignature(previousAssessment, assessment) : null;
 
   async function generate() {
     if (bid && !window.confirm("Detta ersätter det befintliga utkastet med ett nytt. Fortsätt?")) {
@@ -128,6 +145,45 @@ export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSect
     }
   }
 
+  async function applySwap(imp: ImprovementSuggestion) {
+    const ids = imp.swapIds;
+    if (!ids?.removeId || !ids?.addId) return;
+    const swapText =
+      imp.swap?.remove && imp.swap?.add ? `${imp.swap.remove} → ${imp.swap.add}` : "föreslaget byte";
+    const message = bid
+      ? `Detta raderar anbudsutkastet och kör en ny bedömning med bytet ${swapText}. Fortsätt?`
+      : `Detta kör en ny bedömning med bytet ${swapText}. Fortsätt?`;
+    if (!window.confirm(message)) return;
+    setWorking("swap");
+    setError(null);
+    try {
+      const res = await fetch(`/api/analyses/${analysisId}/apply-swap`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assessmentId: assessment.id, removeId: ids.removeId, addId: ids.addId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Bytet kunde inte genomföras");
+      }
+      // router.refresh() fires the RSC refetch and returns immediately — it
+      // does not await completion. Resetting `working` synchronously here
+      // would hide the loader and re-enable the swap buttons while the page
+      // still renders the pre-swap assessment (double-submit window on a
+      // stale assessment id). startTransition keeps isPending true until the
+      // refreshed render commits; the loader and disabled states key on it.
+      startTransition(() => {
+        router.refresh();
+      });
+      if (!mountedRef.current) return;
+      setWorking(null);
+    } catch (err) {
+      if (!mountedRef.current) return;
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setWorking(null);
+    }
+  }
+
   const actions = frozen ? (
     <>
       <span className="flex-1 px-4 py-2 text-sm text-ink-mute text-center">
@@ -145,7 +201,7 @@ export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSect
     <>
       <button
         onClick={unlock}
-        disabled={working !== null}
+        disabled={working !== null || isRefreshing}
         className="flex-1 border border-rule text-ink-soft px-4 py-2 rounded-lg text-sm font-medium
                    hover:bg-paper-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
@@ -162,7 +218,7 @@ export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSect
       )}
       <button
         onClick={generate}
-        disabled={working !== null}
+        disabled={working !== null || isRefreshing}
         className="flex-1 bg-ink text-white px-4 py-2 rounded-lg text-sm font-medium
                    hover:bg-accent-ink disabled:bg-rule disabled:cursor-not-allowed transition-colors"
       >
@@ -200,7 +256,31 @@ export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSect
         </div>
       )}
 
-      <GoNoGoResultView result={assessment.result} assessmentId={assessment.id} actions={actions} />
+      {comparison && (
+        <div className="border border-rule rounded-lg px-4 py-3 bg-paper-2 text-sm text-ink-soft">
+          Föregående bedömning:{" "}
+          <span className="font-medium">{comparison.prevWinProbability} %</span>
+          {" → "}
+          <span className="font-medium">{assessment.result.winProbability} %</span>
+          {comparison.removed.length > 0 && comparison.added.length > 0 && (
+            <> · byte: {comparison.removed.join(", ")} → {comparison.added.join(", ")}</>
+          )}
+        </div>
+      )}
+      {(working === "swap" || isRefreshing) && (
+        <div className="flex justify-center py-6">
+          <ForgeLoader size={64} />
+        </div>
+      )}
+
+      <GoNoGoResultView
+        result={assessment.result}
+        assessmentId={assessment.id}
+        actions={actions}
+        onApplySwap={frozen ? undefined : applySwap}
+        swapDisabled={working !== null || isRefreshing}
+        undoSwapSignature={undoSignature}
+      />
     </div>
   );
 }

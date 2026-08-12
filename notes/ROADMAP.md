@@ -4,7 +4,21 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-12 — **#107 (DENNA PR): HÖGEFFORT-BUNDLARNA TRUNKERADE, DE
+_Senast uppdaterad: 2026-08-12 kväll — **APPLY-SWAP (DENNA PR): go/no-go-förslagens
+konsultbyte är nu en knapp.** Stefans klick-smoke (första efter #103) kvitterades i dev:
+kärnflödet grönt end-to-end. Två 404-fynd under smoken visade sig vara stale `.next`-cache
+(CLAUDE.md-regel tillagd på main, e8b6909), inte kodbuggar i #103/#105. Ur smoken föddes
+denna PR: "Testa bytet"-knapp på förbättringskorten (POST `/api/analyses/[id]/apply-swap`:
+validerar swapIds mot pool + låst team, CAS-vakt på assessment-id, omvärderar FÖRE
+utkastraderingen så ett AI-fel aldrig kostar utkastet, gamla bedömningen behålls),
+före/efter-panel (flow-state exponerar näst-senaste bedömningen, limit 2),
+useTransition-gejtning mot dubbelklick på stale data under refetchen, samt route-auth på
+POST /api/go-no-go (401 i stället för 500; #103-regeln, demo-seedern autentiserar redan).
+Kända v1-gränser: cirkulärbyte-risken står kvar (notes/2026-04-30, nu användarsynlig men
+exponerad av jämförelsepanelen); `estimatedImpact` är en gissning — livesmoke: "+15%"
+blev +6 (42→48 %). Smoke-fynden i övrigt bokförda i live-backloggen._
+
+_Historik (2026-08-12, #107): **HÖGEFFORT-BUNDLARNA TRUNKERADE, DE
 SKENADE ALDRIG.** `max_tokens` är ett tak på tänkande PLUS svarstext. Tre bundles körde
 `effort: "max"` under Anthropics golv på 64000 (phases 32k, understanding 32k, quality 16k)
 ⇒ tänkandet åt budgeten och svaret klipptes. Det bokfördes som ett skenande anrop eftersom
@@ -231,8 +245,10 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       KLAR 2026-08-11 (#106, fail closed). ~~(3) export-flippen muterar DB på GET~~ —
       KLAR 2026-08-11 (#105, POST i båda exportrouterna).
       ~~Markdown-escaping av AI-fritext~~ — KLAR 2026-08-11 (#104).
-      **NÄSTA STEG ÄR DÄRMED STEFANS KLICK-SMOKE i dev på kärnflödet** (aldrig kvitterad
-      efter #103) — den avgör vad härdningen tar sig an härnäst. Öppna poster som INTE är
+      ~~NÄSTA STEG ÄR DÄRMED STEFANS KLICK-SMOKE i dev på kärnflödet~~ — **GENOMFÖRD
+      2026-08-12:** kärnflödet grönt end-to-end (analys → go/no-go → generering →
+      MD-export). Fynden bokförda i live-backloggen ("SMOKE-FYND 2026-08-12");
+      apply-swap-knappen byggdes direkt ur smoken (denna PR). Öppna poster som INTE är
       correctness ligger kvar i live-backloggen (watchdog-samspel, status-reconcile,
       routine-follow-ups från #96/#97, onboarding-mätpassets v1-lucka).
 - [ ] **PUBLICERING — FRAMFLYTTAD 2026-08-11, INGET NYTT DATUM.** Ursprungsplanen
@@ -496,6 +512,36 @@ _Inga — #54–#68 mergade 2026-07-03/04._
 _Triage 2026-08-04: PPTX-bundna poster flyttade till "Parkerat med PPTX-motorn" nedan,
 verifierat inaktuella till "Struket". Kvar här = MD-vägen + kärnan (generering,
 extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
+- **SMOKE-FYND 2026-08-12 (Stefans klick-smoke, polish/produkt):** (1) go/no-go-copyn
+  blandar engelska ("should-krav 2") — etikettpass på hydrering/prompt önskas; (2)
+  genererings-väntan: användaren står kvar på go/no-go-sidan med enbart knapptext i ~2 min
+  — kandidat: navigera till editorn direkt på 202 så GeneratingChapterList/ForgeLoader
+  bär väntan (Stefan lutar åt ja, beslutas separat, rör #103-testat flöde); (3)
+  export-frysningen ifrågasatt ("kanske lite onödigt nu när jag tänker på det") — hänger
+  ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;
+  (4) pedagogiken "varför föreslås byten när jag valde bäst matchade?" — individmatchning
+  vs teamkomposition behöver förklaras i UI-copy; (5) editor-UI:t ska designas om
+  (Stefan styr, eget synkront pass); (6) GO/NO-GO-VARIANSEN BELAGD i apply-swap-smoken:
+  samma team + samma analys gav 48 % resp. 38 % i två körningar (±10 p brus, dränker
+  bytets effekt — "+10%" gav ±0, "+15%" gav +6); jämförelsepanelens Δ = byteseffekt +
+  brus. Hör till eval-/kalibreringsspåret (pausat till trevägs-evalen), inte UI:t.
+  CIRKELBYTET BELAGT LIVE i samma smoke: direkt efter Sara→Aram (±0) föreslog nya
+  bedömningen "byt tillbaka Aram→Sara +7%" — den dokumenterade 2026-04-30-begränsningen,
+  nu klickbar (ping-pong à 30 s + AI-kostnad på brusnivå-skillnader);
+  (7) extraktions-icke-determinismen BITER I PRAKTIKEN: samma RFP omanalyserad gav
+  annan ska-/bör-klassning (facklig samverkan blev ska-krav ⇒ mekanisk 0 %) + en
+  krav-DUBBLETT i listan — dedupe-kandidat i extraktionens post-processing.
+- **APPLY-SWAP: deferred minors ur PR:ens granskningskedja** (final review pekas hit):
+  ApplySwapSchema saknar sektions-headerkommentar i api-schemas.ts; "Analysis not
+  found"/"No match found" på engelska i apply-swap- OCH go-no-go-routerna (samma
+  strängar); apply-swaps 500-grenar (delete-/select-fel) utan dedikerade tester;
+  flow-state-testtiteln säger "limit 1" trots assessments limit 2; isRefreshing kan
+  teoretiskt fastna om RSC-refetchen aldrig löser (inherent i useTransition-mönstret,
+  accepterat); oanvändbar fallback "föreslaget byte" i swapText (knappen renderas bara
+  när swap.remove/add finns). PR-ROUTINENS FOLLOW-UP (#109, APPROVE): CAS:en skyddar
+  mot stale vy men inte mot två samtidiga swaps från samma färska vy — dubbel
+  AI-kostnad, koherent slutläge; åtgärdas (insert villkorad på att assessmentId ännu
+  är senaste raden, t.ex. RPC) först om det observeras i praktiken.
 - **generic-prose kör `high`/32000 på Sonnet 5 (routine-follow-up på #107, polish):**
   runtime-vakten gejtar bara `max`/`xhigh`, vilket är rätt mot Anthropics dokumenterade
   golv — men samma mekanism (tänkandet delar taket med svaret) gäller i mildare form

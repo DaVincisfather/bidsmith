@@ -3,9 +3,8 @@ import { createServiceClient, fetchConsultantsByIds } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { evaluateGoNoGo } from "@/lib/go-no-go-evaluator";
 import { RfpAnalysis, ScoredConsultant } from "@/lib/types";
-import { parseBody, internalError } from "@/lib/api-helpers";
+import { parseBody, internalError, requireUser } from "@/lib/api-helpers";
 import { GoNoGoCreateSchema } from "@/lib/api-schemas";
-import { getUserId } from "@/lib/org";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,9 +12,12 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) return parsed.response;
   const { analysisId, teamConsultantIds } = parsed.data;
 
-  // Middleware guarantees authentication; no org scoping in single-workspace model.
+  // Mutating route + service client: route-level auth, never middleware alone
+  // (#103 rule). requireUser also supplies the userId for attribution.
   const authed = await createClient();
-  const userId = await getUserId(authed);
+  const auth = await requireUser(authed);
+  if (!auth.ok) return auth.response;
+  const userId = auth.data;
   const supabase = createServiceClient();
 
   // Fetch analysis + match in parallel

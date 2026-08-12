@@ -102,6 +102,16 @@ export const GoNoGoDecisionPatchSchema = z.object({
   decision: z.enum(["go", "no-go"]),
 });
 
+// z.guid() not z.uuid(): zod 4's .uuid() enforces the RFC-4122 variant nibble,
+// which rejects the repo's own test-fixture UUIDs (e.g. "2222...2222") — the
+// same permissive shape-only check parseUuidParam's UUID_RE already uses.
+// z.guid() is the top-level replacement for the deprecated z.string().guid().
+export const ApplySwapSchema = z.object({
+  assessmentId: z.guid(),
+  removeId: z.guid(),
+  addId: z.guid(),
+});
+
 // --- Radar: PATCH /api/radar/opportunities/[id] ---
 
 export const OpportunityStatusPatchSchema = z.object({
