@@ -27,6 +27,7 @@ export default async function GoNoGoPage({ params }: PageProps) {
         <GoNoGoSection
           analysisId={id}
           assessment={flow.assessment}
+          previousAssessment={flow.previousAssessment}
           match={flow.match}
           bid={flow.bid}
         />

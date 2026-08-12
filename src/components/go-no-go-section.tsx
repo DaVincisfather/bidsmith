@@ -4,11 +4,15 @@ import { useRef, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GoNoGoResultView } from "./go-no-go-result";
+import { ForgeLoader } from "./ForgeLoader";
+import { deriveSwapComparison } from "@/lib/team-diff";
 import type { FlowAssessment, FlowBid, FlowMatch } from "@/lib/flow-state";
+import type { ImprovementSuggestion } from "@/lib/types";
 
 interface GoNoGoSectionProps {
   analysisId: string;
   assessment: FlowAssessment;
+  previousAssessment: FlowAssessment | null;
   match: FlowMatch | null;
   bid: FlowBid | null;
 }
@@ -54,7 +58,13 @@ async function pollBidUntilDone(
   }
 }
 
-export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSectionProps) {
+export function GoNoGoSection({
+  analysisId,
+  assessment,
+  previousAssessment,
+  match,
+  bid,
+}: GoNoGoSectionProps) {
   const router = useRouter();
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -64,13 +74,17 @@ export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSect
     };
   }, []);
 
-  const [working, setWorking] = useState<"generate" | "unlock" | null>(null);
+  const [working, setWorking] = useState<"generate" | "unlock" | "swap" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const team = (match?.scoredConsultants ?? []).filter((c) =>
     assessment.teamConsultantIds.includes(c.consultantId),
   );
   const frozen = bid !== null && (bid.exportedAt !== null || bid.status === "exported");
+  const comparison =
+    previousAssessment && match
+      ? deriveSwapComparison(previousAssessment, assessment, match.scoredConsultants)
+      : null;
 
   async function generate() {
     if (bid && !window.confirm("Detta ersätter det befintliga utkastet med ett nytt. Fortsätt?")) {
@@ -121,6 +135,37 @@ export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSect
       }
       router.push(`/analysis/${analysisId}`);
       router.refresh();
+    } catch (err) {
+      if (!mountedRef.current) return;
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setWorking(null);
+    }
+  }
+
+  async function applySwap(imp: ImprovementSuggestion) {
+    const ids = imp.swapIds;
+    if (!ids?.removeId || !ids?.addId) return;
+    const swapText =
+      imp.swap?.remove && imp.swap?.add ? `${imp.swap.remove} → ${imp.swap.add}` : "föreslaget byte";
+    const message = bid
+      ? `Detta raderar anbudsutkastet och kör en ny bedömning med bytet ${swapText}. Fortsätt?`
+      : `Detta kör en ny bedömning med bytet ${swapText}. Fortsätt?`;
+    if (!window.confirm(message)) return;
+    setWorking("swap");
+    setError(null);
+    try {
+      const res = await fetch(`/api/analyses/${analysisId}/apply-swap`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assessmentId: assessment.id, removeId: ids.removeId, addId: ids.addId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Bytet kunde inte genomföras");
+      }
+      router.refresh();
+      if (!mountedRef.current) return;
+      setWorking(null);
     } catch (err) {
       if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -200,7 +245,30 @@ export function GoNoGoSection({ analysisId, assessment, match, bid }: GoNoGoSect
         </div>
       )}
 
-      <GoNoGoResultView result={assessment.result} assessmentId={assessment.id} actions={actions} />
+      {comparison && (
+        <div className="border border-rule rounded-lg px-4 py-3 bg-paper-2 text-sm text-ink-soft">
+          Föregående bedömning:{" "}
+          <span className="font-medium">{comparison.prevWinProbability} %</span>
+          {" → "}
+          <span className="font-medium">{assessment.result.winProbability} %</span>
+          {comparison.removed.length > 0 && comparison.added.length > 0 && (
+            <> · byte: {comparison.removed.join(", ")} → {comparison.added.join(", ")}</>
+          )}
+        </div>
+      )}
+      {working === "swap" && (
+        <div className="flex justify-center py-6">
+          <ForgeLoader size={64} />
+        </div>
+      )}
+
+      <GoNoGoResultView
+        result={assessment.result}
+        assessmentId={assessment.id}
+        actions={actions}
+        onApplySwap={frozen ? undefined : applySwap}
+        swapDisabled={working !== null}
+      />
     </div>
   );
 }

@@ -1,12 +1,15 @@
 "use client";
 
-import { GoNoGoResult, GoNoGoRecommendation } from "@/lib/types";
+import { GoNoGoResult, GoNoGoRecommendation, ImprovementSuggestion } from "@/lib/types";
 
 interface GoNoGoResultProps {
   result: GoNoGoResult;
   assessmentId: string;
   /** Page-level action buttons (generate/open/unlock) — supplied by the caller. */
   actions: React.ReactNode;
+  /** When set, actionable improvement cards render a "Testa bytet" button. */
+  onApplySwap?: (imp: ImprovementSuggestion) => void;
+  swapDisabled?: boolean;
 }
 
 function recommendationLabel(rec: GoNoGoRecommendation): string {
@@ -38,7 +41,7 @@ function probabilityColor(p: number): string {
   return "text-red-700 bg-red-50";
 }
 
-export function GoNoGoResultView({ result, actions }: GoNoGoResultProps) {
+export function GoNoGoResultView({ result, actions, onApplySwap, swapDisabled }: GoNoGoResultProps) {
   const allMustMet = result.mustRequirements.every((r) => r.met);
 
   return (
@@ -140,6 +143,17 @@ export function GoNoGoResultView({ result, actions }: GoNoGoResultProps) {
                     <span className="text-blue-600">{imp.estimatedImpact}</span>
                   </div>
                   <p className="text-blue-800 mt-1">{imp.reason}</p>
+                  {onApplySwap && imp.swapIds?.removeId && imp.swapIds?.addId && (
+                    <button
+                      onClick={() => onApplySwap(imp)}
+                      disabled={swapDisabled}
+                      className="mt-2 border border-blue-300 text-blue-900 px-3 py-1.5 rounded-lg
+                                 text-sm font-medium hover:bg-blue-100 disabled:opacity-50
+                                 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Testa bytet
+                    </button>
+                  )}
                 </div>
               ) : null
             )}
