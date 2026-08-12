@@ -4,7 +4,25 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-12 kväll — **APPLY-SWAP (DENNA PR): go/no-go-förslagens
+_Senast uppdaterad: 2026-08-12 natt — **ADD-FÖRSLAG (DENNA PR): go/no-go kan nu föreslå
+en fjärde konsult + säga "poolen räcker inte".** Stefans beslut efter kvällens smoke:
+tillägg primärt för otäckta ska-krav (bör-krav tillåtna), strukturerad poolGap-signal.
+Levererat: `kind: "swap"|"add"`-diskriminator (REQUIRED i AI-schemat per BUG-A-lärdomen,
+optional i lästyperna för legacy-rader), `poolGap: string|null` (required-nullable),
+promptens task 6 + regler + teamstorleksinjektion ("Teamstorlek: N av 5"), per-kind-filter
+med MAX_TEAM_SIZE-vakt, apply-routens add-gren (removeId frånvarande/null ⇒ append,
+409 vid fullt team, allt annat oförändrat: CAS, dubbla bid-vakter, pool-422,
+eval-före-delete), "Lägg till X"-kort med "Testa tillägget"-knapp, gul "Poolen räcker
+inte"-panel (visas även utan förslag), jämförelsebalkens tilläggsgren. RIDER:
+GoNoGoCreateSchema-taket 200→MAX_TEAM_SIZE (sista luckan där team kunde växa förbi 5
+server-side). LIVE-SMOKE (grind för gonogo-promptändring): 2-personersteam gav två
+kind:add (+15/+8, korrekt sorterade, removeId null) OCH ärlig poolGap om
+kollektivavtal+Timecare-kombon — båda signalerna samexisterar korrekt. Kända v1-gränser:
+ingen undo-dämpning för add-kort (skulle kräva remove-typ som inte finns; lägre
+cirkularitetsrisk än byten); dubbel isAdd-härledning UI/handler (kort: swap.remove,
+handler: swapIds.removeId) — filtret tvingar bara swap.remove==null, skärpningskandidat._
+
+_Historik (2026-08-12 kväll): **APPLY-SWAP (#109): go/no-go-förslagens
 konsultbyte är nu en knapp.** Stefans klick-smoke (första efter #103) kvitterades i dev:
 kärnflödet grönt end-to-end. Två 404-fynd under smoken visade sig vara stale `.next`-cache
 (CLAUDE.md-regel tillagd på main, e8b6909), inte kodbuggar i #103/#105. Ur smoken föddes
