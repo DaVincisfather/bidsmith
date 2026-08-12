@@ -43,7 +43,7 @@ export function dedupeRequirements<
       // Digit-reference boilerplate is a measured false-positive class: rows that
       // differ only in a numeric reference collapse at the trigram threshold —
       // "…bifoga ifylld och undertecknad bilaga 3…" vs "…bilaga 4…" measures
-      // 0.9091, "…krav enligt avsnitt 3.2…" vs "…avsnitt 3.4…" measures 0.9286.
+      // 0.9091, "…krav enligt avsnitt 3.2…" vs "…avsnitt 3.4…" measures 0.9592.
       // Both are must+qualification, so priority/kind don't protect. If the
       // digit-token sequences differ, these are different requirements — skip
       // both the equality and trigram checks. True duplicates that happen to
