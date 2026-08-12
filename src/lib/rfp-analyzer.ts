@@ -3,6 +3,7 @@ import { RfpAnalysisSchema } from "./ai-schemas";
 import { callClaude } from "./ai-client";
 import { MODELS } from "./models";
 import { runEvidenceGuard } from "./evidence-guard";
+import { dedupeRequirements } from "./requirement-dedupe";
 
 const SYSTEM_PROMPT = `Du är en expert på att analysera förfrågningsunderlag (RFP:er) för konsultuppdrag.
 Du läser ett RFP-dokument och producerar en strukturerad analys i JSON-format.
@@ -104,6 +105,14 @@ export async function analyzeRfp(
     temperature: 0,
     userId,
   });
+
+  const beforeDedupe = analysis.requirements.length;
+  analysis.requirements = dedupeRequirements(analysis.requirements);
+  if (analysis.requirements.length < beforeDedupe) {
+    console.warn(
+      `[rfp-analyzer] dropped ${beforeDedupe - analysis.requirements.length} duplicate requirement(s), kept first occurrences`,
+    );
+  }
 
   // RUNTIME-EVIDENSVAKT (delad mekanik med CV-extraktionen, se evidence-guard.ts).
   // Gratis sträng-matchning: finns varje kravs citat ordagrant i underlaget?

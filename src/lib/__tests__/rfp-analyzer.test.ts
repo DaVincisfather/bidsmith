@@ -268,6 +268,60 @@ describe("analyzeRfp — runtime evidence guard", () => {
   });
 });
 
+describe("analyzeRfp — requirement dedupe", () => {
+  beforeEach(() => {
+    mockCallClaude.mockReset();
+  });
+
+  // Underlag där kravets citat verifierar ordagrant, så vakten inte gör ett
+  // extra re-citat-anrop — call count 1 isolerar dedupe-effekten.
+  const RFP = "Anbudsgivaren ska ha minst tre års erfarenhet av projektledning.";
+
+  function analysis(requirements: unknown[]) {
+    return {
+      title: "Test",
+      client: "Kund",
+      deadline: null,
+      summary: "s",
+      requirements,
+      evaluationCriteria: [],
+      requiredCompetencies: [],
+      estimatedScope: "x",
+      redFlags: [],
+      domain: "IT",
+      oslReference: null,
+      secrecyRows: [],
+    };
+  }
+
+  // Fabrik (inte ett delat objekt): vakten muterar `evidence` in place, så varje
+  // test måste få FÄRSKA krav-objekt annars läcker en mutation mellan testerna.
+  const duplicateReq = () => ({
+    category: "Erfarenhet",
+    description: "Minst tre års erfarenhet av projektledning",
+    priority: "must",
+    kind: "qualification",
+    evidence: "minst tre års erfarenhet av projektledning",
+  });
+
+  it("en dubblerad krav-post i den mockade AI-analysen kommer tillbaka en gång", async () => {
+    mockCallClaude.mockResolvedValueOnce(analysis([duplicateReq(), duplicateReq()]));
+
+    const result = await analyzeRfp(RFP);
+
+    expect(result.requirements).toHaveLength(1);
+    expect(result.requirements[0].evidence).toBe(
+      "minst tre års erfarenhet av projektledning",
+    );
+    // Ingen extra vakt-runda behövdes: bevis att evidensvakten fick den redan
+    // deduplicerade listan (1 post), inte den råa (2 poster) — hade vakten fått
+    // 2 identiska overifierbara poster hade den fortfarande inte anropat igen
+    // här (citatet verifierar), men körningen bekräftar att endast 1 anrop
+    // totalt behövdes för hela flödet.
+    expect(mockCallClaude).toHaveBeenCalledOnce();
+  });
+});
+
 describe("RfpAnalysisSchema — OSL extraction", () => {
   it("accepts oslReference and secrecyRows", () => {
     const raw = {
