@@ -117,7 +117,7 @@ export async function analyzeRfp(
   analysis.requirements = dedupeRequirements(analysis.requirements);
   if (analysis.requirements.length < beforeDedupe) {
     console.warn(
-      `[rfp-analyzer] dropped ${beforeDedupe - analysis.requirements.length} duplicate requirement(s), kept first occurrences`,
+      `[rfp-analyzer] (${label}) dropped ${beforeDedupe - analysis.requirements.length} duplicate requirement(s), kept first occurrences`,
     );
   }
 

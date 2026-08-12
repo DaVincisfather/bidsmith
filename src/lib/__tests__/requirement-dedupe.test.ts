@@ -51,4 +51,28 @@ describe("dedupeRequirements", () => {
     const a2 = req("Krav A");
     expect(dedupeRequirements([a, b, a2])).toEqual([a, b]);
   });
+
+  it("keeps digit-reference rows that differ only in the numeric reference (bilaga 3 vs bilaga 4)", () => {
+    const a = req("Anbudsgivaren ska bifoga ifylld och undertecknad bilaga 3 till anbudet");
+    const b = req("Anbudsgivaren ska bifoga ifylld och undertecknad bilaga 4 till anbudet");
+    expect(dedupeRequirements([a, b])).toHaveLength(2);
+  });
+
+  it("keeps digit-reference rows that differ only in the section reference (avsnitt 3.2 vs 3.4)", () => {
+    const a = req("Anbudsgivaren ska uppfylla krav enligt avsnitt 3.2");
+    const b = req("Anbudsgivaren ska uppfylla krav enligt avsnitt 3.4");
+    expect(dedupeRequirements([a, b])).toHaveLength(2);
+  });
+
+  it("still collapses a verbatim duplicate that contains digits", () => {
+    const a = req("Uppdraget omfattar 3 faser under 2026");
+    const b = req("Uppdraget omfattar 3 faser under 2026");
+    expect(dedupeRequirements([a, b])).toEqual([a]);
+  });
+
+  it("collapses an undefined kind with an explicit 'qualification' kind via the fallback", () => {
+    const a = { ...req("Erfarenhet av offentlig upphandling", "must"), kind: undefined };
+    const b = req("Erfarenhet av offentlig upphandling", "must", "qualification");
+    expect(dedupeRequirements([a, b])).toHaveLength(1);
+  });
 });

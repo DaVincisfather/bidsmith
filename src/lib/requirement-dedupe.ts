@@ -11,6 +11,17 @@ function normalized(s: string): string {
   return s.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+function digitTokens(s: string): string[] {
+  return normalized(s).match(/\d+(?:\.\d+)*/g) ?? [];
+}
+
+function sameDigitTokens(a: string, b: string): boolean {
+  const ta = digitTokens(a);
+  const tb = digitTokens(b);
+  if (ta.length !== tb.length) return false;
+  return ta.every((token, i) => token === tb[i]);
+}
+
 /**
  * Deterministic near-exact dedupe of extracted requirements, keep-first.
  * Two rows are duplicates only when priority AND kind match and the
@@ -29,6 +40,15 @@ export function dedupeRequirements<
     const isDupe = kept.some((existing) => {
       if (existing.priority !== candidate.priority) return false;
       if ((existing.kind ?? "qualification") !== (candidate.kind ?? "qualification")) return false;
+      // Digit-reference boilerplate is a measured false-positive class: rows that
+      // differ only in a numeric reference collapse at the trigram threshold —
+      // "…bifoga ifylld och undertecknad bilaga 3…" vs "…bilaga 4…" measures
+      // 0.9091, "…krav enligt avsnitt 3.2…" vs "…avsnitt 3.4…" measures 0.9286.
+      // Both are must+qualification, so priority/kind don't protect. If the
+      // digit-token sequences differ, these are different requirements — skip
+      // both the equality and trigram checks. True duplicates that happen to
+      // contain digits still have identical token arrays and still collapse.
+      if (!sameDigitTokens(existing.description, candidate.description)) return false;
       const a = normalized(existing.description);
       const b = normalized(candidate.description);
       return a === b || trigramSimilarity(a, b) >= DUPLICATE_THRESHOLD;
