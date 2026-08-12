@@ -75,13 +75,14 @@ export async function buildUnderstandingBundle(
     callLLM: (p) =>
       callClaude({
         model: MODELS.writing,
-        maxTokens: 32000,
+        // Se phases-bundlen: taket delas av tänkande och svar.
+        maxTokens: 64000,
         system: p,
         cachedContext: formatContext(ctx),
         userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
         schema: UnderstandingBundleSchema,
         label: "understanding bundle",
-        effort: "max",
+        effort: "high",
         userId: ctx.userId,
         bidId: ctx.bidId,
       }),

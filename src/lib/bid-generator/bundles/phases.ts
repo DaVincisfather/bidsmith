@@ -97,13 +97,21 @@ export async function buildPhasesBundle(
     callLLM: (p) =>
       callClaude({
         model: MODELS.writing,
-        maxTokens: 32000,
+        // 64000, inte 32000: taket delas av tänkande och svar. Med det gamla
+        // taket trunkerades phases i 3 av 4 skarpa genereringar 2026-08-02 —
+        // stop_reason "max_tokens" på exakt 32000, vilket bokfördes som ett
+        // skenande anrop innan rotorsaken var klarlagd.
+        maxTokens: 64000,
         system: p,
         cachedContext: formatContext(ctx),
         userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
         schema: PhasesV2Schema,
         label: "phases bundle",
-        effort: "max",
+        // "high" i stället för "max": tänkandet ryms i taket, latensen sjunker
+        // från ~275 s (marginal mot Vercels 300 s och watchdogen) och kostnaden
+        // per anbud går ner. Anthropics 4.8-vägledning är att börja på high —
+        // max är benäget att övertänka och ger avtagande avkastning.
+        effort: "high",
         userId: ctx.userId,
         bidId: ctx.bidId,
       }),

@@ -1,6 +1,7 @@
 import Anthropic, { APIError } from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { logAiCall } from "@/lib/ai-call-logger";
+import { limitsFor } from "@/lib/models";
 import { toStructuredOutputSchema } from "@/lib/structured-output-schema";
 
 let _client: Anthropic | null = null;
@@ -22,11 +23,11 @@ const OVERLOAD_BASE_DELAY_MS = 5000;
 // retries (429/5xx) consume no output tokens and are NOT gated by this.
 const RETRY_OUTPUT_BUDGET_MULTIPLE = 2.5;
 
-// Tak för hur högt maxTokens får höjas vid en max_tokens-trunkering (se
-// stop_reason-kollen nedan). Kodbasen har ingen per-modell-registrerad
-// output-gräns i dag (bara call-site-satta maxTokens i bundlarna) — 16384 är
-// en konservativ, modelloberoende gräns tills en sådan tabell finns.
-const MAX_TOKENS_RETRY_CAP = 16384;
+// Fallback-tak för hur högt maxTokens får höjas vid en max_tokens-trunkering
+// (se stop_reason-kollen nedan). Gäller bara modeller UTAN rad i MODEL_LIMITS —
+// kända modeller höjs mot sitt eget output-tak, vilket är hela poängen med
+// registret: en okänd modell ska inte tyst höjas mot en gissad gräns.
+const UNKNOWN_MODEL_RETRY_CAP = 16384;
 
 // Modeller där API:t avvisar `temperature` (400 "deprecated for this model").
 // Verifierat empiriskt 2026-07-03 (claude-sonnet-5). Se översättningen i
@@ -81,7 +82,12 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export type ClaudeEffort = "low" | "medium" | "high" | "max";
+export type ClaudeEffort = "low" | "medium" | "high" | "xhigh" | "max";
+
+// Nivåerna där tänkandet tar så stor del av max_tokens att taket måste
+// dimensioneras för tänkande + svar, inte bara för svaret (se
+// ModelLimits.highEffortFloor).
+const HIGH_EFFORT_LEVELS = new Set<ClaudeEffort>(["xhigh", "max"]);
 
 interface CallClaudeOptions<T> {
   model: string;
@@ -143,6 +149,22 @@ export async function callClaude<T>({
     throw new Error(
       `callClaude(${label}): effort och temperature kan inte kombineras — adaptive thinking kräver API-default temperature`,
     );
+  }
+
+  // max_tokens är ett hårt tak på TÄNKANDE + svarstext. Vid effort max/xhigh
+  // äter tänkandet en stor del av budgeten, så ett tak avsett för enbart svaret
+  // klipper svaret mitt i. Fånga felkonfigurationen här — i drift ser den ut som
+  // ett skenande anrop (stop_reason "max_tokens" på exakt takets värde), och
+  // max_tokens-retryn nedan kan inte rädda den: de stora bundlarna ligger redan
+  // över retry-taket och kör då om på samma tak och trunkerar likadant.
+  const modelLimits = limitsFor(model);
+  if (effort && HIGH_EFFORT_LEVELS.has(effort) && modelLimits?.highEffortFloor != null) {
+    if (maxTokens < modelLimits.highEffortFloor) {
+      throw new Error(
+        `callClaude(${label}): effort "${effort}" kräver maxTokens ≥ ${modelLimits.highEffortFloor} för ${model} `
+          + `(fick ${maxTokens}) — tänkandet delar taket med svaret, så ett lägre tak trunkerar outputen`,
+      );
+    }
   }
 
   // Sonnet 5+ avvisar temperature helt (400 "\`temperature\` is deprecated for
@@ -249,8 +271,9 @@ export async function callClaude<T>({
         // lögn. Neutralt konstaterande av trunkeringen + maxTokens som gällde
         // (currentMaxTokens är ännu inte höjd här — första trunkeringen kör
         // alltid på anroparens värde).
-        if (currentMaxTokens < MAX_TOKENS_RETRY_CAP) {
-          currentMaxTokens = Math.min(currentMaxTokens * 2, MAX_TOKENS_RETRY_CAP);
+        const retryCap = modelLimits?.maxOutputTokens ?? UNKNOWN_MODEL_RETRY_CAP;
+        if (currentMaxTokens < retryCap) {
+          currentMaxTokens = Math.min(currentMaxTokens * 2, retryCap);
           maxTokensWasRaised = true;
         }
         throw new MaxTokensTruncatedError(

@@ -71,13 +71,16 @@ export async function buildQualityBundle(
     callLLM: (p) =>
       callClaude({
         model: MODELS.writing,
-        maxTokens: 16000,
+        // Se phases-bundlen: taket delas av tänkande och svar. Denna bundle låg
+        // värst till (16000 med effort max) men har inte fällt en generering —
+        // trunkeringen är stokastisk och beror på hur långt modellen tänker.
+        maxTokens: 64000,
         system: p,
         cachedContext: formatContext(ctx),
         userContent: "Generera JSON-payloaden enligt systeminstruktionerna.",
         schema: QualityBundleSchema,
         label: "quality bundle",
-        effort: "max",
+        effort: "high",
         userId: ctx.userId,
         bidId: ctx.bidId,
       }),

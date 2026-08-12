@@ -4,11 +4,35 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-11 kväll — **FYRA PR:AR SAMMA KVÄLL, TRE MERGADE.**
+_Senast uppdaterad: 2026-08-12 — **#107 (DENNA PR): HÖGEFFORT-BUNDLARNA TRUNKERADE, DE
+SKENADE ALDRIG.** `max_tokens` är ett tak på tänkande PLUS svarstext. Tre bundles körde
+`effort: "max"` under Anthropics golv på 64000 (phases 32k, understanding 32k, quality 16k)
+⇒ tänkandet åt budgeten och svaret klipptes. Det bokfördes som ett skenande anrop eftersom
+outputen stannade på exakt 32k — men ett skenande anrop stannar inte på ett jämnt tal, ett
+avklippt gör det. Fixen är ett kapabilitetsregister (`MODEL_LIMITS` i models.ts, testtvingat
+per modell) + runtime-vakt i `callClaude` + retry-tak ur registret i stället för gissningen
+16384; bundlarna går till `effort: "high"` med tak 64000.
+**EVAL-GRINDEN FRÅNGÅNGEN MEDVETET (Stefans beslut 2026-08-12):** evals pausas tills
+produkten är färdig — planerad senare är en TREVÄGS (Opus 5@high, Opus 5@xhigh, Sonnet 5)
+mot befintlig output, alltså en modellfråga, inte en effort-jämförelse på 4.8. Alternativet
+var att låta en känd trunkeringsbugg stå kvar under hela härdningen. Ersättningsgrind =
+LIVE-SMOKE (4 bid-generator-fixturer × 1 rep genom `generateAllSections`, produktens egen
+`ai_call_logs` som mätinstrument): **24 anrop, 0 fel, $1,32 totalt = $0,33/anbud, 6 min 35 s
+väggklocka för alla fyra (~99 s/anbud)**. Inget bundle nuddade sitt tak: phases 1 262–1 658
+output-tokens (tak 64 000), 24,4–25,6 s, $0,074 i snitt; understanding ≤1 208/23,6 s;
+quality ≤452/11,2 s; requirement-matrix ≤7 366/63,5 s (störst nu). Baslinjen 2026-08-02:
+phases på EXAKT 32 000 i 3 av 4 genereringar, 272–277 s, ~$1,05 av ~$1,5 per anbud, och i
+en körning skenade även retryn ⇒ hela genereringen fälld. `shortDescription` är rena och
+`risks`/`hoursEstimate` materialiseras. OBS för framtida eval: `max` med 64k-taket är en
+MÄTARM, inte en driftkandidat — den ger modellen dubbelt tänkutrymme och driver latensen
+mot Vercels 300 s._
+
+_Historik (2026-08-11 kväll): **FYRA PR:AR SAMMA KVÄLL, TRE MERGADE.**
 #104 MD-escaping, #105 export-flippen till POST, #106 foreign-genereringen fail closed —
 alla med PR-routine-fynd åtgärdade i respektive PR. #107 (kapabilitetsregister +
-effort-fixen) ligger som **DRAFT** och får inte mergas förrän eval körts: den ändrar
-`writing`-rollens beteende. Denna PR: prisnoten i `ai-cost.ts` var tidsinställt fel —
+effort-fixen) ~~ligger som DRAFT och får inte mergas förrän eval körts~~ — grinden
+frångicks 2026-08-12 och ersattes av en live-smoke, se headern.
+Denna PR: prisnoten i `ai-cost.ts` var tidsinställt fel —
 Sonnet 5:s $2/$10 skulle enligt noten "bumpas" till $3/$15 efter 2026-08-31, men
 Anthropic har gjort $2/$10 till standardpris och höjningen sker inte; en bump hade
 ÖVERskattat kostnaderna 1,5×. Prisrad för `claude-opus-5` tillagd (samma tier som
@@ -201,14 +225,16 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
 - [ ] **PRODUKTHÄRDNING FÖRE LANSERING (Stefans beslut 2026-08-11).** Lanseringen är
       framflyttad utan nytt datum — produkten ska vara bra nog först. Ingen deadline
       styr prioriteringen längre; ordningen är correctness → produktluckor → polish.
-      Öppna correctness-poster i live-backloggen, störst först:
-      (1) **32k-runawayen i phases-bundlen** (synkront med Stefan, kräver eval enligt
-      grind-policyn eftersom `writing`-rollen berörs) — den enda kvarvarande posten som
-      kan fälla en hel generering; (2) **foreign-genereringen gejtas inte av flaggan**
-      (aktiv foreign-mall genererar profilvägen med flaggan av → 195 kapitel + ~$0,5
-      i onödan); (3) **export-flippen muterar DB på GET** (båda exportrouterna).
-      Därefter: Stefans klick-smoke i dev på kärnflödet (aldrig kvitterad efter #103).
-      ~~Markdown-escaping av AI-fritext~~ — KLAR 2026-08-11 (denna PR).
+      **ALLA TRE CORRECTNESS-POSTERNA ÄR NU STÄNGDA:**
+      ~~(1) 32k-runawayen i phases-bundlen~~ — KLAR 2026-08-12 (#107): det var trunkering,
+      inte runaway; se headern. ~~(2) foreign-genereringen gejtas inte av flaggan~~ —
+      KLAR 2026-08-11 (#106, fail closed). ~~(3) export-flippen muterar DB på GET~~ —
+      KLAR 2026-08-11 (#105, POST i båda exportrouterna).
+      ~~Markdown-escaping av AI-fritext~~ — KLAR 2026-08-11 (#104).
+      **NÄSTA STEG ÄR DÄRMED STEFANS KLICK-SMOKE i dev på kärnflödet** (aldrig kvitterad
+      efter #103) — den avgör vad härdningen tar sig an härnäst. Öppna poster som INTE är
+      correctness ligger kvar i live-backloggen (watchdog-samspel, status-reconcile,
+      routine-follow-ups från #96/#97, onboarding-mätpassets v1-lucka).
 - [ ] **PUBLICERING — FRAMFLYTTAD 2026-08-11, INGET NYTT DATUM.** Ursprungsplanen
       (tisdag 2026-08-11, LinkedIn ~07:45 svensk B2B-morgon, X ~14:30 US-östkustens
       morgon) står kvar som mall för tidpunkterna när datumet sätts om.
@@ -470,6 +496,11 @@ _Inga — #54–#68 mergade 2026-07-03/04._
 _Triage 2026-08-04: PPTX-bundna poster flyttade till "Parkerat med PPTX-motorn" nedan,
 verifierat inaktuella till "Struket". Kvar här = MD-vägen + kärnan (generering,
 extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
+- **generic-prose kör `high`/32000 på Sonnet 5 (routine-follow-up på #107, polish):**
+  runtime-vakten gejtar bara `max`/`xhigh`, vilket är rätt mot Anthropics dokumenterade
+  golv — men samma mekanism (tänkandet delar taket med svaret) gäller i mildare form
+  även på `high`. Ligger på foreign-/profilvägen, som är parkerad med PPTX-motorn, så
+  posten väcks när den ytan aktiveras igen: höj taket där eller utvidga golvtanken.
 - **PHASES-RUNAWAY (CORRECTNESS, kärnlogik — ta SYNKRONT med Stefan):** phases-bundlen
   (Opus `writing`, `effort: "max"`, `maxTokens: 32000`) skenade till EXAKT 32k-output-taket
   i 3 av 4 skarpa genereringar 2026-08-02 (272–277 s, ~$0,85/försök); i en körning skenade
@@ -493,8 +524,40 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   blödde in i sista strängfältet. Livesmoke post-fix: phases i ETT anrop
   (9 081 tokens/98 s), rena shortDescriptions, och `risks`/`hoursEstimate`
   materialiseras nu (var alltid tomma pre-fix ⇒ {Risker}-boxen får innehåll).
-  KVAR av posten: 32k-runawayen (hypotes 1, effort max-tänkbudgeten — n=1 utan
-  runaway bevisar inget), watchdog-samspelet, status-reconcile.
+  **HYPOTES 1 BELAGD + ÅTGÄRDAD 2026-08-11 (denna PR) — och den var aldrig en
+  runaway.** Anthropics migrationsguide för Opus 4.7/4.8 har en BLOCKS-punkt:
+  vid `effort: "max"`/`"xhigh"` ska `max_tokens` vara ≥ 64000, eftersom taket är
+  ett hårt tak på TÄNKANDE + svarstext tillsammans. phases körde `max` med 32000
+  ⇒ tänkandet åt utrymmet och svaret klipptes. "Skenade till EXAKT 32k" var
+  ledtråden: ett skenande anrop stannar inte på ett jämnt tal, ett avklippt gör
+  det. Två bundles till bröt mot samma regel utan att ha fällt en generering:
+  `understanding` (max/32000) och `quality` (max/16000 — värst ställd).
+  Följdfyndet förklarar varför #83-retryn inte räddade den: `MAX_TOKENS_RETRY_CAP`
+  var en modelloberoende gissning på 16384, så bundlarna låg redan över
+  retry-taket och kördes om på SAMMA tak — och trunkerade likadant.
+  LEVERERAT (Stefans val: effort ner OCH tak upp): alla tre bundles `max` → `high`
+  med tak 64000; **kapabilitetsregister `MODEL_LIMITS` i `models.ts`** (output-tak
+  + golv för hög effort per modell, med `claude-opus-5` förberedd) så ett
+  modellbyte förblir en enradsändring i stället för en granskning av varje
+  hårdkodat tokentak; **runtime-vakt i `callClaude`** som vägrar hög effort under
+  modellens golv innan anropet går iväg (samma mönster som temperature-vakten) —
+  buggklassen kan därmed inte återinföras; retry-taket kommer nu ur registret i
+  stället för gissningen (okänd modell faller tillbaka på 16384).
+  **GRINDEN: EVAL FRÅNGÅNGEN, LIVE-SMOKE I STÄLLET (Stefans beslut 2026-08-12).**
+  Effort-ändringen rör `writing`-rollens beteende och krävde enligt policyn en eval,
+  men Stefan pausade alla evals tills produkten är färdig; alternativet var att låta
+  trunkeringen stå kvar under hela härdningen. Ersättningsgrinden kördes i stället:
+  4 bid-generator-fixturer × 1 rep genom `generateAllSections`, mätt med produktens
+  egen `ai_call_logs` — 24 anrop, **0 fel, 4/4 utan trunkering**, $1,32 totalt
+  ($0,33/anbud mot ~$1,5), 6 min 35 s för alla fyra. phases: 1 262–1 658 output-tokens
+  mot taket 64 000 och 24,4–25,6 s mot baslinjens 272–277 s; `shortDescription` rena,
+  `risks`/`hoursEstimate` materialiserade. Kvar omätt: anbudsTEXTENS kvalitet vid
+  `high` vs `max` — den frågan ställs aldrig av Stefans planerade trevägs (Opus 5@high,
+  Opus 5@xhigh, Sonnet 5 mot befintlig output), så den är medvetet obesvarad.
+  KVAR av posten: watchdog-samspelet och status-reconcile (latensvinsten från
+  `high` mildrar men löser inte); Opus 5-bytet är nu en radändring men eget
+  beslut med egen eval — buntas medvetet INTE ihop med effort-ändringen, då
+  mäter evalen två saker samtidigt.
   ~~omkörningsknapp~~ — KLAR 2026-08-05 (flow-navigation-PR:en): go/no-go-sidans
   "Generera om" ersätter utkastet på samma rad; stale generating (>7 min) räknas
   som död och ersätts i stället för att 409:a (delad regel i `lib/bid-status.ts`
