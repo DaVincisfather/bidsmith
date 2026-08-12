@@ -199,8 +199,11 @@ ${poolText}`,
   // require positive impact (the prompt forbids 0 % swaps but the LLM still
   // produces "+0 %" suggestions where it argues against itself in the reason
   // field — confusing for the user). "add" additionally requires an add-only
-  // shape (no remove) and a free team slot; "swap" requires a real
-  // remove+add pair (unchanged from the original swap-only filter).
+  // shape (no remove, in EITHER the display field or the id field) and a
+  // free team slot; "swap" requires a real remove+add pair (unchanged from
+  // the original swap-only filter). After this filter, swap.remove and
+  // swapIds.removeId are both null for every surviving add — the UI's two
+  // isAdd derivations agree by construction.
   result.improvements = result.improvements.filter((imp) => {
     if (!(parseImpactPct(imp.estimatedImpact) > 0)) return false;
     if (imp.kind === "add") {
@@ -208,6 +211,7 @@ ${poolText}`,
         imp.swap?.add != null &&
         imp.swapIds?.addId != null &&
         imp.swap?.remove == null &&
+        imp.swapIds?.removeId == null &&
         teamConsultants.length < MAX_TEAM_SIZE
       );
     }

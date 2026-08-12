@@ -342,6 +342,32 @@ describe("evaluateGoNoGo post-processing", () => {
     expect(result.improvements).toHaveLength(0);
   });
 
+  it("drops a kind:add entry whose swapIds.removeId disagrees with swap.remove (malformed)", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 72,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "add",
+          swap: { remove: null, add: "Aram" },
+          swapIds: { removeId: "c1", addId: "id-aram" },
+          estimatedImpact: "+12%",
+          reason: "Malformed: kind add, swap.remove null men swapIds.removeId satt",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, teamOfThree, scored);
+    expect(result.improvements).toHaveLength(0);
+  });
+
   it("passes poolGap through and tolerates null", async () => {
     mockResponse({
       mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
