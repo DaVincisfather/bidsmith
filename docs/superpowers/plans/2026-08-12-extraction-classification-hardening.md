@@ -97,7 +97,12 @@ describe("dedupeRequirements", () => {
 ```ts
 import { trigramSimilarity } from "@/lib/text-similarity";
 
-const DUPLICATE_THRESHOLD = 0.9;
+// Calibrated against the real near-dupe class: "…leverantör … samt prisbilaga"
+// vs "…leverantören … och prisbilaga" measures 0.8636 — inflection + stopword
+// variants of the same requirement. Dedupe additionally requires identical
+// priority AND kind, which keeps the false-positive risk low at this level;
+// eval:analyzer precision is the guard against over-collapsing.
+const DUPLICATE_THRESHOLD = 0.85;
 
 function normalized(s: string): string {
   return s.toLowerCase().replace(/\s+/g, " ").trim();
