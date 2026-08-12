@@ -19,8 +19,11 @@ server-side). LIVE-SMOKE (grind för gonogo-promptändring): 2-personersteam gav
 kind:add (+15/+8, korrekt sorterade, removeId null) OCH ärlig poolGap om
 kollektivavtal+Timecare-kombon — båda signalerna samexisterar korrekt. Kända v1-gränser:
 ingen undo-dämpning för add-kort (skulle kräva remove-typ som inte finns; lägre
-cirkularitetsrisk än byten); dubbel isAdd-härledning UI/handler (kort: swap.remove,
-handler: swapIds.removeId) — filtret tvingar bara swap.remove==null, skärpningskandidat._
+cirkularitetsrisk än byten). Slutgranskningens fynd FIXAT före merge: filtret tvingar nu
+BÅDA fälten (swap.remove OCH swapIds.removeId null) för add — UI:ts två isAdd-härledningar
+är ekvivalenta per konstruktion. Deferred follow-ups: promptregeln "varje förslag ska
+vara ett byte" omformuleras i nästa prompt-PR (egen smoke), add-grenens felcopy,
+två billiga testpins (pool-422 på add, team-diff-pin för add-form)._
 
 _Historik (2026-08-12 kväll): **APPLY-SWAP (#109): go/no-go-förslagens
 konsultbyte är nu en knapp.** Stefans klick-smoke (första efter #103) kvitterades i dev:
