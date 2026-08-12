@@ -16,13 +16,16 @@ positionsbyte) är försumbar i sammanhanget, ~$1–2.
 | Körning | Vad den svarar på | Uppskattad kostnad |
 |---|---|---|
 | Opus 4.8 vs **Opus 5** | Ska skrivrollen byta modell? | **~$15–16** |
-| Opus 4.8 vs **Sonnet 5** | Räcker Sonnet för anbudstext? | **~$10–11** |
+| Opus 4.8 vs **Sonnet 5** | Räcker Sonnet för anbudstext? | **~$9–10** |
 | **Trevägs:** 4.8@max, 4.8@high, Opus 5@high | Både effort-frågan (#107) OCH modellfrågan | **~$18–20** |
 
 Uppskattningarna bygger på: Opus 5 kostar **exakt samma per token som Opus 4.8**
 ($5/$25 — samma tier, inget pristillägg), men skriver längre som default, så jag
-lägger på 20–30 % tokenvolym. Sonnet 5 är $2/$10 men har en ny tokenizer som ger
-~30 % fler tokens för samma text, netto ~1,9× billigare än Opus snarare än 2,5×.
+lägger på 20–30 % tokenvolym. Sonnet 5 är $2/$10, alltså **2,5× billigare än Opus
+per token**. (RÄTTELSE efter PR-review: en tidigare version drog av ~30 % för
+Sonnet 5:s nya tokenizer och landade på ~1,9×. Det var dubbelräkning — Opus 4.8
+använder SAMMA nya tokenizer, införd med Opus 4.7. Tokenizern flyttar alltså båda
+modellernas tokenantal lika mycket och kvoten dem emellan förblir 2,5×.)
 
 **Trevägskörningen är den bästa affären.** Den kostar ~$3 mer än en ren
 modelljämförelse och stänger då även #107:s eval-grind i samma svep, i stället för
@@ -96,9 +99,17 @@ inte våra rena JSON-steg.
 kan tas bort. Vi har inga.
 
 **Effort-mappning vid migrering:** Sonnet 5 på `medium` ≈ Sonnet 4.6 på `high`; Sonnet
-5 på `high` ≈ 4.6 på `max`. Våra Sonnet-roller sätter inte effort alls, vilket ger
-`high` som default — alltså en nivå högre än vi hade före bytet, utan att någon
-beslutat det.
+5 på `high` ≈ 4.6 på `max`.
+
+**Vad våra Sonnet-roller faktiskt kör** (RÄTTELSE efter PR-review — en tidigare version
+påstod att de ärver `high` utan beslut): de kör med **tänkandet AV**, inte på en ärvd
+nivå. `ai-client.ts:164` skickar `thinking: disabled` explicit när `effort` saknas
+(`const thinkingDisabled = !effort && NO_SAMPLING_MODELS.has(model)`), just för att
+Sonnet 5 annars defaultar till adaptiv thinking server-side och skulle äta våra snäva
+`maxTokens` (team 2000, gonogo 4000) med tänkande-tokens. Beteendet är testtäckt.
+Enda Sonnet-ytan som sätter effort explicit är generic-prose-bundlen
+(`generic-prose.ts:222` och `:418`, båda `effort: "high"`); de mekaniska passen där
+utelämnar den medvetet.
 
 ### Ett fynd som rör en garanti vi tror att vi har
 
@@ -129,11 +140,16 @@ Kostar inget extra per token. Nu en radändring i `models.ts` — prisrad och
 kapabilitetsrad finns redan.
 → *Rekommendation: avvakta A. Fas 1 visade att "nyare modell" inte är ett skäl i sig.*
 
-**C. Sätt effort explicit på Sonnet-rollerna.** De ärver `high` sedan bytet i juli utan
-att någon valt det. `medium` motsvarar det vi hade på 4.6 och skulle sänka kostnad och
-latens på fem roller.
-→ *Rekommendation: ja, men som egen liten PR med smoke — inte i evalen. Det rör inte
-writing-rollen, så ingen eval krävs enligt policyn.*
+**C. ~~Sätt effort explicit på Sonnet-rollerna.~~ STRUKEN — byggde på ett felaktigt
+antagande** (fångat av PR-reviewen). Förslaget var att sätta `effort: "medium"` för att
+sänka kostnad och latens, med motiveringen att rollerna "ärver `high`". Det gör de inte:
+de kör med tänkandet explicit AV (avsnitt 3). Att sätta `medium` skulle därför **slå PÅ**
+adaptiv thinking på fem roller som i dag kör utan — högre kostnad och latens, inte lägre.
+Raka motsatsen till avsikten.
+→ *Vad som återstår av frågan: generic-prose-bundlens explicita `effort: "high"` är den
+enda Sonnet-yta där nivån faktiskt är vald. Den ligger på foreign-/profilvägen, som är
+parkerad med PPTX-motorn efter MD-pivoten — låg avkastning att röra nu. Rekommendation:
+lämna.*
 
 **D. Prompt-audit av Sonnet-rollernas prompter mot literalismen.**
 → *Rekommendation: nej, inte nu. Ingen belagd skada — lägg som backlog-post tills något
