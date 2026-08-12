@@ -94,6 +94,22 @@ describe("analyzeRfp", () => {
     expect(args.system).toMatch(/ordagrant|ordagran/i);
   });
 
+  it("anchors the ska/bör classification in the document's explicit markers", async () => {
+    mockCallClaude.mockResolvedValueOnce({
+      title: "Test", client: "Kund", deadline: null, summary: "s",
+      requirements: [], evaluationCriteria: [], requiredCompetencies: [],
+      estimatedScope: "x", redFlags: [], domain: "IT",
+      oslReference: null, secrecyRows: [],
+    });
+
+    await analyzeRfp("RFP-text");
+
+    const args = mockCallClaude.mock.calls[0][0];
+    expect(args.system).toContain("uttryckligen");
+    expect(args.system).toContain('ALDRIG "must"');
+    expect(args.system).toContain("kravmatris");
+  });
+
   it("skickar med distinkt label när en sådan anges (loop-attribution)", async () => {
     mockCallClaude.mockResolvedValueOnce({
       title: "Test", client: "Kund", deadline: null, summary: "s",

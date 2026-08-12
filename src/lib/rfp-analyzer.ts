@@ -48,6 +48,13 @@ Var noggrann med att:
   Mappa svenska termer: ska-krav/skall-krav/skall/ska → "must",
   bör-krav/bör → "should", kan-krav/kan/önskemål → "nice-to-have".
   Använd aldrig svenska värden eller andra varianter i fältet.
+- KLASSNINGEN MÅSTE FÖRANKRAS I UNDERLAGETS EGEN MARKERING. Upphandlingar anger i
+  regel uttryckligen vad som är ska-krav respektive bör-krav — ofta i en kravmatris
+  eller med orden "ska"/"skall"/"obligatoriskt" i kravmeningen eller dess rubrik.
+  Sätt "must" ENDAST när en sådan uttrycklig markering finns i underlaget för just
+  det kravet. Saknas uttrycklig markering, eller är den tvetydig, klassa som
+  "should" — ALDRIG "must" på egen bedömning av hur viktigt kravet verkar vara.
+  När markören står i löptexten: låt evidence-citatet omfatta den.
 - kind klassar VARJE post:
   - "qualification" = krav PÅ anbudsgivaren som bedöms/måste uppfyllas för att kvalificera
     (kompetens, certifieringar, erfarenhet, uteslutningsgrunder, obligatoriska villkor,
