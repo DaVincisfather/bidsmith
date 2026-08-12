@@ -4,7 +4,27 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-12 kväll — **APPLY-SWAP (DENNA PR): go/no-go-förslagens
+_Senast uppdaterad: 2026-08-12 natt — **KLASSNINGSHÄRDNING (DENNA PR): ska/bör förankras
+i underlagets egen markering + deterministisk krav-dedupe.** Rotorsak (backlog-fynd 7,
+Stefans repro): omanalys av samma RFP flippade "facklig samverkan" bör→ska ⇒ mekanisk 0 %.
+Levererat: (1) prompt-regel — "must" ENDAST vid uttrycklig markering i underlaget
+(kravmatris/ska/skall/obligatoriskt i mening eller rubrik); saknad/tvetydig markering ⇒
+"should", ALDRIG must på egen viktighetsbedömning (Stefans princip: upphandlingar ÄR
+explicita, ofta en matris); (2) `dedupeRequirements` (trigram ≥0,85 + identisk
+priority+kind, keep-first) FÖRE evidence-guarden (indexskrivningen är lastbärande);
+olik klassning kollapsas aldrig. **EVAL-GRINDEN — ÄRLIGT UTFALL (#107-mönstret):**
+`eval:zero-halluc` GRÖN (1 stokastisk miss i första körningen — deliverable med utelämnat
+citat, klassen strippas av vakten i drift; isolerad omkörning 22/22). `eval:analyzer` är
+RÖD ÄVEN PÅ MAIN (req-f1 0,42 mot tröskel 0,85 — goldens stale sedan Sonnet 5-bytet) och
+kan inte grinda någon ändring; baslinje-vs-branch per äkta fixtur visar INGEN regression
+(0,67→0,73 / 0,19→0,30 / 0,11→0,10 / 0,15→0,14; snitt 0,28→0,32, inga tappade krav).
+NYA BACKLOG-POSTER ur mätningen: run-analyzer räknar med `_stub` (2-kravsfixtur, f1
+svänger 1↔0 på en flip och förvränger aggregatet — ska skippas som i loopen); goldens
+behöver omannotering under marker-förankrad klassning innan analyzer-evalen åter är grind;
+nice-to-have-etikettens fallback i analysis-result (nyckel `nice` vs värdet
+`nice-to-have` ⇒ rå sträng renderas)._
+
+_Historik (2026-08-12 kväll): **APPLY-SWAP (#109): go/no-go-förslagens
 konsultbyte är nu en knapp.** Stefans klick-smoke (första efter #103) kvitterades i dev:
 kärnflödet grönt end-to-end. Två 404-fynd under smoken visade sig vara stale `.next`-cache
 (CLAUDE.md-regel tillagd på main, e8b6909), inte kodbuggar i #103/#105. Ur smoken föddes
@@ -528,9 +548,10 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   CIRKELBYTET BELAGT LIVE i samma smoke: direkt efter Sara→Aram (±0) föreslog nya
   bedömningen "byt tillbaka Aram→Sara +7%" — den dokumenterade 2026-04-30-begränsningen,
   nu klickbar (ping-pong à 30 s + AI-kostnad på brusnivå-skillnader);
-  (7) extraktions-icke-determinismen BITER I PRAKTIKEN: samma RFP omanalyserad gav
+  ~~(7) extraktions-icke-determinismen BITER I PRAKTIKEN: samma RFP omanalyserad gav
   annan ska-/bör-klassning (facklig samverkan blev ska-krav ⇒ mekanisk 0 %) + en
-  krav-DUBBLETT i listan — dedupe-kandidat i extraktionens post-processing.
+  krav-DUBBLETT i listan — dedupe-kandidat i extraktionens post-processing.~~
+  ÅTGÄRDAD (denna PR): klassningsförankring + dedupe, se headern.
 - **APPLY-SWAP: deferred minors ur PR:ens granskningskedja** (final review pekas hit):
   ApplySwapSchema saknar sektions-headerkommentar i api-schemas.ts; "Analysis not
   found"/"No match found" på engelska i apply-swap- OCH go-no-go-routerna (samma
