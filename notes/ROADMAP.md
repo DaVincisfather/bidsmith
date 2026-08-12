@@ -22,7 +22,11 @@ NYA BACKLOG-POSTER ur mätningen: run-analyzer räknar med `_stub` (2-kravsfixtu
 svänger 1↔0 på en flip och förvränger aggregatet — ska skippas som i loopen); goldens
 behöver omannotering under marker-förankrad klassning innan analyzer-evalen åter är grind;
 nice-to-have-etikettens fallback i analysis-result (nyckel `nice` vs värdet
-`nice-to-have` ⇒ rå sträng renderas)._
+`nice-to-have` ⇒ rå sträng renderas). Slutgranskningens mätta fynd FIXAT före merge:
+sifferreferens-boilerplate ("bilaga 3" vs "bilaga 4" → 0,9091) kollapsade äkta ska-krav —
+siffertoken-precondition tillagd i dedupe-predikatet. KÄND ACCEPTERAD RESIDUAL:
+certnamns-klassen ("PRINCE2" vs "PMP" i identisk mall) mäter 0,8533 — strax ÖVER tröskeln
+och utan siffror; rapporteras ett kollapsat cert-krav är detta rotorsaken._
 
 _Historik (2026-08-12 kväll): **APPLY-SWAP (#109): go/no-go-förslagens
 konsultbyte är nu en knapp.** Stefans klick-smoke (första efter #103) kvitterades i dev:
