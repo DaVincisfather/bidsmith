@@ -7,6 +7,7 @@ const h = vi.hoisted(() => {
     analysisRow: { analysis: { title: "RFP" } } as unknown,
     matchRows: [{ team_proposal: [] }] as { team_proposal: unknown[] }[],
     bids: [] as unknown[],
+    bidsSelectQueue: null as unknown[][] | null,
     consultants: [{ id: "c-add" }] as unknown[],
     evalResult: { winProbability: 55 } as unknown,
     evalError: null as Error | null,
@@ -35,7 +36,13 @@ vi.mock("@/lib/supabase", () => ({
           return { eq: () => ({ order: () => ({ limit: () => Promise.resolve({ data: h.state.assessments, error: null }) }) }) };
         }
         // bids
-        return { eq: () => Promise.resolve({ data: h.state.bids, error: null }) };
+        return {
+          eq: () =>
+            Promise.resolve({
+              data: h.state.bidsSelectQueue?.length ? h.state.bidsSelectQueue.shift() : h.state.bids,
+              error: null,
+            }),
+        };
       },
       insert: (payload: Record<string, unknown>) => {
         h.state.inserted.push(payload);
@@ -117,6 +124,7 @@ beforeEach(() => {
   h.state.analysisRow = { analysis: { title: "RFP" } };
   h.state.matchRows = [{ team_proposal: [{ consultantId: ADD_ID, consultantName: "Aram" }] }];
   h.state.bids = [];
+  h.state.bidsSelectQueue = null;
   h.state.consultants = [{ id: "c" }];
   h.state.evalResult = { winProbability: 55 };
   h.state.evalError = null;
@@ -225,6 +233,18 @@ describe("POST /api/analyses/[id]/apply-swap", () => {
     const res = await POST(makeRequest(validBody()), ctx(ANALYSIS_ID));
     expect(res.status).toBe(500);
     expect(h.state.deletedFrom).toHaveLength(0);
+  });
+
+  it("409s when a generation starts during the evaluation window, deleting nothing and inserting nothing", async () => {
+    const generatingBidRow = { id: "b-2", status: "generating", exported_at: null, created_at: new Date().toISOString() };
+    // First guard (pre-evaluation) sees no bids; the re-check right after
+    // evaluateGoNoGo returns sees a bid that started generating mid-flight.
+    h.state.bidsSelectQueue = [[], [generatingBidRow]];
+    const res = await POST(makeRequest(validBody()), ctx(ANALYSIS_ID));
+    expect(res.status).toBe(409);
+    expect(h.state.deletedFrom).toHaveLength(0);
+    expect(h.state.inserted).toHaveLength(0);
+    expect(h.state.evalCalls).toHaveLength(1);
   });
 
   it("500s when the assessment insert fails", async () => {

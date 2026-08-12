@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient, fetchConsultantsByIds } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
 import { evaluateGoNoGo } from "@/lib/go-no-go-evaluator";
@@ -9,6 +10,38 @@ import { isActivelyGenerating } from "@/lib/bid-status";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+// Same freeze/generation guards as unlock-team: an exported bid is a
+// submitted document and a running generation must not lose its bid row.
+// Called twice below — once before the AI evaluation, once right after —
+// because the evaluation call is long (tens of seconds) and a second tab
+// can start a generation while it's in flight.
+async function refuseBidConflicts(
+  supabase: SupabaseClient,
+  analysisId: string,
+): Promise<NextResponse | null> {
+  const { data: bids, error: bidsError } = await supabase
+    .from("bids")
+    .select("id, status, exported_at, created_at")
+    .eq("analysis_id", analysisId);
+  if (bidsError) {
+    return NextResponse.json({ error: bidsError.message }, { status: 500 });
+  }
+  const bidRows = (bids ?? []) as { id: string; status: string; exported_at: string | null; created_at: string | null }[];
+  if (bidRows.some((b) => b.exported_at || b.status === "exported")) {
+    return NextResponse.json(
+      { error: "Anbudet är inlämnat — teamet kan inte ändras." },
+      { status: 409 },
+    );
+  }
+  if (bidRows.some((b) => isActivelyGenerating(b))) {
+    return NextResponse.json(
+      { error: "Generering pågår — vänta tills den är klar." },
+      { status: 409 },
+    );
+  }
+  return null;
 }
 
 /**
@@ -67,28 +100,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    // Same freeze/generation guards as unlock-team: an exported bid is a
-    // submitted document and a running generation must not lose its bid row.
-    const { data: bids, error: bidsError } = await supabase
-      .from("bids")
-      .select("id, status, exported_at, created_at")
-      .eq("analysis_id", analysisId);
-    if (bidsError) {
-      return NextResponse.json({ error: bidsError.message }, { status: 500 });
-    }
-    const bidRows = (bids ?? []) as { id: string; status: string; exported_at: string | null; created_at: string | null }[];
-    if (bidRows.some((b) => b.exported_at || b.status === "exported")) {
-      return NextResponse.json(
-        { error: "Anbudet är inlämnat — teamet kan inte ändras." },
-        { status: 409 },
-      );
-    }
-    if (bidRows.some((b) => isActivelyGenerating(b))) {
-      return NextResponse.json(
-        { error: "Generering pågår — vänta tills den är klar." },
-        { status: 409 },
-      );
-    }
+    const conflict = await refuseBidConflicts(supabase, analysisId);
+    if (conflict) return conflict;
 
     const [analysisResult, matchResult] = await Promise.all([
       supabase.from("analyses").select("analysis").eq("id", analysisId).single(),
@@ -121,10 +134,19 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const teamConsultants = await fetchConsultantsByIds(supabase, newTeamIds);
 
     // Evaluate BEFORE deleting the draft: an AI failure must not cost the user
-    // their bid. The delete below keeps the exported/status filters so an export
-    // landing mid-evaluation survives (same accepted race as unlock-team).
+    // their bid. evaluateGoNoGo is a long AI call (tens of seconds) — long enough
+    // for a second tab to start a generation while it's in flight — so re-run the
+    // same guards right after it returns, before touching anything. A conflict
+    // found here means the evaluation's cost is lost (no way to avoid that), but
+    // no bid is destroyed and no new assessment is inserted.
     const result = await evaluateGoNoGo(rfpAnalysis, teamConsultants, pool, userId);
 
+    const postEvalConflict = await refuseBidConflicts(supabase, analysisId);
+    if (postEvalConflict) return postEvalConflict;
+
+    // The re-check above shrinks the unguarded window to the gap between it and
+    // this delete (milliseconds) — the same residual as unlock-team's: an export
+    // landing in that gap survives because these filters spare exported rows.
     const { error: delBidsError } = await supabase
       .from("bids")
       .delete()

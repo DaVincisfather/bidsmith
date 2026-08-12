@@ -86,7 +86,7 @@ describe("loadFlowState", () => {
     expect(flow.assessment?.decision).toBeNull();
   });
 
-  it("asks each table for the latest row only (analysis-scoped, created_at desc, limit 1)", async () => {
+  it("asks each table for the newest rows (analysis-scoped, created_at desc; matches/bids limit 1, assessments limit 2)", async () => {
     await loadFlowState("a-42");
     expect(h.state.calls).toHaveLength(3);
     for (const call of h.state.calls) {
