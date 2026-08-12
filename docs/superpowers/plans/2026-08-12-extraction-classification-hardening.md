@@ -111,7 +111,8 @@ function normalized(s: string): string {
 /**
  * Deterministic near-exact dedupe of extracted requirements, keep-first.
  * Two rows are duplicates only when priority AND kind match and the
- * descriptions are identical after normalization or trigram-similar >= 0.9 —
+ * descriptions are identical after normalization or trigram-similar at or
+ * above DUPLICATE_THRESHOLD —
  * near-dupes that disagree on classification are deliberately kept, because
  * collapsing them would silently guess which classification is right.
  * Runs BEFORE the evidence guard: the guard's write-back is index-aligned,
