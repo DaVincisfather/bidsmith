@@ -521,7 +521,16 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;
   (4) pedagogiken "varför föreslås byten när jag valde bäst matchade?" — individmatchning
   vs teamkomposition behöver förklaras i UI-copy; (5) editor-UI:t ska designas om
-  (Stefan styr, eget synkront pass).
+  (Stefan styr, eget synkront pass); (6) GO/NO-GO-VARIANSEN BELAGD i apply-swap-smoken:
+  samma team + samma analys gav 48 % resp. 38 % i två körningar (±10 p brus, dränker
+  bytets effekt — "+10%" gav ±0, "+15%" gav +6); jämförelsepanelens Δ = byteseffekt +
+  brus. Hör till eval-/kalibreringsspåret (pausat till trevägs-evalen), inte UI:t.
+  CIRKELBYTET BELAGT LIVE i samma smoke: direkt efter Sara→Aram (±0) föreslog nya
+  bedömningen "byt tillbaka Aram→Sara +7%" — den dokumenterade 2026-04-30-begränsningen,
+  nu klickbar (ping-pong à 30 s + AI-kostnad på brusnivå-skillnader);
+  (7) extraktions-icke-determinismen BITER I PRAKTIKEN: samma RFP omanalyserad gav
+  annan ska-/bör-klassning (facklig samverkan blev ska-krav ⇒ mekanisk 0 %) + en
+  krav-DUBBLETT i listan — dedupe-kandidat i extraktionens post-processing.
 - **APPLY-SWAP: deferred minors ur PR:ens granskningskedja** (final review pekas hit):
   ApplySwapSchema saknar sektions-headerkommentar i api-schemas.ts; "Analysis not
   found"/"No match found" på engelska i apply-swap- OCH go-no-go-routerna (samma
