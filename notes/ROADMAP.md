@@ -4,7 +4,28 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-12 natt — **ADD-FÖRSLAG (DENNA PR): go/no-go kan nu föreslå
+_Senast uppdaterad: 2026-08-13 — **TEAMSTORLEKS-HINT (DENNA PR): defaultteamet följer
+underlaget i stället för alltid topp-3.** Stefans beslut: första bedömningen byggs,
+storleks-FÖRSLAG skippas (bolaget bedömer själva; remove-typ byggs inte). Levererat:
+`teamSizeHint` i extraktionen (REQUIRED-nullable per BUG-A; sätts ENDAST vid uttrycklig
+antalsangivelse i underlaget, ordagrant citat, mekaniskt verifierat via verifyEvidence —
+miss ⇒ null, fail closed till dagens beteende), `defaultTeamSize`-hjälparen (hint.max
+klampat 1..5; max per Stefans praxisnot: bemanna övre gränsen för ledighetstäckning;
+utan hint = 3 som idag) i BÅDA default-ställena (matchnings-UI:t + go/no-go-fallbacken),
+transparensrad "Underlaget anger 1–2 konsulter — 2 förvalda". LIVE-SMOKE: syntetisk RFP
+med "1–2 konsulter" ⇒ hint med verifierat citat; rfp-1.md utan angivelse ⇒ null.
+DESIGNINPUT BOKFÖRD (Stefans marknadsbild 2026-08-13): 1–2 vanligt på små uppdrag,
+3 standard, 4 för ledighetstäckning, 5 oerhört ovanligt. ÖPPET SEPARAT BESLUT:
+team-bundlens promptrad "Ideal 3–5 för full impact" motsäger marknadsbilden men ligger
+i writing-rollen (eval-grindad enligt policyn) — ändras inte utan Stefans grindbeslut.
+Slutgranskningens fynd FIXADE före merge: underlagets tak styr nu även FÖRSLAGEN
+(effectiveCap = min(5, hint.max) i evaluatorns promptrad + add-filter + routens
+add-vakt med ärlig 409-copy) och förvalsraden ljuger inte längre i låst/liten-pool-läge.
+LATENT NOTERING (om-granskningen): apply-routens analysis/match-hämtning flyttades före
+guard-kedjan — analysis-404 utrankar nu guard-409:or när båda gäller; oåtkomligt idag
+(inget kodspår raderar analyses/matches), pinna med test om delete-analys någonsin byggs._
+
+_Historik (2026-08-12 natt): **ADD-FÖRSLAG (#110): go/no-go kan nu föreslå
 en fjärde konsult + säga "poolen räcker inte".** Stefans beslut efter kvällens smoke:
 tillägg primärt för otäckta ska-krav (bör-krav tillåtna), strukturerad poolGap-signal.
 Levererat: `kind: "swap"|"add"`-diskriminator (REQUIRED i AI-schemat per BUG-A-lärdomen,

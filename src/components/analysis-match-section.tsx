@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { TeamProposal } from "./team-proposal";
 import { MAX_TEAM_SIZE } from "@/lib/constants";
+import { defaultTeamSize } from "@/lib/default-team-size";
+import { RfpAnalysis } from "@/lib/types";
 import { ForgeLoader } from "./ForgeLoader";
 
 interface ScoredConsultant {
@@ -27,12 +29,36 @@ interface AnalysisMatchSectionProps {
   locked: boolean;
   /** the locked team from the latest assessment (null when unlocked) */
   lockedTeamIds: string[] | null;
+  /** explicit team size hint extracted from the RFP (null/absent when the underlag doesn't state one) */
+  teamSizeHint?: RfpAnalysis["teamSizeHint"];
 }
 
-function buildDefaultTeamIds(scored: ScoredConsultant[]): Set<string> {
-  // Pick top 3 by score, regardless of level
-  const top = [...scored].sort((a, b) => b.score - a.score).slice(0, 3);
+function buildDefaultTeamIds(scored: ScoredConsultant[], teamSize: number): Set<string> {
+  // Pick top N by score, regardless of level
+  const top = [...scored].sort((a, b) => b.score - a.score).slice(0, teamSize);
   return new Set(top.map((c) => c.consultantId));
+}
+
+// Transparency line for the default pre-selection — only when the RFP states
+// an explicit size; collapses to one number when min === max. Locked: the
+// selection is the locked team, not a default pre-selection, so the
+// "— N förvalda" tail would be false — suppress it. Otherwise clamp the
+// displayed count to the actual pool size (a pool smaller than teamSize
+// preselects fewer than teamSize, not teamSize).
+function buildTeamSizeHintText(
+  teamSizeHint: RfpAnalysis["teamSizeHint"],
+  locked: boolean,
+  teamSize: number,
+  match: MatchData | null,
+): string | null {
+  if (!teamSizeHint) return null;
+  const range =
+    teamSizeHint.min === teamSizeHint.max
+      ? String(teamSizeHint.min)
+      : `${teamSizeHint.min}–${teamSizeHint.max}`;
+  if (locked) return `Underlaget anger ${range} konsulter.`;
+  const preselected = match ? Math.min(teamSize, match.scoredConsultants.length) : teamSize;
+  return `Underlaget anger ${range} konsulter — ${preselected} förvalda.`;
 }
 
 export function AnalysisMatchSection({
@@ -40,14 +66,17 @@ export function AnalysisMatchSection({
   latestMatch,
   locked,
   lockedTeamIds,
+  teamSizeHint,
 }: AnalysisMatchSectionProps) {
   const router = useRouter();
+  const teamSize = defaultTeamSize({ teamSizeHint });
   const [match, setMatch] = useState<MatchData | null>(latestMatch);
+  const teamSizeHintText = buildTeamSizeHintText(teamSizeHint, locked, teamSize, match);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     lockedTeamIds
       ? new Set(lockedTeamIds)
       : latestMatch
-        ? buildDefaultTeamIds(latestMatch.scoredConsultants)
+        ? buildDefaultTeamIds(latestMatch.scoredConsultants, teamSize)
         : new Set(),
   );
   const [loading, setLoading] = useState(false);
@@ -74,7 +103,7 @@ export function AnalysisMatchSection({
         scoredConsultants: data.scoredConsultants,
       };
       setMatch(newMatch);
-      setSelectedIds(buildDefaultTeamIds(data.scoredConsultants));
+      setSelectedIds(buildDefaultTeamIds(data.scoredConsultants, teamSize));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -153,6 +182,9 @@ export function AnalysisMatchSection({
 
       {match && (
         <>
+          {teamSizeHintText && (
+            <p className="text-sm text-ink-mute">{teamSizeHintText}</p>
+          )}
           <TeamProposal
             scoredConsultants={match.scoredConsultants}
             selectedIds={selectedIds}

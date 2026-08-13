@@ -166,6 +166,7 @@ describe("RfpAnalysisSchema — priority coercion in requirements", () => {
     domain: "",
     oslReference: null,
     secrecyRows: [],
+    teamSizeHint: null,
   };
 
   it("coerces Swedish priorities in the requirements array", () => {
@@ -200,6 +201,7 @@ describe("RfpAnalysisSchema — evaluationCriteria weight", () => {
     domain: "",
     oslReference: null,
     secrecyRows: [],
+    teamSizeHint: null,
   };
 
   it("accepterar weight: null när källan inte anger procentvikt", () => {
@@ -338,5 +340,41 @@ describe("GoNoGoAiResponseSchema — improvements.kind och poolGap (BUG-A: requi
     expect(parsed.poolGap).toBe(
       "Gapet kräver dokumenterad Timecare-erfarenhet som ingen i poolen har",
     );
+  });
+});
+
+describe("RfpAnalysisSchema — teamSizeHint (evidence-anchored, BUG-A required-nullable)", () => {
+  const base = {
+    title: "t", client: "c", deadline: null, summary: "s",
+    requirements: [{ category: "x", description: "y", priority: "must", kind: "qualification", evidence: "z" }],
+    evaluationCriteria: [], requiredCompetencies: [],
+    estimatedScope: "", redFlags: [], domain: "",
+    oslReference: null, secrecyRows: [],
+  };
+
+  it("avvisar analys UTAN teamSizeHint-nyckeln — fältet får inte vara optional (BUG-A)", () => {
+    expect(() => RfpAnalysisSchema.parse({ ...base })).toThrow();
+  });
+
+  it("accepterar teamSizeHint: null", () => {
+    const parsed = RfpAnalysisSchema.parse({ ...base, teamSizeHint: null });
+    expect(parsed.teamSizeHint).toBeNull();
+  });
+
+  it("accepterar ett giltigt teamSizeHint-objekt", () => {
+    const parsed = RfpAnalysisSchema.parse({
+      ...base,
+      teamSizeHint: { min: 1, max: 2, evidence: "ett team om 1-2 konsulter" },
+    });
+    expect(parsed.teamSizeHint).toEqual({ min: 1, max: 2, evidence: "ett team om 1-2 konsulter" });
+  });
+
+  it("avvisar min: 0 (minst en konsult)", () => {
+    expect(() =>
+      RfpAnalysisSchema.parse({
+        ...base,
+        teamSizeHint: { min: 0, max: 2, evidence: "citat" },
+      }),
+    ).toThrow();
   });
 });

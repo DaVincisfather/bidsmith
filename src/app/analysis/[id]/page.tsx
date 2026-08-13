@@ -43,6 +43,7 @@ export default async function AnalysisPage({ params }: PageProps) {
   };
 
   const flow = await loadFlowState(id);
+  const analysis = data.analysis as RfpAnalysis;
 
   return (
     <main className="min-h-full bg-paper">
@@ -61,7 +62,7 @@ export default async function AnalysisPage({ params }: PageProps) {
           &larr; Ny analys
         </Link>
         <AnalysisResult
-          analysis={data.analysis as RfpAnalysis}
+          analysis={analysis}
           fileName={document.file_name}
           analysisId={id}
         />
@@ -72,6 +73,7 @@ export default async function AnalysisPage({ params }: PageProps) {
             latestMatch={flow.match}
             locked={flow.assessment !== null}
             lockedTeamIds={flow.assessment?.teamConsultantIds ?? null}
+            teamSizeHint={analysis.teamSizeHint}
           />
         </div>
       </div>

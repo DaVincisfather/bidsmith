@@ -96,29 +96,11 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const teamIds = (latest.team_consultant_ids as string[]) ?? [];
     const isAdd = removeId == null;
-    if (isAdd) {
-      if (teamIds.includes(addId)) {
-        return NextResponse.json(
-          { error: "Konsulten är redan i teamet — ladda om sidan." },
-          { status: 409 },
-        );
-      }
-      if (teamIds.length >= MAX_TEAM_SIZE) {
-        return NextResponse.json(
-          { error: `Teamet är fullt — max ${MAX_TEAM_SIZE} konsulter.` },
-          { status: 409 },
-        );
-      }
-    } else if (!teamIds.includes(removeId) || teamIds.includes(addId)) {
-      return NextResponse.json(
-        { error: "Förslaget matchar inte det låsta teamet — ladda om sidan." },
-        { status: 409 },
-      );
-    }
 
-    const conflict = await refuseBidConflicts(supabase, analysisId);
-    if (conflict) return conflict;
-
+    // Fetched here (moved up from after the guard below) so the add-guard
+    // can honor the RFP's own team-size hint, not just the template's slot
+    // count — proposing a team past an explicit max produces a
+    // non-compliant bid.
     const [analysisResult, matchResult] = await Promise.all([
       supabase.from("analyses").select("analysis").eq("id", analysisId).single(),
       supabase
@@ -134,9 +116,41 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     if (matchResult.error || !matchResult.data?.length) {
       return NextResponse.json({ error: "No match found. Run matching first." }, { status: 400 });
     }
-
     const rfpAnalysis = analysisResult.data.analysis as RfpAnalysis;
     const pool = (matchResult.data[0].team_proposal as ScoredConsultant[]) ?? [];
+
+    if (isAdd) {
+      if (teamIds.includes(addId)) {
+        return NextResponse.json(
+          { error: "Konsulten är redan i teamet — ladda om sidan." },
+          { status: 409 },
+        );
+      }
+      // The document's own ceiling governs when it's stricter than the
+      // template's slot count. A malformed/legacy hint (missing or
+      // non-numeric max) falls back to MAX_TEAM_SIZE rather than silently
+      // blocking every add.
+      const hintMax = rfpAnalysis.teamSizeHint?.max;
+      const effectiveCap = Number.isFinite(hintMax)
+        ? Math.min(MAX_TEAM_SIZE, hintMax as number)
+        : MAX_TEAM_SIZE;
+      if (teamIds.length >= effectiveCap) {
+        const message =
+          effectiveCap < MAX_TEAM_SIZE
+            ? `Underlaget anger max ${effectiveCap} konsulter.`
+            : `Teamet är fullt — max ${MAX_TEAM_SIZE} konsulter.`;
+        return NextResponse.json({ error: message }, { status: 409 });
+      }
+    } else if (!teamIds.includes(removeId) || teamIds.includes(addId)) {
+      return NextResponse.json(
+        { error: "Förslaget matchar inte det låsta teamet — ladda om sidan." },
+        { status: 409 },
+      );
+    }
+
+    const conflict = await refuseBidConflicts(supabase, analysisId);
+    if (conflict) return conflict;
+
     // swapIds come from an AI response and are unvalidated at generation time —
     // the pool membership check is what makes them safe to act on.
     if (!pool.some((c) => c.consultantId === addId)) {

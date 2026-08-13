@@ -99,6 +99,17 @@ export const RfpAnalysisSchema = z.object({
   domain: z.string(),
   oslReference: z.string().nullable(),
   secrecyRows: z.array(SecrecyRowSchema),
+  // REQUIRED-nullable (BUG-A: optional fields get omitted by structured outputs).
+  // Extracted ONLY when the document explicitly states a consultant count;
+  // the evidence quote is mechanically verified post-parse — a miss drops the
+  // whole hint to null (fail closed to the top-3 default).
+  teamSizeHint: z
+    .object({
+      min: z.number().int().min(1),
+      max: z.number().int().min(1),
+      evidence: z.string().min(1),
+    })
+    .nullable(),
 });
 
 // --- Consultant Matcher ---

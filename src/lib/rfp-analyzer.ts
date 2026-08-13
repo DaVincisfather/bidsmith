@@ -4,6 +4,7 @@ import { callClaude } from "./ai-client";
 import { MODELS } from "./models";
 import { runEvidenceGuard } from "./evidence-guard";
 import { dedupeRequirements } from "./requirement-dedupe";
+import { verifyEvidence } from "./verify-evidence";
 
 const SYSTEM_PROMPT = `Du är en expert på att analysera förfrågningsunderlag (RFP:er) för konsultuppdrag.
 Du läser ett RFP-dokument och producerar en strukturerad analys i JSON-format.
@@ -31,7 +32,8 @@ Svara ALLTID med giltig JSON som matchar detta schema:
       "scope": "Vad sekretessen gäller",
       "justification": "Motivering baserad på RFP-texten"
     }
-  ]
+  ],
+  "teamSizeHint": { "min": 1, "max": 2, "evidence": "Ordagrant citat" } | null
 }
 
 Var noggrann med att:
@@ -55,6 +57,10 @@ Var noggrann med att:
   det kravet. Saknas uttrycklig markering, eller är den tvetydig, klassa som
   "should" — ALDRIG "must" på egen bedömning av hur viktigt kravet verkar vara.
   När markören står i löptexten: låt evidence-citatet omfatta den.
+- teamSizeHint: SÄTT ENDAST när underlaget UTTRYCKLIGEN anger antal konsulter
+  (t.ex. "1–2 konsulter", "en (1) konsult", "ett team om tre konsulter").
+  evidence = ordagrant citat som bär angivelsen. Härled ALDRIG utifrån omfattning,
+  budget eller timmar — saknas uttrycklig angivelse: sätt EXAKT null.
 - kind klassar VARJE post:
   - "qualification" = krav PÅ anbudsgivaren som bedöms/måste uppfyllas för att kvalificera
     (kompetens, certifieringar, erfarenhet, uteslutningsgrunder, obligatoriska villkor,
@@ -119,6 +125,28 @@ export async function analyzeRfp(
     console.warn(
       `[rfp-analyzer] (${label}) dropped ${beforeDedupe - analysis.requirements.length} duplicate requirement(s), kept first occurrences`,
     );
+  }
+
+  // teamSizeHint POST-PARSE (evidens-förankrad, samma fail-closed-princip som
+  // evidensvakten nedan): normalisera en omvänd range (min > max byts), verifiera
+  // sedan citatet mekaniskt mot underlaget. En miss nollar HELA hintet — inte bara
+  // citatet, som för requirements — eftersom ett overifierat antal konsulter inte
+  // har något meningsfullt "behåll utan källa"-läge. Oberoende av evidensvakten
+  // (som bara rör requirements).
+  if (analysis.teamSizeHint) {
+    const hint = analysis.teamSizeHint;
+    if (hint.min > hint.max) {
+      [hint.min, hint.max] = [hint.max, hint.min];
+    }
+    const misses = verifyEvidence("runtime", rfpText, [
+      { description: "teamSizeHint", evidence: hint.evidence },
+    ]);
+    if (misses.length > 0) {
+      console.warn(
+        `[rfp-analyzer] (${label}) dropped teamSizeHint — evidence quote did not verify against source, defaulting to null`,
+      );
+      analysis.teamSizeHint = null;
+    }
   }
 
   // RUNTIME-EVIDENSVAKT (delad mekanik med CV-extraktionen, se evidence-guard.ts).

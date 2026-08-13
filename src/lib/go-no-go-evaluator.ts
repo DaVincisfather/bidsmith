@@ -130,6 +130,15 @@ export async function evaluateGoNoGo(
   const teamText = formatTeamForPrompt(teamConsultants, allScoredConsultants);
   const poolText = formatPoolForPrompt(allScoredConsultants, teamIds);
 
+  // The RFP's own ceiling governs suggestions when it's stricter than the
+  // template's slot count — proposing a team past an explicit max produces a
+  // non-compliant bid. A malformed/legacy hint (missing or non-numeric max)
+  // falls back to MAX_TEAM_SIZE rather than silently blocking every add.
+  const hintMax = analysis.teamSizeHint?.max;
+  const effectiveCap = Number.isFinite(hintMax)
+    ? Math.min(MAX_TEAM_SIZE, hintMax as number)
+    : MAX_TEAM_SIZE;
+
   // Go/No-Go gatar hårt på ouppfyllda must-KRAV. Leverabler (kind=deliverable) är
   // uppdragets output, inte kvalifikationskrav — de får aldrig räknas som ska-krav
   // (annars kan en oproducerad leverans tvinga winProbability = 0). Filtrera bort dem.
@@ -168,7 +177,7 @@ ${JSON.stringify(compactAnalysis)}
 ${requirementsList}
 
 ## Låst team
-Teamstorlek: ${teamConsultants.length} av ${MAX_TEAM_SIZE} platser fyllda.
+Teamstorlek: ${teamConsultants.length} av ${effectiveCap} platser fyllda.
 ${teamText}
 
 ## Övriga tillgängliga konsulter (för förbättringsförslag)
@@ -212,7 +221,7 @@ ${poolText}`,
         imp.swapIds?.addId != null &&
         imp.swap?.remove == null &&
         imp.swapIds?.removeId == null &&
-        teamConsultants.length < MAX_TEAM_SIZE
+        teamConsultants.length < effectiveCap
       );
     }
     return imp.swap?.remove != null && imp.swap?.add != null;
