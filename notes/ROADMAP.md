@@ -17,7 +17,13 @@ med "1–2 konsulter" ⇒ hint med verifierat citat; rfp-1.md utan angivelse ⇒
 DESIGNINPUT BOKFÖRD (Stefans marknadsbild 2026-08-13): 1–2 vanligt på små uppdrag,
 3 standard, 4 för ledighetstäckning, 5 oerhört ovanligt. ÖPPET SEPARAT BESLUT:
 team-bundlens promptrad "Ideal 3–5 för full impact" motsäger marknadsbilden men ligger
-i writing-rollen (eval-grindad enligt policyn) — ändras inte utan Stefans grindbeslut._
+i writing-rollen (eval-grindad enligt policyn) — ändras inte utan Stefans grindbeslut.
+Slutgranskningens fynd FIXADE före merge: underlagets tak styr nu även FÖRSLAGEN
+(effectiveCap = min(5, hint.max) i evaluatorns promptrad + add-filter + routens
+add-vakt med ärlig 409-copy) och förvalsraden ljuger inte längre i låst/liten-pool-läge.
+LATENT NOTERING (om-granskningen): apply-routens analysis/match-hämtning flyttades före
+guard-kedjan — analysis-404 utrankar nu guard-409:or när båda gäller; oåtkomligt idag
+(inget kodspår raderar analyses/matches), pinna med test om delete-analys någonsin byggs._
 
 _Historik (2026-08-12 natt): **ADD-FÖRSLAG (#110): go/no-go kan nu föreslå
 en fjärde konsult + säga "poolen räcker inte".** Stefans beslut efter kvällens smoke:
