@@ -24,40 +24,6 @@ const LEVEL_LABELS: Record<string, string> = {
   junior: "Junior",
 };
 
-/** Polls GET /api/bids/[id] until status leaves 'generating'. Returns null if
- *  the component unmounted (generation continues server-side). A single failed
- *  poll must NOT surface as "generation failed" — the generation continues
- *  server-side; only give up after several failures in a row. */
-async function pollBidUntilDone(
-  bidId: string,
-  isMounted: () => boolean,
-): Promise<{ status: string } | null> {
-  let consecutiveFailures = 0;
-  for (;;) {
-    if (!isMounted()) return null;
-    let bid: { status: string } | null = null;
-    try {
-      const res = await fetch(`/api/bids/${bidId}`);
-      if (res.ok) bid = (await res.json()) as { status: string };
-    } catch {
-      // Network rejection (dropped wifi, laptop sleep) — counted below,
-      // exactly like a non-ok response.
-    }
-    if (bid) {
-      consecutiveFailures = 0;
-      if (bid.status !== "generating") return bid;
-    } else {
-      consecutiveFailures += 1;
-      if (consecutiveFailures >= 5) {
-        throw new Error(
-          "Kunde inte följa genereringen — den fortsätter i bakgrunden. Ladda om sidan om en stund.",
-        );
-      }
-    }
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-  }
-}
-
 export function GoNoGoSection({
   analysisId,
   assessment,
@@ -126,8 +92,10 @@ export function GoNoGoSection({
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Bid generation failed");
-      const done = await pollBidUntilDone(data.id, () => mountedRef.current);
-      if (!done) return; // user left the page; generation continues server-side
+      // Navigate immediately on the 202 — the bid editor has its own
+      // generating experience (ForgeLoader + GeneratingChapterList, #102)
+      // that polls /api/bids/[id] and fills väntande→klar live. No need to
+      // poll here first.
       router.push(`/bids/${data.id}`);
     } catch (err) {
       if (!mountedRef.current) return;
