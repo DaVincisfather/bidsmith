@@ -163,7 +163,7 @@ export function GoNoGoResultView({
                         )}{" "}
                         <span className="text-blue-600">
                           ~{imp.estimatedImpact}
-                          <span className="opacity-60"> (AI-estimat)</span>
+                          <span className="text-blue-700 text-xs"> (AI-estimat)</span>
                         </span>
                       </div>
                       <p className="text-blue-800 mt-1">{imp.reason}</p>

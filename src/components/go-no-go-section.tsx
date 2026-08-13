@@ -83,7 +83,11 @@ export function GoNoGoSection({
   // gives no visible feedback and users cannot tell the re-assessment started.
   useEffect(() => {
     if (working === "swap") {
-      loaderRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      loaderRef.current?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
     }
   }, [working]);
 
