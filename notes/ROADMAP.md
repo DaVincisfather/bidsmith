@@ -579,10 +579,12 @@ _Triage 2026-08-04: PPTX-bundna poster flyttade till "Parkerat med PPTX-motorn" 
 verifierat inaktuella till "Struket". Kvar här = MD-vägen + kärnan (generering,
 extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
 - **SMOKE-FYND 2026-08-12 (Stefans klick-smoke, polish/produkt):** (1) go/no-go-copyn
-  blandar engelska ("should-krav 2") — etikettpass på hydrering/prompt önskas; (2)
-  genererings-väntan: användaren står kvar på go/no-go-sidan med enbart knapptext i ~2 min
-  — kandidat: navigera till editorn direkt på 202 så GeneratingChapterList/ForgeLoader
-  bär väntan (Stefan lutar åt ja, beslutas separat, rör #103-testat flöde); (3)
+  blandar engelska ("should-krav 2") — etikettpass på hydrering/prompt önskas;
+  ~~(2) genererings-väntan: användaren står kvar på go/no-go-sidan med enbart knapptext i
+  ~2 min — kandidat: navigera till editorn direkt på 202 så GeneratingChapterList/
+  ForgeLoader bär väntan (Stefan lutar åt ja, beslutas separat, rör #103-testat flöde);~~
+  LEVERERAD (denna PR): "Generera anbud" navigerar direkt till editorn på 202;
+  GeneratingChapterList/ForgeLoader bär väntan. (3)
   export-frysningen ifrågasatt ("kanske lite onödigt nu när jag tänker på det") — hänger
   ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;
   (4) pedagogiken "varför föreslås byten när jag valde bäst matchade?" — individmatchning
