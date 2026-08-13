@@ -41,6 +41,15 @@ export interface RfpAnalysis {
   domain: string;
   oslReference: string | null;      // NEW — OSL paragraph (e.g. "19 kap 3 §") or null
   secrecyRows: SecrecyRow[];        // NEW — what the RFP asks to be classified (may be empty)
+  /**
+   * Antal konsulter uttryckligen angivet i underlaget (evidens-förankrat), eller
+   * null om underlaget inte anger det. Modellen TVINGAS ta ställning (obligatoriskt
+   * i output-schemat, BUG-A), men läs-typen är valfri: analyser lagrade före fältet
+   * parsar oförändrat. evidence är valfri i läs-typen för strukturell symmetri med
+   * requirements — i praktiken nollas HELA hintet (inte bara citatet) vid en
+   * misslyckad verifiering, se rfp-analyzer.ts.
+   */
+  teamSizeHint?: { min: number; max: number; evidence?: string } | null;
 }
 
 // --- M1: Consultant Profiles & Matching ---
