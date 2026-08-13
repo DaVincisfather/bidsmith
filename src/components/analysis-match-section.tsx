@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { TeamProposal } from "./team-proposal";
 import { MAX_TEAM_SIZE } from "@/lib/constants";
+import { defaultTeamSize } from "@/lib/default-team-size";
+import { RfpAnalysis } from "@/lib/types";
 import { ForgeLoader } from "./ForgeLoader";
 
 interface ScoredConsultant {
@@ -27,11 +29,13 @@ interface AnalysisMatchSectionProps {
   locked: boolean;
   /** the locked team from the latest assessment (null when unlocked) */
   lockedTeamIds: string[] | null;
+  /** explicit team size hint extracted from the RFP (null/absent when the underlag doesn't state one) */
+  teamSizeHint?: RfpAnalysis["teamSizeHint"];
 }
 
-function buildDefaultTeamIds(scored: ScoredConsultant[]): Set<string> {
-  // Pick top 3 by score, regardless of level
-  const top = [...scored].sort((a, b) => b.score - a.score).slice(0, 3);
+function buildDefaultTeamIds(scored: ScoredConsultant[], teamSize: number): Set<string> {
+  // Pick top N by score, regardless of level
+  const top = [...scored].sort((a, b) => b.score - a.score).slice(0, teamSize);
   return new Set(top.map((c) => c.consultantId));
 }
 
@@ -40,14 +44,25 @@ export function AnalysisMatchSection({
   latestMatch,
   locked,
   lockedTeamIds,
+  teamSizeHint,
 }: AnalysisMatchSectionProps) {
   const router = useRouter();
+  const teamSize = defaultTeamSize({ teamSizeHint });
+  // Transparency line for the default pre-selection — only when the RFP
+  // states an explicit size; collapses to one number when min === max.
+  const teamSizeHintText = teamSizeHint
+    ? `Underlaget anger ${
+        teamSizeHint.min === teamSizeHint.max
+          ? teamSizeHint.min
+          : `${teamSizeHint.min}–${teamSizeHint.max}`
+      } konsulter — ${teamSize} förvalda.`
+    : null;
   const [match, setMatch] = useState<MatchData | null>(latestMatch);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     lockedTeamIds
       ? new Set(lockedTeamIds)
       : latestMatch
-        ? buildDefaultTeamIds(latestMatch.scoredConsultants)
+        ? buildDefaultTeamIds(latestMatch.scoredConsultants, teamSize)
         : new Set(),
   );
   const [loading, setLoading] = useState(false);
@@ -74,7 +89,7 @@ export function AnalysisMatchSection({
         scoredConsultants: data.scoredConsultants,
       };
       setMatch(newMatch);
-      setSelectedIds(buildDefaultTeamIds(data.scoredConsultants));
+      setSelectedIds(buildDefaultTeamIds(data.scoredConsultants, teamSize));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -153,6 +168,9 @@ export function AnalysisMatchSection({
 
       {match && (
         <>
+          {teamSizeHintText && (
+            <p className="text-sm text-ink-mute">{teamSizeHintText}</p>
+          )}
           <TeamProposal
             scoredConsultants={match.scoredConsultants}
             selectedIds={selectedIds}

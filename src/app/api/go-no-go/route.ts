@@ -5,6 +5,7 @@ import { evaluateGoNoGo } from "@/lib/go-no-go-evaluator";
 import { RfpAnalysis, ScoredConsultant } from "@/lib/types";
 import { parseBody, internalError, requireUser } from "@/lib/api-helpers";
 import { GoNoGoCreateSchema } from "@/lib/api-schemas";
+import { defaultTeamSize } from "@/lib/default-team-size";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,10 +43,14 @@ export async function POST(request: NextRequest) {
   const rfpAnalysis = analysisResult.data.analysis as RfpAnalysis;
   const allScoredConsultants = matchResult.data[0].team_proposal as ScoredConsultant[];
 
-  // Determine team IDs — use provided or pick top 3 by score
+  // Determine team IDs — use provided, or pick the top N by score where N
+  // follows the RFP's explicit team size hint (defaultTeamSize), 3 otherwise
   const resolvedTeamIds = teamConsultantIds?.length
     ? teamConsultantIds
-    : [...allScoredConsultants].sort((a, b) => b.score - a.score).slice(0, 3).map((c) => c.consultantId);
+    : [...allScoredConsultants]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, defaultTeamSize(rfpAnalysis))
+        .map((c) => c.consultantId);
 
   const teamConsultants = await fetchConsultantsByIds(supabase, resolvedTeamIds);
 
