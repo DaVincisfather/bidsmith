@@ -161,7 +161,8 @@ export function GoNoGoResultView({
                         ) : (
                           <>Byt {imp.swap.remove} → {imp.swap.add}</>
                         )}{" "}
-                        <span className="text-blue-600">{imp.estimatedImpact}</span>
+                        <span className="text-blue-600">~{imp.estimatedImpact}</span>
+                        <span className="text-blue-400"> (AI-estimat)</span>
                       </div>
                       <p className="text-blue-800 mt-1">{imp.reason}</p>
                       {isUndo ? (
@@ -192,7 +193,16 @@ export function GoNoGoResultView({
           )}
           {result.poolGap && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-900">
-              <span className="font-medium">Poolen räcker inte:</span> {result.poolGap}
+              {result.improvements.length > 0 ? (
+                <>
+                  <span className="font-medium">Kvarstående gap</span> (täcks inte av
+                  förslagen ovan): {result.poolGap}
+                </>
+              ) : (
+                <>
+                  <span className="font-medium">Poolen räcker inte:</span> {result.poolGap}
+                </>
+              )}
             </div>
           )}
         </div>
