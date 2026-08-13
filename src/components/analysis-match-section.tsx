@@ -39,6 +39,28 @@ function buildDefaultTeamIds(scored: ScoredConsultant[], teamSize: number): Set<
   return new Set(top.map((c) => c.consultantId));
 }
 
+// Transparency line for the default pre-selection — only when the RFP states
+// an explicit size; collapses to one number when min === max. Locked: the
+// selection is the locked team, not a default pre-selection, so the
+// "— N förvalda" tail would be false — suppress it. Otherwise clamp the
+// displayed count to the actual pool size (a pool smaller than teamSize
+// preselects fewer than teamSize, not teamSize).
+function buildTeamSizeHintText(
+  teamSizeHint: RfpAnalysis["teamSizeHint"],
+  locked: boolean,
+  teamSize: number,
+  match: MatchData | null,
+): string | null {
+  if (!teamSizeHint) return null;
+  const range =
+    teamSizeHint.min === teamSizeHint.max
+      ? String(teamSizeHint.min)
+      : `${teamSizeHint.min}–${teamSizeHint.max}`;
+  if (locked) return `Underlaget anger ${range} konsulter.`;
+  const preselected = match ? Math.min(teamSize, match.scoredConsultants.length) : teamSize;
+  return `Underlaget anger ${range} konsulter — ${preselected} förvalda.`;
+}
+
 export function AnalysisMatchSection({
   analysisId,
   latestMatch,
@@ -48,16 +70,8 @@ export function AnalysisMatchSection({
 }: AnalysisMatchSectionProps) {
   const router = useRouter();
   const teamSize = defaultTeamSize({ teamSizeHint });
-  // Transparency line for the default pre-selection — only when the RFP
-  // states an explicit size; collapses to one number when min === max.
-  const teamSizeHintText = teamSizeHint
-    ? `Underlaget anger ${
-        teamSizeHint.min === teamSizeHint.max
-          ? teamSizeHint.min
-          : `${teamSizeHint.min}–${teamSizeHint.max}`
-      } konsulter — ${teamSize} förvalda.`
-    : null;
   const [match, setMatch] = useState<MatchData | null>(latestMatch);
+  const teamSizeHintText = buildTeamSizeHintText(teamSizeHint, locked, teamSize, match);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     lockedTeamIds
       ? new Set(lockedTeamIds)

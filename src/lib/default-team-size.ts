@@ -13,6 +13,8 @@ const DEFAULT_TEAM_SIZE = 3;
  */
 export function defaultTeamSize(analysis: Pick<RfpAnalysis, "teamSizeHint">): number {
   const hint = analysis.teamSizeHint;
-  if (!hint) return DEFAULT_TEAM_SIZE;
+  // A malformed persisted hint (missing/non-numeric max) must not propagate
+  // NaN into slice(0, NaN) downstream — fall back to the default instead.
+  if (!hint || !Number.isFinite(hint.max)) return DEFAULT_TEAM_SIZE;
   return Math.min(Math.max(hint.max, 1), MAX_TEAM_SIZE);
 }

@@ -21,4 +21,10 @@ describe("defaultTeamSize", () => {
   it("clamps hint.max to MAX_TEAM_SIZE", () => {
     expect(defaultTeamSize({ teamSizeHint: { min: 4, max: 9 } })).toBe(5);
   });
+
+  it("falls back to 3 when hint.max is malformed (non-numeric, defeats the TS type)", () => {
+    expect(
+      defaultTeamSize({ teamSizeHint: { min: 1, max: undefined as unknown as number } }),
+    ).toBe(3);
+  });
 });
