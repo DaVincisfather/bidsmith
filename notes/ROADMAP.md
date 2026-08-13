@@ -571,7 +571,11 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   klick gav ingen synlig feedback), kontextuell poolGap-etikett ("Kvarstående gap
   (täcks inte av förslagen ovan)" när förslag finns; "Poolen räcker inte" annars),
   estimatet nedtonat till "~+N % (AI-estimat)" (överlovnings-mönstret belagt 3 av 3:
-  +15→+6, +10→±0, +20→+7 — kalibrering hör till eval-spåret);
+  +15→+6, +10→±0, +20→+7 — kalibrering hör till eval-spåret). ROUTINE-FOLLOW-UPS
+  (#112, egen PR): kontrastsvep över AI-estimat-suffixen (rad 72:s opacity-60 har samma
+  2,4:1-problem — opacity blandar mot bakgrunden, ärvd kontrast finns inte) +
+  probabilityColor-kombinationerna; första komponenttest för GoNoGoResultView
+  (etikettgrenen + undo-kortet);
   (6) GO/NO-GO-VARIANSEN BELAGD i apply-swap-smoken:
   samma team + samma analys gav 48 % resp. 38 % i två körningar (±10 p brus, dränker
   bytets effekt — "+10%" gav ±0, "+15%" gav +6); jämförelsepanelens Δ = byteseffekt +
