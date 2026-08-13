@@ -67,6 +67,7 @@ export function GoNoGoSection({
 }: GoNoGoSectionProps) {
   const router = useRouter();
   const mountedRef = useRef(true);
+  const loaderRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -77,6 +78,18 @@ export function GoNoGoSection({
   const [working, setWorking] = useState<"generate" | "unlock" | "swap" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, startTransition] = useTransition();
+
+  // The improvement cards sit far below the loader — without this, a click
+  // gives no visible feedback and users cannot tell the re-assessment started.
+  useEffect(() => {
+    if (working === "swap") {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      loaderRef.current?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "center",
+      });
+    }
+  }, [working]);
 
   const team = (match?.scoredConsultants ?? []).filter((c) =>
     assessment.teamConsultantIds.includes(c.consultantId),
@@ -277,7 +290,7 @@ export function GoNoGoSection({
         </div>
       )}
       {(working === "swap" || isRefreshing) && (
-        <div className="flex justify-center py-6">
+        <div ref={loaderRef} className="flex justify-center py-6">
           <ForgeLoader size={64} />
         </div>
       )}

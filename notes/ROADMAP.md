@@ -587,7 +587,17 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;
   (4) pedagogiken "varför föreslås byten när jag valde bäst matchade?" — individmatchning
   vs teamkomposition behöver förklaras i UI-copy; (5) editor-UI:t ska designas om
-  (Stefan styr, eget synkront pass); (6) GO/NO-GO-VARIANSEN BELAGD i apply-swap-smoken:
+  (Stefan styr, eget synkront pass); UX-POLISH LEVERERAD (denna PR, 2026-08-13, ur
+  Stefans smoke på #110): scroll-till-smiden vid apply (korten ligger under folden —
+  klick gav ingen synlig feedback), kontextuell poolGap-etikett ("Kvarstående gap
+  (täcks inte av förslagen ovan)" när förslag finns; "Poolen räcker inte" annars),
+  estimatet nedtonat till "~+N % (AI-estimat)" (överlovnings-mönstret belagt 3 av 3:
+  +15→+6, +10→±0, +20→+7 — kalibrering hör till eval-spåret). ROUTINE-FOLLOW-UPS
+  (#112, egen PR): kontrastsvep över AI-estimat-suffixen (rad 72:s opacity-60 har samma
+  2,4:1-problem — opacity blandar mot bakgrunden, ärvd kontrast finns inte) +
+  probabilityColor-kombinationerna; första komponenttest för GoNoGoResultView
+  (etikettgrenen + undo-kortet);
+  (6) GO/NO-GO-VARIANSEN BELAGD i apply-swap-smoken:
   samma team + samma analys gav 48 % resp. 38 % i två körningar (±10 p brus, dränker
   bytets effekt — "+10%" gav ±0, "+15%" gav +6); jämförelsepanelens Δ = byteseffekt +
   brus. Hör till eval-/kalibreringsspåret (pausat till trevägs-evalen), inte UI:t.
