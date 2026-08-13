@@ -257,7 +257,39 @@ describe("evaluateGoNoGo post-processing", () => {
     expect(result.improvements[0].kind).toBe("add");
   });
 
-  it("drops an add suggestion when the team is at MAX_TEAM_SIZE", async () => {
+  it("drops an add suggestion when the analysis's team-size hint caps the team below MAX_TEAM_SIZE", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 72,
+      winProbabilityReasoning: "Bra team men underlaget tillåter inte fler",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "add",
+          swap: { remove: null, add: "Aram" },
+          swapIds: { removeId: null, addId: "id-aram" },
+          estimatedImpact: "+12%",
+          reason: "Aram täcker ska-krav Z, men underlaget anger max 2 konsulter",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const hintedAnalysis: RfpAnalysis = {
+      ...analysis,
+      teamSizeHint: { min: 1, max: 2 },
+    };
+    const teamOfTwo: Consultant[] = [makeConsultant("c1", "Anna"), makeConsultant("c2", "Bo")];
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(hintedAnalysis, teamOfTwo, scored);
+    expect(result.improvements).toHaveLength(0);
+  });
+
+  it("drops an add suggestion when the team is at MAX_TEAM_SIZE (legacy analysis, no team-size hint)", async () => {
     mockResponse({
       mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
       winProbability: 72,

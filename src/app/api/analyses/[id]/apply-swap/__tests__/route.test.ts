@@ -268,6 +268,21 @@ describe("POST /api/analyses/[id]/apply-swap", () => {
     });
   });
 
+  it("409s an ADD when the analysis's team-size hint caps the team below MAX_TEAM_SIZE, deleting/inserting nothing", async () => {
+    h.state.assessments = [{ id: ASSESSMENT_ID, team_consultant_ids: [KEEP_ID, REMOVE_ID] }];
+    h.state.analysisRow = { analysis: { title: "RFP", teamSizeHint: { min: 1, max: 2 } } };
+    const res = await POST(
+      makeRequest({ assessmentId: ASSESSMENT_ID, addId: ADD_ID }),
+      ctx(ANALYSIS_ID),
+    );
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toContain("max 2");
+    expect(h.state.evalCalls).toHaveLength(0);
+    expect(h.state.deletedFrom).toHaveLength(0);
+    expect(h.state.inserted).toHaveLength(0);
+  });
+
   it("409s an ADD when the team is already at MAX_TEAM_SIZE", async () => {
     h.state.assessments = [
       {
