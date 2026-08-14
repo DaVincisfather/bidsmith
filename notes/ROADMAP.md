@@ -4,7 +4,24 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-14 — **EXPORT ≠ INLÄMNING (DENNA PR): exporten är en ren
+_Senast uppdaterad: 2026-08-14 — **IMPACT-SPANN + TEAMPEDAGOGIK (DENNA PR): go/no-go-
+förslagen lovar ett spann, inte en siffra.** Stefans beslut 2026-08-14 (överlovnings-
+mönstret belagt 3 av 3: "+15%"→+6, "+10%"→±0, "+20%"→+7): `estimatedImpact`-punktestimatet
+ersatt av `estimatedImpactMin/Max` (heltal, REQUIRED i AI-schemat per BUG-A; läs-typen
+behåller strängfältet — evaluatorn normaliserar omkastade spann och syntetiserar
+display-strängen "+4–7 %", legacy-rader renderar med tilde som förr). Promptregeln kräver
+KONSERVATIVT spann; filtret gejtar på övre gränsen (>0), parseImpactPct pensionerad.
+Pedagogik-tooltip (smoke-fynd 4) vid förslagsrubriken: individmatchning ≠ teamkomposition.
+GRIND (gonogo-promptändring ⇒ live-smoke, #110-prejudikatet): orebro-fixtur, svagt
+2-personersteam + meritbärande pool ⇒ add-förslag "+40–70 %" (heltal, normaliserat,
+äkta poolkonsult) + ärlig poolGap parallellt — PASS. Smoke-lärdom bokförd: pool-prompten
+byggs ur ScoredConsultant.reasoning, så stub-scorer utan meriter ger ärligt 0 förslag.
+ROUTINE-FYNDEN FIXADE I PR:EN (APPROVE, båda polish): tooltipen är nu en klickbar knapp
+(aria-expanded, touch/tangentbord; title kvar för hover) och nollan i undre gränsen
+renderar utan plustecken ("0–5 %"). Beslutet togs i 2026-08-14-beslutspasset (se även
+"Ideal 3–5"-strykningen + export/inlämnings-splitten i headrarna nedan)._
+
+_Historik (2026-08-14): **EXPORT ≠ INLÄMNING (#116): exporten är en ren
 nedladdning, inlämning är en explicit handling.** Stefans beslut 2026-08-14 (smoke-fynd 3,
 2026-08-12: "export-frysningen kanske lite onödig"): export-routerna (md + parkerade PPTX)
 flippar INTE längre `exported`/`exported_at` — flippen bor i nya POST
@@ -620,11 +637,19 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   LEVERERAD (denna PR): "Generera anbud" navigerar direkt till editorn på 202;
   GeneratingChapterList/ForgeLoader bär väntan. ~~(3)
   export-frysningen ifrågasatt ("kanske lite onödigt nu när jag tänker på det") — hänger
+<<<<<<< HEAD
   ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;~~
   AVGJORD + LEVERERAD (denna PR, 2026-08-14): export = ren nedladdning, explicit
   "Markera som inlämnad" äger flippen — se headern.
   (4) pedagogiken "varför föreslås byten när jag valde bäst matchade?" — individmatchning
   vs teamkomposition behöver förklaras i UI-copy; (5) editor-UI:t ska designas om
+=======
+  ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;
+  ~~(4) pedagogiken "varför föreslås byten när jag valde bäst matchade?" — individmatchning
+  vs teamkomposition behöver förklaras i UI-copy;~~ LEVERERAD (denna PR, 2026-08-14):
+  info-tooltip vid förslagsrubriken + impact-SPANN i stället för punktestimat, se headern.
+  (5) editor-UI:t ska designas om
+>>>>>>> 50ce9f1 (feat: go/no-go impact as a conservative range + team-pedagogy tooltip)
   (Stefan styr, eget synkront pass); UX-POLISH LEVERERAD (denna PR, 2026-08-13, ur
   Stefans smoke på #110): scroll-till-smiden vid apply (korten ligger under folden —
   klick gav ingen synlig feedback), kontextuell poolGap-etikett ("Kvarstående gap

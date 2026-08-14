@@ -139,8 +139,21 @@ export function GoNoGoResultView({
         <div>
           {result.improvements.length > 0 && (
             <>
-              <h4 className="text-sm font-semibold text-ink-soft mb-2">
+              <h4 className="text-sm font-semibold text-ink-soft mb-2 flex items-center gap-1.5">
                 Förbättringsförslag
+                {/* Pedagogik (smoke-fynd 4, 2026-08-12): individmatchning ≠
+                    teamkomposition — utan förklaringen läser förslagen som
+                    "ni valde fel", fast användaren valde de bäst matchade. */}
+                <span
+                  className="inline-flex h-4 w-4 items-center justify-center rounded-full
+                             border border-ink-mute/50 text-[10px] font-normal text-ink-mute
+                             cursor-help select-none"
+                  title="Matchningen rankar individer mot kraven. Här bedöms teamet som helhet — täckning och sammansättning — därför kan byten föreslås även när de bäst matchade individerna är valda. Spannet är ett AI-estimat med stor osäkerhet."
+                  aria-label="Matchningen rankar individer mot kraven. Här bedöms teamet som helhet — täckning och sammansättning — därför kan byten föreslås även när de bäst matchade individerna är valda. Spannet är ett AI-estimat med stor osäkerhet."
+                  role="img"
+                >
+                  i
+                </span>
               </h4>
               <div className="space-y-2">
                 {result.improvements.map((imp, i) => {
@@ -162,7 +175,12 @@ export function GoNoGoResultView({
                           <>Byt {imp.swap.remove} → {imp.swap.add}</>
                         )}{" "}
                         <span className="text-blue-600">
-                          ~{imp.estimatedImpact}
+                          {/* Nya rader bär ett spann ("+4–7 %") — tilde vore
+                              dubbel osäkerhetsmarkör. Legacy-punktestimat
+                              behåller sin "~". */}
+                          {imp.estimatedImpactMin != null
+                            ? imp.estimatedImpact
+                            : `~${imp.estimatedImpact}`}
                           <span className="text-blue-700 text-xs"> (AI-estimat)</span>
                         </span>
                       </div>
