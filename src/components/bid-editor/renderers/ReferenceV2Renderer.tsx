@@ -1,18 +1,14 @@
 "use client";
-import type { BidSectionContent, StyleGuide } from "@/lib/types";
+import type { BidSectionContent } from "@/lib/types";
 import { EditableText } from "../EditableText";
 
 type ReferenceContent = Extract<BidSectionContent, { format: "reference-v2" }>;
 
 export function ReferenceV2Renderer({
-  title,
   content,
-  style,
   onChange,
 }: {
-  title: string;
   content: ReferenceContent;
-  style: StyleGuide;
   onChange?: (next: ReferenceContent) => void;
 }) {
   const editable = !!onChange;
@@ -37,11 +33,10 @@ export function ReferenceV2Renderer({
   }
 
   return (
-    <section className="p-6 text-sm">
-      <h2 className="text-xl font-semibold mb-4" style={{ color: style.colors.primary }}>{title}</h2>
+    <section className="text-sm">
       <div className="space-y-6">
         {content.references.map((r, i) => (
-          <div key={i} className="border-l-4 pl-4" style={{ borderColor: style.colors.accent }}>
+          <div key={i} className="border-l-4 border-accent pl-4">
             <p className="font-medium">
               {editable ? (
                 <EditableText value={r.clientName} onChange={(v) => updateRef(i, { clientName: v })} as="span" />
@@ -51,7 +46,7 @@ export function ReferenceV2Renderer({
                 <EditableText value={r.contextLine} onChange={(v) => updateRef(i, { contextLine: v })} as="span" />
               ) : r.contextLine}
             </p>
-            <p className="text-gray-600">
+            <p className="text-ink-soft">
               {editable ? (
                 <EditableText value={r.organisation} onChange={(v) => updateRef(i, { organisation: v })} as="span" />
               ) : r.organisation}
@@ -82,7 +77,7 @@ export function ReferenceV2Renderer({
                 <EditableText value={r.result} onChange={(v) => updateRef(i, { result: v })} as="span" />
               ) : r.result}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-ink-mute mt-1">
               Kontakt:{" "}
               {editable ? (
                 <EditableText value={r.contact.name} onChange={(v) => updateContact(i, { name: v })} as="span" />

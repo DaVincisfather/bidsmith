@@ -18,8 +18,20 @@ inte genereras); "ej granskad" byggs inte (granskningsfeature ≠ omstyling) och
 saknas-utan-failad-bundle flaggas inte (borttagning är supportad; foreign ej v2-bunden).
 Visuellt verifierad mot dev-anbud b3b76311 (autentiserad Playwright-shot, matchar
 mockupen; deadline-formatfix ur verifieringen). STEFANS BESLUT samma dag: PipelineRail
-STÅR KVAR på editorsidan men behöver egen UI-polish (backlog nedan). PR 2 (renderers:
-cover→dokumenthuvud, faser→tidslinje, rubrikunifiering, tokenpass) följer stackad._
+STÅR KVAR på editorsidan men behöver egen UI-polish (backlog nedan).
+**PR 2 (DENNA PR): INNEHÅLLET.** PPTX-preview-covern RADERAD (Stefans uttryckliga
+beställning) → dokumenthuvud-kortet (kicker + Fraunces-kundnamn + undertitel, alla
+tre fälten fortsatt redigerbara, datamodell orörd); fasvyn → numrerad tidslinje
+(slide-färgbalkarna raderade, samtliga fält redigerbara); RUBRIKUNIFIERING (wrappern
+äger kapitelrubriken i Fraunces, renderers interna h2 borttagna — döda title/style-
+props amputerade hela vägen: StyleGuide-plumbingen ur editorn/sidan; routinen belade
+att typen därmed var HELT föräldralös — PPTX-motorn importerar den inte — så typen är
+raderad, DB-kolumnen workspace_settings.style_guide står kvar oläst); tokenpass
+(gray/neutral → ink/rule-tokens, p-6-dubbelpaddar bort). Routine-fynden fixade i PR:en:
+placeholder-CSS för tomma EditableText-fält + Number("")-vakten i updateHours.
+Visuellt verifierad mot dev-anbud b3b76311: dokumenthuvud + tidslinje matchar
+mockupen. Nya renderer-tester (cover + faser). Smoke-fynd 5 STÄNGS vid merge —
+därefter Stefans klick-smoke enligt gränsbeslutet._
 
 _Historik (2026-08-14 em): **SVENSK-COPY-SVEPET + KONTRAST (#119).**
 Tre backlog-poster stängda: (1) SMOKE-FYND 1 (2026-08-12) — go/no-go-promptens numrerade

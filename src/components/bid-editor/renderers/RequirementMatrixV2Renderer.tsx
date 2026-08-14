@@ -1,19 +1,15 @@
 "use client";
 import { Fragment, useState } from "react";
-import type { BidSectionContent, StyleGuide } from "@/lib/types";
+import type { BidSectionContent } from "@/lib/types";
 import { EditableText } from "../EditableText";
 
 type MatrixContent = Extract<BidSectionContent, { format: "requirement-matrix-v2" }>;
 
 export function RequirementMatrixV2Renderer({
-  title,
   content,
-  style,
   onChange,
 }: {
-  title: string;
   content: MatrixContent;
-  style: StyleGuide;
   onChange?: (next: MatrixContent) => void;
 }) {
   const editable = !!onChange;
@@ -40,8 +36,7 @@ export function RequirementMatrixV2Renderer({
   }
 
   return (
-    <section className="p-6 text-sm">
-      <h2 className="text-xl font-semibold mb-4" style={{ color: style.colors.primary }}>{title}</h2>
+    <section className="text-sm">
       <table className="w-full text-left">
         <thead>
           <tr className="border-b">
@@ -81,7 +76,7 @@ export function RequirementMatrixV2Renderer({
                 </td>
               </tr>
               {expanded[i] && (
-                <tr className="bg-gray-50">
+                <tr className="bg-paper-2">
                   <td colSpan={4} className="py-2 px-4">
                     <ul className="space-y-1">
                       {r.coverage.map((c, j) => (
@@ -104,7 +99,7 @@ export function RequirementMatrixV2Renderer({
                             {c.status}
                           </span>
                           {" — "}
-                          <span className="text-gray-600">
+                          <span className="text-ink-soft">
                             {editable ? (
                               <EditableText value={c.evidence} onChange={(v) => updateCoverage(i, j, { evidence: v })} as="span" />
                             ) : c.evidence}
