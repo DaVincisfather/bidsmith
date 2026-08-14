@@ -4,7 +4,24 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-14 em — **SVENSK-COPY-SVEPET + KONTRAST (DENNA PR).**
+_Senast uppdaterad: 2026-08-14 em — **EDITOR-OMDESIGNEN PR 1: SKALET (DENNA PR).**
+Stefans mockup-beslut (smoke-fynd 5; process: 3 varianter → syntes A+B+C → godkänd,
+referens `notes/2026-08-14-editor-redesign-mockup.html`, spec+plan i docs/superpowers/):
+ny EditorTopbar (flödessteg-pills ERSÄTTER FlowNav enbart på anbudssidan; dnr,
+dokumentnamn, statuspunkt + SPARAD HH:MM, export/submit-knapparna flyttade upp,
+metadata-rad avsändare/sista anbudsdag/anbudsdatum ur pinnade profilen + analysen,
+null döljs), ny ChapterDashboard (numrerade rader, statusprickar, N/M KLARA,
+avvikelsenoter DIREKT under listan; ersätter SectionNav + GeneratingChapterList,
+dnd + genereringstillstånd bevarade), sektionskort på papper. ÄRLIG STATUSMODELL
+(avsteg från mockup-fyllnad, bokfört i spec): klar/avvikelse (timpris saknas, kunde
+inte genereras); "ej granskad" byggs inte (granskningsfeature ≠ omstyling) och
+saknas-utan-failad-bundle flaggas inte (borttagning är supportad; foreign ej v2-bunden).
+Visuellt verifierad mot dev-anbud b3b76311 (autentiserad Playwright-shot, matchar
+mockupen; deadline-formatfix ur verifieringen). STEFANS BESLUT samma dag: PipelineRail
+STÅR KVAR på editorsidan men behöver egen UI-polish (backlog nedan). PR 2 (renderers:
+cover→dokumenthuvud, faser→tidslinje, rubrikunifiering, tokenpass) följer stackad._
+
+_Historik (2026-08-14 em): **SVENSK-COPY-SVEPET + KONTRAST (#119).**
 Tre backlog-poster stängda: (1) SMOKE-FYND 1 (2026-08-12) — go/no-go-promptens numrerade
 kravlista bar engelska tags ([must/qualification]) som modellen ekade i svensk output
 ("should-krav 2"); nu svenska etiketter ([ska-krav]/[bör-krav]/[önskemål], kind-taggen
@@ -878,6 +895,9 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   KVARSTÅR (medvetet utanför): PPTX-routens statusflipp är fortfarande
   fire-and-forget (ingen felkontroll, till skillnad från md-routens) — den ytan är
   parkerad med motorn och orörd här.
+- **PipelineRail UI-polish (Stefans direktiv 2026-08-14):** railen står kvar på
+  editorsidan (beslut vid PR 1-granskningen av omdesignen) men behöver ett eget
+  polish-pass i omdesignens anda — eget synkront designbeslut, inte del av PR 2.
 - **Strängsvep 2 (polish, routine-follow-up #119):** kärnflödet är helsvenskt efter
   copy-svepet, men consultants-/templates-/radar-routernas felsträngar är kvar på
   engelska ("Consultant not found", "Template not found", "No file provided" i
