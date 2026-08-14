@@ -1,18 +1,14 @@
 "use client";
-import type { BidSectionContent, StyleGuide } from "@/lib/types";
+import type { BidSectionContent } from "@/lib/types";
 import { EditableText } from "../EditableText";
 
 type CertContent = Extract<BidSectionContent, { format: "certifications" }>;
 
 export function CertificationsRenderer({
-  title,
   content,
-  style,
   onChange,
 }: {
-  title: string;
   content: CertContent;
-  style: StyleGuide;
   onChange?: (next: CertContent) => void;
 }) {
   const editable = !!onChange;
@@ -27,8 +23,7 @@ export function CertificationsRenderer({
   }
 
   return (
-    <section className="p-6 text-sm">
-      <h2 className="text-xl font-semibold mb-4" style={{ color: style.colors.primary }}>{title}</h2>
+    <section className="text-sm">
       <div className="grid grid-cols-2 gap-4">
         {content.certs.map((c, i) => {
           const displayName = c.name ?? defaultNames[i] ?? "Övrig";
@@ -45,7 +40,7 @@ export function CertificationsRenderer({
                 ) : displayName}
               </p>
               {(editable || c.description) && (
-                <p className="text-gray-600">
+                <p className="text-ink-soft">
                   {editable ? (
                     <EditableText
                       value={c.description ?? ""}

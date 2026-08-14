@@ -1,25 +1,20 @@
 "use client";
-import type { BidSectionContent, StyleGuide } from "@/lib/types";
+import type { BidSectionContent } from "@/lib/types";
 import { EditableText } from "../EditableText";
 
 type QAContent = Extract<BidSectionContent, { format: "quality-assurance" }>;
 
 export function QualityAssuranceRenderer({
-  title,
   content,
-  style,
   onChange,
 }: {
-  title: string;
   content: QAContent;
-  style: StyleGuide;
   onChange?: (next: QAContent) => void;
 }) {
   const editable = !!onChange;
 
   return (
-    <section className="p-6 text-sm">
-      <h2 className="text-xl font-semibold mb-4" style={{ color: style.colors.primary }}>{title}</h2>
+    <section className="text-sm">
       <div className="space-y-4">
         <div>
           <p className="font-medium mb-1">Kvalitetsprocess</p>
@@ -64,7 +59,7 @@ export function QualityAssuranceRenderer({
               />
             ) : <span>{content.qualityLead.roleAndMandate}</span>}
           </div>
-          <div className="text-gray-600">
+          <div className="text-ink-soft">
             {editable ? (
               <EditableText
                 value={content.qualityLead.contact}
@@ -90,7 +85,7 @@ export function QualityAssuranceRenderer({
               as="p"
             />
           ) : <p>{content.escalation.process}</p>}
-          <div className="text-gray-600">
+          <div className="text-ink-soft">
             Rapportering:{" "}
             {editable ? (
               <EditableText

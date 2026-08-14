@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { BidSection, StyleGuide } from "@/lib/types";
+import { BidSection } from "@/lib/types";
 import { failedUnitLabel, type FailedUnit } from "@/lib/bundle-labels";
 import { buildChapterList } from "@/lib/bid-editor/expected-chapters";
 import { ChapterDashboard } from "./ChapterDashboard";
@@ -16,7 +16,6 @@ interface BidEditorProps {
   analysisId: string | null;
   initialSections: BidSection[];
   initialStatus: string;
-  styleGuide: StyleGuide;
   initialFailedBundles: FailedUnit[];
   initialGenerationError: string | null;
   /** true when a go/no-go assessment exists — enables step 2 in the topbar. */
@@ -35,7 +34,6 @@ export function BidEditor({
   analysisId,
   initialSections,
   initialStatus,
-  styleGuide,
   initialFailedBundles,
   initialGenerationError,
   gonogoEnabled,
@@ -303,14 +301,22 @@ export function BidEditor({
               className="group relative rounded-[14px] border border-rule bg-white px-8 py-7 shadow-sm"
               onClick={() => setActiveSectionKey(section.key)}
             >
-              {/* Kortets kicker; rubrikunifieringen (Fraunces-h2 i wrappern,
-                  renderer-rubrikerna bort) tas i renderer-PR:en (plan steg 5–7). */}
-              <span className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-ink-mute">
-                Kapitel {String(chapterIndexByKey?.get(section.key) ?? i).padStart(2, "0")}
-              </span>
+              {/* Wrappern äger kapitelrubriken (Fraunces) — renderers renderar
+                  inte längre egna titlar. Cover-kortet är dokumenthuvudet och
+                  bär sin egen typografi. Numreringen följer dashboardens
+                  förväntade lista under generering (routine-fynd #120). */}
+              {section.content?.format !== "cover" && (
+                <>
+                  <span className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-ink-mute">
+                    Kapitel {String(chapterIndexByKey?.get(section.key) ?? i).padStart(2, "0")}
+                  </span>
+                  <h2 className="mb-3 font-display text-[23px] font-medium text-ink">
+                    {section.title}
+                  </h2>
+                </>
+              )}
               <SectionRenderer
                 section={section}
-                style={styleGuide}
                 onSectionChange={isReady ? (updated) => handleSectionChange(section.key, updated) : undefined}
               />
             </div>

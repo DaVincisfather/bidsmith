@@ -1,6 +1,6 @@
 "use client";
 
-import { BidSection, BidSectionContent, StyleGuide } from "@/lib/types";
+import { BidSection, BidSectionContent } from "@/lib/types";
 import { CoverRenderer } from "./CoverRenderer";
 
 type TeamPricingContent = Extract<BidSectionContent, { format: "team-pricing" }>;
@@ -24,11 +24,10 @@ import { CertificationsRenderer } from "./CertificationsRenderer";
 
 interface SectionRendererProps {
   section: BidSection;
-  style: StyleGuide;
   onSectionChange?: (updated: BidSection) => void;
 }
 
-export function SectionRenderer({ section, style, onSectionChange }: SectionRendererProps) {
+export function SectionRenderer({ section, onSectionChange }: SectionRendererProps) {
   const content = section.content;
 
   function setContent(next: BidSectionContent) {
@@ -61,7 +60,6 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
       return (
         <PhasesRenderer
           phases={content.phases}
-          style={style}
           onChange={onSectionChange ? (phases) => updateContent({ phases }) : undefined}
         />
       );
@@ -70,27 +68,21 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
     case "understanding-vision":
       return (
         <UnderstandingRenderer
-          title={section.title}
           content={content}
-          style={style}
           onChange={onSectionChange ? setContent : undefined}
         />
       );
     case "quality-assurance":
       return (
         <QualityAssuranceRenderer
-          title={section.title}
           content={content}
-          style={style}
           onChange={onSectionChange ? setContent : undefined}
         />
       );
     case "team-pricing":
       return (
         <TeamPricingRenderer
-          title={section.title}
           content={content}
-          style={style}
           onTimprisChange={onSectionChange ? (idx, timpris) => {
             const members = content.members.map((m, i) => {
               if (i !== idx) return m;
@@ -120,36 +112,28 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
     case "requirement-matrix-v2":
       return (
         <RequirementMatrixV2Renderer
-          title={section.title}
           content={content}
-          style={style}
           onChange={onSectionChange ? setContent : undefined}
         />
       );
     case "reference-v2":
       return (
         <ReferenceV2Renderer
-          title={section.title}
           content={content}
-          style={style}
           onChange={onSectionChange ? setContent : undefined}
         />
       );
     case "confidentiality":
       return (
         <ConfidentialityRenderer
-          title={section.title}
           content={content}
-          style={style}
           onChange={onSectionChange ? setContent : undefined}
         />
       );
     case "certifications":
       return (
         <CertificationsRenderer
-          title={section.title}
           content={content}
-          style={style}
           onChange={onSectionChange ? setContent : undefined}
         />
       );
@@ -157,9 +141,9 @@ export function SectionRenderer({ section, style, onSectionChange }: SectionRend
       // Fallback prose for a non-specialised slot (template-upload slice 4).
       return (
         <div className="space-y-1">
-          <div className="text-xs text-neutral-500">{content.placeholder}</div>
+          <div className="text-xs text-ink-mute">{content.placeholder}</div>
           <textarea
-            className="w-full min-h-[8rem] rounded border p-2 text-sm border-neutral-300"
+            className="w-full min-h-[8rem] rounded border p-2 text-sm border-rule"
             value={content.text}
             readOnly={!onSectionChange}
             onChange={onSectionChange ? (e) => updateContent({ text: e.target.value }) : undefined}
