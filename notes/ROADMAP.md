@@ -918,9 +918,20 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   KVARSTÅR (medvetet utanför): PPTX-routens statusflipp är fortfarande
   fire-and-forget (ingen felkontroll, till skillnad från md-routens) — den ytan är
   parkerad med motorn och orörd här.
-- **PipelineRail UI-polish (Stefans direktiv 2026-08-14):** railen står kvar på
-  editorsidan (beslut vid PR 1-granskningen av omdesignen) men behöver ett eget
-  polish-pass i omdesignens anda — eget synkront designbeslut, inte del av PR 2.
+- **UTFALLSKALIBRERING AV GO/NO-GO (produktvision, post-launch, eval-spåret):**
+  i dag flödar utfallen INTE in i go/no-go — winProbability är en ren LLM-bedömning
+  av underlaget (Stefans fråga 2026-08-14 belade nollkopplingen; rail-copyn som
+  påstod motsatsen är rättad). Framtida koppling: enklast en prior i prompten
+  ("historisk win-rate X % över N anbud"), seriösare en efterkalibrering av
+  sannolikheterna mot loggade utfall. Kräver volym (14 utfall räcker inte) och
+  det pausade eval-spåret — buntas med trevägs-evalen tidigast.
+- **PIPELINE-DASHBOARDENS UI/UX-PASS (Stefans direktiv 2026-08-14, ersätter
+  polish-posten):** (1) avgjorda anbud (vunna/förlorade/avbrutna) flyttar till
+  ett ARKIV i stället för att ligga kvar i railens Inlämnade-lista; (2) DUBBLETTER
+  av samma anbud/RFP i listorna kollapsas — "man kan ju bara söka en" (legacy-rader
+  från före en-analys-ett-anbud-regeln #103 visar 7× samma RFP i dev);
+  (3) inforutorna/korten i dashen + utfallsdialogen (OutcomeSheet) omstylas i
+  omdesignens anda. Körs mot mockup som Stefan godkänner, som editor-passet.
 - **Strängsvep 2 (polish, routine-follow-up #119):** kärnflödet är helsvenskt efter
   copy-svepet, men consultants-/templates-/radar-routernas felsträngar är kvar på
   engelska ("Consultant not found", "Template not found", "No file provided" i

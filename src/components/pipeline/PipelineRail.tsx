@@ -72,14 +72,22 @@ export function PipelineRail() {
         </button>
       )}
 
+      {/* Ärlig copy (correctness-fynd 2026-08-14): utfallen flödar INTE in i
+          go/no-go-bedömningen i dag — de bär win-rate-statistiken. Kalibrering
+          mot faktiska utfall är en bokförd framtidspost (ROADMAP-backloggen),
+          lova den inte i UI:t innan den finns. */}
       {stats && stats.loggedCount > 0 && (
         <p className="text-[11px] text-ink-mute mt-4 pt-3 border-t border-rule leading-relaxed">
-          Du har loggat {stats.loggedCount} utfall — Go/No-Go-rekommendationer är nu kalibrerade mot er firma.
+          Du har loggat {stats.loggedCount} utfall — win-rate och historik per person finns på{" "}
+          <Link href="/arbetsyta/statistik" className="underline hover:no-underline">
+            statistiksidan
+          </Link>
+          .
         </p>
       )}
       {stats && stats.loggedCount === 0 && awaiting.length > 0 && (
         <p className="text-[11px] text-ink-mute mt-4 pt-3 border-t border-rule leading-relaxed">
-          Logga ditt första utfall för att börja träna modellen mot er firma.
+          Logga utfall så byggs firmans win-rate och historik upp på statistiksidan.
         </p>
       )}
 
