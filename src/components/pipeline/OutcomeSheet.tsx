@@ -77,8 +77,10 @@ export function OutcomeSheet({ awaiting, onClose, onCommitted }: Props) {
             ×
           </button>
         </header>
+        {/* Samma correctness-klass som rail-copyn (2026-08-14): utfallen
+            tränar INGEN modell i dag — de bygger firmans historik/win-rate. */}
         <div className="bg-amber-50 border-b border-amber-200 px-5 py-2.5 text-xs text-ink">
-          📊 Detaljerna här tränar din firmas Go/No-Go-modell — vi lär oss vad ni vinner och förlorar på.
+          📊 Detaljerna sparas i firmans historik — win-rate och förlustmönster syns på statistiksidan.
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {awaiting.length === 0 && (
