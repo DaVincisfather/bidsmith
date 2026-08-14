@@ -1,25 +1,20 @@
 "use client";
-import type { BidSectionContent, StyleGuide } from "@/lib/types";
+import type { BidSectionContent } from "@/lib/types";
 import { EditableText } from "../EditableText";
 
 type UnderstandingContent = Extract<BidSectionContent, { format: `understanding-${string}` }>;
 
 export function UnderstandingRenderer({
-  title,
   content,
-  style,
   onChange,
 }: {
-  title: string;
   content: UnderstandingContent;
-  style: StyleGuide;
   onChange?: (next: UnderstandingContent) => void;
 }) {
   const editable = !!onChange;
 
   return (
-    <section className="p-6">
-      <h2 className="text-xl font-semibold mb-4" style={{ color: style.colors.primary }}>{title}</h2>
+    <section>
 
       {content.format === "understanding-current" && (
         <div className="space-y-2 text-sm">

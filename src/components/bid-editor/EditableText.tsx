@@ -5,7 +5,7 @@ import { useRef, useEffect, useCallback } from "react";
 interface EditableTextProps {
   value: string;
   onChange: (value: string) => void;
-  as?: "p" | "h2" | "h3" | "h4" | "span" | "li";
+  as?: "p" | "h1" | "h2" | "h3" | "h4" | "span" | "li";
   className?: string;
   placeholder?: string;
   style?: React.CSSProperties;

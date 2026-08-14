@@ -1,18 +1,14 @@
 "use client";
-import type { BidSectionContent, StyleGuide } from "@/lib/types";
+import type { BidSectionContent } from "@/lib/types";
 import { EditableText } from "../EditableText";
 
 type ConfContent = Extract<BidSectionContent, { format: "confidentiality" }>;
 
 export function ConfidentialityRenderer({
-  title,
   content,
-  style,
   onChange,
 }: {
-  title: string;
   content: ConfContent;
-  style: StyleGuide;
   onChange?: (next: ConfContent) => void;
 }) {
   const editable = !!onChange;
@@ -26,8 +22,7 @@ export function ConfidentialityRenderer({
   }
 
   return (
-    <section className="p-6 text-sm">
-      <h2 className="text-xl font-semibold mb-4" style={{ color: style.colors.primary }}>{title}</h2>
+    <section className="text-sm">
       <p className="mb-3">
         <span className="font-medium">OSL-referens: </span>
         {editable ? (
@@ -40,7 +35,7 @@ export function ConfidentialityRenderer({
         ) : (content.oslReference || "—")}
       </p>
       {content.secrecyRows.length === 0 ? (
-        <p className="text-gray-500 italic">Inga sekretessuppgifter identifierade</p>
+        <p className="text-ink-mute italic">Inga sekretessuppgifter identifierade</p>
       ) : (
         <table className="w-full text-left">
           <thead>

@@ -1,17 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { BidEditor } from "../BidEditor";
-import type { BidSection, StyleGuide } from "@/lib/types";
-
-const style: StyleGuide = {
-  colors: {
-    primary: "#7A2230", primaryLight: "#9A3340", secondary: "#BE969A",
-    secondaryLight: "#E0CFD1", accent: "#7A2230", dark: "#14120E",
-    light: "#F3EFE7", muted: "#8A847A",
-  },
-  font: "Calibri",
-  logoUrl: "",
-};
+import type { BidSection } from "@/lib/types";
 
 function proseSection(key: string, title: string, text: string): BidSection {
   return {
@@ -36,7 +26,6 @@ function renderEditor(overrides: Partial<Parameters<typeof BidEditor>[0]> = {}) 
       analysisId={null}
       initialSections={[proseSection("intro", "Inledning", "Vi är en konsultfirma.")]}
       initialStatus="draft"
-      styleGuide={style}
       initialFailedBundles={[]}
       initialGenerationError={null}
       gonogoEnabled={false}

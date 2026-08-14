@@ -1,20 +1,16 @@
 "use client";
-import type { BidSectionContent, StyleGuide } from "@/lib/types";
+import type { BidSectionContent } from "@/lib/types";
 import { EditableText } from "../EditableText";
 
 type TeamPricingContent = Extract<BidSectionContent, { format: "team-pricing" }>;
 type Member = TeamPricingContent["members"][number];
 
 export function TeamPricingRenderer({
-  title,
   content,
-  style,
   onTimprisChange,
   onMemberFieldChange,
 }: {
-  title: string;
   content: TeamPricingContent;
-  style: StyleGuide;
   onTimprisChange?: (memberIndex: number, timpris: number | null) => void;
   onMemberFieldChange?: (memberIndex: number, field: "name" | "role" | "omfattningPct" | "timmar", value: string) => void;
 }) {
@@ -33,8 +29,7 @@ export function TeamPricingRenderer({
   };
 
   return (
-    <section className="p-6 text-sm">
-      <h2 className="text-xl font-semibold mb-4" style={{ color: style.colors.primary }}>{title}</h2>
+    <section className="text-sm">
       <table className="w-full text-left">
         <thead>
           <tr className="border-b">
