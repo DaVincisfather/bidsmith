@@ -265,6 +265,33 @@ describe("evaluateGoNoGo post-processing", () => {
     expect(result.improvements[0].estimatedImpact).toBe("+4–9 %");
   });
 
+  it("renders a zero lower bound without a plus sign (routine finding #117)", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 65,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "swap",
+          swap: { remove: "Anna", add: "Cecilia" },
+          swapIds: { removeId: "c1", addId: "c3" },
+          estimatedImpactMin: 0,
+          estimatedImpactMax: 5,
+          reason: "Ärligt litet spann",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, team, scored);
+    expect(result.improvements[0].estimatedImpact).toBe("0–5 %");
+  });
+
   it("renders a collapsed span (min === max) as a single value", async () => {
     mockResponse({
       mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],

@@ -248,11 +248,12 @@ ${poolText}`,
   return result;
 }
 
-/** Display string for an impact span: "+4–7 %", single value "+7 %", and
+/** Display string for an impact span: "+4–7 %", zero lower bound "0–5 %"
+ *  (no plus on zero — routine finding #117), single value "+7 %", and
  *  explicit signs when the lower bound is negative ("-2–+5 %"). */
 function formatImpactRange(min: number, max: number): string {
   if (min === max) return `${max > 0 ? "+" : ""}${max} %`;
-  if (min >= 0) return `+${min}–${max} %`;
+  if (min >= 0) return `${min > 0 ? "+" : ""}${min}–${max} %`;
   return `${min}–${max > 0 ? "+" : ""}${max} %`;
 }
 

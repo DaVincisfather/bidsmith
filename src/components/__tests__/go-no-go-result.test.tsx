@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { GoNoGoResultView } from "../go-no-go-result";
 import type { GoNoGoResult, ImprovementSuggestion } from "@/lib/types";
 
@@ -58,11 +58,19 @@ describe("GoNoGoResultView — impact-spann och pedagogik", () => {
     expect(screen.getByText(/~\+15%/)).toBeInTheDocument();
   });
 
-  it("förklarar individmatchning vs teamkomposition vid förslagsrubriken", () => {
+  it("förklarar individmatchning vs teamkomposition via klickbar info-knapp (touch, routine-fynd)", () => {
     renderView([spanSuggestion]);
     expect(screen.getByText("Förbättringsförslag")).toBeInTheDocument();
-    expect(
-      screen.getByLabelText(/Matchningen rankar individer .* teamet som helhet/),
-    ).toBeInTheDocument();
+
+    const infoButton = screen.getByRole("button", { name: "Varför föreslås byten?" });
+    expect(infoButton).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/Matchningen rankar individer/)).not.toBeInTheDocument();
+
+    fireEvent.click(infoButton);
+    expect(infoButton).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText(/Matchningen rankar individer/)).toBeInTheDocument();
+
+    fireEvent.click(infoButton);
+    expect(screen.queryByText(/Matchningen rankar individer/)).not.toBeInTheDocument();
   });
 });
