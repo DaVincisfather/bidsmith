@@ -149,6 +149,22 @@ describe("BidEditor (inlämningssplitten)", () => {
     );
   });
 
+  it("adopterar inlämnad-läget när en annan flik redan markerat (409, routine-fynd)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: "Anbudet är redan markerat som inlämnat." }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: /Markera som inlämnad/ }));
+
+    expect(await screen.findByText(/markerat som inlämnat/i)).toBeInTheDocument();
+    expect(screen.queryByText(/redan markerat/)).not.toBeInTheDocument();
+  });
+
   it("avbruten bekräftelse skickar inget anrop", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

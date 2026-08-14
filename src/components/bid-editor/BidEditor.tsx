@@ -169,7 +169,16 @@ export function BidEditor({
     try {
       const res = await fetch(`/api/bids/${bidId}/submit`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Kunde inte markera anbudet som inlämnat");
+      // En annan flik hann markera — adoptera det nya läget i stället för att
+      // visa ett fel för något som redan är i det tillstånd användaren ville nå
+      // (routine-fynd #116).
+      const alreadySubmitted =
+        res.status === 409 &&
+        typeof data.error === "string" &&
+        data.error.includes("redan markerat");
+      if (!res.ok && !alreadySubmitted) {
+        throw new Error(data.error || "Kunde inte markera anbudet som inlämnat");
+      }
       setStatus("exported");
       setExportNudge(false);
     } catch (err) {
@@ -287,7 +296,7 @@ export function BidEditor({
               {status === "draft" ? (
                 <>
                   {exportNudge && (
-                    <p className="text-sm text-ink-mute">
+                    <p role="status" className="text-sm text-ink-mute">
                       Filen är nedladdad. När anbudet har lämnats in — markera det som inlämnat
                       så följs utfallet upp.
                     </p>
@@ -303,7 +312,7 @@ export function BidEditor({
                   </button>
                 </>
               ) : (
-                <p className="text-sm text-ink-mute text-center">
+                <p role="status" className="text-sm text-ink-mute text-center">
                   Anbudet är markerat som inlämnat — utfallet följs upp i pipelinen.
                 </p>
               )}
