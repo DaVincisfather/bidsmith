@@ -96,8 +96,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         );
       }
     }
+    // Raw Supabase error.message stays server-side (routine finding #119) —
+    // it leaked verbatim into the editor's autosave banner.
+    if (error) console.error(`PATCH /api/bids/${id} failed:`, error);
     return NextResponse.json(
-      { error: error?.message ?? "Bid not found" },
+      { error: "Anbudet hittades inte." },
       { status: 404 }
     );
   }
