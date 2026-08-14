@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { parseUuidParam } from "@/lib/api-helpers";
-import { getUserId } from "@/lib/org";
+import { parseUuidParam, requireUser } from "@/lib/api-helpers";
+import { exportReadinessGuard } from "@/lib/bid-export-guards";
 import { bidToMarkdown } from "@/lib/bid-markdown";
 import { BidSection } from "@/lib/types";
 
@@ -24,9 +24,12 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const idResult = parseUuidParam(rawId, "bid id");
   if (!idResult.ok) return idResult.response;
   const id = idResult.data;
-  // Middleware guarantees authentication; no org scoping in single-workspace model.
+  // Route-level auth: an unauthenticated API hit must be a JSON 401, not an
+  // unhandled NotAuthenticatedError → 500 (routine follow-up #116). Middleware
+  // alone is not enough — it fails open when the anon key is missing.
   const authed = await createClient();
-  await getUserId(authed);
+  const auth = await requireUser(authed);
+  if (!auth.ok) return auth.response;
   const supabase = createServiceClient();
 
   const { data: bid, error: bidError } = await supabase
@@ -35,35 +38,10 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     .eq("id", id)
     .single();
 
-  if (bidError || !bid) {
-    return NextResponse.json({ error: "Bid not found" }, { status: 404 });
-  }
+  const guard = exportReadinessGuard(bid, bidError);
+  if (!guard.ok) return guard.response;
 
-  if (bid.status === "generating") {
-    return NextResponse.json(
-      { error: "Bid is still generating. Wait until status is 'draft'." },
-      { status: 409 },
-    );
-  }
-
-  if (bid.status === "failed") {
-    return NextResponse.json(
-      { error: "Bid generation failed. Re-run generation before exporting." },
-      { status: 409 },
-    );
-  }
-
-  // Same partial-bid refusal as the PPTX route: missing bundle sections would
-  // silently export an incomplete document.
-  const failedBundles = (bid.failed_bundles as unknown[] | null) ?? [];
-  if (failedBundles.length > 0) {
-    return NextResponse.json(
-      { error: "Bid has failed sections. Re-run generation before exporting." },
-      { status: 409 },
-    );
-  }
-
-  const markdown = bidToMarkdown(bid.sections as BidSection[]);
+  const markdown = bidToMarkdown(guard.bid.sections as BidSection[]);
 
   return new NextResponse(markdown, {
     status: 200,
