@@ -4,7 +4,17 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-14 — **IMPACT-SPANN + TEAMPEDAGOGIK (DENNA PR): go/no-go-
+_Senast uppdaterad: 2026-08-14 em — **EXPORTROUTER-STÄDET (DENNA PR): requireUser +
+delade readiness-guards.** Två backlog-poster stängda i en städ-PR: (1) routine-follow-up
+#116 — båda exportrouterna (md + parkerade PPTX) kör nu `requireUser` på route-nivå
+(JSON-401 i stället för ohanterad NotAuthenticatedError ⇒ 500; nytt 401-test på md-routen);
+(2) routine-förslag #100 — de rad-för-rad-duplicerade 404/generating/failed/failed_bundles-
+guarderna utbrutna till `lib/bid-export-guards.ts` (ParseResult-formad diskriminerad union
+så bid-typen smalnar utan non-null-assertions; egen testfil pinnar copy + statuskoder,
+inkl. re-export-tillåtet och fail-closed på query-fel). Beteendebevarande — engelska
+guard-strängarna översätts i copy-svepets PR (nästa), nu på ETT ställe._
+
+_Historik (2026-08-14): **IMPACT-SPANN + TEAMPEDAGOGIK (#117): go/no-go-
 förslagen lovar ett spann, inte en siffra.** Stefans beslut 2026-08-14 (överlovnings-
 mönstret belagt 3 av 3: "+15%"→+6, "+10%"→±0, "+20%"→+7): `estimatedImpact`-punktestimatet
 ersatt av `estimatedImpactMin/Max` (heltal, REQUIRED i AI-schemat per BUG-A; läs-typen
@@ -846,15 +856,10 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   KVARSTÅR (medvetet utanför): PPTX-routens statusflipp är fortfarande
   fire-and-forget (ingen felkontroll, till skillnad från md-routens) — den ytan är
   parkerad med motorn och orörd här.
-- **Export-routernas auth-mönster (polish, routine-follow-up #116):** md- och
-  PPTX-exportrouterna kör kvar gamla `await getUserId(authed)`-throw-mönstret —
-  en oautentiserad API-träff blir ohanterad `NotAuthenticatedError` ⇒ 500 i
-  stället för 401. Fail closed, ingen säkerhetsrisk; byt till `requireUser`
-  (mönstret finns nu i `/submit`) i en billig städ-PR.
-- **Export-routernas delade readiness-guards (polish, routine-förslag #100):** 404/
-  generating/failed/failed_bundles-guarderna är nu duplicerade rad för rad mellan
-  `export/route.ts` och `export-md/route.ts` — bryt ut till gemensam helper innan de
-  glider isär.
+- [x] ~~**Export-routernas auth-mönster (polish, routine-follow-up #116)**~~ — KLAR
+  2026-08-14 (exportrouter-städet): `requireUser` i båda routerna, 401-test.
+- [x] ~~**Export-routernas delade readiness-guards (polish, routine-förslag #100)**~~ —
+  KLAR 2026-08-14 (exportrouter-städet): `lib/bid-export-guards.ts`, egen testfil.
 - [x] **Markdown-escaping av AI-fritext — LEVERERAD 2026-08-11 (denna PR).**
   Ursprungsposten (uppgraderad polish → FÖRE LANSERING, Stefan 2026-08-04;
   routine-förslag #100): rader i AI-text som börjar med `#`, `*`, `` ` `` blir

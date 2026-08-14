@@ -4,7 +4,8 @@ import type { NextRequest } from "next/server";
 const h = vi.hoisted(() => {
   const singleMock = vi.fn();
   const updatePayloads: unknown[] = [];
-  return { singleMock, updatePayloads };
+  const state = { unauthed: false };
+  return { singleMock, updatePayloads, state };
 });
 
 vi.mock("@/lib/supabase", () => ({
@@ -23,9 +24,16 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({}),
 }));
 
-vi.mock("@/lib/org", () => ({
-  getUserId: async () => "user-1",
-}));
+vi.mock("@/lib/org", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/org")>();
+  return {
+    ...actual,
+    getUserId: async () => {
+      if (h.state.unauthed) throw new actual.NotAuthenticatedError();
+      return "user-1";
+    },
+  };
+});
 
 import * as route from "../route";
 
@@ -64,6 +72,7 @@ function bidRow(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   h.updatePayloads.length = 0;
+  h.state.unauthed = false;
 });
 
 describe("POST /api/bids/[id]/export-md — pure download since the submission split", () => {
@@ -73,6 +82,14 @@ describe("POST /api/bids/[id]/export-md — pure download since the submission s
   // user value.
   it("exposes no GET handler", () => {
     expect("GET" in route).toBe(false);
+  });
+
+  it("401s an unauthenticated call instead of an unhandled 500 (requireUser, routine follow-up #116)", async () => {
+    h.state.unauthed = true;
+
+    const res = await route.POST(makeRequest(), ctx(VALID_ID));
+
+    expect(res.status).toBe(401);
   });
 
   it("exports a draft as markdown WITHOUT touching status (submission is explicit)", async () => {

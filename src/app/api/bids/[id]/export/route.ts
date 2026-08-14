@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { parseUuidParam } from "@/lib/api-helpers";
-import { getUserId } from "@/lib/org";
+import { parseUuidParam, requireUser } from "@/lib/api-helpers";
+import { exportReadinessGuard } from "@/lib/bid-export-guards";
 import { renderTemplate } from "@/lib/pptx-template/loader";
 import { renderFromProfile } from "@/lib/pptx-template/render-from-profile";
 import { loadTemplateForBid } from "@/lib/pptx-template/active-template";
@@ -24,47 +24,23 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const idResult = parseUuidParam(rawId, "bid id");
   if (!idResult.ok) return idResult.response;
   const id = idResult.data;
-  // Middleware guarantees authentication; no org scoping in single-workspace model.
+  // Route-level auth: an unauthenticated API hit must be a JSON 401, not an
+  // unhandled NotAuthenticatedError → 500 (routine follow-up #116). Middleware
+  // alone is not enough — it fails open when the anon key is missing.
   const authed = await createClient();
-  await getUserId(authed);
+  const auth = await requireUser(authed);
+  if (!auth.ok) return auth.response;
   const supabase = createServiceClient();
 
-  const { data: bid, error: bidError } = await supabase
+  const { data: bidRow, error: bidError } = await supabase
     .from("bids")
     .select("*")
     .eq("id", id)
     .single();
 
-  if (bidError || !bid) {
-    return NextResponse.json({ error: "Bid not found" }, { status: 404 });
-  }
-
-  if (bid.status === "generating") {
-    return NextResponse.json(
-      { error: "Bid is still generating. Wait until status is 'draft'." },
-      { status: 409 },
-    );
-  }
-
-  // Failed bids stay in the DB (they used to be deleted) — never hand out a
-  // document from a failed generation run.
-  if (bid.status === "failed") {
-    return NextResponse.json(
-      { error: "Bid generation failed. Re-run generation before exporting." },
-      { status: 409 },
-    );
-  }
-
-  // A 'draft' with failed bundles is a partial bid: the sections those bundles
-  // would have filled are missing, so their slides export with raw {placeholder}
-  // tokens visible. Refuse rather than hand out a broken deck.
-  const failedBundles = (bid.failed_bundles as unknown[] | null) ?? [];
-  if (failedBundles.length > 0) {
-    return NextResponse.json(
-      { error: "Bid has failed sections. Re-run generation before exporting." },
-      { status: 409 },
-    );
-  }
+  const guard = exportReadinessGuard(bidRow, bidError);
+  if (!guard.ok) return guard.response;
+  const bid = guard.bid;
 
   const { data: analysisRow, error: analysisError } = await supabase
     .from("analyses")
