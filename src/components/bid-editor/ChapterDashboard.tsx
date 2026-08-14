@@ -103,10 +103,10 @@ function buildRows(
   return rows;
 }
 
-const GLYPH: Record<RowStatus, { char: string; cls: string }> = {
+// pending har ingen glyf — väntande rader renderar spinnern (routine-fynd #123).
+const GLYPH: Record<Exclude<RowStatus, "pending">, { char: string; cls: string }> = {
   ok: { char: "●", cls: "text-emerald-700" },
   warn: { char: "◐", cls: "text-flag" },
-  pending: { char: "…", cls: "text-ink-mute" },
   failed: { char: "✕", cls: "text-red-600" },
 };
 
@@ -163,7 +163,6 @@ function SortableRow({
 }
 
 function RowBody({ row, index }: { row: Row; index: number }) {
-  const glyph = GLYPH[row.status];
   // Väntande kapitel får en snurrande mini-indikator i stället för statiskt
   // "…" — Stefans smoke-fynd 2026-08-14: kravmatrisen tuggar länge och en
   // stillastående rad läses som att genereringen buggat ur.
@@ -175,8 +174,8 @@ function RowBody({ row, index }: { row: Row; index: number }) {
         className="h-3 w-3 shrink-0 animate-spin rounded-full border-[1.5px] border-ink-mute/60 border-t-transparent"
       />
     ) : (
-      <span aria-hidden className={`text-[10px] ${glyph.cls}`}>
-        {glyph.char}
+      <span aria-hidden className={`text-[10px] ${GLYPH[row.status].cls}`}>
+        {GLYPH[row.status].char}
       </span>
     );
   return (
