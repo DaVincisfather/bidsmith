@@ -4,7 +4,18 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-14 em — **EDITOR-OMDESIGNEN PR 1: SKALET (DENNA PR).**
+_Senast uppdaterad: 2026-08-14 kväll — **GENERERINGS-LIVENESS (DENNA PR): Stefans
+första smoke-fynd på omdesignade editorn.** Fyndet: man landar i editorn medan allt
+genereras, kravmatrisen tuggar länge och stillastående väntande-rader läses som att
+det buggat ur (mittens ForgeLoader försvinner så fort första kapitlen landat).
+Stefans båda förslag byggda ihop: snurrande mini-indikator per väntande kapitelrad
+(ersätter statiska "…") + ForgeLoader (40px, "Smider…") under kapitellistan medan
+status=generating. Visuellt verifierad via engångs-anbud i generating-läge
+(PostgREST-insert → screenshot → delete, $0). Kvarstående ur samma smoke:
+kravmatrisen ÄR långsammast (requirement-matrix ≤7 366 output-tokens/63,5 s per
+#107-mätningen) — latensen i sig är eval-/modellspåret, inte UI._
+
+_Historik (2026-08-14 em): **EDITOR-OMDESIGNEN PR 1: SKALET (#120).**
 Stefans mockup-beslut (smoke-fynd 5; process: 3 varianter → syntes A+B+C → godkänd,
 referens `notes/2026-08-14-editor-redesign-mockup.html`, spec+plan i docs/superpowers/):
 ny EditorTopbar (flödessteg-pills ERSÄTTER FlowNav enbart på anbudssidan; dnr,

@@ -82,6 +82,25 @@ describe("BidEditor (dokumentvyn)", () => {
     expect(screen.getByLabelText("Kapitel under generering")).toBeInTheDocument();
   });
 
+  it("väntande kapitel snurrar och smideloadern ligger under listan (liveness, smoke-fynd 2026-08-14)", () => {
+    renderEditor({
+      initialSections: [proseSection("intro", "Inledning", "Vi är en konsultfirma.")],
+      initialStatus: "generating",
+    });
+    // Mini-spinner per väntande rad — en stillastående rad läses som hängd.
+    expect(screen.getAllByTestId("chapter-spinner").length).toBeGreaterThan(0);
+    // Global smides-animering under kapitellistan.
+    const dashboard = screen.getByLabelText("Kapitel under generering");
+    expect(dashboard.querySelector('[aria-label="Smider"]')).toBeInTheDocument();
+  });
+
+  it("varken spinner eller smideloader när anbudet är klart", () => {
+    renderEditor();
+    expect(screen.queryByTestId("chapter-spinner")).not.toBeInTheDocument();
+    const dashboard = screen.getByLabelText("Kapitel");
+    expect(dashboard.querySelector('[aria-label="Smider"]')).not.toBeInTheDocument();
+  });
+
   it("markerar fallerad bundles kapitel under generering", () => {
     renderEditor({
       initialSections: [],
