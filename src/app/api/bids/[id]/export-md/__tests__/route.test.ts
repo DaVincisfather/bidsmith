@@ -4,8 +4,7 @@ import type { NextRequest } from "next/server";
 const h = vi.hoisted(() => {
   const singleMock = vi.fn();
   const updatePayloads: unknown[] = [];
-  const state = { updateError: null as { message: string } | null };
-  return { singleMock, updatePayloads, state };
+  return { singleMock, updatePayloads };
 });
 
 vi.mock("@/lib/supabase", () => ({
@@ -14,7 +13,7 @@ vi.mock("@/lib/supabase", () => ({
       select: () => ({ eq: () => ({ single: h.singleMock }) }),
       update: (payload: unknown) => {
         h.updatePayloads.push(payload);
-        return { eq: () => Promise.resolve({ error: h.state.updateError }) };
+        return { eq: () => Promise.resolve({ error: null }) };
       },
     }),
   }),
@@ -65,19 +64,18 @@ function bidRow(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   h.updatePayloads.length = 0;
-  h.state.updateError = null;
 });
 
-describe("POST /api/bids/[id]/export-md — the formal export (flips status)", () => {
-  // The flip freezes the bid (one analysis = one bid, exported is frozen — #103),
-  // so it must never ride on a safe method: a browser prefetch, a link preview
-  // unfurl or an antivirus scanner following the URL would freeze a user's draft
-  // and count it as submitted in the outcome stats.
-  it("exposes no GET handler — a prefetch cannot flip the bid", () => {
+describe("POST /api/bids/[id]/export-md — pure download since the submission split", () => {
+  // Export no longer mutates anything (submission moved to /submit, 2026-08-14),
+  // but the route stays POST: the client already POSTs, and re-opening a GET
+  // surface would re-litigate the prefetch/CSRF reasoning from #105 for zero
+  // user value.
+  it("exposes no GET handler", () => {
     expect("GET" in route).toBe(false);
   });
 
-  it("exports a draft as markdown AND marks the bid exported", async () => {
+  it("exports a draft as markdown WITHOUT touching status (submission is explicit)", async () => {
     h.singleMock.mockResolvedValue(bidRow());
 
     const res = await route.POST(makeRequest(), ctx(VALID_ID));
@@ -85,13 +83,10 @@ describe("POST /api/bids/[id]/export-md — the formal export (flips status)", (
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toContain("text/markdown");
     expect(await res.text()).toContain("Vi är en konsultfirma.");
-    expect(h.updatePayloads).toHaveLength(1);
-    const payload = h.updatePayloads[0] as { status: string; exported_at: string };
-    expect(payload.status).toBe("exported");
-    expect(payload.exported_at).toBeTruthy();
+    expect(h.updatePayloads).toHaveLength(0);
   });
 
-  it("preserves the original exported_at on re-export (stats bucket by first submission)", async () => {
+  it("re-exports an already submitted bid unchanged", async () => {
     h.singleMock.mockResolvedValue(
       bidRow({ status: "exported", exported_at: "2026-08-01T10:00:00Z" }),
     );
@@ -99,26 +94,14 @@ describe("POST /api/bids/[id]/export-md — the formal export (flips status)", (
     const res = await route.POST(makeRequest(), ctx(VALID_ID));
 
     expect(res.status).toBe(200);
-    const payload = h.updatePayloads[0] as { exported_at: string };
-    expect(payload.exported_at).toBe("2026-08-01T10:00:00Z");
-  });
-
-  it("returns 500 and no file when the status flip fails (never a silent draft)", async () => {
-    h.singleMock.mockResolvedValue(bidRow());
-    h.state.updateError = { message: "connection lost" };
-
-    const res = await route.POST(makeRequest(), ctx(VALID_ID));
-
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error).toContain("Export could not be recorded");
+    expect(h.updatePayloads).toHaveLength(0);
   });
 
   it.each([
     ["generating", bidRow({ status: "generating" })],
     ["failed", bidRow({ status: "failed" })],
     ["partial (failed bundles)", bidRow({ failed_bundles: ["phases"] })],
-  ])("refuses %s bids with 409 and never touches status", async (_label, row) => {
+  ])("refuses %s bids with 409", async (_label, row) => {
     h.singleMock.mockResolvedValue(row);
 
     const res = await route.POST(makeRequest(), ctx(VALID_ID));
@@ -127,7 +110,7 @@ describe("POST /api/bids/[id]/export-md — the formal export (flips status)", (
     expect(h.updatePayloads).toHaveLength(0);
   });
 
-  it("404s when the bid does not exist, without touching status", async () => {
+  it("404s when the bid does not exist", async () => {
     h.singleMock.mockResolvedValue({ data: null, error: { message: "not found" } });
 
     const res = await route.POST(makeRequest(), ctx(VALID_ID));

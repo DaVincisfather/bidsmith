@@ -38,6 +38,10 @@ export function BidEditor({
   const [activeSectionKey, setActiveSectionKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [downloadingMd, setDownloadingMd] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  // Visas efter lyckad export: exporten flippar inte längre status
+  // (inlämningssplitten 2026-08-14) — nudgen pekar på den explicita knappen.
+  const [exportNudge, setExportNudge] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -144,11 +148,34 @@ export function BidEditor({
       a.download = `anbud-${bidId.substring(0, 8)}.md`;
       a.click();
       URL.revokeObjectURL(url);
-      setStatus("exported");
+      if (status === "draft") setExportNudge(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Export misslyckades");
     } finally {
       setDownloadingMd(false);
+    }
+  }
+
+  async function markSubmitted() {
+    if (
+      !window.confirm(
+        "Markera anbudet som inlämnat? Teamet låses och det går inte att ångra — utfallet följs upp i pipelinen.",
+      )
+    ) {
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/bids/${bidId}/submit`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Kunde inte markera anbudet som inlämnat");
+      setStatus("exported");
+      setExportNudge(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte markera anbudet som inlämnat");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -247,7 +274,7 @@ export function BidEditor({
 
           {/* Footer actions */}
           {isReady && (
-            <div className="pt-4 border-t border-rule">
+            <div className="pt-4 border-t border-rule space-y-3">
               <button
                 onClick={downloadMarkdown}
                 disabled={downloadingMd}
@@ -256,6 +283,30 @@ export function BidEditor({
               >
                 {downloadingMd ? "Exporterar..." : "Exportera anbud (Markdown)"}
               </button>
+
+              {status === "draft" ? (
+                <>
+                  {exportNudge && (
+                    <p className="text-sm text-ink-mute">
+                      Filen är nedladdad. När anbudet har lämnats in — markera det som inlämnat
+                      så följs utfallet upp.
+                    </p>
+                  )}
+                  <button
+                    onClick={markSubmitted}
+                    disabled={submitting}
+                    className="w-full border border-rule px-4 py-3 rounded-lg text-sm font-medium
+                               text-ink hover:border-accent-ink hover:text-accent-ink
+                               disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {submitting ? "Markerar..." : "Markera som inlämnad"}
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-ink-mute text-center">
+                  Anbudet är markerat som inlämnat — utfallet följs upp i pipelinen.
+                </p>
+              )}
             </div>
           )}
         </div>

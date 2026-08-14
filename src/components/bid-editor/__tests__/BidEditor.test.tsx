@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { BidEditor } from "../BidEditor";
 import type { BidSection, StyleGuide } from "@/lib/types";
 
@@ -114,5 +114,65 @@ describe("BidEditor (dokumentvyn)", () => {
     });
     const textarea = screen.getByDisplayValue("Vi är en konsultfirma.");
     expect(textarea).not.toHaveAttribute("readonly");
+  });
+});
+
+describe("BidEditor (inlämningssplitten)", () => {
+  it("visar Markera som inlämnad-knappen när status är draft", () => {
+    renderEditor();
+    expect(screen.getByRole("button", { name: /Markera som inlämnad/ })).toBeInTheDocument();
+  });
+
+  it("döljer submit-knappen och visar inlämnad-status när anbudet är inlämnat", () => {
+    renderEditor({ initialStatus: "exported" });
+    expect(screen.queryByRole("button", { name: /Markera som inlämnad/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/markerat som inlämnat/i)).toBeInTheDocument();
+    // Exporten är fortfarande tillgänglig efter inlämning (re-export tillåten).
+    expect(screen.getByRole("button", { name: /Exportera anbud \(Markdown\)/ })).toBeInTheDocument();
+  });
+
+  it("markerar som inlämnad via POST /submit efter bekräftelse", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: "exported", exportedAt: "2026-08-14T10:00:00Z" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: /Markera som inlämnad/ }));
+
+    expect(await screen.findByText(/markerat som inlämnat/i)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/bids/00000000-0000-0000-0000-000000000001/submit",
+      { method: "POST" },
+    );
+  });
+
+  it("avbruten bekräftelse skickar inget anrop", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: /Markera som inlämnad/ }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("export flippar INTE status — nudgen visas och submit-knappen står kvar", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(["# Anbud"]) }),
+    );
+    URL.createObjectURL = vi.fn(() => "blob:x");
+    URL.revokeObjectURL = vi.fn();
+
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: /Exportera anbud \(Markdown\)/ }));
+
+    expect(await screen.findByText(/markera det som inlämnat/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Markera som inlämnad/ })).toBeInTheDocument();
+    expect(screen.queryByText(/markerat som inlämnat/i)).not.toBeInTheDocument();
   });
 });

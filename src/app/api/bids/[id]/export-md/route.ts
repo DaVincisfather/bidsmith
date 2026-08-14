@@ -11,13 +11,14 @@ interface RouteContext {
 }
 
 // Template-free Markdown export — the primary export path since the MD-first
-// decision (2026-08-03). Flips status to 'exported': this IS the formal
-// deliverable that feeds outcome tracking (INLÄMNADE / utfallsloggen).
+// decision (2026-08-03). PURE DOWNLOAD since the submission split (2026-08-14):
+// exporting the file no longer marks the bid as submitted — that claim is an
+// explicit user action on POST /api/bids/[id]/submit, which owns the
+// exported/exported_at flip and the freeze.
 //
-// POST, not GET, precisely BECAUSE of that flip. Since #103 an exported bid is
-// frozen (one analysis = one bid), so a browser prefetch, a link-preview unfurl
-// or a security scanner following the URL would freeze a user's draft and count
-// it as submitted. A state change may not ride on a safe method.
+// Still POST although nothing mutates: the client already POSTs, and re-opening
+// a GET surface would re-litigate the prefetch/CSRF reasoning from #105 for
+// zero user value.
 export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "bid id");
@@ -30,7 +31,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
   const { data: bid, error: bidError } = await supabase
     .from("bids")
-    .select("sections, status, failed_bundles, exported_at")
+    .select("sections, status, failed_bundles")
     .eq("id", id)
     .single();
 
@@ -63,24 +64,6 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   }
 
   const markdown = bidToMarkdown(bid.sections as BidSection[]);
-
-  // The flip IS the point of this route (it feeds outcome tracking) — a silent
-  // failure here would hand out the file while the bid never shows as submitted.
-  // exported_at is preserved on re-export: stats bucket by first submission.
-  const { error: updateError } = await supabase
-    .from("bids")
-    .update({
-      status: "exported",
-      exported_at: (bid.exported_at as string | null) ?? new Date().toISOString(),
-    })
-    .eq("id", id);
-  if (updateError) {
-    console.error(`Failed to mark bid ${id} as exported:`, updateError);
-    return NextResponse.json(
-      { error: "Export could not be recorded. Try again." },
-      { status: 500 },
-    );
-  }
 
   return new NextResponse(markdown, {
     status: 200,

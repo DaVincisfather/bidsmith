@@ -6,7 +6,7 @@ import { buildAnalysisListItems, type AnalysisListItem } from "@/lib/analyses-li
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<AnalysisListItem["status"], string> = {
-  exported: "Exporterat",
+  exported: "Inlämnat",
   draft: "Utkast",
   none: "Ingen anbud",
 };

@@ -116,10 +116,14 @@ console.log(`\n    bid ${bid.id} → ${bid.status}`);
 
 // 6. Export the PPTX to verify the full chain end-to-end.
 console.log("6/6 Exporting PPTX …");
-// POST, not GET: the export flips the bid to 'exported' (and freezes it), so the
-// route refuses safe methods.
+// POST for parity with the reachable Markdown route (the routes refuse safe methods).
 const exportRes = await call(`/api/bids/${bid.id}/export`, { method: "POST" }, false);
 const out = arg("--out", "tmp/demo-bid.pptx");
 writeFileSync(out, Buffer.from(await exportRes.arrayBuffer()));
 console.log(`    saved ${out}`);
+
+// Export no longer flips status (submission split 2026-08-14) — mark the demo
+// bid submitted explicitly so the pipeline/outcome storyline stays seeded.
+console.log("    marking bid submitted …");
+await call(`/api/bids/${bid.id}/submit`, { method: "POST" });
 console.log("Done. Workspace is seeded and fully pre-computed.");

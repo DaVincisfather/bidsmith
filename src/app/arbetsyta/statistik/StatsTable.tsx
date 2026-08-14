@@ -6,7 +6,7 @@ import { formatUsd, formatPct, type UserStats } from "@/lib/stats";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Utkast",
-  exported: "Exporterat",
+  exported: "Inlämnat",
 };
 
 export function StatsTable({ perUser }: { perUser: UserStats[] }) {
