@@ -77,6 +77,12 @@ export function BidEditor({
   const displaySections = chapterList
     ? chapterList.flatMap((c) => (c.section ? [c.section] : []))
     : sections;
+  // Kortens kapitelnummer måste följa dashboardens numrering även under
+  // generering, då korten bara visar LANDADE sektioner men dashboarden
+  // numrerar hela förväntade listan (routine-fynd #120).
+  const chapterIndexByKey = chapterList
+    ? new Map(chapterList.map((c, idx) => [c.key, idx]))
+    : null;
   const isReady = status === "draft" || status === "exported";
 
   // Poll while generating
@@ -300,7 +306,7 @@ export function BidEditor({
               {/* Kortets kicker; rubrikunifieringen (Fraunces-h2 i wrappern,
                   renderer-rubrikerna bort) tas i renderer-PR:en (plan steg 5–7). */}
               <span className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-ink-mute">
-                Kapitel {String(i).padStart(2, "0")}
+                Kapitel {String(chapterIndexByKey?.get(section.key) ?? i).padStart(2, "0")}
               </span>
               <SectionRenderer
                 section={section}

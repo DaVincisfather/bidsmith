@@ -70,7 +70,9 @@ export default async function BidEditorPage({ params }: PageProps) {
   const sections = bid.sections as BidSection[];
   const coverContent = sections.find((s) => s.content?.format === "cover")?.content;
   const coverClient = coverContent?.format === "cover" ? coverContent.client : null;
-  const docName = analysis?.client ?? analysis?.title ?? coverClient ?? "Anbud";
+  // || (inte ??): en tom sträng ur AI-extraktionen ska falla vidare till nästa
+  // källa i stället för att ge en tom topbar (routine-fynd #120).
+  const docName = analysis?.client || analysis?.title || coverClient || "Anbud";
 
   // FlowNav ersätts av EditorTopbar på denna sida (editor-omdesignen); den
   // lever kvar på analys-/go-no-go-sidorna.
@@ -86,7 +88,7 @@ export default async function BidEditorPage({ params }: PageProps) {
         styleGuide={styleGuide}
         initialFailedBundles={(bid.failed_bundles as FailedUnit[]) ?? []}
         initialGenerationError={(bid.generation_error as string | null) ?? null}
-        gonogoEnabled={flow?.assessment !== null && flow !== null}
+        gonogoEnabled={flow !== null && flow.assessment !== null}
         diaryNumber={analysis?.diaryNumber ?? null}
         deadline={analysis?.deadline ? analysis.deadline.slice(0, 10) : null}
         senderName={profile?.companyName ?? null}
