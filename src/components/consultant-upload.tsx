@@ -51,7 +51,7 @@ export function ConsultantUpload({ onComplete }: ConsultantUploadProps) {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Upload failed");
+        throw new Error(data.error || "Uppladdningen misslyckades");
       }
 
       const data: UploadResponse = await response.json();

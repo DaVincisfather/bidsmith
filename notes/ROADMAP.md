@@ -4,7 +4,26 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-14 em — **EXPORTROUTER-STÄDET (DENNA PR): requireUser +
+_Senast uppdaterad: 2026-08-14 em — **SVENSK-COPY-SVEPET + KONTRAST (DENNA PR).**
+Tre backlog-poster stängda: (1) SMOKE-FYND 1 (2026-08-12) — go/no-go-promptens numrerade
+kravlista bar engelska tags ([must/qualification]) som modellen ekade i svensk output
+("should-krav 2"); nu svenska etiketter ([ska-krav]/[bör-krav]/[önskemål], kind-taggen
+struken — listan är redan qualification-filtrerad), promptreglernas engelska
+priority-referenser städade, test pinnar etiketterna. GRIND (gonogo-promptändring ⇒
+live-smoke, #110-prejudikatet): orebro-fixtur, svagt 2-personersteam ⇒ output helt på
+svenska ("ska-krav", "krav 1, 2, 3, 4"), add-förslag "+25–45 %" + ärlig poolGap — PASS.
+(2) Flow-nav follow-up 8 + apply-swap-minors — engelska felsträngar i KÄRNFLÖDET
+översatta (bids/matches/go-no-go/apply-swap/source-view/outcome/submit/export-guards +
+komponent-fallbacks; "Generation timed out" → svensk display-sträng, ingen logik matchar
+på den). Consultants-/templates-/radar-routernas strängar medvetet utanför (eget svep).
+(3) #112-follow-upen kontrast — vinstchansens "(AI-estimat)" nedtonas nu via text-xs i
+stället för opacity-60 (opacity blandar mot bakgrunden, #112-klassen);
+probabilityColor-paren UPPMÄTTA mot Tailwind v4-paletten (oklch→sRGB→WCAG):
+green 4,72:1 / yellow 4,76:1 / red 5,88:1 — alla PASS AA, ingen ändring behövdes.
+Kvar av #112-follow-upen: komponenttest för etikettgrenen + undo-kortet (första
+komponenttestet landade i #117)._
+
+_Historik (2026-08-14 em): **EXPORTROUTER-STÄDET (#118): requireUser +
 delade readiness-guards.** Två backlog-poster stängda i en städ-PR: (1) routine-follow-up
 #116 — båda exportrouterna (md + parkerade PPTX) kör nu `requireUser` på route-nivå
 (JSON-401 i stället för ohanterad NotAuthenticatedError ⇒ 500; nytt 401-test på md-routen);
@@ -639,8 +658,10 @@ _Inga — #54–#68 mergade 2026-07-03/04._
 _Triage 2026-08-04: PPTX-bundna poster flyttade till "Parkerat med PPTX-motorn" nedan,
 verifierat inaktuella till "Struket". Kvar här = MD-vägen + kärnan (generering,
 extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
-- **SMOKE-FYND 2026-08-12 (Stefans klick-smoke, polish/produkt):** (1) go/no-go-copyn
-  blandar engelska ("should-krav 2") — etikettpass på hydrering/prompt önskas;
+- **SMOKE-FYND 2026-08-12 (Stefans klick-smoke, polish/produkt):** ~~(1) go/no-go-copyn
+  blandar engelska ("should-krav 2") — etikettpass på hydrering/prompt önskas;~~
+  ÅTGÄRDAD (2026-08-14, copy-svepet): svenska etiketter i kravlistan + felsträngs-svep,
+  se headern;
   ~~(2) genererings-väntan: användaren står kvar på go/no-go-sidan med enbart knapptext i
   ~2 min — kandidat: navigera till editorn direkt på 202 så GeneratingChapterList/
   ForgeLoader bär väntan (Stefan lutar åt ja, beslutas separat, rör #103-testat flöde);~~
@@ -666,10 +687,11 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   (täcks inte av förslagen ovan)" när förslag finns; "Poolen räcker inte" annars),
   estimatet nedtonat till "~+N % (AI-estimat)" (överlovnings-mönstret belagt 3 av 3:
   +15→+6, +10→±0, +20→+7 — kalibrering hör till eval-spåret). ROUTINE-FOLLOW-UPS
-  (#112, egen PR): kontrastsvep över AI-estimat-suffixen (rad 72:s opacity-60 har samma
-  2,4:1-problem — opacity blandar mot bakgrunden, ärvd kontrast finns inte) +
-  probabilityColor-kombinationerna; första komponenttest för GoNoGoResultView
-  (etikettgrenen + undo-kortet);
+  (#112, egen PR): ~~kontrastsvep över AI-estimat-suffixen (rad 72:s opacity-60) +
+  probabilityColor-kombinationerna~~ ÅTGÄRDAD (2026-08-14, copy-svepet): text-xs i
+  stället för opacity; probabilityColor-paren uppmätta, alla PASS AA — se headern;
+  KVAR: komponenttest för GoNoGoResultView:s etikettgren + undo-kort (första
+  komponenttestet landade i #117);
   (6) GO/NO-GO-VARIANSEN BELAGD i apply-swap-smoken:
   samma team + samma analys gav 48 % resp. 38 % i två körningar (±10 p brus, dränker
   bytets effekt — "+10%" gav ±0, "+15%" gav +6); jämförelsepanelens Δ = byteseffekt +

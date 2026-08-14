@@ -147,6 +147,36 @@ describe("evaluateGoNoGo post-processing", () => {
     expect(sent).not.toContain("LEVERANS_UNIK");
   });
 
+  it("märker den numrerade kravlistan med svenska etiketter — engelska tags ekas annars in i svensk output (smoke-fynd 1)", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 60,
+      winProbabilityReasoning: "",
+      strengths: [],
+      gaps: [],
+      improvements: [],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+    const withPriorities: RfpAnalysis = {
+      ...analysis,
+      requirements: [
+        { category: "A", description: "SKA_UNIK", priority: "must", kind: "qualification" },
+        { category: "B", description: "BOR_UNIK", priority: "should", kind: "qualification" },
+        { category: "C", description: "KAN_UNIK", priority: "nice-to-have", kind: "qualification" },
+      ],
+    };
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    await evaluateGoNoGo(withPriorities, team, scored);
+    const sent = JSON.stringify(mockStream.mock.calls.at(-1)![0]);
+    expect(sent).toContain("[ska-krav] SKA_UNIK");
+    expect(sent).toContain("[bör-krav] BOR_UNIK");
+    expect(sent).toContain("[önskemål] KAN_UNIK");
+    expect(sent).not.toContain("[must");
+    expect(sent).not.toContain("/qualification]");
+  });
+
   it("leaves winProbability untouched when all must-requirements are met", async () => {
     mockResponse({
       mustRequirements: [

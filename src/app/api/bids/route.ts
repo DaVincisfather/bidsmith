@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     ]);
 
   if (analysisResult.error || !analysisResult.data) {
-    return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
+    return NextResponse.json({ error: "Analysen hittades inte." }, { status: 404 });
   }
 
   const bidRows = (existingBidResult.data ?? []) as {

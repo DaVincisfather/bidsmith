@@ -91,7 +91,7 @@ export function GoNoGoSection({
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Bid generation failed");
+      if (!response.ok) throw new Error(data.error || "Genereringen misslyckades");
       // Navigate immediately on the 202 — the bid editor has its own
       // generating experience (ForgeLoader + GeneratingChapterList, #102)
       // that polls /api/bids/[id] and fills väntande→klar live. No need to

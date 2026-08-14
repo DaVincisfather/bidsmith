@@ -28,7 +28,7 @@ export function UploadForm() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Analysis failed");
+        throw new Error(data.error || "Analysen misslyckades");
       }
 
       const data = await response.json();

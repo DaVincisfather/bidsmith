@@ -23,7 +23,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
   if (!data) {
     return NextResponse.json(
-      { error: "Bid not found" },
+      { error: "Anbudet hittades inte." },
       { status: 404 }
     );
   }
@@ -32,9 +32,11 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     // bids.created_at is NOT NULL (setup.sql) — the missing-created_at fail-safe branch in isActivelyGenerating is unreachable here; a future nullable created_at would resurrect infinite-poll for corrupt rows.
     // Watchdog: without this, a bid whose generator died (maxDuration
     // exceeded, deploy, crash) stays 'generating' and polls forever.
+    // Display data only (BidEditor renders it verbatim) — no logic matches
+    // on the string, so Swedish is safe.
     const { data: failed } = await supabase
       .from("bids")
-      .update({ status: "failed", generation_error: "Generation timed out" })
+      .update({ status: "failed", generation_error: "Genereringen tog för lång tid och avbröts." })
       .eq("id", id)
       .eq("status", "generating")
       .select()

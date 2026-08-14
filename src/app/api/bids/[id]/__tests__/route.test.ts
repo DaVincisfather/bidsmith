@@ -170,7 +170,7 @@ describe("GET /api/bids/[id] — stale-generating watchdog", () => {
         outcome: null,
         exported_at: null,
         failed_bundles: [],
-        generation_error: "Generation timed out",
+        generation_error: "Genereringen tog för lång tid och avbröts.",
       },
       error: null,
     };
@@ -180,12 +180,12 @@ describe("GET /api/bids/[id] — stale-generating watchdog", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.status).toBe("failed");
-    expect(body.generationError).toBe("Generation timed out");
+    expect(body.generationError).toBe("Genereringen tog för lång tid och avbröts.");
     // Watchdog should have issued an update with the exact fields
     expect(h.state.watchdogUpdatePayloads).toHaveLength(1);
     const payload = h.state.watchdogUpdatePayloads[0] as Record<string, unknown>;
     expect(payload.status).toBe("failed");
-    expect(payload.generation_error).toBe("Generation timed out");
+    expect(payload.generation_error).toBe("Genereringen tog för lång tid och avbröts.");
   });
 
   it("leaves non-generating statuses alone regardless of age", async () => {

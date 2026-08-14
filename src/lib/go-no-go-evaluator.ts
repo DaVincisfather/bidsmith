@@ -14,13 +14,21 @@ import { qualificationRequirements } from "./requirement-kind";
 import { groundedConsultantClaims } from "./grounded-claims";
 import { MAX_TEAM_SIZE } from "@/lib/constants";
 
+// Svenska prioritetsetiketter för den numrerade kravlistan — engelska
+// priority-värden i prompten läcker in i modellens svenska svarstext.
+const PRIORITY_LABELS: Record<string, string> = {
+  must: "ska-krav",
+  should: "bör-krav",
+  "nice-to-have": "önskemål",
+};
+
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
 Du får en RFP-analys, en numrerad kravlista, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
 
 Din uppgift:
-1. Kontrollera varje SKA-KRAV (priority: "must") i den numrerade kravlistan mot teamets kompetenser och referensuppdrag. Binärt: uppfyllt eller ej.
+1. Kontrollera varje SKA-KRAV (märkt [ska-krav]) i den numrerade kravlistan mot teamets kompetenser och referensuppdrag. Binärt: uppfyllt eller ej.
 2. Om NÅGOT ska-krav INTE uppfylls → winProbability = 0. Inga undantag.
-3. Bedöm bör-krav (should) och önskemål (nice-to-have) för sannolikhetsbedömningen.
+3. Bedöm bör-krav och önskemål för sannolikhetsbedömningen.
 4. Vikta utvärderingskriterierna som anges i RFP:en.
 5. Beakta red flags.
 6. Generera förbättringsförslag genom att jämföra teamets luckor mot tillgängliga konsulter i poolen. Två typer: BYTE (kind "swap") och TILLÄGG (kind "add" — lägg till en konsult utan att ta bort någon, bara när teamet har lediga platser enligt raden "Teamstorlek" nedan). Föreslå tillägg i första hand när ett ska-krav står otäckt och en poolkonsult täcker det; tillägg för bör-krav-luckor är också tillåtna. Föreslå konkreta förslag med uppskattad påverkan.
@@ -63,7 +71,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 }
 
 Regler:
-- mustRequirements: "index" är numret på kravet i listan "## Kvalifikationskrav (numrerade)" nedan — INTE kravtexten. Använd bara nummer som finns i listan, ett per ska-krav (priority: must).
+- mustRequirements: "index" är numret på kravet i listan "## Kvalifikationskrav (numrerade)" nedan — INTE kravtexten. Använd bara nummer som finns i listan, ett per krav märkt [ska-krav].
 - winProbability: 0-100. ALLTID 0 om något ska-krav saknas.
 - improvements: sortera efter estimatedImpactMax (högst först). Du får BARA referera till konsulter som finns i listan "Övriga tillgängliga konsulter" nedan. Använd EXAKT namn och ID från den listan. Hitta INTE PÅ konsulter. Om inga tillgängliga konsulter förbättrar teamet, returnera en tom improvements-lista.
 - improvements MÅSTE ha reell positiv impact. Om ett byte INTE löser ett ouppfyllt ska-krav och winProbability redan är 0, kommer bytet fortfarande resultera i 0% — ta INTE med det som förbättringsförslag. Varje förslag ska vara ett byte som faktiskt höjer winProbability. Inkludera ALDRIG förslag där estimatedImpactMax är 0 eller negativt.
@@ -149,9 +157,13 @@ export async function evaluateGoNoGo(
   // återge varje kravs fulla text i mustRequirements — output-generering
   // dominerar go/no-go-latensen (23–36s), och en full kravtext per krav är dyr
   // att upprepa.
+  // Svenska etiketter i listan (smoke-fynd 1, 2026-08-12): engelska tags
+  // ([must/qualification]) ekades av modellen in i svensk output-text
+  // ("täcker should-krav 2"). Kind-taggen är struken — listan är redan
+  // filtrerad till enbart kvalifikationskrav.
   const numberedRequirements = qualificationRequirements(analysis.requirements);
   const requirementsList = numberedRequirements
-    .map((r, i) => `${i + 1}. [${r.priority}/${r.kind ?? "qualification"}] ${r.description}`)
+    .map((r, i) => `${i + 1}. [${PRIORITY_LABELS[r.priority] ?? r.priority}] ${r.description}`)
     .join("\n");
 
   // Kraven bärs nu av den numrerade listan ovan — dumpa inte requirements i

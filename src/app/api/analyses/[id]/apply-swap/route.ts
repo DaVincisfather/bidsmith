@@ -111,10 +111,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         .limit(1),
     ]);
     if (analysisResult.error || !analysisResult.data) {
-      return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
+      return NextResponse.json({ error: "Analysen hittades inte." }, { status: 404 });
     }
     if (matchResult.error || !matchResult.data?.length) {
-      return NextResponse.json({ error: "No match found. Run matching first." }, { status: 400 });
+      return NextResponse.json({ error: "Ingen matchning hittades — kör matchningen först." }, { status: 400 });
     }
     const rfpAnalysis = analysisResult.data.analysis as RfpAnalysis;
     const pool = (matchResult.data[0].team_proposal as ScoredConsultant[]) ?? [];

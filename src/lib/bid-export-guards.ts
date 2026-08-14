@@ -20,7 +20,7 @@ export function exportReadinessGuard<
   if (bidError || !bid) {
     return {
       ok: false,
-      response: NextResponse.json({ error: "Bid not found" }, { status: 404 }),
+      response: NextResponse.json({ error: "Anbudet hittades inte." }, { status: 404 }),
     };
   }
 
@@ -28,7 +28,7 @@ export function exportReadinessGuard<
     return {
       ok: false,
       response: NextResponse.json(
-        { error: "Bid is still generating. Wait until status is 'draft'." },
+        { error: "Anbudet genereras fortfarande — vänta tills utkastet är klart." },
         { status: 409 },
       ),
     };
@@ -38,7 +38,7 @@ export function exportReadinessGuard<
     return {
       ok: false,
       response: NextResponse.json(
-        { error: "Bid generation failed. Re-run generation before exporting." },
+        { error: "Genereringen misslyckades — generera om innan export." },
         { status: 409 },
       ),
     };
@@ -52,7 +52,7 @@ export function exportReadinessGuard<
     return {
       ok: false,
       response: NextResponse.json(
-        { error: "Bid has failed sections. Re-run generation before exporting." },
+        { error: "Anbudet är ofullständigt (sektioner saknas) — generera om innan export." },
         { status: 409 },
       ),
     };
