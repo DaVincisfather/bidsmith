@@ -1,25 +1,33 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import Link from "next/link";
 import { BidSection, StyleGuide } from "@/lib/types";
 import { failedUnitLabel, type FailedUnit } from "@/lib/bundle-labels";
 import { buildChapterList } from "@/lib/bid-editor/expected-chapters";
-import { SectionNav } from "./SectionNav";
-import { GeneratingChapterList } from "./GeneratingChapterList";
+import { ChapterDashboard } from "./ChapterDashboard";
+import { EditorTopbar } from "./EditorTopbar";
 import { SectionRenderer } from "./renderers";
 import { ForgeLoader } from "../ForgeLoader";
 
 interface BidEditorProps {
   bidId: string;
-  /** The analysis this bid was generated from — powers the back / change-team
-   *  navigation. null for legacy bids without a linked analysis. */
+  /** The analysis this bid was generated from — powers the flow steps in the
+   *  topbar. null for legacy bids without a linked analysis. */
   analysisId: string | null;
   initialSections: BidSection[];
   initialStatus: string;
   styleGuide: StyleGuide;
   initialFailedBundles: FailedUnit[];
   initialGenerationError: string | null;
+  /** true when a go/no-go assessment exists — enables step 2 in the topbar. */
+  gonogoEnabled: boolean;
+  /** Diarienummer/deadline ur analysen; avsändare ur anbudets pinnade profil.
+   *  null döljer respektive fält i topbaren. */
+  diaryNumber: string | null;
+  deadline: string | null;
+  senderName: string | null;
+  /** Dokumentnamn i topbaren (analysens client, fallback title). */
+  docName: string;
 }
 
 export function BidEditor({
@@ -30,6 +38,11 @@ export function BidEditor({
   styleGuide,
   initialFailedBundles,
   initialGenerationError,
+  gonogoEnabled,
+  diaryNumber,
+  deadline,
+  senderName,
+  docName,
 }: BidEditorProps) {
   const [sections, setSections] = useState<BidSection[]>(initialSections);
   const [status, setStatus] = useState(initialStatus);
@@ -42,6 +55,8 @@ export function BidEditor({
   // Visas efter lyckad export: exporten flippar inte längre status
   // (inlämningssplitten 2026-08-14) — nudgen pekar på den explicita knappen.
   const [exportNudge, setExportNudge] = useState(false);
+  // HH:MM för senast lyckade autosave — topbarens "SPARAD"-text (spec 2026-08-14).
+  const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -53,7 +68,8 @@ export function BidEditor({
   }, [sections]);
 
   // While generating: full expected structure up front, sections slotting in
-  // as they persist. null on finished bids — SectionNav owns that state.
+  // as they persist. null on finished bids — ChapterDashboard derives its own
+  // rows; this list orders the document body's placeholders.
   const chapterList = useMemo(
     () => (status === "generating" ? buildChapterList(sections, failedBundles) : null),
     [status, sections, failedBundles],
@@ -93,6 +109,10 @@ export function BidEditor({
         if (!res.ok) {
           const data = await res.json();
           setError(data.error || "Kunde inte spara");
+        } else {
+          setSavedAt(
+            new Date().toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" }),
+          );
         }
       } catch {
         setError("Nätverksfel vid sparning");
@@ -193,42 +213,46 @@ export function BidEditor({
       && s.content.members?.some((m) => m.timpris === null)
   );
 
+  // Anbudsdatum ur cover-sektionen — topbarens metadata-rad (spec 2026-08-14).
+  const coverContent = sections.find((s) => s.content?.format === "cover")?.content;
+  const bidDate = coverContent?.format === "cover" ? coverContent.date : null;
+
   return (
-    <div className="flex min-h-0 flex-1">
-      {/* Left panel — chapter navigation */}
-      <aside className="w-56 shrink-0 border-r border-rule overflow-y-auto p-3">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xs font-mono font-bold uppercase tracking-wide text-ink-mute">Kapitel</h2>
-          <span className="text-[10px] text-ink-mute">{chapterList ? chapterList.length : sections.length}</span>
-        </div>
-        {chapterList ? (
-          <GeneratingChapterList items={chapterList} />
-        ) : (
-          <SectionNav
+    <div className="flex min-h-0 flex-1 flex-col">
+      <EditorTopbar
+        analysisId={analysisId}
+        gonogoEnabled={gonogoEnabled}
+        diaryNumber={diaryNumber}
+        docName={docName}
+        status={status}
+        savedAt={savedAt}
+        saving={saving}
+        downloadingMd={downloadingMd}
+        submitting={submitting}
+        onExport={downloadMarkdown}
+        onSubmit={markSubmitted}
+        showExportNudge={exportNudge && status === "draft"}
+        senderName={senderName}
+        deadline={deadline}
+        bidDate={bidDate}
+      />
+      <div className="flex min-h-0 flex-1">
+        {/* Left panel — chapter dashboard */}
+        <aside className="w-60 shrink-0 border-r border-rule">
+          <ChapterDashboard
             sections={sections}
+            failedBundles={failedBundles}
+            status={status}
             activeSectionKey={activeSectionKey}
             onSectionClick={scrollToSection}
             onReorder={handleReorder}
             onRemoveSection={handleRemoveSection}
           />
-        )}
-      </aside>
+        </aside>
 
-      {/* Center panel — document view */}
-      <main className="flex-1 overflow-y-auto bg-white">
-        <div className="max-w-3xl mx-auto py-8 px-6 space-y-8">
-          {analysisId && (
-            <nav className="flex items-center gap-4 text-xs font-mono text-ink-mute">
-              <Link href={`/analysis/${analysisId}`} className="hover:text-ink transition-colors">
-                ← Tillbaka till analys
-              </Link>
-              <span aria-hidden className="text-rule">|</span>
-              <Link href={`/analysis/${analysisId}/go-no-go`} className="hover:text-ink transition-colors">
-                Ändra team
-              </Link>
-            </nav>
-          )}
-
+        {/* Center panel — document canvas on paper */}
+        <main className="flex-1 overflow-y-auto bg-paper">
+          <div className="max-w-3xl mx-auto py-7 px-6 space-y-4">
           {needsTimpris && (
             <div className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <span role="img" aria-label="varning">⚠</span> Fyll i timpriser i Team-sektionen innan export.
@@ -266,13 +290,18 @@ export function BidEditor({
             </div>
           )}
 
-          {displaySections.map((section) => (
+          {displaySections.map((section, i) => (
             <div
               key={section.key}
               ref={(el) => { sectionRefs.current[section.key] = el; }}
-              className="group relative"
+              className="group relative rounded-[14px] border border-rule bg-white px-8 py-7 shadow-sm"
               onClick={() => setActiveSectionKey(section.key)}
             >
+              {/* Kortets kicker; rubrikunifieringen (Fraunces-h2 i wrappern,
+                  renderer-rubrikerna bort) tas i renderer-PR:en (plan steg 5–7). */}
+              <span className="mb-2 block font-mono text-[9px] uppercase tracking-widest text-ink-mute">
+                Kapitel {String(i).padStart(2, "0")}
+              </span>
               <SectionRenderer
                 section={section}
                 style={styleGuide}
@@ -281,52 +310,14 @@ export function BidEditor({
             </div>
           ))}
 
-          {/* Footer actions */}
-          {isReady && (
-            <div className="pt-4 border-t border-rule space-y-3">
-              <button
-                onClick={downloadMarkdown}
-                disabled={downloadingMd}
-                className="w-full bg-ink text-white px-4 py-3 rounded-lg text-sm font-medium
-                           hover:bg-accent-ink disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {downloadingMd ? "Exporterar..." : "Exportera anbud (Markdown)"}
-              </button>
-
-              {status === "draft" ? (
-                <>
-                  {exportNudge && (
-                    <p role="status" className="text-sm text-ink-mute">
-                      Filen är nedladdad. När anbudet har lämnats in — markera det som inlämnat
-                      så följs utfallet upp.
-                    </p>
-                  )}
-                  <button
-                    onClick={markSubmitted}
-                    disabled={submitting}
-                    className="w-full border border-rule px-4 py-3 rounded-lg text-sm font-medium
-                               text-ink hover:border-accent-ink hover:text-accent-ink
-                               disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {submitting ? "Markerar..." : "Markera som inlämnad"}
-                  </button>
-                </>
-              ) : (
-                <p role="status" className="text-sm text-ink-mute text-center">
-                  Anbudet är markerat som inlämnat — utfallet följs upp i pipelinen.
-                </p>
-              )}
-            </div>
+          {status === "exported" && (
+            <p role="status" className="pt-2 text-center text-sm text-ink-mute">
+              Anbudet är markerat som inlämnat — utfallet följs upp i pipelinen.
+            </p>
           )}
-        </div>
-
-        {/* Saving indicator */}
-        {saving && (
-          <div className="fixed bottom-4 right-4 bg-ink text-white text-xs px-3 py-1.5 rounded-full">
-            Sparar...
           </div>
-        )}
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

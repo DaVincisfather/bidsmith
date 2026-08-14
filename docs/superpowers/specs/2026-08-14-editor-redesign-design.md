@@ -45,7 +45,9 @@ grå Tailwind-färger utanför tokensystemet, headern är två mono-länkar, och
   - team-pricing med `timpris === null` på någon medlem → "timpris saknas"
     (samma predikat som dagens needsTimpris-banner)
   - kapitel vars bundle ligger i `failed_bundles` → "kunde inte genereras"
-  - förväntat kapitel som saknas i sections (draft) → "saknas"
+  - OBS (rättad under bygget): "saknas"-fallet för ej-landade förväntade kapitel
+    utan failad bundle byggs INTE — borttagning av sektioner är en supportad
+    handling och foreign-anbud är inte v2-bundna; flaggan hade spammat båda.
 - **Genereras (under generation):** GeneratingChapterLists väntande/klar/misslyckad-
   semantik flyttar in i dashboardens rader (befintlig buildChapterList återanvänds).
 - MEDVETET UTANFÖR: mockupens "ej granskad" — granskningsspårning är en ny feature,
