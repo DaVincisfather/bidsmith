@@ -4,7 +4,28 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-14 — **"IDEAL 3–5"-RADEN STRUKEN (DENNA PR): grindbeslutet
+_Senast uppdaterad: 2026-08-14 — **EXPORT ≠ INLÄMNING (DENNA PR): exporten är en ren
+nedladdning, inlämning är en explicit handling.** Stefans beslut 2026-08-14 (smoke-fynd 3,
+2026-08-12: "export-frysningen kanske lite onödig"): export-routerna (md + parkerade PPTX)
+flippar INTE längre `exported`/`exported_at` — flippen bor i nya POST
+`/api/bids/[id]/submit` (requireUser på route-nivå, guards: 404/redan inlämnad/
+generating/failed/failed_bundles ⇒ 409, CAS på status='draft' mot dubbel-submit från två
+flikar). Kolumnerna återanvänds ⇒ ALLA nedströms-konsumenter orörda (Pipen, stats,
+frys-guards i unlock/apply-swap/POST bids, analyses-listan). UI: "Markera som inlämnad"-
+knapp med bekräftelsedialog i editorn + nudge efter export ("filen är nedladdad — markera
+när inlämnat"); exported-läget visar inert inlämnad-rad; redigering + re-export förblir
+öppna efter inlämning (som förr). Etiketter "Exporterat" → "Inlämnat" (analyser + statistik).
+Call sites i HELA repot per #105-lärdomen: demo-seedern markerar nu explicit submit efter
+export (annars tom demo-Pipe). MEDVETEN KONSEKVENS: den som glömmer markera får tom
+utfallsspårning — nudgen mitigerar; migration behövdes inte. ROUTINE-FYNDEN FIXADE I
+PR:EN (COMMENT, inga blockerare): cross-tab-409 adopterar inlämnad-läget i stället för
+fel + `role="status"` på nudge/inlämnad-raden; routine-follow-up bokförd i backloggen
+(export-routernas gamla getUserId-throw ⇒ 500 i st.f. 401 — byt till requireUser, egen
+städ-PR). Grindar: 1551 tester (14 nya, TDD RED→GREEN), lint 0 fel, tsc rent,
+`next build` exit 0. Beslutet togs i 2026-08-14-beslutspasset (se även "Ideal 3–5"-
+strykningen i förra headern + impact-spannet, egna PR:ar)._
+
+_Historik (2026-08-14): **"IDEAL 3–5"-RADEN STRUKEN (#115): grindbeslutet
 avgjort.** Stefans beslut 2026-08-14: meningen "Ideal 3-5 för full impact" stryks ur
 team-pricing-bundlens prompt ("Max 5 konsulter (template slot cap)" står kvar).
 KORREKTIV mot förra headerns antagande: raden låg INTE i writing-rollen utan i
@@ -597,9 +618,11 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   ~2 min — kandidat: navigera till editorn direkt på 202 så GeneratingChapterList/
   ForgeLoader bär väntan (Stefan lutar åt ja, beslutas separat, rör #103-testat flöde);~~
   LEVERERAD (denna PR): "Generera anbud" navigerar direkt till editorn på 202;
-  GeneratingChapterList/ForgeLoader bär väntan. (3)
+  GeneratingChapterList/ForgeLoader bär väntan. ~~(3)
   export-frysningen ifrågasatt ("kanske lite onödigt nu när jag tänker på det") — hänger
-  ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;
+  ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;~~
+  AVGJORD + LEVERERAD (denna PR, 2026-08-14): export = ren nedladdning, explicit
+  "Markera som inlämnad" äger flippen — se headern.
   (4) pedagogiken "varför föreslås byten när jag valde bäst matchade?" — individmatchning
   vs teamkomposition behöver förklaras i UI-copy; (5) editor-UI:t ska designas om
   (Stefan styr, eget synkront pass); UX-POLISH LEVERERAD (denna PR, 2026-08-13, ur
@@ -798,6 +821,11 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   KVARSTÅR (medvetet utanför): PPTX-routens statusflipp är fortfarande
   fire-and-forget (ingen felkontroll, till skillnad från md-routens) — den ytan är
   parkerad med motorn och orörd här.
+- **Export-routernas auth-mönster (polish, routine-follow-up #116):** md- och
+  PPTX-exportrouterna kör kvar gamla `await getUserId(authed)`-throw-mönstret —
+  en oautentiserad API-träff blir ohanterad `NotAuthenticatedError` ⇒ 500 i
+  stället för 401. Fail closed, ingen säkerhetsrisk; byt till `requireUser`
+  (mönstret finns nu i `/submit`) i en billig städ-PR.
 - **Export-routernas delade readiness-guards (polish, routine-förslag #100):** 404/
   generating/failed/failed_bundles-guarderna är nu duplicerade rad för rad mellan
   `export/route.ts` och `export-md/route.ts` — bryt ut till gemensam helper innan de

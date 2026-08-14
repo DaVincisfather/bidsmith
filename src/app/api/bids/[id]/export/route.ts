@@ -16,9 +16,9 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-// POST, not GET: this route flips the bid to 'exported' (frozen since #103), and
-// a state change may not ride on a method prefetchers treat as safe. Mirrors the
-// Markdown route, which is the reachable export path.
+// Pure download since the submission split (2026-08-14) — the exported/
+// exported_at flip lives on POST /api/bids/[id]/submit. Stays POST for parity
+// with the Markdown route, which is the reachable export path.
 export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "bid id");
@@ -46,8 +46,8 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // Failed bids stay in the DB (they used to be deleted) — exporting one
-  // would flip it to 'exported' and count it as submitted in the stats.
+  // Failed bids stay in the DB (they used to be deleted) — never hand out a
+  // document from a failed generation run.
   if (bid.status === "failed") {
     return NextResponse.json(
       { error: "Bid generation failed. Re-run generation before exporting." },
@@ -95,8 +95,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const template = await loadTemplateForBid((bid.template_id as string | null) ?? null);
 
   // PPTX rendering touches template files + section data of varying shape —
-  // a rendering bug must surface as a clean 500, not an unhandled crash, and
-  // must not mark the bid as exported.
+  // a rendering bug must surface as a clean 500, not an unhandled crash.
   let buffer: Buffer;
   try {
     // A FOREIGN template's manifest is near-empty, so render from the SAME
@@ -116,11 +115,6 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       { status: 500 },
     );
   }
-
-  await supabase
-    .from("bids")
-    .update({ status: "exported", exported_at: new Date().toISOString() })
-    .eq("id", id);
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,
