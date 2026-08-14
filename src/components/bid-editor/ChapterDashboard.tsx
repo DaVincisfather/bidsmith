@@ -21,6 +21,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { BidSection } from "@/lib/types";
 import type { FailedUnit } from "@/lib/bundle-labels";
 import { buildChapterList } from "@/lib/bid-editor/expected-chapters";
+import { ForgeLoader } from "../ForgeLoader";
 
 // Kapiteldashboarden ur den godkända mockupen (C-varianten): numrerade rader
 // med statusprick, N/M-räknare och avvikelsenoter DIREKT UNDER listan (Stefans
@@ -102,10 +103,10 @@ function buildRows(
   return rows;
 }
 
-const GLYPH: Record<RowStatus, { char: string; cls: string }> = {
+// pending har ingen glyf — väntande rader renderar spinnern (routine-fynd #123).
+const GLYPH: Record<Exclude<RowStatus, "pending">, { char: string; cls: string }> = {
   ok: { char: "●", cls: "text-emerald-700" },
   warn: { char: "◐", cls: "text-flag" },
-  pending: { char: "…", cls: "text-ink-mute" },
   failed: { char: "✕", cls: "text-red-600" },
 };
 
@@ -162,7 +163,21 @@ function SortableRow({
 }
 
 function RowBody({ row, index }: { row: Row; index: number }) {
-  const glyph = GLYPH[row.status];
+  // Väntande kapitel får en snurrande mini-indikator i stället för statiskt
+  // "…" — Stefans smoke-fynd 2026-08-14: kravmatrisen tuggar länge och en
+  // stillastående rad läses som att genereringen buggat ur.
+  const indicator =
+    row.status === "pending" ? (
+      <span
+        aria-hidden
+        data-testid="chapter-spinner"
+        className="h-3 w-3 shrink-0 animate-spin rounded-full border-[1.5px] border-ink-mute/60 border-t-transparent"
+      />
+    ) : (
+      <span aria-hidden className={`text-[10px] ${GLYPH[row.status].cls}`}>
+        {GLYPH[row.status].char}
+      </span>
+    );
   return (
     <>
       <span className="font-mono text-[9px] text-ink-mute w-4 shrink-0">
@@ -175,9 +190,7 @@ function RowBody({ row, index }: { row: Row; index: number }) {
       >
         {row.title}
       </span>
-      <span aria-hidden className={`text-[10px] ${glyph.cls}`}>
-        {glyph.char}
-      </span>
+      {indicator}
     </>
   );
 }
@@ -274,6 +287,14 @@ export function ChapterDashboard({
           </DndContext>
         )}
       </div>
+      {generating && (
+        <div className="mx-3.5 mb-3 mt-2 flex justify-center border-t border-rule pt-4">
+          {/* Global liveness under listan (Stefans smoke-fynd 2026-08-14):
+              mittens ForgeLoader försvinner när första kapitlen landat, och
+              en lista med enbart väntande rader läses som hängd. */}
+          <ForgeLoader size={40} />
+        </div>
+      )}
       {deviations.length > 0 && (
         <div className="mx-3.5 mb-3 mt-1 border-t border-rule pt-2 font-mono text-[9px] leading-relaxed text-ink-mute">
           {deviations.map((d) => (
