@@ -287,7 +287,8 @@ describe("GoNoGoAiResponseSchema — improvements.kind och poolGap (BUG-A: requi
           {
             swap: { remove: "A", add: "B" },
             swapIds: { removeId: "a", addId: "b" },
-            estimatedImpact: "+10%",
+            estimatedImpactMin: 4,
+            estimatedImpactMax: 10,
             reason: "r",
           },
         ],
@@ -304,13 +305,50 @@ describe("GoNoGoAiResponseSchema — improvements.kind och poolGap (BUG-A: requi
           kind: "add",
           swap: { remove: null, add: "C" },
           swapIds: { removeId: null, addId: "c" },
-          estimatedImpact: "+12%",
+          estimatedImpactMin: 2,
+          estimatedImpactMax: 6,
           reason: "r",
         },
       ],
       poolGap: null,
     });
     expect(parsed.improvements[0].kind).toBe("add");
+  });
+
+  it("avvisar en improvements-post med gamla punktestimatet estimatedImpact i stället för spannet (BUG-A: båda spannfälten obligatoriska)", () => {
+    expect(() =>
+      GoNoGoAiResponseSchema.parse({
+        ...base,
+        improvements: [
+          {
+            kind: "swap",
+            swap: { remove: "A", add: "B" },
+            swapIds: { removeId: "a", addId: "b" },
+            estimatedImpact: "+10%",
+            reason: "r",
+          },
+        ],
+        poolGap: null,
+      }),
+    ).toThrow();
+  });
+
+  it("avvisar en improvements-post med bara ena spannfältet", () => {
+    expect(() =>
+      GoNoGoAiResponseSchema.parse({
+        ...base,
+        improvements: [
+          {
+            kind: "swap",
+            swap: { remove: "A", add: "B" },
+            swapIds: { removeId: "a", addId: "b" },
+            estimatedImpactMin: 4,
+            reason: "r",
+          },
+        ],
+        poolGap: null,
+      }),
+    ).toThrow();
   });
 
   it("avvisar payload utan poolGap-nyckeln — fältet är required-nullable (BUG-A)", () => {

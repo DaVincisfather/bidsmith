@@ -187,7 +187,7 @@ describe("evaluateGoNoGo post-processing", () => {
     expect(result.winProbability).toBe(0);
   });
 
-  it("suppresses improvements with non-positive estimatedImpact", async () => {
+  it("suppresses improvements whose upper impact bound is not positive", async () => {
     mockResponse({
       mustRequirements: [
         { index: 1, met: true, coveredBy: "Anna" },
@@ -201,21 +201,24 @@ describe("evaluateGoNoGo post-processing", () => {
           kind: "swap",
           swap: { remove: "Anna", add: "Bo" },
           swapIds: { removeId: "c1", addId: "c2" },
-          estimatedImpact: "+0%",
+          estimatedImpactMin: 0,
+          estimatedImpactMax: 0,
           reason: "Bo täcker bör-krav men Anna bidrar med juridik — bytet ger ingen nettoeffekt",
         },
         {
           kind: "swap",
           swap: { remove: "Anna", add: "Cecilia" },
           swapIds: { removeId: "c1", addId: "c3" },
-          estimatedImpact: "+10%",
+          estimatedImpactMin: 4,
+          estimatedImpactMax: 10,
           reason: "Cecilia har starkare referens",
         },
         {
           kind: "swap",
           swap: { remove: "Anna", add: "David" },
           swapIds: { removeId: "c1", addId: "c4" },
-          estimatedImpact: "-5%",
+          estimatedImpactMin: -5,
+          estimatedImpactMax: -2,
           reason: "David är junior — försämring",
         },
       ],
@@ -227,7 +230,93 @@ describe("evaluateGoNoGo post-processing", () => {
     const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
     const result = await evaluateGoNoGo(analysis, team, scored);
     expect(result.improvements).toHaveLength(1);
-    expect(result.improvements[0].estimatedImpact).toBe("+10%");
+    expect(result.improvements[0].estimatedImpact).toBe("+4–10 %");
+    expect(result.improvements[0].estimatedImpactMin).toBe(4);
+    expect(result.improvements[0].estimatedImpactMax).toBe(10);
+  });
+
+  it("normalizes an inverted span (model slip) and synthesizes the display string", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 65,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "swap",
+          swap: { remove: "Anna", add: "Cecilia" },
+          swapIds: { removeId: "c1", addId: "c3" },
+          estimatedImpactMin: 9,
+          estimatedImpactMax: 4,
+          reason: "Omkastat spann",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, team, scored);
+    expect(result.improvements).toHaveLength(1);
+    expect(result.improvements[0].estimatedImpactMin).toBe(4);
+    expect(result.improvements[0].estimatedImpactMax).toBe(9);
+    expect(result.improvements[0].estimatedImpact).toBe("+4–9 %");
+  });
+
+  it("renders a zero lower bound without a plus sign (routine finding #117)", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 65,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "swap",
+          swap: { remove: "Anna", add: "Cecilia" },
+          swapIds: { removeId: "c1", addId: "c3" },
+          estimatedImpactMin: 0,
+          estimatedImpactMax: 5,
+          reason: "Ärligt litet spann",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, team, scored);
+    expect(result.improvements[0].estimatedImpact).toBe("0–5 %");
+  });
+
+  it("renders a collapsed span (min === max) as a single value", async () => {
+    mockResponse({
+      mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
+      winProbability: 65,
+      winProbabilityReasoning: "Bra team",
+      strengths: [],
+      gaps: [],
+      improvements: [
+        {
+          kind: "swap",
+          swap: { remove: "Anna", add: "Cecilia" },
+          swapIds: { removeId: "c1", addId: "c3" },
+          estimatedImpactMin: 7,
+          estimatedImpactMax: 7,
+          reason: "Punktspann",
+        },
+      ],
+      poolGap: null,
+      recommendation: "go",
+      reasoning: "—",
+    });
+
+    const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
+    const result = await evaluateGoNoGo(analysis, team, scored);
+    expect(result.improvements[0].estimatedImpact).toBe("+7 %");
   });
 
   it("keeps a valid add suggestion when the team has a free slot", async () => {
@@ -242,7 +331,8 @@ describe("evaluateGoNoGo post-processing", () => {
           kind: "add",
           swap: { remove: null, add: "Aram" },
           swapIds: { removeId: null, addId: "id-aram" },
-          estimatedImpact: "+12%",
+          estimatedImpactMin: 2,
+          estimatedImpactMax: 6,
           reason: "Aram täcker ska-krav Z som ingen i teamet täcker; teamet har en ledig plats",
         },
       ],
@@ -269,7 +359,8 @@ describe("evaluateGoNoGo post-processing", () => {
           kind: "add",
           swap: { remove: null, add: "Aram" },
           swapIds: { removeId: null, addId: "id-aram" },
-          estimatedImpact: "+12%",
+          estimatedImpactMin: 2,
+          estimatedImpactMax: 6,
           reason: "Aram täcker ska-krav Z, men underlaget anger max 2 konsulter",
         },
       ],
@@ -301,7 +392,8 @@ describe("evaluateGoNoGo post-processing", () => {
           kind: "add",
           swap: { remove: null, add: "Aram" },
           swapIds: { removeId: null, addId: "id-aram" },
-          estimatedImpact: "+12%",
+          estimatedImpactMin: 2,
+          estimatedImpactMax: 6,
           reason: "Aram täcker ska-krav Z, men teamet har inga lediga platser",
         },
       ],
@@ -315,7 +407,7 @@ describe("evaluateGoNoGo post-processing", () => {
     expect(result.improvements).toHaveLength(0);
   });
 
-  it("drops an add suggestion with non-positive or unparseable impact", async () => {
+  it("drops an add suggestion whose upper impact bound is not positive", async () => {
     mockResponse({
       mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
       winProbability: 72,
@@ -327,15 +419,17 @@ describe("evaluateGoNoGo post-processing", () => {
           kind: "add",
           swap: { remove: null, add: "Aram" },
           swapIds: { removeId: null, addId: "id-aram" },
-          estimatedImpact: "+0%",
+          estimatedImpactMin: 0,
+          estimatedImpactMax: 0,
           reason: "Ingen nettoeffekt",
         },
         {
           kind: "add",
           swap: { remove: null, add: "Bea" },
           swapIds: { removeId: null, addId: "id-bea" },
-          estimatedImpact: "täcker ska-krav 2",
-          reason: "Ej numerisk impact — modellen svarade i klartext",
+          estimatedImpactMin: -3,
+          estimatedImpactMax: 0,
+          reason: "Övre gränsen är noll — kan inte förbättra teamet",
         },
       ],
       poolGap: null,
@@ -360,7 +454,8 @@ describe("evaluateGoNoGo post-processing", () => {
           kind: "add",
           swap: { remove: "Anna", add: "Aram" },
           swapIds: { removeId: "c1", addId: "id-aram" },
-          estimatedImpact: "+12%",
+          estimatedImpactMin: 2,
+          estimatedImpactMax: 6,
           reason: "Malformed: kind add men remove satt",
         },
       ],
@@ -386,7 +481,8 @@ describe("evaluateGoNoGo post-processing", () => {
           kind: "add",
           swap: { remove: null, add: "Aram" },
           swapIds: { removeId: "c1", addId: "id-aram" },
-          estimatedImpact: "+12%",
+          estimatedImpactMin: 2,
+          estimatedImpactMax: 6,
           reason: "Malformed: kind add, swap.remove null men swapIds.removeId satt",
         },
       ],

@@ -143,7 +143,13 @@ export interface ImprovementSuggestion {
   // have a real remove/add pair.
   swap: { remove: string | null; add: string | null } | null;
   swapIds: { removeId: string | null; addId: string | null } | null;
+  // Display string — legacy rows carry a point estimate ("+15%"), new rows a
+  // range synthesized by the evaluator from the span fields below ("+4–7 %").
   estimatedImpact: string;
+  // Conservative span in percentage points. Optional: legacy persisted rows
+  // predate the range (point-estimate era) and carry only estimatedImpact.
+  estimatedImpactMin?: number;
+  estimatedImpactMax?: number;
   reason: string;
 }
 

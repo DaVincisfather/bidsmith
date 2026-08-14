@@ -44,14 +44,16 @@ Svara ALLTID med giltig JSON som matchar detta schema:
       "kind": "swap",
       "swap": { "remove": "Konsult A", "add": "Konsult B" },
       "swapIds": { "removeId": "uuid-a", "addId": "uuid-b" },
-      "estimatedImpact": "+15%",
+      "estimatedImpactMin": 4,
+      "estimatedImpactMax": 9,
       "reason": "Konsult B har erfarenhet av X som täcker ska-krav Y"
     },
     {
       "kind": "add",
       "swap": { "remove": null, "add": "Konsult C" },
       "swapIds": { "removeId": null, "addId": "uuid-c" },
-      "estimatedImpact": "+12%",
+      "estimatedImpactMin": 2,
+      "estimatedImpactMax": 6,
       "reason": "Konsult C täcker ska-krav Z som ingen i teamet täcker; teamet har en ledig plats"
     }
   ],
@@ -63,9 +65,9 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 Regler:
 - mustRequirements: "index" är numret på kravet i listan "## Kvalifikationskrav (numrerade)" nedan — INTE kravtexten. Använd bara nummer som finns i listan, ett per ska-krav (priority: must).
 - winProbability: 0-100. ALLTID 0 om något ska-krav saknas.
-- improvements: sortera efter estimatedImpact (högst först). Du får BARA referera till konsulter som finns i listan "Övriga tillgängliga konsulter" nedan. Använd EXAKT namn och ID från den listan. Hitta INTE PÅ konsulter. Om inga tillgängliga konsulter förbättrar teamet, returnera en tom improvements-lista.
-- improvements MÅSTE ha reell positiv impact. Om ett byte INTE löser ett ouppfyllt ska-krav och winProbability redan är 0, kommer bytet fortfarande resultera i 0% — ta INTE med det som förbättringsförslag. Varje förslag ska vara ett byte som faktiskt höjer winProbability. Inkludera ALDRIG förslag med +0% impact.
-- estimatedImpact: beräkna genom att tänka igenom vad winProbability skulle bli med det nya teamet. Om nuvarande winProbability är 0 pga ouppfyllt ska-krav, och bytet löser det kravet, uppskatta den nya winProbability baserat på resterande ska-krav + bör-krav + viktning. Om bytet INTE löser alla ouppfyllda ska-krav förblir det 0% — inkludera inte förslaget.
+- improvements: sortera efter estimatedImpactMax (högst först). Du får BARA referera till konsulter som finns i listan "Övriga tillgängliga konsulter" nedan. Använd EXAKT namn och ID från den listan. Hitta INTE PÅ konsulter. Om inga tillgängliga konsulter förbättrar teamet, returnera en tom improvements-lista.
+- improvements MÅSTE ha reell positiv impact. Om ett byte INTE löser ett ouppfyllt ska-krav och winProbability redan är 0, kommer bytet fortfarande resultera i 0% — ta INTE med det som förbättringsförslag. Varje förslag ska vara ett byte som faktiskt höjer winProbability. Inkludera ALDRIG förslag där estimatedImpactMax är 0 eller negativt.
+- estimatedImpactMin/estimatedImpactMax: ett KONSERVATIVT SPANN i procentenheter (heltal, min ≤ max) för hur mycket winProbability förändras med det nya teamet. Punktestimat överlovar systematiskt — spannet ska rymma osäkerheten: sätt min till vad förändringen MINST rimligen ger och max till en realistisk övre gräns, inte ett önsketänkande. Beräkna genom att tänka igenom vad winProbability skulle bli med det nya teamet. Om nuvarande winProbability är 0 pga ouppfyllt ska-krav, och bytet löser det kravet, uppskatta den nya winProbability baserat på resterande ska-krav + bör-krav + viktning. Om bytet INTE löser alla ouppfyllda ska-krav förblir det 0% — inkludera inte förslaget.
 - kind: "swap" kräver både remove och add (removeId och addId). kind: "add" kräver add/addId och remove/removeId ska vara null. Föreslå ALDRIG "add" när teamet är fullt.
 - poolGap: om ett ouppfyllt krav inte kan täckas av NÅGON konsult i poolen — varken via byte eller tillägg — beskriv gapet kort och konkret (t.ex. "Gapet kräver dokumenterad Timecare-erfarenhet som ingen i poolen har"). Annars EXAKT null. Aldrig tom sträng.
 - coveredBy: använd EXAKT namn från teamlistan.
@@ -188,10 +190,23 @@ ${poolText}`,
   });
 
   // Hydrera AI-svarets index tillbaka till det publika GoNoGoResult-formatet
-  // (requirement = kravtext) — UI/persistens/GoNoGoResultSchema är orörda.
+  // (requirement = kravtext). Impact-spannet normaliseras (ett omkastat
+  // min/max är ett modellslip, inte ett skäl att fälla anropet) och
+  // display-strängen estimatedImpact syntetiseras ur spannet — läs-typen och
+  // legacy-rader (punktestimat-eran) behåller därmed samma strängfält.
   const result: GoNoGoResult = {
     ...aiResult,
     mustRequirements: hydrateMustRequirements(aiResult.mustRequirements, numberedRequirements),
+    improvements: aiResult.improvements.map((imp) => {
+      const lo = Math.min(imp.estimatedImpactMin, imp.estimatedImpactMax);
+      const hi = Math.max(imp.estimatedImpactMin, imp.estimatedImpactMax);
+      return {
+        ...imp,
+        estimatedImpactMin: lo,
+        estimatedImpactMax: hi,
+        estimatedImpact: formatImpactRange(lo, hi),
+      };
+    }),
   };
 
   // Enforce hard rule: if any must-requirement is unmet, winProbability must be 0.
@@ -214,7 +229,10 @@ ${poolText}`,
   // swapIds.removeId are both null for every surviving add — the UI's two
   // isAdd derivations agree by construction.
   result.improvements = result.improvements.filter((imp) => {
-    if (!(parseImpactPct(imp.estimatedImpact) > 0)) return false;
+    // Span semantics: a suggestion whose UPPER bound isn't positive cannot
+    // improve the team. min may be 0 (an honest "0–5 %") — the old "+0 %"
+    // point-estimate ban maps to max > 0.
+    if (!((imp.estimatedImpactMax ?? 0) > 0)) return false;
     if (imp.kind === "add") {
       return (
         imp.swap?.add != null &&
@@ -230,11 +248,13 @@ ${poolText}`,
   return result;
 }
 
-/** Parse "+15 %" / "-5%" / "0 %" → number. Returns NaN if unparseable. */
-function parseImpactPct(s: string): number {
-  const cleaned = s.replace(/[%\s]/g, "").replace(",", ".");
-  const n = parseFloat(cleaned);
-  return Number.isFinite(n) ? n : NaN;
+/** Display string for an impact span: "+4–7 %", zero lower bound "0–5 %"
+ *  (no plus on zero — routine finding #117), single value "+7 %", and
+ *  explicit signs when the lower bound is negative ("-2–+5 %"). */
+function formatImpactRange(min: number, max: number): string {
+  if (min === max) return `${max > 0 ? "+" : ""}${max} %`;
+  if (min >= 0) return `${min > 0 ? "+" : ""}${min}–${max} %`;
+  return `${min}–${max > 0 ? "+" : ""}${max} %`;
 }
 
 // Strippar rekursivt fält med namnet "evidence" — käll-citaten (se

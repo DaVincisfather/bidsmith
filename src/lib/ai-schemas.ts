@@ -159,7 +159,14 @@ export const GoNoGoResultSchema = z.object({
       swapIds: z
         .object({ removeId: z.string().nullable(), addId: z.string().nullable() })
         .nullable(),
-      estimatedImpact: z.string(),
+      // Konservativt SPANN i procentenheter (heltal) i stället för punktestimat
+      // — punktestimaten överlovade systematiskt (belagt 3 av 3 i live-smokes:
+      // "+15%"→+6, "+10%"→±0, "+20%"→+7). BÅDA obligatoriska i modell-output
+      // (BUG-A: optional-fält utelämnas av structured outputs). Läs-typen
+      // ImprovementSuggestion behåller estimatedImpact-strängen — evaluatorn
+      // syntetiserar den ur spannet för nya rader, legacy-rader bär den redan.
+      estimatedImpactMin: z.number().int(),
+      estimatedImpactMax: z.number().int(),
       reason: z.string(),
     })
   ),

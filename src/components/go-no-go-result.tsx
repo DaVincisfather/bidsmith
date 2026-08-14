@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { GoNoGoResult, GoNoGoRecommendation, ImprovementSuggestion } from "@/lib/types";
+
+const TEAM_PEDAGOGY_TEXT =
+  "Matchningen rankar individer mot kraven. Här bedöms teamet som helhet — täckning och sammansättning — därför kan byten föreslås även när de bäst matchade individerna är valda. Spannet är ett AI-estimat med stor osäkerhet.";
 
 interface GoNoGoResultProps {
   result: GoNoGoResult;
@@ -52,6 +56,7 @@ export function GoNoGoResultView({
   undoSwapSignature,
 }: GoNoGoResultProps) {
   const allMustMet = result.mustRequirements.every((r) => r.met);
+  const [showPedagogy, setShowPedagogy] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -139,9 +144,30 @@ export function GoNoGoResultView({
         <div>
           {result.improvements.length > 0 && (
             <>
-              <h4 className="text-sm font-semibold text-ink-soft mb-2">
+              <h4 className="text-sm font-semibold text-ink-soft mb-2 flex items-center gap-1.5">
                 Förbättringsförslag
+                {/* Pedagogik (smoke-fynd 4, 2026-08-12): individmatchning ≠
+                    teamkomposition — utan förklaringen läser förslagen som
+                    "ni valde fel", fast användaren valde de bäst matchade.
+                    Knapp (inte hover-title): touch-användare måste kunna öppna
+                    texten (routine-fynd #117); title behålls för hover. */}
+                <button
+                  type="button"
+                  onClick={() => setShowPedagogy((v) => !v)}
+                  aria-expanded={showPedagogy}
+                  aria-label="Varför föreslås byten?"
+                  title={TEAM_PEDAGOGY_TEXT}
+                  className="inline-flex h-4 w-4 items-center justify-center rounded-full
+                             border border-ink-mute/50 text-[10px] font-normal text-ink-mute
+                             cursor-help select-none hover:border-ink hover:text-ink
+                             transition-colors"
+                >
+                  i
+                </button>
               </h4>
+              {showPedagogy && (
+                <p className="mb-2 text-sm text-ink-mute">{TEAM_PEDAGOGY_TEXT}</p>
+              )}
               <div className="space-y-2">
                 {result.improvements.map((imp, i) => {
                   const isAdd = imp.swap?.add != null && imp.swap?.remove == null;
@@ -162,7 +188,12 @@ export function GoNoGoResultView({
                           <>Byt {imp.swap.remove} → {imp.swap.add}</>
                         )}{" "}
                         <span className="text-blue-600">
-                          ~{imp.estimatedImpact}
+                          {/* Nya rader bär ett spann ("+4–7 %") — tilde vore
+                              dubbel osäkerhetsmarkör. Legacy-punktestimat
+                              behåller sin "~". */}
+                          {imp.estimatedImpactMin != null
+                            ? imp.estimatedImpact
+                            : `~${imp.estimatedImpact}`}
                           <span className="text-blue-700 text-xs"> (AI-estimat)</span>
                         </span>
                       </div>
