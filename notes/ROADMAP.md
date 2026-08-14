@@ -24,8 +24,11 @@ beställning) → dokumenthuvud-kortet (kicker + Fraunces-kundnamn + undertitel,
 tre fälten fortsatt redigerbara, datamodell orörd); fasvyn → numrerad tidslinje
 (slide-färgbalkarna raderade, samtliga fält redigerbara); RUBRIKUNIFIERING (wrappern
 äger kapitelrubriken i Fraunces, renderers interna h2 borttagna — döda title/style-
-props amputerade hela vägen: StyleGuide-plumbingen ur editorn/sidan, typen kvar för
-PPTX-motorn); tokenpass (gray/neutral → ink/rule-tokens, p-6-dubbelpaddar bort).
+props amputerade hela vägen: StyleGuide-plumbingen ur editorn/sidan; routinen belade
+att typen därmed var HELT föräldralös — PPTX-motorn importerar den inte — så typen är
+raderad, DB-kolumnen workspace_settings.style_guide står kvar oläst); tokenpass
+(gray/neutral → ink/rule-tokens, p-6-dubbelpaddar bort). Routine-fynden fixade i PR:en:
+placeholder-CSS för tomma EditableText-fält + Number("")-vakten i updateHours.
 Visuellt verifierad mot dev-anbud b3b76311: dokumenthuvud + tidslinje matchar
 mockupen. Nya renderer-tester (cover + faser). Smoke-fynd 5 STÄNGS vid merge —
 därefter Stefans klick-smoke enligt gränsbeslutet._

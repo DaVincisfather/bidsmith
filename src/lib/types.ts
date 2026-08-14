@@ -291,21 +291,9 @@ export interface BidSection {
 export type BidStatus = "generating" | "draft" | "exported" | "failed";
 export type BidOutcome = "won" | "lost" | "no-bid" | "cancelled";
 
-
-export interface StyleGuide {
-  colors: {
-    primary: string;
-    primaryLight: string;
-    secondary: string;
-    secondaryLight: string;
-    accent: string;
-    dark: string;
-    light: string;
-    muted: string;
-  };
-  font: string;
-  logoUrl: string;
-}
+// StyleGuide-typen (PPTX-erans per-workspace-färger) togs bort med editor-
+// omdesignen 2026-08-14 — sista konsumenten var editorns renderers. DB-kolumnen
+// workspace_settings.style_guide finns kvar men läses inte längre någonstans.
 
 // --- RFP Dashboard types ---
 

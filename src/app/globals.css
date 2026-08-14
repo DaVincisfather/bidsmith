@@ -53,3 +53,11 @@ body {
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
 }
+
+/* EditableText sätter data-placeholder men ingen CSS renderade den — tomma
+   redigerbara fält var osynliga klickytor (routine-fynd #122). */
+[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-mute);
+  pointer-events: none;
+}

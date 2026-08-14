@@ -39,6 +39,9 @@ export function PhasesRenderer({ phases, onChange }: PhasesRendererProps) {
 
   function updateHours(i: number, value: string) {
     if (!onChange) return;
+    // Number("") === 0 — ett tömt fält ska inte tyst bli 0 timmar
+    // (routine-fynd #122).
+    if (value.trim() === "") return;
     const num = Number(value);
     if (!Number.isFinite(num)) return;
     updatePhase(i, { hoursEstimate: num });
