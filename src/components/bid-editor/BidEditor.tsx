@@ -139,7 +139,7 @@ export function BidEditor({
       const res = await fetch(`/api/bids/${bidId}/export-md`, { method: "POST" });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Export failed");
+        throw new Error(data.error || "Exporten misslyckades");
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

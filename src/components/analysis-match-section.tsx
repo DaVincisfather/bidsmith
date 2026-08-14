@@ -94,7 +94,7 @@ export function AnalysisMatchSection({
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Matching failed");
+        throw new Error(data.error || "Matchningen misslyckades");
       }
 
       const data = await response.json();

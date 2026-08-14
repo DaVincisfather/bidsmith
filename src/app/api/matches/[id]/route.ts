@@ -30,11 +30,11 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   ]);
 
   if (analysisResult.error || !analysisResult.data) {
-    return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
+    return NextResponse.json({ error: "Analysen hittades inte." }, { status: 404 });
   }
 
   if (consultantResult.error || !consultantResult.data?.length) {
-    return NextResponse.json({ error: "No consultants found. Upload CVs first." }, { status: 400 });
+    return NextResponse.json({ error: "Inga konsulter hittades — ladda upp CV:n först." }, { status: 400 });
   }
 
   const rfpAnalysis = analysisResult.data.analysis as RfpAnalysis;

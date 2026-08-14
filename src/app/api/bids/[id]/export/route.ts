@@ -50,7 +50,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
   if (analysisError || !analysisRow) {
     return NextResponse.json(
-      { error: "Analysis not found for bid" },
+      { error: "Analysen för anbudet hittades inte." },
       { status: 404 },
     );
   }
@@ -87,7 +87,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   } catch (err) {
     console.error(`PPTX render failed for bid ${id}:`, err);
     return NextResponse.json(
-      { error: "PPTX rendering failed. Check section contents and try again." },
+      { error: "PPTX-renderingen misslyckades — kontrollera sektionsinnehållet och försök igen." },
       { status: 500 },
     );
   }

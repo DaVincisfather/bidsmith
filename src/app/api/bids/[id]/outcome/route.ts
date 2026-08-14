@@ -35,7 +35,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
 
   if (!updated || updated.length === 0) {
-    return NextResponse.json({ error: "Bid not found" }, { status: 404 });
+    return NextResponse.json({ error: "Anbudet hittades inte." }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true });

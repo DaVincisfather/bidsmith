@@ -74,7 +74,10 @@ export function GoNoGoResultView({
         <div className="text-3xl font-bold">{result.winProbability}%</div>
         <div className="text-sm mt-1">
           Uppskattad vinstchans
-          <span className="opacity-60"> (AI-estimat)</span>
+          {/* text-xs, inte opacity: opacity blandar mot bakgrunden och sänker
+              kontrasten under AA (#112-fyndet, samma klass) — nedtoning via
+              storlek behåller den uppmätta AA-kontrasten i alla färglägen. */}
+          <span className="text-xs"> (AI-estimat)</span>
         </div>
         <p className="text-sm mt-2">{result.winProbabilityReasoning}</p>
       </div>

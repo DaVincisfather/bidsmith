@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     .single();
 
   if (error || !data) {
-    return NextResponse.json({ error: "Analysis not found" }, { status: 404 });
+    return NextResponse.json({ error: "Analysen hittades inte." }, { status: 404 });
   }
 
   const doc = data.documents as unknown as {

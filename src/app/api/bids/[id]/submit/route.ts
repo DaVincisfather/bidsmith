@@ -37,7 +37,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     .single();
 
   if (bidError || !bid) {
-    return NextResponse.json({ error: "Bid not found" }, { status: 404 });
+    return NextResponse.json({ error: "Anbudet hittades inte." }, { status: 404 });
   }
 
   if (bid.status === "exported" || bid.exported_at) {
