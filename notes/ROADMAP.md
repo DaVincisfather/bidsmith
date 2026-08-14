@@ -4,7 +4,19 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-13 — **TEAMSTORLEKS-HINT (DENNA PR): defaultteamet följer
+_Senast uppdaterad: 2026-08-14 — **"IDEAL 3–5"-RADEN STRUKEN (DENNA PR): grindbeslutet
+avgjort.** Stefans beslut 2026-08-14: meningen "Ideal 3-5 för full impact" stryks ur
+team-pricing-bundlens prompt ("Max 5 konsulter (template slot cap)" står kvar).
+KORREKTIV mot förra headerns antagande: raden låg INTE i writing-rollen utan i
+`team.ts` (writingSupport/Sonnet 5), som prissätter ett REDAN valt team — den kunde
+aldrig ändra teamstorleken, bara possibly bias:a omfattning/timmar mot marknadsbilden
+(1–2 vanligt små uppdrag, 3 standard, 5 oerhört ovanligt). Grind därmed
+live-smoke (gonogo-promptändrings-prejudikatet, #110), inte eval: 2-personersfixtur
+(chalmers-healthtech, elin+cecilia) ⇒ exakt 2 rader, inga påhittade konsulter,
+omfattningar 50/20 %, 0 overflowFlags — PASS. Beslutet togs i 2026-08-14-beslutspasset
+tillsammans med export/inlämnings-splitten och impact-spannet (egna PR:ar, se NÄSTA)._
+
+_Historik (2026-08-13): **TEAMSTORLEKS-HINT (#113): defaultteamet följer
 underlaget i stället för alltid topp-3.** Stefans beslut: första bedömningen byggs,
 storleks-FÖRSLAG skippas (bolaget bedömer själva; remove-typ byggs inte). Levererat:
 `teamSizeHint` i extraktionen (REQUIRED-nullable per BUG-A; sätts ENDAST vid uttrycklig
@@ -15,9 +27,10 @@ utan hint = 3 som idag) i BÅDA default-ställena (matchnings-UI:t + go/no-go-fa
 transparensrad "Underlaget anger 1–2 konsulter — 2 förvalda". LIVE-SMOKE: syntetisk RFP
 med "1–2 konsulter" ⇒ hint med verifierat citat; rfp-1.md utan angivelse ⇒ null.
 DESIGNINPUT BOKFÖRD (Stefans marknadsbild 2026-08-13): 1–2 vanligt på små uppdrag,
-3 standard, 4 för ledighetstäckning, 5 oerhört ovanligt. ÖPPET SEPARAT BESLUT:
+3 standard, 4 för ledighetstäckning, 5 oerhört ovanligt. ~~ÖPPET SEPARAT BESLUT:
 team-bundlens promptrad "Ideal 3–5 för full impact" motsäger marknadsbilden men ligger
-i writing-rollen (eval-grindad enligt policyn) — ändras inte utan Stefans grindbeslut.
+i writing-rollen (eval-grindad enligt policyn) — ändras inte utan Stefans grindbeslut.~~
+AVGJORT 2026-08-14: raden struken (låg i writingSupport, inte writing — se headern).
 Slutgranskningens fynd FIXADE före merge: underlagets tak styr nu även FÖRSLAGEN
 (effectiveCap = min(5, hint.max) i evaluatorns promptrad + add-filter + routens
 add-vakt med ärlig 409-copy) och förvalsraden ljuger inte längre i låst/liten-pool-läge.
