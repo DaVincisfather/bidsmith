@@ -878,6 +878,10 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   KVARSTÅR (medvetet utanför): PPTX-routens statusflipp är fortfarande
   fire-and-forget (ingen felkontroll, till skillnad från md-routens) — den ytan är
   parkerad med motorn och orörd här.
+- **Strängsvep 2 (polish, routine-follow-up #119):** kärnflödet är helsvenskt efter
+  copy-svepet, men consultants-/templates-/radar-routernas felsträngar är kvar på
+  engelska ("Consultant not found", "Template not found", "No file provided" i
+  upload/score/analyze m.fl.). Eget svep när ytan ändå rörs.
 - [x] ~~**Export-routernas auth-mönster (polish, routine-follow-up #116)**~~ — KLAR
   2026-08-14 (exportrouter-städet): `requireUser` i båda routerna, 401-test.
 - [x] ~~**Export-routernas delade readiness-guards (polish, routine-förslag #100)**~~ —
