@@ -39,6 +39,11 @@ function renderEditor(overrides: Partial<Parameters<typeof BidEditor>[0]> = {}) 
       styleGuide={style}
       initialFailedBundles={[]}
       initialGenerationError={null}
+      gonogoEnabled={false}
+      diaryNumber={null}
+      deadline={null}
+      senderName={null}
+      docName="Testkund"
       {...overrides}
     />,
   );
@@ -65,9 +70,9 @@ describe("BidEditor (dokumentvyn)", () => {
     expect(screen.queryByTestId("char-counter")).not.toBeInTheDocument();
   });
 
-  it("visar exportknappen när status är draft", () => {
+  it("visar exportknappen i topbaren när status är draft", () => {
     renderEditor();
-    expect(screen.getByRole("button", { name: /Exportera anbud \(Markdown\)/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Exportera \(MD\)/ })).toBeInTheDocument();
   });
 
   it("varnar när timpris saknas i team-sektionen", () => {
@@ -75,9 +80,9 @@ describe("BidEditor (dokumentvyn)", () => {
     expect(screen.getByText(/Fyll i timpriser/)).toBeInTheDocument();
   });
 
-  it("visar misslyckade bundles som varning", () => {
+  it("visar misslyckade bundles som varning (banner + dashboard-not)", () => {
     renderEditor({ initialFailedBundles: [{ bundle: "phases", error: "boom" }] });
-    expect(screen.getByText(/kunde\s+inte genereras/)).toBeInTheDocument();
+    expect(screen.getAllByText(/kunde\s+inte genereras/).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/Faser/)).toBeInTheDocument();
   });
 
@@ -94,8 +99,7 @@ describe("BidEditor (dokumentvyn)", () => {
       initialStatus: "generating",
       initialFailedBundles: [{ bundle: "phases", error: "boom" }],
     });
-    const item = screen.getByText("Genomförande");
-    expect(item.closest("div")).toHaveClass("text-red-600", "line-through");
+    expect(screen.getByText("Genomförande")).toHaveClass("text-red-600", "line-through");
   });
 
   it("låser en landad sektion för redigering medan generering pågår (stale autosave kan trunkera anbudet)", () => {
@@ -128,7 +132,7 @@ describe("BidEditor (inlämningssplitten)", () => {
     expect(screen.queryByRole("button", { name: /Markera som inlämnad/ })).not.toBeInTheDocument();
     expect(screen.getByText(/markerat som inlämnat/i)).toBeInTheDocument();
     // Exporten är fortfarande tillgänglig efter inlämning (re-export tillåten).
-    expect(screen.getByRole("button", { name: /Exportera anbud \(Markdown\)/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Exportera \(MD\)/ })).toBeInTheDocument();
   });
 
   it("markerar som inlämnad via POST /submit efter bekräftelse", async () => {
@@ -185,10 +189,48 @@ describe("BidEditor (inlämningssplitten)", () => {
     URL.revokeObjectURL = vi.fn();
 
     renderEditor();
-    fireEvent.click(screen.getByRole("button", { name: /Exportera anbud \(Markdown\)/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Exportera \(MD\)/ }));
 
     expect(await screen.findByText(/markera det som inlämnat/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Markera som inlämnad/ })).toBeInTheDocument();
     expect(screen.queryByText(/markerat som inlämnat/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("BidEditor (editor-omdesignen, skalet)", () => {
+  it("visar topbarens metadata-rad och döljer null-fält", () => {
+    renderEditor({
+      diaryNumber: "RS-2026/1147",
+      deadline: "2026-09-01",
+      senderName: "Evalbolaget AB",
+      docName: "Region Sörmland",
+    });
+    expect(screen.getByText("RS-2026/1147")).toBeInTheDocument();
+    expect(screen.getByText("Region Sörmland")).toBeInTheDocument();
+    expect(screen.getByText("Evalbolaget AB")).toBeInTheDocument();
+    expect(screen.getByText("2026-09-01")).toBeInTheDocument();
+  });
+
+  it("visar inga steg för legacy-anbud utan analys", () => {
+    renderEditor({ analysisId: null });
+    expect(screen.queryByText("1 ANALYS")).not.toBeInTheDocument();
+  });
+
+  it("stegen länkar till flödet och Go/No-Go spärras utan bedömning", () => {
+    renderEditor({ analysisId: "a-1", gonogoEnabled: false });
+    expect(screen.getByText("1 ANALYS").closest("a")).toHaveAttribute("href", "/analysis/a-1");
+    expect(screen.getByText("2 GO/NO-GO").closest("a")).toBeNull();
+    expect(screen.getByText("3 ANBUD")).toHaveAttribute("aria-current", "step");
+  });
+
+  it("dashboarden räknar klara kapitel och flaggar timpris-avvikelsen under listan", () => {
+    renderEditor({
+      initialSections: [
+        proseSection("intro", "Inledning", "Vi är en konsultfirma."),
+        teamSection,
+      ],
+    });
+    expect(screen.getByText(/1\/2 KLARA/)).toBeInTheDocument();
+    expect(screen.getByText(/Team och pris: timpris saknas/)).toBeInTheDocument();
   });
 });
