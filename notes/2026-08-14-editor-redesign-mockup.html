@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Slutmockup — A + B:s kort + C:s dashboard/topbar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#faf8f4; --paper-2:#f3efe7; --ink:#14120e; --ink-soft:#4a463e; --ink-mute:#8a847a;
+    --rule:#e4dfd4; --accent:#7a2230; --accent-ink:#5e1822; --accent-soft:#f6ebec;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);font-family:"Inter Tight",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .display{font-family:"Fraunces",serif}
+
+  /* ── Topbar: C:s slimmade statusrad + anbudsmetadata-raden under ── */
+  header{background:#fff;border-bottom:1px solid var(--rule)}
+  .bar{display:flex;align-items:center;gap:14px;padding:8px 20px}
+  .steps{display:flex;gap:2px;font-family:"JetBrains Mono",monospace;font-size:10px}
+  .step{padding:4px 10px;border-radius:6px;color:var(--ink-mute)}
+  .step.done{color:var(--ink-soft)}
+  .step.here{background:var(--accent);color:#fff;font-weight:700}
+  .doc-id{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-mute)}
+  .doc-name{font-size:14px;font-weight:600}
+  .spacer{flex:1}
+  .status-dot{width:8px;height:8px;border-radius:99px;background:#d97706}
+  .status-text{font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft)}
+  .btn{font-size:12px;font-weight:600;padding:6px 12px;border-radius:7px;border:1px solid var(--rule);background:#fff;cursor:pointer}
+  .btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+  /* Anbudsrubrik-raden: avsändare/sista anbudsdag/anbudsdatum (dnr bor i statusraden) */
+  .meta-bar{display:flex;gap:26px;padding:7px 20px;border-top:1px solid var(--rule);background:var(--paper);font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--ink-mute)}
+  .meta-bar b{color:var(--ink-soft);font-weight:500}
+  .meta-bar .k{letter-spacing:.1em;text-transform:uppercase;margin-right:6px}
+
+  .layout{display:flex;height:calc(100vh - 71px)}
+
+  /* ── Kapiteldashboard (C) ── */
+  aside{width:248px;flex-shrink:0;border-right:1px solid var(--rule);background:#fff;overflow-y:auto}
+  .aside-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--rule)}
+  .aside-head .t{font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-mute)}
+  .aside-head .n{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--accent);font-weight:700}
+  .row{display:flex;align-items:center;gap:9px;padding:7px 14px;font-size:12.5px;color:var(--ink-soft);border-left:2px solid transparent;cursor:pointer}
+  .row:hover{background:var(--paper)}
+  .row.active{border-left-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:500}
+  .row .idx{font-family:"JetBrains Mono",monospace;font-size:9px;color:var(--ink-mute);width:14px}
+  .row .g{margin-left:auto;font-size:10px}
+  .g.ok{color:#0b7a53}.g.warn{color:#d97706}
+  .aside-foot{margin:8px 14px 12px;padding-top:10px;border-top:1px solid var(--rule);font-family:"JetBrains Mono",monospace;font-size:9px;color:var(--ink-mute);line-height:1.8}
+
+  /* ── Dokumentet: A:s spalt, B:s vita kort per avsnitt ── */
+  main{flex:1;overflow-y:auto;padding:30px 36px 80px}
+  .canvas{max-width:47rem;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+  .card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:30px 36px;box-shadow:0 1px 2px rgba(20,18,14,.03)}
+
+  /* Dokumenthuvud — typografiskt (A), metadatan bor i topbaren */
+  .doc-head .kicker{font-family:"JetBrains Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:14px}
+  .doc-head h1{font-family:"Fraunces",serif;font-size:40px;font-weight:500;line-height:1.08;letter-spacing:-.01em}
+  .doc-head .subtitle{font-family:"Fraunces",serif;font-size:19px;font-weight:400;color:var(--ink-soft);margin-top:8px}
+
+  .chapter-no{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.14em;color:var(--ink-mute);text-transform:uppercase;display:block;margin-bottom:8px}
+  h2.chapter{font-family:"Fraunces",serif;font-size:23px;font-weight:500}
+  p.body{font-size:15px;line-height:1.75;color:var(--ink-soft);margin-top:12px}
+
+  /* Faser: A:s vertikala tidslinje, inuti sitt vita kort */
+  .timeline{margin-top:24px;position:relative;padding-left:34px}
+  .timeline::before{content:"";position:absolute;left:11px;top:8px;bottom:8px;width:2px;background:var(--rule)}
+  .phase{position:relative;padding-bottom:32px}
+  .phase:last-child{padding-bottom:0}
+  .phase .node{position:absolute;left:-34px;top:0;width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid var(--accent);color:var(--accent);font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .phase-head{display:flex;align-items:baseline;gap:12px}
+  .phase-head h3{font-family:"Fraunces",serif;font-size:17px;font-weight:500}
+  .period{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--accent);background:var(--accent-soft);padding:2px 8px;border-radius:99px}
+  .hours{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--ink-mute);margin-left:auto}
+  .phase p{font-size:14px;line-height:1.65;color:var(--ink-soft);margin-top:8px;max-width:38rem}
+  .deliv{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+  .deliv span{font-size:13px;color:var(--ink-soft);display:flex;gap:8px;align-items:baseline}
+  .deliv .tick{color:var(--accent);font-size:11px}
+  .risk{margin-top:10px;font-size:12px;color:var(--ink-mute);display:flex;gap:8px;align-items:baseline}
+  .risk .mark{font-family:"JetBrains Mono",monospace;color:#d97706;font-size:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="steps"><span class="step done">1 ANALYS</span><span class="step done">2 GO/NO-GO</span><span class="step here">3 ANBUD</span></div>
+    <span class="doc-id">RS-2026/1147</span>
+    <span class="doc-name">Region Sörmland — Verksamhetsstöd</span>
+    <div class="spacer"></div>
+    <span class="status-dot"></span><span class="status-text">Utkast · sparad 10:42</span>
+    <button class="btn">Markera som inlämnad</button>
+    <button class="btn primary">Exportera (MD)</button>
+  </div>
+  <div class="meta-bar">
+    <span><span class="k">Avsändare</span><b>Evalbolaget AB</b></span>
+    <span><span class="k">Sista anbudsdag</span><b>2026-09-01</b></span>
+    <span><span class="k">Anbudsdatum</span><b>2026-08-14</b></span>
+  </div>
+</header>
+<div class="layout">
+  <aside>
+    <div class="aside-head"><span class="t">Kapitel</span><span class="n">9/11 KLARA</span></div>
+    <div class="rows">
+      <div class="row"><span class="idx">00</span>Dokumenthuvud<span class="g ok">●</span></div>
+      <div class="row"><span class="idx">01</span>Nuläge<span class="g ok">●</span></div>
+      <div class="row"><span class="idx">02</span>Uppdraget<span class="g ok">●</span></div>
+      <div class="row"><span class="idx">03</span>Målbild<span class="g ok">●</span></div>
+      <div class="row active"><span class="idx">04</span>Genomförande<span class="g ok">●</span></div>
+      <div class="row"><span class="idx">05</span>Kvalitetssäkring<span class="g ok">●</span></div>
+      <div class="row"><span class="idx">06</span>Kravuppfyllnad<span class="g ok">●</span></div>
+      <div class="row"><span class="idx">07</span>Team och pris<span class="g warn">◐</span></div>
+      <div class="row"><span class="idx">08</span>Referensuppdrag<span class="g ok">●</span></div>
+      <div class="row"><span class="idx">09</span>Sekretess<span class="g warn">◐</span></div>
+      <div class="row"><span class="idx">10</span>Certifieringar<span class="g ok">●</span></div>
+    </div>
+    <div class="aside-foot">◐ Team och pris: timpris saknas<br>◐ Sekretess: ej granskad</div>
+  </aside>
+  <main><div class="canvas">
+
+    <div class="card doc-head">
+      <div class="kicker">Anbud · 2026-08-14</div>
+      <h1>Region Sörmland</h1>
+      <div class="subtitle">Verksamhetsstöd för digitalisering av vårdadministration</div>
+    </div>
+
+    <div class="card">
+      <span class="chapter-no">Kapitel 03</span>
+      <h2 class="chapter display">Målbild</h2>
+      <p class="body">Regionens vision om en sammanhållen digital vårdadministration kräver att tre
+      förvaltningsområden konsolideras utan att den kliniska vardagen störs. Vi ser två huvudsakliga
+      utmaningar: journalsystemets integrationsyta mot regionala register, och förändringsledningen
+      hos de 240 administratörer som berörs av det nya arbetssättet.</p>
+    </div>
+
+    <div class="card">
+      <span class="chapter-no">Kapitel 04</span>
+      <h2 class="chapter display">Genomförande</h2>
+      <div class="timeline">
+        <div class="phase">
+          <div class="node">1</div>
+          <div class="phase-head"><h3 class="display">Etablering och nulägesanalys</h3><span class="period">Vecka 1–4</span><span class="hours">240 h</span></div>
+          <p>Uppdraget etableras med styrgrupp, intressentkarta och gemensam målbild. Nulägesanalysen
+          kartlägger dagens administrativa flöden i de tre förvaltningsområdena.</p>
+          <div class="deliv">
+            <span><span class="tick">✓</span>Etablerad styrgrupp med beslutsmandat</span>
+            <span><span class="tick">✓</span>Nulägesrapport med processkartor</span>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="node">2</div>
+          <div class="phase-head"><h3 class="display">Design av framtida arbetssätt</h3><span class="period">Vecka 5–12</span><span class="hours">460 h</span></div>
+          <p>Tillsammans med verksamhetsrepresentanter designas det konsoliderade arbetssättet.
+          Workshopserie per förvaltningsområde med förankring i linjen.</p>
+          <div class="deliv">
+            <span><span class="tick">✓</span>Målprocesser med systemstöd specificerat</span>
+            <span><span class="tick">✓</span>Beslutad införandeplan per område</span>
+          </div>
+          <div class="risk"><span class="mark">⚠ RISK</span>Semesterperioden kan förskjuta workshopserien — mitigeras med tidig bokning.</div>
+        </div>
+        <div class="phase">
+          <div class="node">3</div>
+          <div class="phase-head"><h3 class="display">Införande och överlämning</h3><span class="period">Vecka 13–20</span><span class="hours">380 h</span></div>
+          <p>Stegvist införande per förvaltningsområde med hypercare-stöd de två första veckorna.
+          Överlämning till regionens förvaltningsorganisation med dokumenterade rutiner.</p>
+          <div class="deliv">
+            <span><span class="tick">✓</span>Infört arbetssätt i tre förvaltningsområden</span>
+            <span><span class="tick">✓</span>Överlämningsdokumentation och utbildade superanvändare</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div></main>
+</div>
+</body>
+</html>
