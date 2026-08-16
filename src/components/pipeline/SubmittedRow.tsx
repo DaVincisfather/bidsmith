@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { RailBidEntry } from "@/lib/pipeline";
-import type { LossReason } from "@/lib/types";
 
 function daysSinceExport(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -10,34 +9,10 @@ function formatShortDate(iso: string): string {
   return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
 }
 
-const LOSS_REASON_LABEL: Record<LossReason, string> = {
-  pris: "Pris",
-  erfarenhet: "Erfarenhet",
-  team: "Team",
-  kvalitet: "Kvalitet",
-  relation: "Relation",
-  annat: "Annat",
-};
-
-const OUTCOME_CHIP: Record<string, { label: string; cls: string }> = {
-  won: { label: "✓ Vunnen", cls: "border-emerald-600 text-emerald-700" },
-  lost: { label: "✗ Förlorad", cls: "border-red-600 text-red-600" },
-  cancelled: { label: "— Avbröts", cls: "border-rule text-ink-mute" },
-  "no-bid": { label: "— Inget anbud", cls: "border-rule text-ink-mute" },
-};
-
-function VersionsBadge({ count }: { count: number }) {
-  if (count <= 1) return null;
-  return (
-    <span className="rounded-full border border-rule bg-paper-2 px-1.5 py-px text-[8px]">
-      {count} versioner
-    </span>
-  );
-}
-
-// Railens anbudskort i chips-varianten (Stefans val 2026-08-16,
-// beautifului.dev filter table-mönstret): en gemensam kortform där
-// statuschipen bär tillståndet — väntar beslut respektive avgjord.
+// Väntar-beslut-kortet i flikvarianten (Stefans val 2026-08-16, anti-slop-
+// justeringen): rent kort utan statuschip och utan den grå kantlisten —
+// sektionsrubriken bär tillståndet. "senaste av N"-badgen bär dubblett-
+// kollapsen (superseded-semantiken i splitDashboard).
 export function SubmittedRow({ entry }: { entry: RailBidEntry }) {
   const { bid, versionsCount } = entry;
   return (
@@ -47,41 +22,46 @@ export function SubmittedRow({ entry }: { entry: RailBidEntry }) {
                  transition-colors hover:border-ink-mute"
     >
       <div className="line-clamp-2 text-[13px] font-medium leading-snug text-ink">{bid.title}</div>
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 font-mono text-[9px] text-ink-mute">
-        <span className="rounded-full border border-[color:var(--outcome-awaiting)] px-1.5 py-px text-[8px] uppercase tracking-wider text-slate-500">
-          Väntar beslut
-        </span>
+      <div className="mt-1.5 flex flex-wrap items-center gap-2 font-mono text-[9px] text-ink-mute">
         <span>
           Inlämnat {formatShortDate(bid.exportedAt)} · {daysSinceExport(bid.exportedAt)} d sen
         </span>
-        <VersionsBadge count={versionsCount} />
+        {versionsCount > 1 && (
+          <span className="rounded-full border border-rule bg-paper-2 px-1.5 py-px text-[8px]">
+            senaste av {versionsCount}
+          </span>
+        )}
       </div>
     </Link>
   );
 }
 
-export function DecidedRow({ entry }: { entry: RailBidEntry }) {
-  const { bid, versionsCount } = entry;
-  const chip = OUTCOME_CHIP[bid.outcome ?? "cancelled"];
-  const metaParts = [
-    bid.outcome === "lost" && bid.competitorName ? `mot ${bid.competitorName}` : null,
-    bid.outcome === "lost" && bid.lossReason ? LOSS_REASON_LABEL[bid.lossReason] : null,
-    bid.outcomeLoggedAt ? `Loggat ${formatShortDate(bid.outcomeLoggedAt)}` : null,
-  ].filter(Boolean);
+const ARCHIVE_GLYPH: Record<string, { char: string; cls: string }> = {
+  won: { char: "✓", cls: "text-emerald-600" },
+  lost: { char: "✗", cls: "text-red-600" },
+  cancelled: { char: "—", cls: "text-ink-mute" },
+  "no-bid": { char: "—", cls: "text-ink-mute" },
+};
+
+// Arkivrad: tyst textrad — inte kortform. Avgjort är ett annat mentalt läge
+// än pågående och ska inte se ut som arbete (Stefans anti-slop-kritik).
+export function ArchiveRow({ entry }: { entry: RailBidEntry }) {
+  const { bid } = entry;
+  const glyph = ARCHIVE_GLYPH[bid.outcome ?? "cancelled"];
   return (
     <Link
       href={`/bids/${bid.id}`}
-      className="mb-2 block rounded-xl border border-rule bg-white px-3 py-2.5 shadow-sm
-                 transition-colors hover:border-ink-mute"
+      className="flex items-baseline gap-2 px-0.5 py-1 text-[11.5px] text-ink-mute transition-colors hover:text-ink-soft"
     >
-      <div className="line-clamp-2 text-[13px] font-medium leading-snug text-ink">{bid.title}</div>
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 font-mono text-[9px] text-ink-mute">
-        <span className={`rounded-full border px-1.5 py-px text-[8px] uppercase tracking-wider ${chip.cls}`}>
-          {chip.label}
+      <span aria-hidden className={`w-2.5 shrink-0 font-mono text-[9px] ${glyph.cls}`}>
+        {glyph.char}
+      </span>
+      <span className="truncate">{bid.title}</span>
+      {bid.outcomeLoggedAt && (
+        <span className="ml-auto shrink-0 font-mono text-[8px]">
+          {formatShortDate(bid.outcomeLoggedAt)}
         </span>
-        {metaParts.length > 0 && <span>{metaParts.join(" · ")}</span>}
-        <VersionsBadge count={versionsCount} />
-      </div>
+      )}
     </Link>
   );
 }

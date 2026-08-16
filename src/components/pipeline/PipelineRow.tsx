@@ -32,9 +32,6 @@ export function PipelineRow({ item }: { item: PipelineItem }) {
     >
       <div className="line-clamp-2 text-[13px] font-medium leading-snug text-ink">{item.title}</div>
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 font-mono text-[9px] text-ink-mute">
-        <span className="rounded-full border border-flag px-1.5 py-px text-[8px] uppercase tracking-wider text-flag-ink">
-          Aktiv
-        </span>
         <span
           aria-hidden
           className="h-[7px] w-[7px] shrink-0 rounded-full"
