@@ -11,12 +11,15 @@ utfallsdatat); (2) DUBBLETTKOLLAPS via ny `splitDashboard` i lib/pipeline (en ra
 analys i väntar-beslut, senaste inlämningen + "senaste av N"-badge; ARKIVET behåller
 alla avgjorda rader — de är utfallshistorik, raderas/skrivs ALDRIG över; nya dubbletter
 kan inte uppstå sedan #103; `BidSummary.analysisId` tillagd, dashboard-routens tak
-8→100 som skydd i st.f. paginering); (3) OMSTYLAT i omdesignens DNA: aktiva-/väntar-
-kort, burgundy-CTA "Logga utfall" med räknare, ärlig win-rate-fot ("Win-rate X % ·
-W/L · N loggade — statistiksidan"), utfallsdialogen med Fraunces-rubrik + chip +
-formfält i mockupens stil. TREDJE falska kalibrerings-copyn städad i samma pass
-(berikningsformulärets "tränar modellen" — samma klass som #124:s två). Visuellt
-verifierad live mot dev (rail + öppnad dialog, autentiserade Playwright-shots).
+8→100 som skydd i st.f. paginering); (3) OMSTYLAT i omdesignens DNA — och efter
+beautifului.dev-referensen (bokad av smoke-sessionen 16/8) valde Stefan CHIPS-VARIANTEN:
+railen är EN yta med filterchips (Alla/Aktiva/Väntar beslut/Avgjorda, live-filter,
+avgjorda capas i Alla-läget med "Visa alla N →"), statuschip per kort (AKTIV/VÄNTAR
+BESLUT/✓ VUNNEN/✗ FÖRLORAD med mot-vem/skäl/loggdatum), burgundy-CTA "Logga utfall"
+med räknare, ärlig win-rate-fot, utfallsdialogen med Fraunces-rubrik + chip + formfält.
+TREDJE falska kalibrerings-copyn städad i samma pass (berikningsformulärets "tränar
+modellen" — samma klass som #124:s två). Visuellt verifierad live mot dev (chips-railen
++ öppnad dialog, autentiserade Playwright-shots).
 PARALLELLNOT: Stefans smoke kör i worktreen `bidsmith-smoke` (port 3001);
 FFU-terminologibytet (beslut i smoke-sessionen) tas EFTER detta pass._
 

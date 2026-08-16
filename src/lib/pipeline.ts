@@ -37,16 +37,16 @@ export function sortPipelineItems(items: PipelineItem[]): PipelineItem[] {
   );
 }
 
-export interface AwaitingEntry {
+export interface RailBidEntry {
   bid: BidSummary;
-  /** Antal inlämnade rader (alla utfall) som delar analys — "senaste av N".
+  /** Antal inlämnade rader (alla utfall) som delar analys — "N versioner".
    *  1 när anbudet är ensamt om sin analys eller saknar analyskoppling. */
   versionsCount: number;
 }
 
 export interface DashboardSplit {
-  awaiting: AwaitingEntry[];
-  archive: BidSummary[];
+  awaiting: RailBidEntry[];
+  archive: RailBidEntry[];
 }
 
 /**
@@ -77,14 +77,16 @@ export function splitDashboard(items: BidSummary[]): DashboardSplit {
     }
   }
 
-  const awaiting: AwaitingEntry[] = [...latestAwaiting.values(), ...orphanAwaiting]
-    .sort((a, b) => a.exportedAt.localeCompare(b.exportedAt)) // äldst väntar först
-    .map((bid) => ({
-      bid,
-      versionsCount: bid.analysisId ? versionsByAnalysis.get(bid.analysisId) ?? 1 : 1,
-    }));
+  const withVersions = (bid: BidSummary): RailBidEntry => ({
+    bid,
+    versionsCount: bid.analysisId ? versionsByAnalysis.get(bid.analysisId) ?? 1 : 1,
+  });
 
-  const archive = items
+  const awaiting: RailBidEntry[] = [...latestAwaiting.values(), ...orphanAwaiting]
+    .sort((a, b) => a.exportedAt.localeCompare(b.exportedAt)) // äldst väntar först
+    .map(withVersions);
+
+  const archive: RailBidEntry[] = items
     .filter((b) => b.outcome !== null)
     .sort((a, b) => {
       // Senast loggade först; rader utan loggtid sist.
@@ -92,7 +94,8 @@ export function splitDashboard(items: BidSummary[]): DashboardSplit {
       if (a.outcomeLoggedAt === null) return 1;
       if (b.outcomeLoggedAt === null) return -1;
       return b.outcomeLoggedAt.localeCompare(a.outcomeLoggedAt);
-    });
+    })
+    .map(withVersions);
 
   return { awaiting, archive };
 }

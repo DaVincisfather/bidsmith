@@ -174,7 +174,7 @@ describe("splitDashboard (pipeline-UX-passet: dedupe + arkiv)", () => {
       make("open", "a-4", null, "2026-06-01"),
     ];
     const { archive } = splitDashboard(items);
-    expect(archive.map((b) => b.id)).toEqual(["l", "w", "nolog"]);
+    expect(archive.map((e) => e.bid.id)).toEqual(["l", "w", "nolog"]);
   });
 
   it("arkivet behaller ALLA avgjorda rader for samma analys — de ar utfallshistorik, inte dubbletter", () => {
