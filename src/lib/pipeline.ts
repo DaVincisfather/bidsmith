@@ -37,6 +37,66 @@ export function sortPipelineItems(items: PipelineItem[]): PipelineItem[] {
   );
 }
 
+export interface AwaitingEntry {
+  bid: BidSummary;
+  /** Antal inlämnade rader (alla utfall) som delar analys — "senaste av N".
+   *  1 när anbudet är ensamt om sin analys eller saknar analyskoppling. */
+  versionsCount: number;
+}
+
+export interface DashboardSplit {
+  awaiting: AwaitingEntry[];
+  archive: BidSummary[];
+}
+
+/**
+ * Railens vy av inlämnade anbud (pipeline-UX-passet 2026-08-16, Stefans
+ * direktiv): väntar-beslut visar EN rad per analys (senaste inlämningen;
+ * legacy-dubbletter från före en-analys-ett-anbud-regeln #103 kollapsas i
+ * VISNINGEN — raderna finns kvar och bär utfallshistoriken), avgjorda flyttar
+ * till arkivet. Rader utan analyskoppling kan inte dedupas och visas var för sig.
+ */
+export function splitDashboard(items: BidSummary[]): DashboardSplit {
+  const versionsByAnalysis = new Map<string, number>();
+  for (const b of items) {
+    if (b.analysisId === null) continue;
+    versionsByAnalysis.set(b.analysisId, (versionsByAnalysis.get(b.analysisId) ?? 0) + 1);
+  }
+
+  const latestAwaiting = new Map<string, BidSummary>();
+  const orphanAwaiting: BidSummary[] = [];
+  for (const b of items) {
+    if (b.outcome !== null) continue;
+    if (b.analysisId === null) {
+      orphanAwaiting.push(b);
+      continue;
+    }
+    const current = latestAwaiting.get(b.analysisId);
+    if (!current || b.exportedAt.localeCompare(current.exportedAt) > 0) {
+      latestAwaiting.set(b.analysisId, b);
+    }
+  }
+
+  const awaiting: AwaitingEntry[] = [...latestAwaiting.values(), ...orphanAwaiting]
+    .sort((a, b) => a.exportedAt.localeCompare(b.exportedAt)) // äldst väntar först
+    .map((bid) => ({
+      bid,
+      versionsCount: bid.analysisId ? versionsByAnalysis.get(bid.analysisId) ?? 1 : 1,
+    }));
+
+  const archive = items
+    .filter((b) => b.outcome !== null)
+    .sort((a, b) => {
+      // Senast loggade först; rader utan loggtid sist.
+      if (a.outcomeLoggedAt === null && b.outcomeLoggedAt === null) return 0;
+      if (a.outcomeLoggedAt === null) return 1;
+      if (b.outcomeLoggedAt === null) return -1;
+      return b.outcomeLoggedAt.localeCompare(a.outcomeLoggedAt);
+    });
+
+  return { awaiting, archive };
+}
+
 export function sortBidSummaries(items: BidSummary[]): BidSummary[] {
   return [...items].sort((a, b) => {
     const aAwaiting = a.outcome === null;

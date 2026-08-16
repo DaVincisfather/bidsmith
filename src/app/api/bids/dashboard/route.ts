@@ -3,7 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { sortBidSummaries } from "@/lib/pipeline";
 import type { BidSummary, PipelineStats, RfpAnalysis } from "@/lib/types";
 
-const MAX_ITEMS = 8;
+// Skyddstak, inte pagineringsdesign — railen delar själv upp i väntar-beslut
+// (dedupad) och arkiv (3 senaste + länk), så den behöver hela mängden.
+const MAX_ITEMS = 100;
 
 export async function GET() {
   const supabase = await createClient();
@@ -41,11 +43,12 @@ export async function GET() {
   const nameById = new Map(consultants.map((c) => [c.id, c.name]));
 
   const summaries: BidSummary[] = (bids ?? []).map((b) => {
-    const analysis = (b.analyses as unknown as { analysis: RfpAnalysis })?.analysis;
-    const title = (analysis?.title as string) ?? "Namnlös RFP";
+    const analysisRow = b.analyses as unknown as { id: string; analysis: RfpAnalysis };
+    const title = (analysisRow?.analysis?.title as string) ?? "Namnlös RFP";
     const ids = (b.team_consultant_ids as string[]) ?? [];
     return {
       id: b.id as string,
+      analysisId: (analysisRow?.id as string) ?? null,
       title,
       exportedAt: b.exported_at as string,
       teamNames: ids.map((id) => nameById.get(id) ?? "—"),

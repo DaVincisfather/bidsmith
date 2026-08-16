@@ -1,44 +1,37 @@
 import Link from "next/link";
-import type { BidSummary } from "@/lib/types";
-
-const BORDER_BY_OUTCOME: Record<string, string> = {
-  awaiting: "var(--outcome-awaiting)",
-  won: "var(--outcome-won)",
-  lost: "var(--outcome-lost)",
-  cancelled: "var(--outcome-cancelled)",
-  "no-bid": "var(--outcome-cancelled)",
-};
-
-function outcomeLabel(b: BidSummary): string {
-  if (b.outcome === null) return "Väntar beslut";
-  if (b.outcome === "won") return "✓ Vunnen";
-  if (b.outcome === "lost") return "✗ Förlorad";
-  if (b.outcome === "cancelled") return "— Avbröts";
-  return "— Inget anbud";
-}
+import type { AwaitingEntry } from "@/lib/pipeline";
 
 function daysSinceExport(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
 }
 
-export function SubmittedRow({ bid }: { bid: BidSummary }) {
-  const key = bid.outcome ?? "awaiting";
-  const borderStyle =
-    key === "cancelled" || key === "no-bid"
-      ? `3px dashed ${BORDER_BY_OUTCOME[key]}`
-      : `3px solid ${BORDER_BY_OUTCOME[key]}`;
+function formatExportDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
+}
 
+// Väntar-beslut-kortet (pipeline-UX-passet 2026-08-16): railen visar numera
+// bara ODÖMDA anbud som kort — avgjorda bor i arkivsektionen. En rad per
+// analys; "senaste av N"-badgen bär dubblettkollapsen (legacy-rader från före
+// en-analys-ett-anbud-regeln #103 finns kvar i datat och arkivet).
+export function SubmittedRow({ entry }: { entry: AwaitingEntry }) {
+  const { bid, versionsCount } = entry;
   return (
     <Link
       href={`/bids/${bid.id}`}
-      className="block bg-paper rounded-r mb-1.5 px-3 py-2 hover:bg-paper-2 transition-colors"
-      style={{ borderLeft: borderStyle }}
+      className="mb-2 block rounded-xl border border-rule bg-white px-3 py-2.5 shadow-sm
+                 transition-colors hover:border-ink-mute"
+      style={{ borderLeft: "3px solid var(--outcome-awaiting)" }}
     >
-      <div className="text-sm font-medium text-ink truncate">{bid.title}</div>
-      <div className="text-xs text-ink-soft mt-0.5">
-        {outcomeLabel(bid)}
-        {bid.outcome === null && ` · ${daysSinceExport(bid.exportedAt)}d sen`}
-        {bid.outcome === "lost" && bid.competitorName && ` · mot ${bid.competitorName}`}
+      <div className="line-clamp-2 text-[13px] font-medium leading-snug text-ink">{bid.title}</div>
+      <div className="mt-1.5 flex items-center gap-2 font-mono text-[9px] text-ink-mute">
+        <span>
+          Inlämnat {formatExportDate(bid.exportedAt)} · {daysSinceExport(bid.exportedAt)} d sen
+        </span>
+        {versionsCount > 1 && (
+          <span className="rounded-full border border-rule bg-paper-2 px-1.5 py-px text-[8px]">
+            senaste av {versionsCount}
+          </span>
+        )}
       </div>
     </Link>
   );

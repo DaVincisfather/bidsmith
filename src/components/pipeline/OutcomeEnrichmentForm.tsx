@@ -22,6 +22,21 @@ const REASONS: Array<{ value: LossReason; label: string }> = [
   { value: "annat", label: "Annat" },
 ];
 
+const FIELD_CLASSES =
+  "w-full rounded-lg border border-rule bg-white px-2.5 py-1.5 text-sm text-ink";
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="mb-1 block font-mono text-[9px] uppercase tracking-widest text-ink-mute">
+      {children}
+    </span>
+  );
+}
+
+// Berikningsläget efter valt utfall (pipeline-UX-passet 2026-08-16): utfallschip
+// + fält i omdesignens formstil. Copy-rättelse i samma pass: detaljerna "tränar"
+// ingen modell — de bygger firmans historik (samma correctness-klass som
+// rail-/banner-copyn 2026-08-14).
 export function OutcomeEnrichmentForm({ outcome, onSave, onSkip }: Props) {
   const [competitorName, setCompetitorName] = useState("");
   const [lossReason, setLossReason] = useState<LossReason | "">("");
@@ -30,28 +45,34 @@ export function OutcomeEnrichmentForm({ outcome, onSave, onSkip }: Props) {
   const showLossFields = outcome === "lost";
 
   return (
-    <div className="bg-paper border border-rule rounded-md p-3.5 mt-2 text-sm">
-      <p className="text-xs text-ink-soft italic mb-3">
-        💡 Valfria detaljer — tränar modellen. Hoppa över om du inte vet.
-      </p>
+    <div className="mt-3 border-t border-rule pt-3">
+      <span
+        className={`mb-2.5 inline-block rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-widest ${
+          outcome === "won"
+            ? "border-emerald-600 text-emerald-700"
+            : "border-red-600 text-red-600"
+        }`}
+      >
+        {outcome === "won" ? "✓ Vunnen" : "✗ Förlorad"}
+      </span>
       <div className="grid grid-cols-2 gap-3">
         {showLossFields && (
           <>
             <label className="block">
-              <span className="block text-xs text-ink-soft mb-1 font-medium">Vem vann?</span>
+              <FieldLabel>Mot vem? (valfritt)</FieldLabel>
               <input
                 value={competitorName}
                 onChange={(e) => setCompetitorName(e.target.value)}
                 placeholder="Konkurrentens namn"
-                className="w-full px-2 py-1.5 border border-rule rounded text-sm"
+                className={FIELD_CLASSES}
               />
             </label>
             <label className="block">
-              <span className="block text-xs text-ink-soft mb-1 font-medium">Varför förlorade vi?</span>
+              <FieldLabel>Främsta skäl</FieldLabel>
               <select
                 value={lossReason}
                 onChange={(e) => setLossReason(e.target.value as LossReason | "")}
-                className="w-full px-2 py-1.5 border border-rule rounded text-sm"
+                className={FIELD_CLASSES}
               >
                 <option value="">— Välj —</option>
                 {REASONS.map((r) => (
@@ -63,26 +84,27 @@ export function OutcomeEnrichmentForm({ outcome, onSave, onSkip }: Props) {
             </label>
           </>
         )}
-        <label className="block col-span-2">
-          <span className="block text-xs text-ink-soft mb-1 font-medium">Fri kommentar</span>
+        <label className="col-span-2 block">
+          <FieldLabel>Kommentar (valfritt)</FieldLabel>
           <textarea
             value={lossComment}
             onChange={(e) => setLossComment(e.target.value)}
             placeholder="Vad lärde vi oss?"
-            className="w-full px-2 py-1.5 border border-rule rounded text-sm min-h-[60px] resize-y"
+            className={`${FIELD_CLASSES} min-h-[60px] resize-y`}
           />
         </label>
       </div>
-      <div className="flex gap-2 mt-3">
+      <div className="mt-3 flex items-center gap-3">
         <button
           onClick={() => onSave({ competitorName, lossReason, lossComment })}
-          className="px-3 py-1.5 bg-ink hover:bg-accent-ink text-white rounded text-xs"
+          className="rounded-lg bg-ink px-4 py-1.5 text-xs font-semibold text-white
+                     transition-colors hover:bg-accent-ink"
         >
-          Spara
+          Spara detaljer
         </button>
         <button
           onClick={onSkip}
-          className="px-3 py-1.5 border border-rule text-ink-soft rounded text-xs"
+          className="text-xs text-ink-mute underline hover:no-underline"
         >
           Hoppa över
         </button>

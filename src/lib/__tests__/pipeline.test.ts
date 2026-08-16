@@ -4,6 +4,7 @@ import {
   daysUntil,
   sortPipelineItems,
   sortBidSummaries,
+  splitDashboard,
   stockholmToday,
 } from "@/lib/pipeline";
 import type { PipelineItem, BidSummary } from "@/lib/types";
@@ -83,6 +84,7 @@ describe("sortBidSummaries", () => {
     outcomeLoggedAt: string | null
   ): BidSummary => ({
     id,
+    analysisId: null,
     title: `Bid ${id}`,
     exportedAt,
     teamNames: [],
@@ -118,5 +120,69 @@ describe("sortBidSummaries", () => {
     ];
     const sorted = sortBidSummaries(items);
     expect(sorted[0].id).toBe("awaiting");
+  });
+});
+
+describe("splitDashboard (pipeline-UX-passet: dedupe + arkiv)", () => {
+  const make = (
+    id: string,
+    analysisId: string | null,
+    outcome: BidSummary["outcome"],
+    exportedAt: string,
+    outcomeLoggedAt: string | null = null,
+  ): BidSummary => ({
+    id,
+    analysisId,
+    title: `Bid ${id}`,
+    exportedAt,
+    teamNames: [],
+    outcome,
+    outcomeLoggedAt,
+    competitorName: null,
+    lossReason: null,
+    lossComment: null,
+  });
+
+  it("kollapsar dubbletter per analys: senaste inlämningen visas, versionsCount räknar alla", () => {
+    const items = [
+      make("v1", "a-1", "lost", "2026-06-01", "2026-06-10"),
+      make("v2", "a-1", null, "2026-07-01"),
+      make("v3", "a-1", null, "2026-08-01"),
+      make("solo", "a-2", null, "2026-05-01"),
+    ];
+    const { awaiting } = splitDashboard(items);
+    expect(awaiting.map((e) => e.bid.id)).toEqual(["solo", "v3"]);
+    expect(awaiting.find((e) => e.bid.id === "v3")?.versionsCount).toBe(3);
+    expect(awaiting.find((e) => e.bid.id === "solo")?.versionsCount).toBe(1);
+  });
+
+  it("rader utan analyskoppling kan inte dedupas och visas var för sig", () => {
+    const items = [
+      make("x", null, null, "2026-06-01"),
+      make("y", null, null, "2026-07-01"),
+    ];
+    const { awaiting } = splitDashboard(items);
+    expect(awaiting).toHaveLength(2);
+    expect(awaiting.every((e) => e.versionsCount === 1)).toBe(true);
+  });
+
+  it("avgjorda hamnar i arkivet, senast loggade först, ologgade sist", () => {
+    const items = [
+      make("w", "a-1", "won", "2026-06-01", "2026-06-05"),
+      make("l", "a-2", "lost", "2026-06-01", "2026-07-05"),
+      make("nolog", "a-3", "cancelled", "2026-06-01", null),
+      make("open", "a-4", null, "2026-06-01"),
+    ];
+    const { archive } = splitDashboard(items);
+    expect(archive.map((b) => b.id)).toEqual(["l", "w", "nolog"]);
+  });
+
+  it("arkivet behaller ALLA avgjorda rader for samma analys — de ar utfallshistorik, inte dubbletter", () => {
+    const items = [
+      make("l1", "a-1", "lost", "2026-05-01", "2026-05-10"),
+      make("l2", "a-1", "lost", "2026-06-01", "2026-06-10"),
+    ];
+    const { archive } = splitDashboard(items);
+    expect(archive).toHaveLength(2);
   });
 });

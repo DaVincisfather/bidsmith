@@ -3,9 +3,31 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import type { PipelineItem, BidSummary, PipelineStats } from "@/lib/types";
+import { splitDashboard } from "@/lib/pipeline";
 import { PipelineRow } from "./PipelineRow";
 import { SubmittedRow } from "./SubmittedRow";
 import { OutcomeSheet } from "./OutcomeSheet";
+
+// Railens sektioner (pipeline-UX-passet 2026-08-16, godkänd mockup): Aktiva →
+// Väntar beslut (dedupad, en rad per analys) → Arkiv (avgjorda lämnar korten,
+// 3 senaste + länk till statistiksidan) → ärlig win-rate-fot.
+const ARCHIVE_PREVIEW = 3;
+
+const ARCHIVE_GLYPH: Record<string, { char: string; cls: string }> = {
+  won: { char: "✓", cls: "text-emerald-600" },
+  lost: { char: "✗", cls: "text-red-600" },
+  cancelled: { char: "—", cls: "text-ink-mute" },
+  "no-bid": { char: "—", cls: "text-ink-mute" },
+};
+
+function SectionHeading({ label, count }: { label: string; count: number | null }) {
+  return (
+    <h3 className="mb-2 mt-5 flex items-baseline justify-between font-mono text-[10px] font-bold uppercase tracking-widest text-ink-mute first:mt-0">
+      <span>{label}</span>
+      {count !== null && <span className="text-accent">{count}</span>}
+    </h3>
+  );
+}
 
 export function PipelineRail() {
   const [pipeItems, setPipeItems] = useState<PipelineItem[] | null>(null);
@@ -28,16 +50,17 @@ export function PipelineRail() {
     refetch();
   }, [refetch]);
 
-  const awaiting = (bidItems ?? []).filter((b) => b.outcome === null);
+  const { awaiting, archive } = splitDashboard(bidItems ?? []);
+  const awaitingBids = awaiting.map((e) => e.bid);
+  const decided = stats ? stats.wonCount + stats.lostCount : 0;
+  const winRate = decided > 0 && stats ? Math.round((stats.wonCount / decided) * 100) : null;
 
   return (
-    <aside className="bg-paper-2 border-l border-rule p-4 h-full">
-      <h3 className="text-[10px] font-bold uppercase tracking-wider text-ink-mute mb-2">
-        Pipen {pipeItems && `· ${pipeItems.length} RFPs`}
-      </h3>
+    <aside className="h-full overflow-y-auto border-l border-rule bg-paper-2 p-4">
+      <SectionHeading label="Pipen · Aktiva" count={pipeItems ? pipeItems.length : null} />
       {pipeItems === null && <p className="text-xs text-ink-mute">Laddar…</p>}
       {pipeItems && pipeItems.length === 0 && (
-        <p className="text-xs text-ink-mute italic">
+        <p className="text-xs italic text-ink-mute">
           Inga aktuella RFPs. Ladda upp eller kika på <a href="/radar" className="underline">Radar →</a>
         </p>
       )}
@@ -46,39 +69,71 @@ export function PipelineRail() {
       ))}
       {/* BUG-B: the pipe hides passed deadlines by design — this is the
           permanent path back to EVERY analysis, one click away. */}
-      <Link href="/arbetsyta/analyser" className="block text-xs text-ink-mute underline mt-2 hover:no-underline">
+      <Link href="/arbetsyta/analyser" className="mt-1 block text-xs text-ink-mute underline hover:no-underline">
         Alla analyser →
       </Link>
 
-      <h3 className="text-[10px] font-bold uppercase tracking-wider text-ink-mute mt-6 mb-2">
-        Inlämnade {stats && `· ${stats.awaitingCount + stats.loggedCount} anbud`}
-      </h3>
+      <SectionHeading label="Väntar beslut" count={bidItems ? awaiting.length : null} />
       {bidItems === null && <p className="text-xs text-ink-mute">Laddar…</p>}
-      {bidItems && bidItems.length === 0 && (
-        <p className="text-xs text-ink-mute italic">
-          Inga inlämnade anbud än. Exporterar du ett anbud hamnar det här.
+      {bidItems && awaiting.length === 0 && (
+        <p className="text-xs italic text-ink-mute">
+          Inga anbud väntar beslut. Markerar du ett anbud som inlämnat hamnar det här.
         </p>
       )}
-      {bidItems?.map((bid) => (
-        <SubmittedRow key={bid.id} bid={bid} />
+      {awaiting.map((entry) => (
+        <SubmittedRow key={entry.bid.id} entry={entry} />
       ))}
-
       {awaiting.length > 0 && (
         <button
           onClick={() => setSheetOpen(true)}
-          className="block w-full text-left text-xs text-black underline mt-2 hover:no-underline"
+          className="mt-1 flex w-full items-center gap-2 rounded-xl bg-accent px-3 py-2 text-xs
+                     font-semibold text-white transition-colors hover:bg-accent-ink"
         >
-          📊 {awaiting.length} anbud väntar på utfall — Logga utfall →
+          <span className="rounded-full bg-white/20 px-2 py-px font-mono text-[10px]">
+            {awaiting.length}
+          </span>
+          Logga utfall →
         </button>
       )}
 
-      {/* Ärlig copy (correctness-fynd 2026-08-14): utfallen flödar INTE in i
-          go/no-go-bedömningen i dag — de bär win-rate-statistiken. Kalibrering
-          mot faktiska utfall är en bokförd framtidspost (ROADMAP-backloggen),
-          lova den inte i UI:t innan den finns. */}
+      {archive.length > 0 && (
+        <div className="mt-5 border-t border-rule pt-3">
+          <SectionHeading label="Arkiv · Avgjorda" count={archive.length} />
+          {archive.slice(0, ARCHIVE_PREVIEW).map((bid) => {
+            const glyph = ARCHIVE_GLYPH[bid.outcome ?? "cancelled"];
+            return (
+              <Link
+                key={bid.id}
+                href={`/bids/${bid.id}`}
+                className="flex items-baseline gap-2 px-0.5 py-1 text-[11.5px] text-ink-mute hover:text-ink-soft"
+              >
+                <span aria-hidden className={`font-mono text-[9px] ${glyph.cls}`}>
+                  {glyph.char}
+                </span>
+                <span className="truncate">{bid.title}</span>
+              </Link>
+            );
+          })}
+          <Link
+            href="/arbetsyta/statistik"
+            className="mt-1 block text-xs text-ink-mute underline hover:no-underline"
+          >
+            Hela arkivet med utfall →
+          </Link>
+        </div>
+      )}
+
+      {/* Ärlig fot (correctness-fyndet 2026-08-14): utfallen bär statistik,
+          inte go/no-go-kalibrering — lova inte kalibreringen före funktionen. */}
       {stats && stats.loggedCount > 0 && (
-        <p className="text-[11px] text-ink-mute mt-4 pt-3 border-t border-rule leading-relaxed">
-          Du har loggat {stats.loggedCount} utfall — win-rate och historik per person finns på{" "}
+        <p className="mt-4 border-t border-rule pt-3 text-[11px] leading-relaxed text-ink-mute">
+          {winRate !== null && (
+            <>
+              Win-rate <b className="text-ink-soft">{winRate} %</b> · {stats.wonCount} W /{" "}
+              {stats.lostCount} L ·{" "}
+            </>
+          )}
+          {stats.loggedCount} loggade utfall — detaljer på{" "}
           <Link href="/arbetsyta/statistik" className="underline hover:no-underline">
             statistiksidan
           </Link>
@@ -86,14 +141,14 @@ export function PipelineRail() {
         </p>
       )}
       {stats && stats.loggedCount === 0 && awaiting.length > 0 && (
-        <p className="text-[11px] text-ink-mute mt-4 pt-3 border-t border-rule leading-relaxed">
+        <p className="mt-4 border-t border-rule pt-3 text-[11px] leading-relaxed text-ink-mute">
           Logga utfall så byggs firmans win-rate och historik upp på statistiksidan.
         </p>
       )}
 
       {sheetOpen && (
         <OutcomeSheet
-          awaiting={awaiting}
+          awaiting={awaitingBids}
           onClose={() => {
             setSheetOpen(false);
             // Committed-but-unenriched outcomes only reach the rail here —
