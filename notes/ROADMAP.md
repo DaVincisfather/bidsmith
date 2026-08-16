@@ -950,6 +950,12 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   DESIGNREFERENS BOKFÖRD 2026-08-16: mönstermappning från beautifului.dev
   (filter table/insight cards/records table) i
   `notes/2026-08-16-pipeline-dashboard-designreferens.md` — input till mockup-fasen.
+- **Superseded-kaskad vid utfallsloggning (semantikbeslut, routine-follow-up #125):**
+  railens dedupe döljer nu äldre odömda syskon (superseded — väg A, fixad i #125),
+  men raderna ligger kvar odömda i DB ⇒ statistiksidans pendingCount räknar dem för
+  evigt. Beslut kvar: kaskad-markera syskon vid utfallsloggning (kräver
+  utfallssemantik för "superseded" — cancelled? eget värde?) eller acceptera
+  historiken som den är. Berör bara legacy-data — nya dubbletter kan inte uppstå.
 - **Strängsvep 2 (polish, routine-follow-up #119):** kärnflödet är helsvenskt efter
   copy-svepet, men consultants-/templates-/radar-routernas felsträngar är kvar på
   engelska ("Consultant not found", "Template not found", "No file provided" i

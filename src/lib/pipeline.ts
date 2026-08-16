@@ -63,26 +63,31 @@ export function splitDashboard(items: BidSummary[]): DashboardSplit {
     versionsByAnalysis.set(b.analysisId, (versionsByAnalysis.get(b.analysisId) ?? 0) + 1);
   }
 
-  const latestAwaiting = new Map<string, BidSummary>();
+  // Senaste INLÄMNINGEN per analys (oavsett utfall) avgör om analysen väntar
+  // beslut. Routine-fynd #125: att välja senaste ODÖMDA raden lät legacy-högen
+  // återuppstå en version i taget när utfall loggades (och badgen kunde sitta
+  // på fel rad) — äldre odömda syskon är superseded och visas aldrig.
+  // Kaskad-markering i DB + statistiksidans eviga pending är bokförd follow-up.
+  const latestByAnalysis = new Map<string, BidSummary>();
   const orphanAwaiting: BidSummary[] = [];
   for (const b of items) {
-    if (b.outcome !== null) continue;
     if (b.analysisId === null) {
-      orphanAwaiting.push(b);
+      if (b.outcome === null) orphanAwaiting.push(b);
       continue;
     }
-    const current = latestAwaiting.get(b.analysisId);
+    const current = latestByAnalysis.get(b.analysisId);
     if (!current || b.exportedAt.localeCompare(current.exportedAt) > 0) {
-      latestAwaiting.set(b.analysisId, b);
+      latestByAnalysis.set(b.analysisId, b);
     }
   }
+  const latestAwaiting = [...latestByAnalysis.values()].filter((b) => b.outcome === null);
 
   const withVersions = (bid: BidSummary): RailBidEntry => ({
     bid,
     versionsCount: bid.analysisId ? versionsByAnalysis.get(bid.analysisId) ?? 1 : 1,
   });
 
-  const awaiting: RailBidEntry[] = [...latestAwaiting.values(), ...orphanAwaiting]
+  const awaiting: RailBidEntry[] = [...latestAwaiting, ...orphanAwaiting]
     .sort((a, b) => a.exportedAt.localeCompare(b.exportedAt)) // äldst väntar först
     .map(withVersions);
 

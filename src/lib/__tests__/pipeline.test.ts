@@ -185,4 +185,14 @@ describe("splitDashboard (pipeline-UX-passet: dedupe + arkiv)", () => {
     const { archive } = splitDashboard(items);
     expect(archive).toHaveLength(2);
   });
+
+  it("superseded: analys vars SENASTE inlamning ar avgjord vantar inte — aldre odomda syskon visas aldrig (routine-fynd #125)", () => {
+    const items = [
+      make("old-undecided", "a-1", null, "2026-06-01"),
+      make("latest-decided", "a-1", "lost", "2026-07-01", "2026-07-10"),
+    ];
+    const { awaiting, archive } = splitDashboard(items);
+    expect(awaiting).toHaveLength(0);
+    expect(archive.map((e) => e.bid.id)).toEqual(["latest-decided"]);
+  });
 });

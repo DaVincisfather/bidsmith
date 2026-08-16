@@ -16,10 +16,9 @@
   --urgency-urgent: #dc2626;
   --urgency-soon: #d97706;
   --urgency-later: #10b981;
+  /* won/lost/cancelled-varianterna städade 2026-08-16 (routine-fynd #125):
+     utfallsfärgerna bärs numera av chips-klasserna, bara awaiting-kanten kvar. */
   --outcome-awaiting: #94a3b8;
-  --outcome-won: #10b981;
-  --outcome-lost: #dc2626;
-  --outcome-cancelled: #94a3b8;
 
   /* källa-badge — obelagd/flaggad påstående (amber, matchar urgency-soon-familjen) */
   --flag: #d97706;
