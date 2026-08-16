@@ -100,7 +100,9 @@ describe("PipelineRail (flikvarianten)", () => {
 
     const card = screen.getByText("Anbud wait-1").closest("a")!;
     expect(card.textContent).not.toMatch(/Väntar beslut/i);
-    expect(card.getAttribute("style") ?? "").not.toContain("outcome-awaiting");
+    // outerHTML fångar markören oavsett om den bor i style eller className
+    // (routine-fynd #127: style-attributsasserten var alltid grön).
+    expect(card.outerHTML).not.toContain("outcome-awaiting");
   });
 
   it("ärliga win-rate-foten räknar ur stats", async () => {

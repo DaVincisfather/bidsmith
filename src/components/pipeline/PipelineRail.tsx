@@ -60,12 +60,25 @@ export function PipelineRail() {
 
   return (
     <aside className="flex h-full flex-col border-l border-rule bg-paper-2">
-      <div role="tablist" aria-label="Pipen" className="flex border-b border-rule bg-paper">
+      <div
+        role="tablist"
+        aria-label="Pipen"
+        className="flex border-b border-rule bg-paper"
+        onKeyDown={(e) => {
+          // Fullt tabs-mönster (routine-fynd #127): piltangenter växlar flik.
+          if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+            setTab((prev) => (prev === "ongoing" ? "archive" : "ongoing"));
+          }
+        }}
+      >
         {tabs.map((t) => (
           <button
             key={t.key}
+            id={`rail-tab-${t.key}`}
             role="tab"
             aria-selected={tab === t.key}
+            aria-controls="rail-tabpanel"
+            tabIndex={tab === t.key ? 0 : -1}
             onClick={() => setTab(t.key)}
             className={`flex-1 border-b-2 pb-2.5 pt-3 text-center font-mono text-[10px] uppercase
                         tracking-widest transition-colors ${
@@ -82,7 +95,12 @@ export function PipelineRail() {
         ))}
       </div>
 
-      <div className="flex flex-1 flex-col overflow-y-auto p-4">
+      <div
+        role="tabpanel"
+        id="rail-tabpanel"
+        aria-labelledby={`rail-tab-${tab}`}
+        className="flex flex-1 flex-col overflow-y-auto p-4"
+      >
         {!loaded && <p className="text-xs text-ink-mute">Laddar…</p>}
 
         {loaded && tab === "ongoing" && (
