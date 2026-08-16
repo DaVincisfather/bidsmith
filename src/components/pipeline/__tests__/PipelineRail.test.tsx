@@ -62,58 +62,47 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe("PipelineRail (chips-varianten)", () => {
-  it("visar filterchips med räknare och Alla-läget capar avgjorda", async () => {
+describe("PipelineRail (flikvarianten)", () => {
+  it("Pågående-fliken är default: aktiva + väntande syns, avgjorda göms helt", async () => {
     render(<PipelineRail />);
     await waitFor(() => expect(screen.getByText("Aktiv upphandling")).toBeInTheDocument());
 
-    expect(screen.getByRole("button", { name: /Alla\s?6/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Aktiva\s?1/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Väntar beslut\s?1/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Avgjorda\s?4/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Pågående\s?2/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByRole("tab", { name: /Arkiv\s?4/ })).toBeInTheDocument();
 
-    // Alla-läget: aktiva + väntande + 3 senaste avgjorda, resten bakom länken.
     expect(screen.getByText("Anbud wait-1")).toBeInTheDocument();
-    expect(screen.getByText("Anbud dec-1")).toBeInTheDocument();
-    expect(screen.getByText("Anbud dec-3")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Logga utfall/ })).toBeInTheDocument();
+    // Hård separation: inga avgjorda i pågående-vyn.
+    expect(screen.queryByText("Anbud dec-1")).not.toBeInTheDocument();
     expect(screen.queryByText("Anbud dec-4")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Visa alla 4 avgjorda/ })).toBeInTheDocument();
   });
 
-  it("Avgjorda-chippet filtrerar till enbart avgjorda, ocapat", async () => {
+  it("Arkiv-fliken visar alla avgjorda som tysta rader och gömmer pågående", async () => {
     render(<PipelineRail />);
     await waitFor(() => expect(screen.getByText("Aktiv upphandling")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: /Avgjorda\s?4/ }));
+    fireEvent.click(screen.getByRole("tab", { name: /Arkiv\s?4/ }));
 
     expect(screen.queryByText("Aktiv upphandling")).not.toBeInTheDocument();
     expect(screen.queryByText("Anbud wait-1")).not.toBeInTheDocument();
-    expect(screen.getByText("Anbud dec-4")).toBeInTheDocument();
-    expect(screen.getByText(/✓ Vunnen/)).toBeInTheDocument();
+    for (const id of ["dec-1", "dec-2", "dec-3", "dec-4"]) {
+      expect(screen.getByText(`Anbud ${id}`)).toBeInTheDocument();
+    }
+    expect(screen.getByText(/Hela arkivet med utfall/)).toBeInTheDocument();
   });
 
-  it("Väntar beslut-chippet visar väntande + Logga utfall-CTA:n", async () => {
+  it("väntar-kortet har varken statuschip eller grå kantlist (anti-slop-justeringen)", async () => {
     render(<PipelineRail />);
     await waitFor(() => expect(screen.getByText("Anbud wait-1")).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole("button", { name: /Väntar beslut\s?1/ }));
-
-    expect(screen.getByText("Anbud wait-1")).toBeInTheDocument();
-    expect(screen.queryByText("Anbud dec-1")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Logga utfall/ })).toBeInTheDocument();
-  });
-
-  it("Visa alla-länken byter till Avgjorda-filtret", async () => {
-    render(<PipelineRail />);
-    await waitFor(() => expect(screen.getByText("Anbud dec-1")).toBeInTheDocument());
-
-    fireEvent.click(screen.getByRole("button", { name: /Visa alla 4 avgjorda/ }));
-
-    expect(screen.getByRole("button", { name: /Avgjorda\s?4/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(screen.getByText("Anbud dec-4")).toBeInTheDocument();
+    const card = screen.getByText("Anbud wait-1").closest("a")!;
+    expect(card.textContent).not.toMatch(/Väntar beslut/i);
+    // outerHTML fångar markören oavsett om den bor i style eller className
+    // (routine-fynd #127: style-attributsasserten var alltid grön).
+    expect(card.outerHTML).not.toContain("outcome-awaiting");
   });
 
   it("ärliga win-rate-foten räknar ur stats", async () => {
