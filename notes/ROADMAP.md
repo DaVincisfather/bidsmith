@@ -932,6 +932,9 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   från före en-analys-ett-anbud-regeln #103 visar 7× samma RFP i dev);
   (3) inforutorna/korten i dashen + utfallsdialogen (OutcomeSheet) omstylas i
   omdesignens anda. Körs mot mockup som Stefan godkänner, som editor-passet.
+  DESIGNREFERENS BOKFÖRD 2026-08-16: mönstermappning från beautifului.dev
+  (filter table/insight cards/records table) i
+  `notes/2026-08-16-pipeline-dashboard-designreferens.md` — input till mockup-fasen.
 - **Strängsvep 2 (polish, routine-follow-up #119):** kärnflödet är helsvenskt efter
   copy-svepet, men consultants-/templates-/radar-routernas felsträngar är kvar på
   engelska ("Consultant not found", "Template not found", "No file provided" i
