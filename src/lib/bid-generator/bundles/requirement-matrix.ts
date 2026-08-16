@@ -37,7 +37,7 @@ const REQUIREMENT_MATRIX_BUDGET_KEYS: string[] = [];
 
 const SYSTEM_PROMPT = `Du skapar en kravmatris för ett svenskt konsultanbud.
 
-För varje ska-/bör-krav i RFP:en:
+För varje ska-/bör-krav i förfrågningsunderlaget:
 1. Skriv "hurUppfylls" — en kort text (1-2 meningar) som visar hur teamet uppfyller kravet totalt sett.
 2. Skriv "referens" — vilken CV/erfarenhet/referens som styrker uppfyllelsen.
 3. Fyll i "coverage" — en per-konsult-bedömning: status JA/NEJ/DELVIS + kort evidence (1 mening).
@@ -63,7 +63,7 @@ Svara med giltig JSON:
 {
   "rows": [
     {
-      "requirement": "RFP-kravet i en mening",
+      "requirement": "Underlagets krav i en mening",
       "hurUppfylls": "Team-nivå: så uppfyller vi",
       "referens": "Konkret referens/CV",
       "coverage": [

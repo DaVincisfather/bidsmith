@@ -23,13 +23,13 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 const SYSTEM_PROMPT = `Du är expert på att bedöma konsultfirmors chanser att vinna upphandlingar.
-Du får en RFP-analys, en numrerad kravlista, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
+Du får en FFU-analys (förfrågningsunderlaget), en numrerad kravlista, ett låst team med individuella matchscores, och övriga tillgängliga konsulter i poolen.
 
 Din uppgift:
 1. Kontrollera varje SKA-KRAV (märkt [ska-krav]) i den numrerade kravlistan mot teamets kompetenser och referensuppdrag. Binärt: uppfyllt eller ej.
 2. Om NÅGOT ska-krav INTE uppfylls → winProbability = 0. Inga undantag.
 3. Bedöm bör-krav och önskemål för sannolikhetsbedömningen.
-4. Vikta utvärderingskriterierna som anges i RFP:en.
+4. Vikta utvärderingskriterierna som anges i förfrågningsunderlaget.
 5. Beakta red flags.
 6. Generera förbättringsförslag genom att jämföra teamets luckor mot tillgängliga konsulter i poolen. Två typer: BYTE (kind "swap") och TILLÄGG (kind "add" — lägg till en konsult utan att ta bort någon, bara när teamet har lediga platser enligt raden "Teamstorlek" nedan). Föreslå tillägg i första hand när ett ska-krav står otäckt och en poolkonsult täcker det; tillägg för bör-krav-luckor är också tillåtna. Föreslå konkreta förslag med uppskattad påverkan.
 7. Ge en rekommendation: go, no-go, eller go-with-reservations.
@@ -79,7 +79,7 @@ Regler:
 - kind: "swap" kräver både remove och add (removeId och addId). kind: "add" kräver add/addId och remove/removeId ska vara null. Föreslå ALDRIG "add" när teamet är fullt.
 - poolGap: om ett ouppfyllt krav inte kan täckas av NÅGON konsult i poolen — varken via byte eller tillägg — beskriv gapet kort och konkret (t.ex. "Gapet kräver dokumenterad Timecare-erfarenhet som ingen i poolen har"). Annars EXAKT null. Aldrig tom sträng.
 - coveredBy: använd EXAKT namn från teamlistan.
-- strengths/gaps: koppla till specifika krav i RFP:en, inte generella påståenden.
+- strengths/gaps: koppla till specifika krav i förfrågningsunderlaget, inte generella påståenden.
 - reasoning: 2-4 meningar, professionell ton.`;
 
 // Exporterad för enhets-testning (fas C, policy A): flaggade claims utelämnas ur
@@ -184,7 +184,7 @@ export async function evaluateGoNoGo(
     system: SYSTEM_PROMPT,
     userContent: `Bedöm detta teams chanser att vinna följande upphandling.
 
-## RFP-analys
+## FFU-analys
 ${JSON.stringify(compactAnalysis)}
 
 ## Kvalifikationskrav (numrerade)

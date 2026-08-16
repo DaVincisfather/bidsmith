@@ -59,7 +59,7 @@ ${ctx.profile.tonality ? `- Tonalitet (följ denna i all text): ${ctx.profile.to
 `
     : "";
 
-  return `${profileBlock}## Förfrågningsunderlag (RFP)
+  return `${profileBlock}## Förfrågningsunderlag (FFU)
 ${JSON.stringify(ctx.analysis, null, 2)}
 
 ## Team

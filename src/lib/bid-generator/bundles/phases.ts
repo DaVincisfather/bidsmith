@@ -48,14 +48,14 @@ Gränser per fas: activities 1-4, deliverables 1-3, decisions 1-3.
 Totalt 3-4 faser i leveransen.
 
 VIKTIGT om realism:
-- Lova bara det RFP:en efterfrågar.
+- Lova bara det förfrågningsunderlaget efterfrågar.
 - Period: månadsintervall i formatet "M1-M2", "M2-M5" etc.
 - Duration: vecko-string, t.ex. "4 v", "6 v".
 - decisions: 1-3 beslut styrgruppen tar vid faslut. Sista fasen har typiskt "Go/no-go till nästa fas".
 - shortDescription: 3-6 ord, används på fasöversikts-sliden som undertitel.
 - Var konsistent — referera inte till aktiviteter som inte finns i andra faser.
 - Skriv konkret och direkt. Undvik floskler och markdown.
-- Planera in de RFP-leveranser som listas nedan (om några) som deliverables i lämpliga
+- Planera in de FFU-leveranser som listas nedan (om några) som deliverables i lämpliga
   faser — de är vad uppdraget faktiskt ska producera. Formulera om till fas-nivå vid behov.
 
 Svara med giltig JSON (fältordningen nedan är exakt den ordning svaret ska ha):
@@ -85,7 +85,7 @@ export async function buildPhasesBundle(
   // grundas i vad RFP:en kräver levererat, inte enbart fri AI-generering.
   const leverabler = deliverableRequirements(ctx.analysis.requirements);
   const leveransBlock = leverabler.length
-    ? `\n\n## RFP-leveranser att planera in i faserna\n${leverabler
+    ? `\n\n## FFU-leveranser att planera in i faserna\n${leverabler
         .map((r) => `- ${r.description}`)
         .join("\n")}`
     : "";

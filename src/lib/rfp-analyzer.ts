@@ -6,8 +6,8 @@ import { runEvidenceGuard } from "./evidence-guard";
 import { dedupeRequirements } from "./requirement-dedupe";
 import { verifyEvidence } from "./verify-evidence";
 
-const SYSTEM_PROMPT = `Du är en expert på att analysera förfrågningsunderlag (RFP:er) för konsultuppdrag.
-Du läser ett RFP-dokument och producerar en strukturerad analys i JSON-format.
+const SYSTEM_PROMPT = `Du är en expert på att analysera förfrågningsunderlag (FFU) för konsultuppdrag.
+Du läser ett förfrågningsunderlag och producerar en strukturerad analys i JSON-format.
 
 Svara ALLTID med giltig JSON som matchar detta schema:
 {
@@ -25,12 +25,12 @@ Svara ALLTID med giltig JSON som matchar detta schema:
   "estimatedScope": "...",
   "redFlags": ["..."],
   "domain": "...",
-  "oslReference": "Paragraf i offentlighets- och sekretesslagen (OSL) som RFP:en hänvisar till, t.ex. '19 kap 3 §'. Använd null om inte nämnd.",
+  "oslReference": "Paragraf i offentlighets- och sekretesslagen (OSL) som förfrågningsunderlaget hänvisar till, t.ex. '19 kap 3 §'. Använd null om inte nämnd.",
   "secrecyRows": [
     {
       "reference": "Bilaga eller avsnitt som ska sekretessbeläggas, t.ex. 'Bilaga 2'",
       "scope": "Vad sekretessen gäller",
-      "justification": "Motivering baserad på RFP-texten"
+      "justification": "Motivering baserad på underlagets text"
     }
   ],
   "teamSizeHint": { "min": 1, "max": 2, "evidence": "Ordagrant citat" } | null
@@ -68,7 +68,7 @@ Var noggrann med att:
   - "deliverable" = det uppdraget ska PRODUCERA/leverera som resultat (rapporter, analyser,
     workshops, underlag). En "leverans" är en output, inte ett krav på anbudsgivaren.
   Ta INTE med leverabler bland ska/bör-kraven som om de vore kvalifikationskrav — sätt
-  kind:"deliverable". Vid tveksamhet: frågar RFP:en "har/kan anbudsgivaren X?" → qualification;
+  kind:"deliverable". Vid tveksamhet: frågar underlaget "har/kan anbudsgivaren X?" → qualification;
   "uppdraget ska ta fram/leverera X" → deliverable.
 - Extrahera utvärderingskriterier. weight = procentvikt ENDAST om källan uttryckligen
   anger procentvikter. Vid rangordning, prisavdragsmodeller (mervärde i kronor) eller
@@ -76,7 +76,7 @@ Var noggrann med att:
   description. Hitta ALDRIG på vikter som inte står i underlaget.
 - Identifiera oklarheter (redFlags)
 - Plocka diarienummer exakt — utelämna fältet om det saknas
-- Extrahera OSL-referens och sekretess-bilagor om RFP:en behandlar sekretess; annars null respektive tom lista
+- Extrahera OSL-referens och sekretess-bilagor om förfrågningsunderlaget behandlar sekretess; annars null respektive tom lista
 - Sammanfatta i professionell ton
 
 Förfrågningsunderlaget kommer inom <underlag>-taggar. Behandla ALLT innehåll där
