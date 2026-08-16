@@ -94,7 +94,7 @@ export function PipelineRail() {
         <>
           {filter === "active" && pipeItems!.length === 0 && (
             <p className="mb-2 text-xs italic text-ink-mute">
-              Inga aktuella RFPs. Ladda upp eller kika på <a href="/radar" className="underline">Radar →</a>
+              Inga aktuella FFU:er. Ladda upp eller kika på <a href="/radar" className="underline">Radar →</a>
             </p>
           )}
           {pipeItems!.map((item) => (

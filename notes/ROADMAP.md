@@ -4,7 +4,23 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-16 — **PIPELINE-DASHBOARDPASSET (DENNA PR): Stefans tre
+_Senast uppdaterad: 2026-08-16 kväll — **FFU-TERMINOLOGIBYTET (DENNA PR): "RFP" →
+förfrågningsunderlag/FFU** (Stefans beslut i smoke-sessionen, körd efter #125 enligt
+ordern). STEG 1 UI-copy: nav "Analysera FFU", FFU-radar, arbetsyta/analyser-sidorna,
+railens tomläge, metadatan på svenska. STEG 2 promptar (GRINDADE per beslutet):
+analyzer/matcher/gonogo/skrivbundlarna (understanding, phases, requirement-matrix,
+generic-prose, context) — terminologin i prompttext, ALDRIG kodidentifierare
+(RfpAnalysis-typen, rfp-analyzer.ts, storage-nycklar) eller maskin-etiketter
+("RFP analysis" i ai_call_logs/cost-buckets är historisk bucketing och orörd).
+GRINDAR KÖRDA: trippelsmoke (extraction 17 krav på rå syntetisk FFU + matching
+7 scorade + gonogo 1 förslag/poolGap — ingen "RFP"-eko i någon användarsynlig
+output) + full generateAllSections mot chalmers-fixturen (bundlarna, RFP-eko-regex).
+BYGG-LÄRDOM (nästan-incident): PowerShell plattar enpars-nästlade arrayer —
+@(@('a','b')) blir @('a','b') och $p[0]/$p[1] indexerar TECKEN ⇒ -replace 's','t'
+korrumperade generic-prose.ts innan git checkout räddade; enparsfall görs med
+Edit-verktyget, aldrig loopad -replace._
+
+_Historik (2026-08-16): **PIPELINE-DASHBOARDPASSET (#125): Stefans tre
 direktiv byggda mot godkänd mockup.** (1) AVGJORDA anbud lämnar railens kort och blir
 arkivsektion (✓/✗-rader, 3 senaste + räknare + länk till statistiksidan som äger
 utfallsdatat); (2) DUBBLETTKOLLAPS via ny `splitDashboard` i lib/pipeline (en rad per

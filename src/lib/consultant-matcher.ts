@@ -51,8 +51,8 @@ const PrefilterSchema = z.object({
   ),
 });
 
-const PREFILTER_SYSTEM = `Du är expert på att matcha konsulter till förfrågningsunderlag (RFP:er).
-Scora VARJE konsult individuellt mot RFP:en utifrån kompetenser, erfarenhet och referensuppdrag.
+const PREFILTER_SYSTEM = `Du är expert på att matcha konsulter till förfrågningsunderlag (FFU).
+Scora VARJE konsult individuellt mot förfrågningsunderlaget utifrån kompetenser, erfarenhet och referensuppdrag.
 Returnera ENDAST en score per konsult — INGEN motivering, ingen text.
 
 Rankning sker enbart inom samma erfarenhetsnivå — juniors tävlar aldrig mot seniors.
@@ -69,8 +69,8 @@ Regler:
 - Score 0-100: 80+ stark, 60-79 relevant, 40-59 delvis, <40 svag
 - Ingen "reasoning"-nyckel — bara score`;
 
-const DEEP_SYSTEM = `Du är expert på att matcha konsulter till förfrågningsunderlag (RFP:er).
-Du får en RFP-analys och en kortlista med de starkaste konsulterna. Skriv en utförlig motivering för VARJE konsult.
+const DEEP_SYSTEM = `Du är expert på att matcha konsulter till förfrågningsunderlag (FFU).
+Du får en FFU-analys och en kortlista med de starkaste konsulterna. Skriv en utförlig motivering för VARJE konsult.
 
 Svara ALLTID med giltig JSON som matchar detta schema:
 {
@@ -81,7 +81,7 @@ Svara ALLTID med giltig JSON som matchar detta schema:
 
 Regler:
 - Skriv motivering för ALLA konsulter du fått
-- reasoning: 2-3 meningar, specifik koppling till RFP-kraven, inte generell text
+- reasoning: 2-3 meningar, specifik koppling till underlagets krav, inte generell text
 - Behåll score i samma intervall 0-100 som du fått`;
 
 // Exporterad för enhets-testning: prompt-texten ska utelämna flaggade (evidens-lösa)
@@ -127,7 +127,7 @@ async function prefilterScoreAll(
     system: PREFILTER_SYSTEM,
     userContent: `Scora följande konsulter individuellt mot detta förfrågningsunderlag.
 
-## RFP-analys
+## FFU-analys
 ${JSON.stringify(analysis, null, 2)}
 
 ## Konsulter att scora
@@ -220,7 +220,7 @@ async function deepReasonSelected(
     system: DEEP_SYSTEM,
     userContent: `Skriv en utförlig motivering för följande kortlistade konsulter mot detta förfrågningsunderlag.
 
-## RFP-analys
+## FFU-analys
 ${JSON.stringify(analysis, null, 2)}
 
 ## Kortlistade konsulter

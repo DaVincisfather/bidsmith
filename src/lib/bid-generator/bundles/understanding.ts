@@ -32,26 +32,26 @@ Skriv som en erfaren konsult — inte som en AI. Undvik överdrivna adjektiv, ab
 markdown-formatering och upprepade parallella strukturer. Variera meningslängd. Konkret och direkt.
 
 KÄLLMATERIAL-TROHET (HÅRD REGEL):
-Skriv ENDAST baserat på vad som faktiskt står i RFP:n och teamkontexten.
+Skriv ENDAST baserat på vad som faktiskt står i förfrågningsunderlaget och teamkontexten.
 Hitta INTE på:
-- Organisationsstorlek (antal medarbetare/omsättning/invånare) om RFP:n inte säger det
-- Klientens tidigare uppdrag, system eller historik utöver RFP:n
+- Organisationsstorlek (antal medarbetare/omsättning/invånare) om underlaget inte säger det
+- Klientens tidigare uppdrag, system eller historik utöver underlaget
 - Procentuella mål eller siffror som inte finns i källmaterialet
-- Sektor- eller verksamhetsdetaljer utöver vad RFP:n explicit anger
+- Sektor- eller verksamhetsdetaljer utöver vad underlaget explicit anger
 
-Om RFP:n är tunn på kontext — skriv kortare istället för att fylla ut.
+Om underlaget är tunt på kontext — skriv kortare istället för att fylla ut.
 Hellre 1 mening korrekt fakta än 2 meningar varav 1 påhittad.
 
 Svara med giltig JSON:
 {
   "current": {
-    "organisation": "1-2 meningar — VAD RFP:n explicit säger om kunden (namn, typ av organisation). Ange INTE storlek/medarbetarantal om det inte står.",
+    "organisation": "1-2 meningar — VAD underlaget explicit säger om kunden (namn, typ av organisation). Ange INTE storlek/medarbetarantal om det inte står.",
     "system": "1-2 meningar om de system/verktyg/tekniska landskap som berörs",
     "processer": "1-2 meningar om hur de jobbar idag",
-    "smärtpunkter": ["max 4 korta konkreta smärtpunkter som RFP:en pekar på"]
+    "smärtpunkter": ["max 4 korta konkreta smärtpunkter som underlaget pekar på"]
   },
   "assignment": {
-    "stycken": ["exakt 3 stycken, vardera 2-4 meningar, som beskriver uppdraget från vårt perspektiv — inte en upprepning av RFP:en"]
+    "stycken": ["exakt 3 stycken, vardera 2-4 meningar, som beskriver uppdraget från vårt perspektiv — inte en upprepning av underlaget"]
   },
   "vision": {
     "utmaningar": ["max 4 utmaningar uppdraget behöver lösa"],
@@ -61,7 +61,7 @@ Svara med giltig JSON:
 
 smärtpunkter, utmaningar och värden: max 4 poster per lista, minst 1.
 assignment.stycken: exakt 3 stycken.
-Leverera så många poster som bäst representerar RFP:en inom de gränserna.`;
+Leverera så många poster som bäst representerar underlaget inom de gränserna.`;
 
 export async function buildUnderstandingBundle(
   ctx: BidContext,

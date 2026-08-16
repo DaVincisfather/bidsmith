@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subset
 
 export const metadata: Metadata = {
   title: "Bidsmith",
-  description: "AI-driven RFP analysis and consultant matching",
+  description: "AI-driven analys av förfrågningsunderlag och konsultmatchning",
 };
 
 export default function RootLayout({
@@ -42,7 +42,7 @@ export default function RootLayout({
               <span className="font-display text-xl tracking-tight">Bidsmith</span>
             </Link>
             <div className="flex items-center gap-6 font-mono text-xs uppercase tracking-wider text-ink-mute">
-              <Link href="/" className="hover:text-ink">Analysera RFP</Link>
+              <Link href="/" className="hover:text-ink">Analysera FFU</Link>
               <Link href="/arbetsyta" className="hover:text-ink">Arbetsyta</Link>
               <Link href="/radar" className="hover:text-ink">Radar</Link>
               <Link href="/installningar" className="hover:text-ink">Inställningar</Link>

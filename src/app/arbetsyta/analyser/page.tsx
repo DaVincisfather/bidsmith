@@ -44,20 +44,20 @@ export default async function AnalyserPage() {
           </Link>
           <h1 className="text-2xl font-display font-normal mt-2">Analyser</h1>
           <p className="mt-1 text-sm text-ink-mute">
-            Alla analyserade RFP:er — oavsett deadline. Klicka för att öppna analysen.
+            Alla analyserade förfrågningsunderlag — oavsett deadline. Klicka för att öppna analysen.
           </p>
         </div>
 
         {items.length === 0 ? (
           <p className="text-ink-mute text-sm py-12 text-center">
-            Inga analyser ännu. Analysera en RFP för att komma igång.
+            Inga analyser ännu. Analysera ett förfrågningsunderlag för att komma igång.
           </p>
         ) : (
           <div className="border border-rule rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-paper-2">
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium text-ink-soft">RFP</th>
+                  <th className="text-left px-4 py-2 font-medium text-ink-soft">FFU</th>
                   <th className="text-left px-4 py-2 font-medium text-ink-soft">Deadline</th>
                   <th className="text-right px-4 py-2 font-medium text-ink-soft">Status</th>
                 </tr>

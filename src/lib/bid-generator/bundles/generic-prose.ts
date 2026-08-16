@@ -80,7 +80,7 @@ const PROSE_VOICE = `Skriv som en erfaren konsult — inte som en AI. Undvik öv
 markdown-formatering och upprepade parallella strukturer. Variera meningslängd. Konkret och direkt.
 
 KÄLLMATERIAL-TROHET (HÅRD REGEL):
-Skriv ENDAST baserat på vad som faktiskt står i RFP:n och teamkontexten. Hitta INTE på siffror,
+Skriv ENDAST baserat på vad som faktiskt står i förfrågningsunderlaget och teamkontexten. Hitta INTE på siffror,
 organisationsdetaljer, historik eller åtaganden som inte finns i källmaterialet. Om underlaget är
 tunt — skriv kortare istället för att fylla ut.
 

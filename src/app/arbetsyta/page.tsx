@@ -44,7 +44,7 @@ export default async function ArbetsytaPage() {
           >
             <h2 className="text-lg font-display font-normal">Analyser</h2>
             <p className="mt-1 text-sm text-ink-mute">
-              {analysisCount ?? 0} analyserade RFP:er
+              {analysisCount ?? 0} analyserade FFU:er
             </p>
           </Link>
           <Link

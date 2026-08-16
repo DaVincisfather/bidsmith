@@ -693,7 +693,7 @@ describe("evaluateGoNoGo — bantad prompt (kostnad/latens)", () => {
     const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
     await evaluateGoNoGo(analysis, team, scored);
     const content = lastSentContent();
-    const rfpAnalysSection = content.split("## RFP-analys\n")[1].split("\n\n## Kvalifikationskrav")[0];
+    const rfpAnalysSection = content.split("## FFU-analys\n")[1].split("\n\n## Kvalifikationskrav")[0];
     expect(rfpAnalysSection).not.toContain('"requirements"');
     // Kravet ska fortfarande nå modellen, men bara via den numrerade listan.
     expect(content).toContain("Projektledning");
@@ -715,7 +715,7 @@ describe("evaluateGoNoGo — bantad prompt (kostnad/latens)", () => {
     const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
     await evaluateGoNoGo(analysis, team, scored);
     const content = lastSentContent();
-    const rfpAnalysSection = content.split("## RFP-analys\n")[1].split("\n\n## Kvalifikationskrav")[0];
+    const rfpAnalysSection = content.split("## FFU-analys\n")[1].split("\n\n## Kvalifikationskrav")[0];
     expect(rfpAnalysSection.includes("\n")).toBe(false);
   });
 
