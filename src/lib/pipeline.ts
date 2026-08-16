@@ -37,6 +37,74 @@ export function sortPipelineItems(items: PipelineItem[]): PipelineItem[] {
   );
 }
 
+export interface RailBidEntry {
+  bid: BidSummary;
+  /** Antal inlämnade rader (alla utfall) som delar analys — "N versioner".
+   *  1 när anbudet är ensamt om sin analys eller saknar analyskoppling. */
+  versionsCount: number;
+}
+
+export interface DashboardSplit {
+  awaiting: RailBidEntry[];
+  archive: RailBidEntry[];
+}
+
+/**
+ * Railens vy av inlämnade anbud (pipeline-UX-passet 2026-08-16, Stefans
+ * direktiv): väntar-beslut visar EN rad per analys (senaste inlämningen;
+ * legacy-dubbletter från före en-analys-ett-anbud-regeln #103 kollapsas i
+ * VISNINGEN — raderna finns kvar och bär utfallshistoriken), avgjorda flyttar
+ * till arkivet. Rader utan analyskoppling kan inte dedupas och visas var för sig.
+ */
+export function splitDashboard(items: BidSummary[]): DashboardSplit {
+  const versionsByAnalysis = new Map<string, number>();
+  for (const b of items) {
+    if (b.analysisId === null) continue;
+    versionsByAnalysis.set(b.analysisId, (versionsByAnalysis.get(b.analysisId) ?? 0) + 1);
+  }
+
+  // Senaste INLÄMNINGEN per analys (oavsett utfall) avgör om analysen väntar
+  // beslut. Routine-fynd #125: att välja senaste ODÖMDA raden lät legacy-högen
+  // återuppstå en version i taget när utfall loggades (och badgen kunde sitta
+  // på fel rad) — äldre odömda syskon är superseded och visas aldrig.
+  // Kaskad-markering i DB + statistiksidans eviga pending är bokförd follow-up.
+  const latestByAnalysis = new Map<string, BidSummary>();
+  const orphanAwaiting: BidSummary[] = [];
+  for (const b of items) {
+    if (b.analysisId === null) {
+      if (b.outcome === null) orphanAwaiting.push(b);
+      continue;
+    }
+    const current = latestByAnalysis.get(b.analysisId);
+    if (!current || b.exportedAt.localeCompare(current.exportedAt) > 0) {
+      latestByAnalysis.set(b.analysisId, b);
+    }
+  }
+  const latestAwaiting = [...latestByAnalysis.values()].filter((b) => b.outcome === null);
+
+  const withVersions = (bid: BidSummary): RailBidEntry => ({
+    bid,
+    versionsCount: bid.analysisId ? versionsByAnalysis.get(bid.analysisId) ?? 1 : 1,
+  });
+
+  const awaiting: RailBidEntry[] = [...latestAwaiting, ...orphanAwaiting]
+    .sort((a, b) => a.exportedAt.localeCompare(b.exportedAt)) // äldst väntar först
+    .map(withVersions);
+
+  const archive: RailBidEntry[] = items
+    .filter((b) => b.outcome !== null)
+    .sort((a, b) => {
+      // Senast loggade först; rader utan loggtid sist.
+      if (a.outcomeLoggedAt === null && b.outcomeLoggedAt === null) return 0;
+      if (a.outcomeLoggedAt === null) return 1;
+      if (b.outcomeLoggedAt === null) return -1;
+      return b.outcomeLoggedAt.localeCompare(a.outcomeLoggedAt);
+    })
+    .map(withVersions);
+
+  return { awaiting, archive };
+}
+
 export function sortBidSummaries(items: BidSummary[]): BidSummary[] {
   return [...items].sort((a, b) => {
     const aAwaiting = a.outcome === null;

@@ -21,13 +21,13 @@ describe("OutcomeSheet", () => {
     const onCommitted = vi.fn();
     render(<OutcomeSheet awaiting={[bid]} onClose={() => {}} onCommitted={onCommitted} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Förlorad" }));
+    fireEvent.click(screen.getByRole("button", { name: /Förlorad/ }));
 
     // The reason form must be reachable: parent refetch (which drops the bid
     // out of `awaiting` and unmounts this row) may only happen after the
     // enrichment step is saved or skipped.
-    await waitFor(() => expect(screen.getByText(/Valfria detaljer/)).toBeTruthy());
-    expect(screen.getByText(/Varför förlorade vi/)).toBeTruthy();
+    await waitFor(() => expect(screen.getByText(/Kommentar \(valfritt\)/i)).toBeTruthy());
+    expect(screen.getByText(/Främsta skäl/i)).toBeTruthy();
     expect(onCommitted).not.toHaveBeenCalled();
   });
 
@@ -35,8 +35,8 @@ describe("OutcomeSheet", () => {
     const onCommitted = vi.fn();
     render(<OutcomeSheet awaiting={[bid]} onClose={() => {}} onCommitted={onCommitted} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Vunnen" }));
-    await waitFor(() => expect(screen.getByText(/Valfria detaljer/)).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: /Vunnen/ }));
+    await waitFor(() => expect(screen.getByText(/Kommentar \(valfritt\)/i)).toBeTruthy());
 
     fireEvent.click(screen.getByRole("button", { name: /Hoppa över/ }));
     await waitFor(() => expect(onCommitted).toHaveBeenCalledTimes(1));
@@ -46,10 +46,10 @@ describe("OutcomeSheet", () => {
     const onCommitted = vi.fn();
     render(<OutcomeSheet awaiting={[bid]} onClose={() => {}} onCommitted={onCommitted} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Förlorad" }));
-    await waitFor(() => expect(screen.getByText(/Valfria detaljer/)).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: /Förlorad/ }));
+    await waitFor(() => expect(screen.getByText(/Kommentar \(valfritt\)/i)).toBeTruthy());
 
-    fireEvent.click(screen.getByRole("button", { name: /Spara/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Spara detaljer/ }));
     await waitFor(() => expect(onCommitted).toHaveBeenCalledTimes(1));
   });
 });

@@ -4,7 +4,26 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-14 kväll — **GENERERINGS-LIVENESS (DENNA PR): Stefans
+_Senast uppdaterad: 2026-08-16 — **PIPELINE-DASHBOARDPASSET (DENNA PR): Stefans tre
+direktiv byggda mot godkänd mockup.** (1) AVGJORDA anbud lämnar railens kort och blir
+arkivsektion (✓/✗-rader, 3 senaste + räknare + länk till statistiksidan som äger
+utfallsdatat); (2) DUBBLETTKOLLAPS via ny `splitDashboard` i lib/pipeline (en rad per
+analys i väntar-beslut, senaste inlämningen + "senaste av N"-badge; ARKIVET behåller
+alla avgjorda rader — de är utfallshistorik, raderas/skrivs ALDRIG över; nya dubbletter
+kan inte uppstå sedan #103; `BidSummary.analysisId` tillagd, dashboard-routens tak
+8→100 som skydd i st.f. paginering); (3) OMSTYLAT i omdesignens DNA — och efter
+beautifului.dev-referensen (bokad av smoke-sessionen 16/8) valde Stefan CHIPS-VARIANTEN:
+railen är EN yta med filterchips (Alla/Aktiva/Väntar beslut/Avgjorda, live-filter,
+avgjorda capas i Alla-läget med "Visa alla N →"), statuschip per kort (AKTIV/VÄNTAR
+BESLUT/✓ VUNNEN/✗ FÖRLORAD med mot-vem/skäl/loggdatum), burgundy-CTA "Logga utfall"
+med räknare, ärlig win-rate-fot, utfallsdialogen med Fraunces-rubrik + chip + formfält.
+TREDJE falska kalibrerings-copyn städad i samma pass (berikningsformulärets "tränar
+modellen" — samma klass som #124:s två). Visuellt verifierad live mot dev (chips-railen
++ öppnad dialog, autentiserade Playwright-shots).
+PARALLELLNOT: Stefans smoke kör i worktreen `bidsmith-smoke` (port 3001);
+FFU-terminologibytet (beslut i smoke-sessionen) tas EFTER detta pass._
+
+_Historik (2026-08-14 kväll): **GENERERINGS-LIVENESS (#123): Stefans
 första smoke-fynd på omdesignade editorn.** Fyndet: man landar i editorn medan allt
 genereras, kravmatrisen tuggar länge och stillastående väntande-rader läses som att
 det buggat ur (mittens ForgeLoader försvinner så fort första kapitlen landat).
@@ -925,13 +944,18 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   ("historisk win-rate X % över N anbud"), seriösare en efterkalibrering av
   sannolikheterna mot loggade utfall. Kräver volym (14 utfall räcker inte) och
   det pausade eval-spåret — buntas med trevägs-evalen tidigast.
-- **PIPELINE-DASHBOARDENS UI/UX-PASS (Stefans direktiv 2026-08-14, ersätter
-  polish-posten):** (1) avgjorda anbud (vunna/förlorade/avbrutna) flyttar till
-  ett ARKIV i stället för att ligga kvar i railens Inlämnade-lista; (2) DUBBLETTER
-  av samma anbud/RFP i listorna kollapsas — "man kan ju bara söka en" (legacy-rader
-  från före en-analys-ett-anbud-regeln #103 visar 7× samma RFP i dev);
-  (3) inforutorna/korten i dashen + utfallsdialogen (OutcomeSheet) omstylas i
-  omdesignens anda. Körs mot mockup som Stefan godkänner, som editor-passet.
+- [x] ~~**PIPELINE-DASHBOARDENS UI/UX-PASS (Stefans direktiv 2026-08-14)**~~ —
+  LEVERERAT 2026-08-16 (se headern): arkiv + dubblettkollaps + omstyling mot
+  godkänd mockup.
+  DESIGNREFERENS BOKFÖRD 2026-08-16: mönstermappning från beautifului.dev
+  (filter table/insight cards/records table) i
+  `notes/2026-08-16-pipeline-dashboard-designreferens.md` — input till mockup-fasen.
+- **Superseded-kaskad vid utfallsloggning (semantikbeslut, routine-follow-up #125):**
+  railens dedupe döljer nu äldre odömda syskon (superseded — väg A, fixad i #125),
+  men raderna ligger kvar odömda i DB ⇒ statistiksidans pendingCount räknar dem för
+  evigt. Beslut kvar: kaskad-markera syskon vid utfallsloggning (kräver
+  utfallssemantik för "superseded" — cancelled? eget värde?) eller acceptera
+  historiken som den är. Berör bara legacy-data — nya dubbletter kan inte uppstå.
 - **Strängsvep 2 (polish, routine-follow-up #119):** kärnflödet är helsvenskt efter
   copy-svepet, men consultants-/templates-/radar-routernas felsträngar är kvar på
   engelska ("Consultant not found", "Template not found", "No file provided" i

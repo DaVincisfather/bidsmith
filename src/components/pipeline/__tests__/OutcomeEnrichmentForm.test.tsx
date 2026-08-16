@@ -3,22 +3,22 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { OutcomeEnrichmentForm } from "../OutcomeEnrichmentForm";
 
 describe("OutcomeEnrichmentForm", () => {
-  it("shows all three fields when outcome is 'lost'", () => {
+  it("visar alla tre fälten when outcome is 'lost'", () => {
     render(
       <OutcomeEnrichmentForm outcome="lost" onSave={vi.fn()} onSkip={vi.fn()} />
     );
-    expect(screen.getByLabelText(/Vem vann/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Varför/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Fri kommentar/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Mot vem/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Främsta skäl/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Kommentar/i)).toBeInTheDocument();
   });
 
-  it("only shows 'Fri kommentar' for 'won' outcome", () => {
+  it("visar bara kommentarfältet för 'won'", () => {
     render(
       <OutcomeEnrichmentForm outcome="won" onSave={vi.fn()} onSkip={vi.fn()} />
     );
-    expect(screen.queryByLabelText(/Vem vann/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/Varför/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/Fri kommentar/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Mot vem/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Främsta skäl/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Kommentar/i)).toBeInTheDocument();
   });
 
   it("calls onSave with form values on Spara click", () => {
@@ -26,10 +26,10 @@ describe("OutcomeEnrichmentForm", () => {
     render(
       <OutcomeEnrichmentForm outcome="lost" onSave={onSave} onSkip={vi.fn()} />
     );
-    fireEvent.change(screen.getByLabelText(/Vem vann/i), {
+    fireEvent.change(screen.getByLabelText(/Mot vem/i), {
       target: { value: "Acme" },
     });
-    fireEvent.change(screen.getByLabelText(/Varför/i), {
+    fireEvent.change(screen.getByLabelText(/Främsta skäl/i), {
       target: { value: "pris" },
     });
     fireEvent.click(screen.getByRole("button", { name: /Spara/i }));

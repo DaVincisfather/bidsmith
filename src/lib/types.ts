@@ -316,6 +316,9 @@ export interface PipelineItem {
 
 export interface BidSummary {
   id: string;
+  /** Ägande analys — nyckeln för dubblettkollapsen i railen (pipeline-UX-passet
+   *  2026-08-16). null för legacy-rader utan koppling. */
+  analysisId: string | null;
   title: string;
   exportedAt: string;
   teamNames: string[];
