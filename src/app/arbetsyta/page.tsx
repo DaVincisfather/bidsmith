@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase";
 import { getWorkspaceStats, formatUsd } from "@/lib/stats";
+import { requirePageSession } from "@/lib/page-auth";
 
 // Reads live workspace data; never prerender at build time.
 export const dynamic = "force-dynamic";
 
 export default async function ArbetsytaPage() {
+  // Service client below bypasses RLS — session must be verified here (#103 for pages).
+  await requirePageSession("/arbetsyta");
   const supabase = createServiceClient();
   const [{ count }, { count: analysisCount }, { count: profileCount }, stats] =
     await Promise.all([

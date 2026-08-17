@@ -67,6 +67,14 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: () => Promise.resolve(client),
 }));
 
+// Rutten kör requireUser före allt DB-arbete (#103-regeln, audit 2026-08-17) —
+// dessa test täcker verifierings-/persistensvägen, så sessionen mockas giltig.
+// 401-vägen testas i src/app/api/consultants/[id]/__tests__/route.test.ts.
+vi.mock("@/lib/org", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/org")>();
+  return { ...actual, getUserId: async () => "user-1" };
+});
+
 import { PUT } from "@/app/api/consultants/[id]/route";
 
 // CV-text som citaten re-verifieras mot. Citatet "erfarenhet av upphandling"

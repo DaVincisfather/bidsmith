@@ -15,9 +15,24 @@ const PUBLIC_PATHS = [
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
+  const pathname = request.nextUrl.pathname;
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return response;
+  if (!url || !anonKey) {
+    // Fail CLOSED (audit 2026-08-17): utan env-nycklarna kan ingen session
+    // verifieras. Den gamla öppna vägen gjorde HELA appen anonymt läsbar när en
+    // self-hostare bara satt service-nyckeln — arbetsyta-sidorna läser med
+    // service-klienten (RLS-bypass) och middlewaren var enda vakten. Publika
+    // paths släpps igenom så /login och /setup kan rendera sina felmeddelanden.
+    if (isPublic) return response;
+    const msg =
+      "Servern är felkonfigurerad: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY saknas. Se SETUP.md.";
+    return pathname.startsWith("/api/")
+      ? NextResponse.json({ error: msg }, { status: 503 })
+      : new NextResponse(msg, { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  }
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -40,9 +55,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
-  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
-
   if (!user && !isPublic) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
@@ -62,7 +74,14 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip static assets and Next.js internals
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Skip static assets and Next.js internals — men BARA verkliga assets:
+    // rotfiler (t.ex. /file.svg) och /templates/*. Det gamla mönstret
+    // `.*\.(?:png|...)$` undantog VARJE path med bildändelse, så dynamiska
+    // routes som /consultants/x.png nådde handlern helt utan auth
+    // (audit 2026-08-17) — ofarligt idag enbart för att alla id:n är strikta
+    // UUID:er, men auth-gränsen ska bäras av design, inte koincidens.
+    // OBS: templates-undantaget täcker EN katalognivå — nya publika assets
+    // måste ligga i rot eller direkt under templates/, eller läggas till här.
+    "/((?!_next/static|_next/image|favicon.ico|[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp)$|templates/[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

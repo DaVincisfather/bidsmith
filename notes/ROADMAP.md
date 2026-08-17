@@ -4,7 +4,25 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-16 kväll — **FFU-TERMINOLOGIBYTET (DENNA PR): "RFP" →
+_Senast uppdaterad: 2026-08-17 — **ULTRACODE-SLUTAUDIT + FIX-PR A: AUTH-GRÄNSEN
+(DENNA PR).** Stefans beställda sista workflow-analys (14 agenter, 4 lenser
+säkerhet/död-kod/förenkling/correctness, 33 råfynd → topp 10 adversariellt prövade →
+9 bekräftade / 1 motbevisat). FYRA correctness-före-lansering-fynd; denna PR fixar de
+tre auth-relaterade: (1) **middleware fail CLOSED** — gamla `return response` när
+env-nycklar saknas gjorde HELA appen anonymt läsbar för self-hostare som bara satt
+service-nyckeln (sidorna läser med service-klient = RLS-bypass; API-routes failade
+redan stängt); nu 503 med SETUP-pekare, publika paths släpps igenom. (2) **matcherns
+bildfilsundantag snävat** — `.*\.png$` undantog varje path med bildändelse så
+/consultants/x.png nådde handlern utan middleware (ofarligt idag enbart för att
+UUID-parsen aldrig matchar; nu bara rotfiler + templates/*). (3) **sessionsvakt i
+arbetsyta-sidorna** (ny `lib/page-auth.ts` requirePageSession — #103-regelns
+sidmotsvarighet; statistik-sidan läste user-mejl via auth.admin.listUsers) +
+**requireUser i consultants/[id] PUT/DELETE** (PII-mutation/radering, 401-test enligt
+#118-mönstret, DB-åtkomst-asserten h.dbCalls=0). ÅTERSTÅR UR AUDITEN: PR B
+(generatorns slutflip, fjärde correctness-fyndet) + PR C (requireUser-svepet, polish)
+— se auditsektionen i backloggen._
+
+_Historik (2026-08-16 kväll): **FFU-TERMINOLOGIBYTET: "RFP" →
 förfrågningsunderlag/FFU** (Stefans beslut i smoke-sessionen, körd efter #125 enligt
 ordern). STEG 1 UI-copy: nav "Analysera FFU", FFU-radar, arbetsyta/analyser-sidorna,
 railens tomläge, metadatan på svenska. STEG 2 promptar (GRINDADE per beslutet):
@@ -739,6 +757,37 @@ _Inga — #54–#68 mergade 2026-07-03/04._
 _Triage 2026-08-04: PPTX-bundna poster flyttade till "Parkerat med PPTX-motorn" nedan,
 verifierat inaktuella till "Struket". Kvar här = MD-vägen + kärnan (generering,
 extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
+
+- **ULTRACODE-SLUTAUDIT 2026-08-17** (14 agenter: 4 lenser → 33 råfynd → topp 10
+  adversariellt prövade → 9 bekräftade/1 motbevisat; full data i sessionens
+  workflow-journal). CORRECTNESS-FÖRE-LANSERING (4): auth-trion fixad i PR A (se
+  headern); **PR B KVAR: run-bid-generation.ts slutflip generating→draft läser aldrig
+  `{ error }`** (supabase-js kastar inte — tyst fail ⇒ watchdogen dömer "tog för
+  lång tid" ⇒ användaren betalar om genereringen; verifierat ner i postgrest-js
+  `shouldThrowOnError=false`). POLISH-EFTER (5, bekräftade): **PR C-svepet** —
+  requireUser på bids/[id] PATCH + outcome-PATCH + go-no-go/[id] PATCH +
+  radar/opportunities/[id] PATCH (alla stoppas idag av middleware-307 + RLS +
+  stängt-failande anon-klient; svepet ger JSON-401 + uniformitet) samt de fem
+  getUserId-routerna (analyze, matches/[id], bids POST, consultants/upload,
+  radar-analyze — 500 i st.f. 401 idag) + stryk "Middleware guarantees
+  authentication"-kommentarerna (matches/[id]:20, radar-analyze:17); **död kod**:
+  evidence-context kontextfönster-resterna (~62 rader: locateEvidenceContext/
+  locateEvidenceSpan/EvidenceContext/DEFAULT_WINDOW/snapBefore/snapAfter/clean +
+  testblock — locateAllSpans-kedjan LEVER), slot-meta grupperingen
+  (groupSectionsBySlide/SlideGroup/GroupedSections + testblock; buildSlotMeta/
+  SlotMeta LEVER via overflow-eval; header-kommentaren stale). MOTBEVISAT:
+  structure_eval-kolumnen är dokumenterat MD-first-beslut (spec 2026-08-03), inte
+  död kod — endast stale kommentarer kvar (bid-structure.ts:144, setup.sql:132).
+  OVERIFIERADE KANDIDATER (22 st under topp-10-snittet; kör verify-runda före
+  åtgärd) — fyra medel-correctness värda först: generations-CAS i runnern
+  (interfolierade genereringar), outcome-PATCH nullar berikningsfält utan
+  statusvakt, sections-PATCH ersätter array utan versionsvakt (cross-tab),
+  radar-analyzens länk-uppdatering okontrollerad (dubbelbetald analys); resten
+  låg (CRON_SECRET-timing, chunked upload-buffring, råa felmeddelanden i 500,
+  team_evaluation-kolumnen, style_guide-kommentaren, fetched_at/scored_at,
+  3 filstorleks-utbrytningar, requireAdmin-duplicering, sorteringsduplicering
+  pipeline.ts, expected-chapters eval-import, OutcomeSheet unmount-fältet,
+  Number("")-vakten i team-tabellen, analyslistans UTC-"idag").
 - **SMOKE-FYND 2026-08-12 (Stefans klick-smoke, polish/produkt):** ~~(1) go/no-go-copyn
   blandar engelska ("should-krav 2") — etikettpass på hydrering/prompt önskas;~~
   ÅTGÄRDAD (2026-08-14, copy-svepet): svenska etiketter i kravlistan + felsträngs-svep,
@@ -749,19 +798,15 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   LEVERERAD (denna PR): "Generera anbud" navigerar direkt till editorn på 202;
   GeneratingChapterList/ForgeLoader bär väntan. ~~(3)
   export-frysningen ifrågasatt ("kanske lite onödigt nu när jag tänker på det") — hänger
-<<<<<<< HEAD
   ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;~~
-  AVGJORD + LEVERERAD (denna PR, 2026-08-14): export = ren nedladdning, explicit
+  AVGJORD + LEVERERAD (2026-08-14): export = ren nedladdning, explicit
   "Markera som inlämnad" äger flippen — se headern.
-  (4) pedagogiken "varför föreslås byten när jag valde bäst matchade?" — individmatchning
-  vs teamkomposition behöver förklaras i UI-copy; (5) editor-UI:t ska designas om
-=======
-  ihop med utfallsspårningen (exporten ÄR inlämningssignalen), kräver äkta produktbeslut;
   ~~(4) pedagogiken "varför föreslås byten när jag valde bäst matchade?" — individmatchning
-  vs teamkomposition behöver förklaras i UI-copy;~~ LEVERERAD (denna PR, 2026-08-14):
+  vs teamkomposition behöver förklaras i UI-copy;~~ LEVERERAD (2026-08-14):
   info-tooltip vid förslagsrubriken + impact-SPANN i stället för punktestimat, se headern.
+  (Kvarglömt konfliktmärke från 50ce9f1 upplöst här 2026-08-17 — båda grenarnas
+  leveranser var äkta och är sammanförda.)
   (5) editor-UI:t ska designas om
->>>>>>> 50ce9f1 (feat: go/no-go impact as a conservative range + team-pedagogy tooltip)
   (Stefan styr, eget synkront pass); UX-POLISH LEVERERAD (denna PR, 2026-08-13, ur
   Stefans smoke på #110): scroll-till-smiden vid apply (korten ligger under folden —
   klick gav ingen synlig feedback), kontextuell poolGap-etikett ("Kvarstående gap
