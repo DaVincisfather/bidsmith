@@ -4,7 +4,22 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-17 — **AUDIT FIX-PR B: GENERATORNS SLUTFLIP (DENNA PR).**
+_Senast uppdaterad: 2026-08-17 — **AUDIT FIX-PR C: REQUIREUSER-SVEPET (DENNA PR).**
+Slutauditens polish-svep — alla 38 API-routes bär nu samma auth-kontrakt:
+requireUser-triot på de fyra PATCH-routerna (bids/[id] inkl. GET:ens watchdog-
+UPDATE, outcome, go-no-go/[id], radar/opportunities/[id]) och de fem gamla
+getUserId-routerna (analyze, matches/[id], bids POST, consultants/upload,
+radar-analyze — gav 500 i st.f. JSON-401; radar-analyze fick även try/
+internalError). Auth flyttad FÖRE body-buffring i analyze/upload (tar samtidigt
+udden av det låga chunked-buffrings-fyndet). "Middleware guarantees
+authentication"-kommentarerna strukna (pre-#103-arv). requirePageSession i
+bids/[id]-sidan (loadProfileForBid vaktades av ordningen — routine-follow-up
+#129). NY SVEPTESTFIL require-user-sweep.test.ts: 10 fall, JSON-401 + assert
+att varken body eller service-klient nås före auth. AUDITEN DÄRMED STÄNGD för
+lansering: alla 4 correctness-fynd + hela polish-svepet åtgärdade; kvar i
+backloggen = död kod ×2, stub-delning (routine #130), 22 overifierade._
+
+_Historik (2026-08-17): **AUDIT FIX-PR B: GENERATORNS SLUTFLIP (#130).**
 Fjärde correctness-fyndet ur slutauditen: slutflippen generating→draft i
 run-bid-generation.ts läste aldrig `{ error }` (supabase-js kastar inte —
 belagt ner i postgrest-js `shouldThrowOnError=false`), så en failad skrivning

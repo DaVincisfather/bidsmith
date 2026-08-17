@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { createServiceClient, fetchConsultantsByIds, EMPTY_GO_NO_GO } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { getUserId } from "@/lib/org";
 import { runBidGeneration } from "@/lib/bid-generator/run-bid-generation";
 import { loadActiveTemplate } from "@/lib/pptx-template/active-template";
 import { loadTemplateProfile } from "@/lib/pptx-template/profile-store";
@@ -11,7 +10,7 @@ import { foreignTemplatesEnabled } from "@/lib/pptx-template/onboarding/foreign-
 import { loadActiveProfile } from "@/lib/org-profile";
 import { RfpAnalysis, ScoredConsultant, GoNoGoResult } from "@/lib/types";
 import type { BidContext } from "@/lib/bid-generator";
-import { parseBody, internalError } from "@/lib/api-helpers";
+import { parseBody, internalError, requireUser } from "@/lib/api-helpers";
 import { BidCreateSchema } from "@/lib/api-schemas";
 import { isActivelyGenerating } from "@/lib/bid-status";
 
@@ -26,12 +25,17 @@ export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
+  // Route-nivå-auth före body-parse (#103-svepet, audit 2026-08-17): rå
+  // getUserId gav 500 i stället för JSON-401.
+  const authed = await createClient();
+  const auth = await requireUser(authed);
+  if (!auth.ok) return auth.response;
+  const userId = auth.data;
+
   const parsed = await parseBody(request, BidCreateSchema);
   if (!parsed.ok) return parsed.response;
   const { analysisId, assessmentId, teamConsultantIds } = parsed.data;
 
-  const authed = await createClient();
-  const userId = await getUserId(authed);
   const supabase = createServiceClient();
 
   // Fetch all context in parallel — including the analysis' existing bid:

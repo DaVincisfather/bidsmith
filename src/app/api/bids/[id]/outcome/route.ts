@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { parseBody, parseUuidParam } from "@/lib/api-helpers";
+import { parseBody, parseUuidParam, requireUser } from "@/lib/api-helpers";
 import { OutcomePatchSchema } from "@/lib/api-schemas";
 
 interface RouteContext {
@@ -12,11 +12,13 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const idResult = parseUuidParam(rawId, "bid id");
   if (!idResult.ok) return idResult.response;
   const id = idResult.data;
+  const supabase = await createClient();
+  // Route-nivå-auth (#103-svepet, audit 2026-08-17).
+  const auth = await requireUser(supabase);
+  if (!auth.ok) return auth.response;
   const parsed = await parseBody(request, OutcomePatchSchema);
   if (!parsed.ok) return parsed.response;
   const body = parsed.data;
-
-  const supabase = await createClient();
 
   const { data: updated, error } = await supabase
     .from("bids")
