@@ -194,6 +194,9 @@ export async function runBidGeneration(
     console.error(
       `final draft write failed for bid ${bidId}: ${finalError.message} — retrying once`,
     );
+    // Kort backoff (routine-fynd #130): ett omedelbart omförsök träffar ofta
+    // samma transienta fel; retryn är idempotent via status-guarden.
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     ({ error: finalError } = await finalWrite());
   }
   if (finalError) {
