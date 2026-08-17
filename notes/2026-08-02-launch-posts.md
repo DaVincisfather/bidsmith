@@ -103,7 +103,13 @@ Repo: https://github.com/DaVincisfather/bidsmith
 
 ## Publiceringschecklista
 
-- [x] Videon klar (v7, MD-first, klippt programmatiskt — `bidsmith-launch/tmp/videocut/`)
+- [x] Videon klar (**v8.1**, 82,5 s, omfilmad 2026-08-16/17 mot nya UI:t: go/no-go-sidan,
+      editor-omdesignen, rail-flikarna med seedade utfall; nedsaktad efter pacing-feedback.
+      Klippt programmatiskt — rigg + finaler i `bidsmith-video/tmp/videocut/`, arkiverad i
+      `bidsmith-brand/launch-arkiv/v8-2026-08-17/`. 15s-GIF 3,2 MB, X-klar. OBS: go/no-go-
+      frysens overlay säger "Uppskattad vinstchans — och motiveringen i klartext" — inte
+      spann-copyn "+4–7 % med ett byte", eftersom v8-tagningens bedömning inte föreslog
+      något teambyte och copyn måste vara sann mot bilden.)
 - [ ] Justera [JUSTERA]-ställena i LinkedIn-utkastet till egen röst
 - [ ] LinkedIn-post med video
 - [ ] X-post med GIF + tråd

@@ -475,19 +475,25 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
 - [ ] **PUBLICERING — FRAMFLYTTAD 2026-08-11, INGET NYTT DATUM.** Ursprungsplanen
       (tisdag 2026-08-11, LinkedIn ~07:45 svensk B2B-morgon, X ~14:30 US-östkustens
       morgon) står kvar som mall för tidpunkterna när datumet sätts om.
-      VIDEON ÄR KLAR (v5, 51 s, klippt programmatiskt via ffmpeg — CapCut behövs ej):
-      `bidsmith-launch/tmp/videocut/bidsmith-launch-draft.mp4` (med musik: Pixabay
+      **VIDEON ÄR KLAR OCH GODKÄND (v8.1, 82,5 s — omfilmad 2026-08-16/17 mot nya UI:t,
+      nedsaktad efter Stefans pacing-feedback):**
+      `bidsmith-video/tmp/videocut/bidsmith-launch-draft.mp4` (musik: Pixabay
       "Corporate Ambient Piano"/Rockot, fri kommersiell licens) + `bidsmith-15s.gif`
-      (X, 2,3 MB) + full-GIF. Innehåll: hook → upload → smideloader → krav →
-      källvisar-frys (hallucinationsbeviset) → matchning + frys → go/no-go + frys →
-      smide → editor → PPTX-pan → radar (RIKTIG TED-data: 87 hämtade, 20 Haiku-scorade,
-      kompetens-seed + CRON_SECRET nu i demo-miljön) → endcard. Ombygge: `build.ps1` +
-      `render-cards.mjs` i tmp/videocut/. KVAR FÖR STEFAN: godkänn slutversionen,
-      justera [JUSTERA] i `notes/2026-08-02-launch-posts.md`, posta (repo-länk i första
-      kommentaren på LinkedIn). OBS efter framflyttningen: keep-alive-rutinen kördes
-      sön 9/8 09:00 (claude.ai/code/routines) inför det gamla datumet — demo-Supabasen
-      pausar igen efter ~7 d inaktivitet, så den behöver pingas om inför nytt datum
-      (eller inför varje demo/inspelning).
+      (X, 3,2 MB) + full-GIF; allt arkiverat i `bidsmith-brand/launch-arkiv/v8-2026-08-17/`
+      (rigg + råscener + stills). Innehåll: hook → upload → smideloader → krav →
+      källvisar-frys (10/10 mekaniskt belagda) → matchning + frys → go/no-go-SIDAN + frys
+      (68 %-bedömningen; overlay-copyn säger "Uppskattad vinstchans — och motiveringen i
+      klartext", INTE spann-copyn — v8-bedömningen föreslog inget teambyte, copyn måste
+      vara sann mot bilden) → smide (kapitelspinnrar + ForgeLoader) → nya editorn →
+      MD-scroll → NY BEAT: rail-flikarna Pågående→Arkiv (3 seedade utfall, win-rate-fot)
+      → radar (riktig TED-data) → endcard. Tagningslärdomar i rigg-kommentarerna
+      (record-video.mjs): --from-parsningen utan flagga gav NaN och hoppade väntblocket;
+      demo-FFU:ns anbudsdag måste ligga i framtiden (lokalt bumpad i bidsmith-video).
+      KVAR FÖR STEFAN: justera [JUSTERA] i `notes/2026-08-02-launch-posts.md`, sätt
+      datum, posta (repo-länk i första kommentaren på LinkedIn). OBS: demo-Supabasen
+      pingades 2026-08-16 via inspelningen — pausar igen efter ~7 d inaktivitet; sätts
+      datumet längre fram, arma om keep-alive-rutinen (claude.ai/code/routines) till
+      söndagen före.
 - [x] **STEFANS SMOKE (KLAR 2026-07-07):** onboarding grön (137 bekräftade/84 pending
       av 221), generering 137/137 mekaniskt grön — men **slutprodukten katastrofal**:
       45 789 tecken prosa över 11 slides, 0 budgetChars satta, nio dubblett-"Om oss" på
