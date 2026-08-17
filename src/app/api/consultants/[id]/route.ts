@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase";
 import { CV_BUCKET } from "@/lib/storage-urls";
-import { parseBody, parseUuidParam } from "@/lib/api-helpers";
+import { parseBody, parseUuidParam, requireUser } from "@/lib/api-helpers";
 import { ConsultantUpdateSchema } from "@/lib/api-schemas";
 import { CONSULTANT_API_SELECT } from "@/lib/constants";
 import { verifyEvidence } from "@/lib/verify-evidence";
@@ -67,10 +67,13 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   const idResult = parseUuidParam(rawId, "consultant id");
   if (!idResult.ok) return idResult.response;
   const id = idResult.data;
+  // Muterar PII — route-nivå-auth enligt #103-regeln, aldrig middlewaren ensam.
+  const supabase = await createClient();
+  const auth = await requireUser(supabase);
+  if (!auth.ok) return auth.response;
   const parsed = await parseBody(request, ConsultantUpdateSchema);
   if (!parsed.ok) return parsed.response;
   const body = parsed.data;
-  const supabase = await createClient();
 
   const { data: updatedRows, error: updateError } = await supabase
     .from("consultants")
@@ -173,7 +176,11 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   const idResult = parseUuidParam(rawId, "consultant id");
   if (!idResult.ok) return idResult.response;
   const id = idResult.data;
+  // Raderar PII + eskalerar till service-klienten för storage — auth FÖRE allt
+  // DB-arbete (#103-regeln).
   const supabase = await createClient();
+  const auth = await requireUser(supabase);
+  if (!auth.ok) return auth.response;
 
   const { data: deletedRows, error } = await supabase
     .from("consultants")

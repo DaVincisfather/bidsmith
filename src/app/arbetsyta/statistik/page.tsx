@@ -8,6 +8,7 @@ import {
 } from "@/lib/stats";
 import { StatsTable } from "./StatsTable";
 import { CostBuckets } from "./CostBuckets";
+import { requirePageSession } from "@/lib/page-auth";
 
 // Reads live workspace data (also implicitly dynamic via searchParams); be explicit.
 export const dynamic = "force-dynamic";
@@ -25,6 +26,9 @@ export default async function StatistikPage({
 }) {
   const { period: rawPeriod } = await searchParams;
   const period = parsePeriod(rawPeriod);
+  // getWorkspaceStats reads with the service client (incl. auth.admin.listUsers,
+  // i.e. user emails) — session must be verified here (#103 for pages).
+  await requirePageSession();
   const stats = await getWorkspaceStats(period);
 
   return (
