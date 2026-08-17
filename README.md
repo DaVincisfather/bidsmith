@@ -204,7 +204,7 @@ src/lib/document-parser.ts  Document parsing (markitdown-js)
 src/lib/bid-generator/      Proposal generation: parallel AI calls + bundles
 src/lib/bid-markdown.ts     Markdown serialization of bid sections (the export path)
 src/lib/pptx-template/      PowerPoint template engine (experimental, flag-gated)
-src/lib/eval/               Mechanical bid-structure scoring (offline evals)
+src/lib/eval/               Bid-structure scoring (offline) + shared section catalog
 evals/                      Offline evaluation harness
 supabase/migrations/        Database schema
 docs/architecture.html      Architecture overview
