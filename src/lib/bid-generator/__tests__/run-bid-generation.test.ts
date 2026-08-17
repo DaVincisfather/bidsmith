@@ -47,17 +47,28 @@ function mockSection(key: string): BidSection {
 
 // Chainable supabase stub: every method returns the chain, update payloads
 // are recorded in order so tests can assert the persisted status transitions.
-function createSupabaseStub() {
+// The chain is THENABLE so awaited update-chains resolve till { error } —
+// supabase-js kastar aldrig, och slutflippen läser felresultatet sedan
+// audit-fixen 2026-08-17. updateErrors konsumeras i update-anropsordning
+// (null = lyckad skrivning).
+function createSupabaseStub(updateErrors: ({ message: string } | null)[] = []) {
   const updates: Record<string, unknown>[] = [];
+  let pendingError: { message: string } | null = null;
   const chain = {
     from: vi.fn(() => chain),
     select: vi.fn(() => chain),
     update: vi.fn((payload: Record<string, unknown>) => {
       updates.push(payload);
+      pendingError = updateErrors.shift() ?? null;
       return chain;
     }),
     eq: vi.fn(() => chain),
     single: vi.fn(async () => ({ data: { sections: [] } })),
+    then: (onFulfilled: (v: unknown) => unknown) => {
+      const error = pendingError;
+      pendingError = null;
+      return Promise.resolve({ error }).then(onFulfilled);
+    },
   };
   return { client: chain as unknown as SupabaseClient, updates };
 }
@@ -143,5 +154,45 @@ describe("runBidGeneration", () => {
     expect(final.status).toBe("failed");
     expect(final.generation_error).toBe("generation exploded");
     expect(final.failed_bundles).toEqual([]);
+  });
+
+  // Audit 2026-08-17: den okontrollerade slutflippen tappade betald generering
+  // tyst — watchdogen dömde "tog för lång tid" och användaren betalade om.
+  it("retries the final draft write once on a transient DB error", async () => {
+    const { client, updates } = createSupabaseStub([{ message: "transient" }]);
+    vi.mocked(generateAllSections).mockResolvedValue({
+      sections: [mockSection("cover")],
+      overflowFlags: [],
+      failedBundles: [],
+    });
+
+    await runBidGeneration(client, "bid-1", baseCtx, template);
+
+    // Första försöket felar, retryn lyckas — två identiska draft-skrivningar,
+    // ingen failed-flip.
+    expect(updates).toHaveLength(2);
+    expect(updates[0].status).toBe("draft");
+    expect(updates[1].status).toBe("draft");
+  });
+
+  it("marks the bid failed when the final draft write fails twice", async () => {
+    const { client, updates } = createSupabaseStub([
+      { message: "db down" },
+      { message: "db still down" },
+    ]);
+    vi.mocked(generateAllSections).mockResolvedValue({
+      sections: [mockSection("cover")],
+      overflowFlags: [],
+      failedBundles: [],
+    });
+
+    await runBidGeneration(client, "bid-1", baseCtx, template);
+
+    // draft-försök ×2, sedan sanningen: failed med begripligt fel — bidden får
+    // inte stå kvar i 'generating' tills watchdogen ljuger om orsaken.
+    expect(updates).toHaveLength(3);
+    const final = updates[updates.length - 1];
+    expect(final.status).toBe("failed");
+    expect(final.generation_error).toBe("Kunde inte spara utkastet");
   });
 });
