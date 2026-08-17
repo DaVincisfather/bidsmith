@@ -574,8 +574,9 @@ förbättringar), foreign-YTAN döljs bakom env-flagga tills loop v2 stänger m�
       → radar (riktig TED-data) → endcard. Tagningslärdomar i rigg-kommentarerna
       (record-video.mjs): --from-parsningen utan flagga gav NaN och hoppade väntblocket;
       demo-FFU:ns anbudsdag måste ligga i framtiden (lokalt bumpad i bidsmith-video).
-      KVAR FÖR STEFAN: justera [JUSTERA] i `notes/2026-08-02-launch-posts.md`, sätt
-      datum, posta (repo-länk i första kommentaren på LinkedIn). OBS: demo-Supabasen
+      KVAR FÖR STEFAN: ~~justera [JUSTERA]~~ KLAR 2026-08-17 (sluttext i posts-filen),
+      sätt datum — SATT: LinkedIn schemaläggs 2026-08-18 07:30, repo-länk i BRÖDTEXTEN
+      (Stefans val 2026-08-17, ersätter första-kommentaren-planen). OBS: demo-Supabasen
       pingades 2026-08-16 via inspelningen — pausar igen efter ~7 d inaktivitet; sätts
       datumet längre fram, arma om keep-alive-rutinen (claude.ai/code/routines) till
       söndagen före.
