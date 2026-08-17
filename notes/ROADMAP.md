@@ -4,7 +4,28 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-17 — **AUDIT DÖD KOD-STÄDET (DENNA PR).**
+_Senast uppdaterad: 2026-08-17 — **README-LANSERINGSPOLISH + GIF (DENNA PR).**
+Stefans genomläsningsfråga "är README:n klar för publicering?" gav fyra fynd, alla
+åtgärdade här: (1) KOSTNADSSIFFRORNA var pre-#107 (överdrev ~2×) — "≈ $1.5–2" →
+"≈ $1" per anbud med #107-mätningen som hård källa ($0.33/anbud för skrivpasset,
+24 anrop/4 fixturer via ai_call_logs), demo-seed $2.5 → $2, stämpel juli → augusti;
+(2) `eval:analyzer`-NOTEN — ärlig "Known state"-ruta under Running the evaluators
+(röd analyzer på orört checkout är väntat tills goldens omannoterats — bidragsgivare
+ska inte blockeras av den); (3) SKÄRMDUMPARNA omtagna mot NYA UI:t (13/8-bilderna
+visade gamla editorn/pre-FFU-nav): hero = omdesignade editorn (topbar-pills, kapitel-
+dashboard 10/11 + ärlig timpris-avvikelse, flikad rail, FFU-nav), matching =
+Teamförslag (nya 16/8-kedjan, FFU-språk i motiveringarna), matrix = Ska-/bör-krav
+MED evidensraden "9 av 9 ordagrant belagda — mekaniskt verifierade" + källa-chips
+(= README:ns evidenskedje-sektion i bild); tagna mot dev-instansen (demo-Supabasen
+pausad — Stefan skiftar manuellt mellan projekten), rigg: tmp/shoot-readme.mjs +
+ocommittad devIndicators:false under fotot, stale fixtur-deadline 2025-11-21 bumpad
+till 2026-09-25 i dev-analysens jsonb före hero-omtagningen; (4) projektlayout-raden
+`src/lib/eval/` rättad (structure-judgen togs ur runtime i #102). PLUS GIF:EN:
+Stefans beslut 2026-08-17 ÄNDRAR post-launch-bokningen — 15s-GIF:en (3,15 MB) in NU
+som docs/screenshots/bidsmith-demo.gif i "What it does" (fullängdaren 14 MB avstods).
+GIF→README-posten i backloggen därmed STÄNGD._
+
+_Historik (2026-08-17): **AUDIT DÖD KOD-STÄDET (#132).**
 Slutauditens två bekräftade död kod-fynd åtgärdade. (1) evidence-context
 kontextfönster-resterna: locateEvidenceContext/EvidenceContext/DEFAULT_WINDOW/
 snapBefore/snapAfter/clean raderade, plus locateEvidenceSpan (noll
