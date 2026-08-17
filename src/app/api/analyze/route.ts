@@ -6,14 +6,21 @@ import {
   contentTypeForFile,
   MAX_UPLOAD_REQUEST_BYTES,
 } from "@/lib/document-parser";
-import { enforceContentLength } from "@/lib/api-helpers";
+import { enforceContentLength, requireUser } from "@/lib/api-helpers";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 import { createServiceClient } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { getUserId } from "@/lib/org";
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth FÖRE body-buffring (#103-svepet, audit 2026-08-17): oautentiserade
+    // anrop ska varken få bygga minnestryck eller ett 500-kontrakt (rå
+    // getUserId gav 500 i stället för JSON-401).
+    const authed = await createClient();
+    const auth = await requireUser(authed);
+    if (!auth.ok) return auth.response;
+    const userId = auth.data;
+
     // Reject a pathological body before formData() buffers it into memory.
     const tooLarge = enforceContentLength(request, MAX_UPLOAD_REQUEST_BYTES);
     if (tooLarge) return tooLarge;
@@ -25,8 +32,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const authed = await createClient();
-    const userId = await getUserId(authed);
     const supabase = createServiceClient();
 
     const buffer = Buffer.from(await file.arrayBuffer());

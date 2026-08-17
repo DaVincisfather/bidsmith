@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, mapConsultantRow } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/server";
-import { parseUuidParam, internalError } from "@/lib/api-helpers";
+import { parseUuidParam, internalError, requireUser } from "@/lib/api-helpers";
 import { CONSULTANT_SELECT } from "@/lib/constants";
 import { matchConsultants } from "@/lib/consultant-matcher";
 import { RfpAnalysis } from "@/lib/types";
-import { getUserId } from "@/lib/org";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -17,10 +16,13 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const idResult = parseUuidParam(rawId, "analysis id");
   if (!idResult.ok) return idResult.response;
   const analysisId = idResult.data;
-  // Middleware guarantees authentication; no org scoping needed — all users
-  // share one consultant bank in the single-workspace model.
+  // Route-nivå-auth (#103-svepet, audit 2026-08-17) — middlewaren är aldrig
+  // enda vakten. Ingen org-scoping behövs: alla användare delar en konsultbank
+  // i single-workspace-modellen.
   const authed = await createClient();
-  const userId = await getUserId(authed);
+  const auth = await requireUser(authed);
+  if (!auth.ok) return auth.response;
+  const userId = auth.data;
   const supabase = createServiceClient();
 
   // Fetch analysis + consultants in parallel

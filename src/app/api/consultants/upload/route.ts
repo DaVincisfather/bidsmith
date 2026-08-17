@@ -6,12 +6,11 @@ import {
   SUPPORTED_EXTENSIONS,
   MAX_UPLOAD_REQUEST_BYTES,
 } from "@/lib/document-parser";
-import { enforceContentLength } from "@/lib/api-helpers";
+import { enforceContentLength, requireUser } from "@/lib/api-helpers";
 import { extractConsultant } from "@/lib/consultant-extractor";
 import { createServiceClient, upsertConsultant } from "@/lib/supabase";
 import { CV_BUCKET } from "@/lib/storage-urls";
 import { createClient } from "@/lib/supabase/server";
-import { getUserId } from "@/lib/org";
 
 interface UploadResult {
   fileName: string;
@@ -39,6 +38,12 @@ function buildCvKey(consultantId: string, fileName: string): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth FÖRE body-buffring (#103-svepet, audit 2026-08-17).
+    const authed = await createClient();
+    const auth = await requireUser(authed);
+    if (!auth.ok) return auth.response;
+    const userId = auth.data;
+
     // Reject a pathological body before formData() buffers every file into memory.
     const tooLarge = enforceContentLength(request, MAX_UPLOAD_REQUEST_BYTES);
     if (tooLarge) return tooLarge;
@@ -50,8 +55,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    const authed = await createClient();
-    const userId = await getUserId(authed);
     const supabase = createServiceClient();
     const results: UploadResult[] = [];
 

@@ -44,6 +44,14 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
+// Route-nivå-auth sedan #103-svepet (audit 2026-08-17) — dessa test täcker
+// edit-locken/watchdogen, så sessionen mockas giltig. 401-vägen testas i
+// src/app/api/__tests__/require-user-sweep.test.ts.
+vi.mock("@/lib/org", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/org")>();
+  return { ...actual, getUserId: async () => "user-1" };
+});
+
 import { GET, PATCH } from "../route";
 
 const VALID_ID = "11111111-1111-1111-1111-111111111111";

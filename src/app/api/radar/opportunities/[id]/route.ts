@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { parseBody, parseUuidParam } from "@/lib/api-helpers";
+import { parseBody, parseUuidParam, requireUser } from "@/lib/api-helpers";
 import { OpportunityStatusPatchSchema } from "@/lib/api-schemas";
 
 export async function PATCH(
@@ -11,11 +11,13 @@ export async function PATCH(
   const idResult = parseUuidParam(rawId, "opportunity id");
   if (!idResult.ok) return idResult.response;
   const id = idResult.data;
+  const supabase = await createClient();
+  // Route-nivå-auth (#103-svepet, audit 2026-08-17).
+  const auth = await requireUser(supabase);
+  if (!auth.ok) return auth.response;
   const parsed = await parseBody(request, OpportunityStatusPatchSchema);
   if (!parsed.ok) return parsed.response;
   const { status } = parsed.data;
-
-  const supabase = await createClient();
   const { data, error } = await supabase
     .from("rfp_opportunities")
     .update({ status })

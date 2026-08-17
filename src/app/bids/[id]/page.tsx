@@ -5,6 +5,7 @@ import type { FailedUnit } from "@/lib/bundle-labels";
 import { notFound } from "next/navigation";
 import { loadFlowState } from "@/lib/flow-state";
 import { loadProfileForBid } from "@/lib/org-profile";
+import { requirePageSession } from "@/lib/page-auth";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -12,6 +13,10 @@ interface PageProps {
 
 export default async function BidEditorPage({ params }: PageProps) {
   const { id } = await params;
+  // loadProfileForBid läser med service-klienten; idag vaktas den av ORDNINGEN
+  // (den RLS-bundna bid-läsningen 404:ar först). Sessionsvakten gör skyddet
+  // buret av design i stället för koincidens (routine-follow-up #129).
+  await requirePageSession(`/bids/${id}`);
   const supabase = await createClient();
 
   const { data: bid, error } = await supabase

@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { parseUuidParam } from "@/lib/api-helpers";
+import { parseUuidParam, internalError, requireUser } from "@/lib/api-helpers";
 import { fetchTedXml } from "@/lib/safe-fetch";
-import { getUserId } from "@/lib/org";
 import { analyzeRfp } from "@/lib/rfp-analyzer";
 
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try {
   const { id: rawId } = await params;
   const idResult = parseUuidParam(rawId, "opportunity id");
   if (!idResult.ok) return idResult.response;
   const id = idResult.data;
   const supabase = await createClient();
-  // Route is auth-gated by middleware; attribute the analysis cost to the
-  // triggering user so it isn't bucketed as "Okänd" in workspace stats.
-  const userId = await getUserId(supabase);
+  // Route-nivå-auth (#103-svepet, audit 2026-08-17) — rå getUserId utan
+  // try/catch gav en ohanterad 500 här. userId attribuerar analyskostnaden
+  // så den inte bucketas som "Okänd" i workspace-statistiken.
+  const auth = await requireUser(supabase);
+  if (!auth.ok) return auth.response;
+  const userId = auth.data;
 
   // 1. Get the opportunity
   const { data: opp, error: oppError } = await supabase
@@ -94,4 +97,7 @@ export async function POST(
     analysisId: analysisRecord.id,
     documentId: doc.id,
   });
+  } catch (err) {
+    return internalError(err);
+  }
 }
