@@ -4,8 +4,20 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-17 — **ULTRACODE-SLUTAUDIT + FIX-PR A: AUTH-GRÄNSEN
-(DENNA PR).** Stefans beställda sista workflow-analys (14 agenter, 4 lenser
+_Senast uppdaterad: 2026-08-17 — **AUDIT FIX-PR B: GENERATORNS SLUTFLIP (DENNA PR).**
+Fjärde correctness-fyndet ur slutauditen: slutflippen generating→draft i
+run-bid-generation.ts läste aldrig `{ error }` (supabase-js kastar inte —
+belagt ner i postgrest-js `shouldThrowOnError=false`), så en failad skrivning
+lämnade bidden i 'generating' utan logg ⇒ watchdogen dömde "tog för lång tid"
+⇒ användaren betalade om hela genereringen. Nu: felkontroll + en retry +
+annars `markFailed("Kunde inte spara utkastet")`. Incrementella persists förblir
+fire-and-forget (bokförd design — som FÖRUTSÄTTER att slutskrivningen larmar).
+Teststubbens chain gjord thenable med felkö; retry- och failed-vägarna testade.
+KVAR UR AUDITEN: PR C (requireUser-svepet + ?next=-parametern var PR A-routinens
+follow-up, TAGEN i A; bids/[id]-sidans loadProfileForBid-ordning noterad av
+routinen — in i C-svepet)._
+
+_Historik (2026-08-17): **ULTRACODE-SLUTAUDIT + FIX-PR A: AUTH-GRÄNSEN (#129).** Stefans beställda sista workflow-analys (14 agenter, 4 lenser
 säkerhet/död-kod/förenkling/correctness, 33 råfynd → topp 10 adversariellt prövade →
 9 bekräftade / 1 motbevisat). FYRA correctness-före-lansering-fynd; denna PR fixar de
 tre auth-relaterade: (1) **middleware fail CLOSED** — gamla `return response` när

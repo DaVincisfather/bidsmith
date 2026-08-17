@@ -171,16 +171,40 @@ export async function runBidGeneration(
   // Guarded on status: if the stale-generating watchdog already marked this
   // bid 'failed' (runner outlived the window), 'failed' is terminal — a late
   // finish must not resurrect the bid the user was told to re-run.
-  await supabase
-    .from("bids")
-    .update({
-      sections,
-      status: "draft",
-      overflow_flags: overflowFlags,
-      failed_bundles: failedBundles,
-    })
-    .eq("id", bidId)
-    .eq("status", "generating");
+  //
+  // The final write MUST be error-checked (audit 2026-08-17): supabase-js never
+  // throws — a failed write left the bid in 'generating' with zero logging, the
+  // watchdog then blamed a timeout and the user re-ran (and re-paid) the whole
+  // generation. The incremental persists above stay fire-and-forget by design;
+  // that design assumes THIS write succeeds or tells the truth.
+  const finalWrite = () =>
+    supabase
+      .from("bids")
+      .update({
+        sections,
+        status: "draft",
+        overflow_flags: overflowFlags,
+        failed_bundles: failedBundles,
+      })
+      .eq("id", bidId)
+      .eq("status", "generating");
+
+  let { error: finalError } = await finalWrite();
+  if (finalError) {
+    console.error(
+      `final draft write failed for bid ${bidId}: ${finalError.message} — retrying once`,
+    );
+    // Kort backoff (routine-fynd #130): ett omedelbart omförsök träffar ofta
+    // samma transienta fel; retryn är idempotent via status-guarden.
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    ({ error: finalError } = await finalWrite());
+  }
+  if (finalError) {
+    console.error(
+      `final draft write failed again for bid ${bidId}: ${finalError.message}`,
+    );
+    await markFailed(supabase, bidId, "Kunde inte spara utkastet", failedUnits);
+  }
 }
 
 async function markFailed(
