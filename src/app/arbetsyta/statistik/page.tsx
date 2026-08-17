@@ -28,7 +28,7 @@ export default async function StatistikPage({
   const period = parsePeriod(rawPeriod);
   // getWorkspaceStats reads with the service client (incl. auth.admin.listUsers,
   // i.e. user emails) — session must be verified here (#103 for pages).
-  await requirePageSession();
+  await requirePageSession("/arbetsyta/statistik");
   const stats = await getWorkspaceStats(period);
 
   return (

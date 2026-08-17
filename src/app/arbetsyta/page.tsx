@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ArbetsytaPage() {
   // Service client below bypasses RLS — session must be verified here (#103 for pages).
-  await requirePageSession();
+  await requirePageSession("/arbetsyta");
   const supabase = createServiceClient();
   const [{ count }, { count: analysisCount }, { count: profileCount }, stats] =
     await Promise.all([

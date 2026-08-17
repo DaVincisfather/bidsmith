@@ -20,7 +20,7 @@ const STATUS_CLASS: Record<AnalysisListItem["status"], string> = {
 
 export default async function AnalyserPage() {
   // Service client below bypasses RLS — session must be verified here (#103 for pages).
-  await requirePageSession();
+  await requirePageSession("/arbetsyta/analyser");
   const supabase = createServiceClient();
   const today = new Date().toISOString().split("T")[0];
 

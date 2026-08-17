@@ -10,10 +10,12 @@ import { createClient } from "@/lib/supabase/server";
  * visitors. createClient throws when the anon key is absent, so even that
  * misconfiguration now fails closed here.
  */
-export async function requirePageSession(): Promise<void> {
+export async function requirePageSession(nextPath?: string): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // Bevara destinationen som middlewarens redirect gör (routine-fynd #129) —
+  // anroparen vet sin egen path statiskt.
+  if (!user) redirect(nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login");
 }

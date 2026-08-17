@@ -80,6 +80,8 @@ export const config = {
     // routes som /consultants/x.png nådde handlern helt utan auth
     // (audit 2026-08-17) — ofarligt idag enbart för att alla id:n är strikta
     // UUID:er, men auth-gränsen ska bäras av design, inte koincidens.
+    // OBS: templates-undantaget täcker EN katalognivå — nya publika assets
+    // måste ligga i rot eller direkt under templates/, eller läggas till här.
     "/((?!_next/static|_next/image|favicon.ico|[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp)$|templates/[^/]+\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
