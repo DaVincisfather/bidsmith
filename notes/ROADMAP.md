@@ -17,7 +17,10 @@ bids/[id]-sidan (loadProfileForBid vaktades av ordningen — routine-follow-up
 #129). NY SVEPTESTFIL require-user-sweep.test.ts: 10 fall, JSON-401 + assert
 att varken body eller service-klient nås före auth. AUDITEN DÄRMED STÄNGD för
 lansering: alla 4 correctness-fynd + hela polish-svepet åtgärdade; kvar i
-backloggen = död kod ×2, stub-delning (routine #130), 22 overifierade._
+backloggen = död kod ×2, stub-delning (routine #130), requirePageSession-
+klientåterbruk (routine #131: bids/[id]-sidan gör två createClient+getUser-
+rundor — låt vakten ta emot/returnera klienten när fler sidor får den),
+22 overifierade._
 
 _Historik (2026-08-17): **AUDIT FIX-PR B: GENERATORNS SLUTFLIP (#130).**
 Fjärde correctness-fyndet ur slutauditen: slutflippen generating→draft i
