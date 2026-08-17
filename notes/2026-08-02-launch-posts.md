@@ -12,45 +12,53 @@ Video bifogas båda; GIF-versionen till X + README. Demosidan (Fas 2) är inte b
 
 ## LinkedIn (svenska — bygghistoria, inte produktpitch)
 
-Jag är managementkonsult, inte utvecklare. De senaste månaderna har jag ändå byggt
-och släppt ett open source-projekt: **Bidsmith** — en AI-agent som tar en offentlig
-upphandling plus era konsultprofiler och smider fram ett strukturerat anbudsutkast
-som ni tar rakt in i er egen mall, med de AI-verktyg ni redan använder.
+*SLUTVERSION 2026-08-17, Stefans röst (omskriven från grundutkastet i session med
+Claude; aforismerna/fetstils-rubrikerna strukna på Stefans direktiv — LinkedIn
+renderar ändå inte markdown). Schemaläggs 2026-08-18 07:30. Repo-länk i brödtexten
+(Stefans val, räckviddsstraffet accepterat). Video: `bidsmith-launch-draft.mp4`
+(82,5 s, MED ljudspår — INTE bidsmith-video.mp4 som är det tysta mastret).*
 
-Det började med en välbekant frustration: anbudsarbete är timmar av mekanik — läsa
-förfrågningsunderlag, plocka krav, matcha konsulter, skriva samma slags grundtext —
-innan det kvalificerade arbetet ens börjar. Det mekaniska går att automatisera.
-Omdömet går inte. Så verktyget slutar alltid i ett utkast som en senior konsult
-granskar och äger.
+Jag är managementkonsult, inte utvecklare. Under våren och sommaren har jag ändå
+byggt Bidsmith — en produkt driven av agentisk AI som stöttar konsultfirmor i att
+förstå offentliga upphandlingar, matcha dem mot era konsultprofiler och ta fram ett
+strukturerat anbudsutkast som ni sedan använder i era egna anbudsmallar och
+AI-verktyg.
 
-Hela bygget är gjort med Claude Code, på kvällar och helger vid sidan av jobbet.
-Jag skriver inte koden själv — jag kravställer, granskar och testar, ungefär som
-att leda en outtröttlig utvecklare som aldrig blir sur när man ändrar sig. [JUSTERA:
-din formulering av arbetssättet]
+Hela bygget är gjort med Claude Code, på kvällar och helger, mellan blöjbyten och
+att torka spyfläckar. Jag har inte skrivit koden själv — jag kravställer,
+orkestrerar och testar produkten mot vad jag tror att andra konsulter vill ha.
 
-Tre saker bygget lärt mig om AI på riktigt:
+Tre saker bygget har lärt mig om AI:
 
-1. **Texten är inte flaskhalsen — förtroendet är.** Störst del av arbetet har
-   handlat om bevis: varje krav och varje kompetenspåstående bär ett ordagrant
-   citat ur källdokumentet, verifierat mekaniskt mot källan. Kan ett påstående
-   inte beläggas stryks det — och når aldrig vare sig matchningen eller anbudstexten.
-2. **Mätning slår magkänsla.** När jag blindtestade två modellers anbudstext valde
-   jag själv den ena 7 gånger av 8 — medan en AI-domare föredrog den andra nästan
-   varje gång. Utan kalibrering mot mänsklig bedömning är en AI-domare bara en
+1. Att nyttja AI på ett bra sätt är svårare än man tror. Det kräver bra kontext
+   kring modellen, det kräver specifika områden där modellen är bra, och det kräver
+   god intuition hos människan som orkestrerar AI:n om när man riskerar att hamna
+   snett.
+
+2. Mätning slår magkänsla. Eftersom det här får klassas som något vibe-kodat har
+   jag lutat mig hårt mot testning och validering av utfall där jag inte förstår
+   tekniken. Ett exempel: när jag blindtestade två modellers anbudstext valde en
+   AI-domare Fable nästan varje gång — medan mina egna blindtester valde Opus
+   7 gånger av 8. Utan kalibrering mot mänsklig bedömning är en AI-domare bara en
    åsikt till.
-3. **Våga döda din egen darling.** Jag byggde en hel motor för att rendera anbud
+
+3. Våga döda din egen darling. Jag byggde en hel motor för att rendera anbud
    direkt i valfri PowerPoint-mall — mallonboarding, layoutmätning, kalibrering.
    Sen insåg jag att sista milen (formateringen) redan löses bättre av verktygen
    alla ändå använder, och bytte till strukturerad Markdown ut. Äg det
-   domänspecifika, låt ekosystemet äga resten. [JUSTERA/STRYK efter smak]
+   domänspecifika, låt ekosystemet äga resten.
 
 Bidsmith är fritt och open source (Apache 2.0). Ingen prismodell, ingen tjänst att
 prenumerera på — du kör den själv och betalar bara din egen API-kostnad, ungefär
-ett par dollar per anbud.
+en dollar per anbud.
+
+Nyfiken på att testa? Jag hjälper gärna till med uppsättningen — skriv i DM. Vill
+ni att jag hostar åt er är det lite mer komplicerat, men det går säkert att lösa om
+ni verkligen vill.
 
 Repo: https://github.com/DaVincisfather/bidsmith
 
-[Video bifogas]
+[Video bifogas: bidsmith-launch-draft.mp4]
 
 ---
 
@@ -71,7 +79,7 @@ What I learned about building agentic pipelines 🧵
 
 1/ Pipeline design: every step gets the *compressed output* of the previous step,
 never the raw documents. Keeps prompts tight and cost predictable — a full tender
-(analysis → matching → go/no-go → full draft → Markdown export) runs ≈ $1.5–2 in API.
+(analysis → matching → go/no-go → full draft → Markdown export) runs ≈ $1 in API.
 
 2/ Model strategy is per role, not per app: Sonnet for extraction and matching
 (mechanical JSON work), Opus where the bid is won or lost (writing). One model
@@ -110,8 +118,11 @@ Repo: https://github.com/DaVincisfather/bidsmith
       frysens overlay säger "Uppskattad vinstchans — och motiveringen i klartext" — inte
       spann-copyn "+4–7 % med ett byte", eftersom v8-tagningens bedömning inte föreslog
       något teambyte och copyn måste vara sann mot bilden.)
-- [ ] Justera [JUSTERA]-ställena i LinkedIn-utkastet till egen röst
-- [ ] LinkedIn-post med video
+- [x] Justera [JUSTERA]-ställena i LinkedIn-utkastet till egen röst — KLAR 2026-08-17
+      (Stefans omskrivning i session: personlig ton, aforismer strukna, DM-erbjudande
+      tillagt; sakpåståenden omverifierade — $1/anbud per nya README:n, blindtest
+      7/8 Opus + AI-domare Fable per evals/results-bid-model-comparison.md)
+- [ ] LinkedIn-post med video — SCHEMALAGD till 2026-08-18 07:30 (Stefans plan)
 - [ ] X-post med GIF + tråd
 - [x] GIF:en in i README:n — KLAR 2026-08-17 (README-lanseringspolish-PR:en; Stefans
       beslut att ta den FÖRE lansering i stället för som uppföljning)
