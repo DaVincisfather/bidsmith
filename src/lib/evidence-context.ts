@@ -1,15 +1,12 @@
-// Källkontext-lokaliserare för källa-badgen. PROBLEM (produktägar-feedback):
-// det utfällda citatet säger ofta EXAKT samma sak som påståendet (extraktionen
-// skriver nära-ordagranna beskrivningar; CV-kompetenser citerar kompetensrad-
-// raden) → meningslöst. FIX: visa citatet I SITT SAMMANHANG — ±windowChars
-// omgivande källtext med citatspannet markerat — så det svarar på "var står det,
-// i vilket sammanhang", inte "vad står det".
+// Citatspann-lokaliserare för källvyn: hittar verifierade citat i källtexten
+// och returnerar spann i ORIGINALTEXTENS teckenoffset (markeringslager +
+// aktiv-citat-betoning i source-view-routerna/source-viewer).
 //
 // Kärnutmaning: verifieraren (verify-evidence.ts) matchar på NORMALISERAD text,
-// men kontexten måste klippas ur ORIGINALTEXTEN (läsbar, med riktiga radbrytningar
-// kollapsade för visning). Vi bygger därför en normaliserad kopia MED en indexkarta
-// tillbaka till originaloffset (normalizeWithMap) och lokaliserar citatet med samma
-// matchningssemantik som verifieraren (första-tecken-skiftläge + sidbrytnings-gap).
+// men spannen måste peka in i ORIGINALTEXTEN. Vi bygger därför en normaliserad
+// kopia MED en indexkarta tillbaka till originaloffset (normalizeWithMap) och
+// lokaliserar citatet med samma matchningssemantik som verifieraren
+// (första-tecken-skiftläge + sidbrytnings-gap).
 import {
   normalizeForEvidence,
   caseVariants,
@@ -17,14 +14,6 @@ import {
   SEAM_SLACK,
   GAP_WINDOW,
 } from "./verify-evidence";
-
-export interface EvidenceContext {
-  before: string;
-  quote: string;
-  after: string;
-}
-
-const DEFAULT_WINDOW = 200;
 
 /**
  * Normaliserar exakt som normalizeForEvidence MEN behåller en karta från varje
@@ -183,9 +172,9 @@ function findLongestHalf(source: string, evidence: string): Span | null {
 /**
  * Kärnlokaliseringen: matchar citatet i den NORMALISERADE kopian (verifierarens
  * semantik: första-tecken-varianter + gap-fallback → längsta halvan) och mappar
- * träffen tillbaka till ORIGINALTEXTENS offset via origStart-kartan. Delas av
- * locateEvidenceContext och locate*Span så matchningen aldrig driftar. Anroparen
- * bygger origStart-kartan EN gång och lokaliserar sedan många citat mot samma text.
+ * träffen tillbaka till ORIGINALTEXTENS offset via origStart-kartan. Anroparen
+ * (locateAllSpans) bygger origStart-kartan EN gång och lokaliserar sedan många
+ * citat mot samma text.
  */
 function origSpanFromMap(
   normalized: string,
@@ -199,20 +188,6 @@ function origSpanFromMap(
     findLongestHalf(normalized, normEvidence);
   if (!span) return null;
   return { start: origStart[span.start], end: origStart[span.end] };
-}
-
-/**
- * Lokaliserar ETT citats spann i ORIGINALTEXTENS teckenoffset (start inklusive,
- * end exklusive). Samma matchning som verifieraren. null när citatet inte återfinns.
- * Powrar källvyns aktiv-citat-betoning; string-slice(start,end) ger den råa källglyfen.
- */
-export function locateEvidenceSpan(
-  sourceText: string,
-  evidence: string,
-): EvidenceSpan | null {
-  if (!sourceText || !evidence) return null;
-  const { normalized, origStart } = normalizeWithMap(sourceText);
-  return origSpanFromMap(normalized, origStart, evidence);
 }
 
 /**
@@ -249,51 +224,4 @@ function mergeSpans(spans: EvidenceSpan[]): EvidenceSpan[] {
     }
   }
   return out;
-}
-
-/**
- * Lokaliserar citatet i källtexten (samma normalisering som verifieraren) och
- * returnerar ±windowChars kontext, snäppt till ordgränser. null när citatet
- * inte återfinns (ska inte hända för verifierad evidence — defensivt).
- */
-export function locateEvidenceContext(
-  sourceText: string,
-  evidence: string,
-  windowChars: number = DEFAULT_WINDOW,
-): EvidenceContext | null {
-  if (!sourceText || !evidence) return null;
-  const { normalized, origStart } = normalizeWithMap(sourceText);
-  const orig = origSpanFromMap(normalized, origStart, evidence);
-  if (!orig) return null;
-
-  const startOrig = orig.start;
-  const endOrig = orig.end;
-
-  const beforeCut = Math.max(0, startOrig - windowChars);
-  const afterCut = Math.min(sourceText.length, endOrig + windowChars);
-
-  return {
-    before: snapBefore(sourceText, beforeCut, startOrig),
-    quote: clean(sourceText.slice(startOrig, endOrig)),
-    after: snapAfter(sourceText, endOrig, afterCut),
-  };
-}
-
-// Klipp ledande partiellt ord om fönstret skar mitt i ett ord.
-function snapBefore(text: string, cut: number, spanStart: number): string {
-  let frag = text.slice(cut, spanStart);
-  if (cut > 0 && /\S/.test(text[cut - 1])) frag = frag.replace(/^\S+/, "");
-  return clean(frag);
-}
-
-// Klipp avslutande partiellt ord om fönstret skar mitt i ett ord.
-function snapAfter(text: string, spanEnd: number, cut: number): string {
-  let frag = text.slice(spanEnd, cut);
-  if (cut < text.length && /\S/.test(text[cut])) frag = frag.replace(/\S+$/, "");
-  return clean(frag);
-}
-
-// Gör ett originalfragment enradigt läsbart: soft hyphen bort, whitespace kollapsad.
-function clean(s: string): string {
-  return s.replace(/­/g, "").replace(/\s+/g, " ").trim();
 }

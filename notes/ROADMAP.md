@@ -4,7 +4,23 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-17 — **AUDIT FIX-PR C: REQUIREUSER-SVEPET (DENNA PR).**
+_Senast uppdaterad: 2026-08-17 — **AUDIT DÖD KOD-STÄDET (DENNA PR).**
+Slutauditens två bekräftade död kod-fynd åtgärdade. (1) evidence-context
+kontextfönster-resterna: locateEvidenceContext/EvidenceContext/DEFAULT_WINDOW/
+snapBefore/snapAfter/clean raderade, plus locateEvidenceSpan (noll
+produktionsimporter — enbart sitt eget testblock; källvyns aktiv-citat-betoning
+går via locateAllSpans.perEvidence). locateAllSpans-kedjan LEVER (source-view-
+routerna + source-viewer) och täckningen bevarad: tre unika fall porterade till
+locateAllSpans-blocket (offset-mappning över radbrytning/soft hyphen,
+versaliserat första tecken, gap-match); modulheadern omskriven från
+kontextfönster- till spann-lokaliserare. (2) slot-meta-grupperingen:
+groupSectionsBySlide/SlideGroup/GroupedSections + testblock raderade (editorn
+slutade konsumera i #102-ombyggnaden); buildSlotMeta/SlotMeta LEVER via
+overflow-evalen, stale header-kommentaren ("konsumeras av editorn") rättad.
+Kvar i audit-backloggen: stub-delning (routine #130), requirePageSession-
+klientåterbruk (routine #131), 22 overifierade kandidater._
+
+_Historik (2026-08-17): **AUDIT FIX-PR C: REQUIREUSER-SVEPET (#131).**
 Slutauditens polish-svep — alla 38 API-routes bär nu samma auth-kontrakt:
 requireUser-triot på de fyra PATCH-routerna (bids/[id] inkl. GET:ens watchdog-
 UPDATE, outcome, go-no-go/[id], radar/opportunities/[id]) och de fem gamla
@@ -800,12 +816,13 @@ extraktion, säkerhet, drift). Klara [x]-poster behållna för spårbarhet._
   stängt-failande anon-klient; svepet ger JSON-401 + uniformitet) samt de fem
   getUserId-routerna (analyze, matches/[id], bids POST, consultants/upload,
   radar-analyze — 500 i st.f. 401 idag) + stryk "Middleware guarantees
-  authentication"-kommentarerna (matches/[id]:20, radar-analyze:17); **död kod**:
+  authentication"-kommentarerna (matches/[id]:20, radar-analyze:17); ~~**död kod**:
   evidence-context kontextfönster-resterna (~62 rader: locateEvidenceContext/
   locateEvidenceSpan/EvidenceContext/DEFAULT_WINDOW/snapBefore/snapAfter/clean +
   testblock — locateAllSpans-kedjan LEVER), slot-meta grupperingen
   (groupSectionsBySlide/SlideGroup/GroupedSections + testblock; buildSlotMeta/
-  SlotMeta LEVER via overflow-eval; header-kommentaren stale). MOTBEVISAT:
+  SlotMeta LEVER via overflow-eval; header-kommentaren stale)~~ ÅTGÄRDAD
+  (2026-08-17, död kod-städet — se headern). MOTBEVISAT:
   structure_eval-kolumnen är dokumenterat MD-first-beslut (spec 2026-08-03), inte
   död kod — endast stale kommentarer kvar (bid-structure.ts:144, setup.sql:132).
   OVERIFIERADE KANDIDATER (22 st under topp-10-snittet; kör verify-runda före
