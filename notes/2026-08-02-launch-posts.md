@@ -113,5 +113,6 @@ Repo: https://github.com/DaVincisfather/bidsmith
 - [ ] Justera [JUSTERA]-ställena i LinkedIn-utkastet till egen röst
 - [ ] LinkedIn-post med video
 - [ ] X-post med GIF + tråd
-- [ ] GIF:en in i README:n (uppföljnings-PR)
+- [x] GIF:en in i README:n — KLAR 2026-08-17 (README-lanseringspolish-PR:en; Stefans
+      beslut att ta den FÖRE lansering i stället för som uppföljning)
 - [ ] (Senare, valfritt) Show HN när demosidan (Fas 2) finns

@@ -41,6 +41,10 @@ documents — which keeps prompts tight and cost predictable.
    team, quality assurance, references, certifications) as structured sections.
 5. **RFP radar** — surfaces relevant new public tenders (TED) on a schedule.
 
+<p align="center">
+  <img src="docs/screenshots/bidsmith-demo.gif" alt="15-second loop: a tender goes in, requirements are extracted with source quotes, consultants are matched, and a proposal draft is forged" width="860" />
+</p>
+
 A built-in **bid editor** lets the consultant edit every section inline. Export is
 structured **Markdown** — deliberately. Your firm already has a template and a way
 of working; a Markdown draft drops straight into it: paste it into Word or Google
@@ -132,11 +136,13 @@ call — which is exactly what the source viewer is for.
 
 Bidsmith is free and open source — there is no license fee and no hosted service. You
 run it yourself, and the only running cost is your own Anthropic API usage. Measured
-on the bundled synthetic data (July 2026, Sonnet 5 extraction + Opus 4.8 writing):
+on the bundled synthetic data (August 2026, Sonnet 5 extraction + Opus 4.8 writing):
 
 - **Onboarding 10 consultant CVs:** ≈ $0.19 total (about 2 cents per CV, one-time)
 - **One tender, end to end** — analysis, matching, go/no-go, full proposal draft,
-  Markdown export: **≈ $1.5–2**, most of it the Opus writing pass
+  Markdown export: **≈ $1**. The largest share is the Opus writing pass, which
+  measured **$0.33 per bid** averaged over four synthetic tenders (via the app's
+  own API call log)
 
 Costs stay predictable because each pipeline step receives the previous step's
 compressed output, never the raw documents.
@@ -168,7 +174,7 @@ in numeric order as before — `setup.sql` is for fresh installs only.
 
 Want a populated workspace without hunting for documents? Seed the bundled synthetic
 demo data — ten consultant CVs and a public-sector tender run through the entire
-pipeline to an exported Markdown draft (≈ $2.5 in API usage):
+pipeline to an exported Markdown draft (≈ $2 in API usage):
 
 ```bash
 node scripts/demo-seed.mjs         # against a running dev server
@@ -185,6 +191,10 @@ npm run eval:bid-generator   # bid quality: structure / coverage / hallucination
 Synthetic fixtures live in `evals/fixtures/` and sample data in `data/synthetic/`, so
 the project is runnable without any real tender data.
 
+> **Known state:** `eval:analyzer` is currently red on an unmodified checkout — its
+> golden annotations predate a model upgrade and are being re-annotated. Don't let
+> a failing analyzer run block your contribution; the other evaluators are the gate.
+
 ## Project layout
 
 ```
@@ -194,7 +204,7 @@ src/lib/document-parser.ts  Document parsing (markitdown-js)
 src/lib/bid-generator/      Proposal generation: parallel AI calls + bundles
 src/lib/bid-markdown.ts     Markdown serialization of bid sections (the export path)
 src/lib/pptx-template/      PowerPoint template engine (experimental, flag-gated)
-src/lib/eval/               Runtime evaluation (structure judge)
+src/lib/eval/               Bid-structure scoring (offline) + shared section catalog
 evals/                      Offline evaluation harness
 supabase/migrations/        Database schema
 docs/architecture.html      Architecture overview
