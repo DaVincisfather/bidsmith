@@ -71,8 +71,6 @@ Samtliga priser exklusive moms. Inom kostnadsramen om 800 000 SEK.
 - Integration Unit4 ERP, personalsystem och verksamhetssystem → Power BI
 - Kontaktperson: [tillgänglig vid förfrågan]
 
-### 6. Kontaktperson
+### 6. Anbudets giltighet
 
-Oscar Magnusson, Senior Dataarkitekt
-oscar.magnusson@nordiamanagement.se
-+46 73 567 89 01
+Anbudet är bindande i tre månader från sista anbudsdag.
