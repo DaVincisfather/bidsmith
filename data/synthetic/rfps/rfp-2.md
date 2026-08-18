@@ -8,6 +8,7 @@
 
 > Utdrag ur ett offentligt upphandlingsdokument (TED-notis 394206-2026; publicerad 2026-05-12).
 > Kontaktuppgifter till enskilda personer är borttagna. Används som exempeldata i Bidsmith.
+> Samma upphandling är golden-case i `evals/fixtures/analyzer/sormland-verksamhetsstod.yaml`.
 
 ---
 

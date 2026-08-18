@@ -9,6 +9,7 @@
 
 > Utdrag ur ett offentligt upphandlingsdokument (TED-notis 3214815; version 2, publicerad 2026-06-04).
 > Kontaktuppgifter till enskilda personer är borttagna. Används som exempeldata i Bidsmith.
+> Samma upphandling är golden-case i `evals/fixtures/analyzer/eskilstuna-lokalforsorjning.yaml`.
 
 ---
 
