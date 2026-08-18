@@ -373,10 +373,10 @@ describe("GoNoGoAiResponseSchema — improvements.kind och poolGap (BUG-A: requi
     const parsed = GoNoGoAiResponseSchema.parse({
       ...base,
       improvements: [],
-      poolGap: "Gapet kräver dokumenterad Timecare-erfarenhet som ingen i poolen har",
+      poolGap: "Gapet kräver dokumenterad GIS-kompetens som ingen i poolen har",
     });
     expect(parsed.poolGap).toBe(
-      "Gapet kräver dokumenterad Timecare-erfarenhet som ingen i poolen har",
+      "Gapet kräver dokumenterad GIS-kompetens som ingen i poolen har",
     );
   });
 });

@@ -11,16 +11,16 @@ describe("bidToMarkdown", () => {
     const md = bidToMarkdown([
       section("cover", "Framsida", {
         format: "cover",
-        title: "Optimering av bemanning",
-        client: "Vikstads kommun",
+        title: "Genomlysning av lokalförsörjning",
+        client: "Testköpings kommun",
         date: "2026-08-02",
       }),
     ]);
-    expect(md).toContain("# Optimering av bemanning");
+    expect(md).toContain("# Genomlysning av lokalförsörjning");
     // One metadata line — separate label lines would soft-wrap into one paragraph.
-    expect(md).toContain("**Till:** Vikstads kommun · **Datum:** 2026-08-02");
+    expect(md).toContain("**Till:** Testköpings kommun · **Datum:** 2026-08-02");
     // Blank line between H1 and metadata (paragraph boundary).
-    expect(md).toContain("# Optimering av bemanning\n\n**Till:**");
+    expect(md).toContain("# Genomlysning av lokalförsörjning\n\n**Till:**");
     expect(md).not.toContain("## Framsida");
   });
 
@@ -59,13 +59,13 @@ describe("bidToMarkdown", () => {
     const md = bidToMarkdown([
       section("understanding-current", "Kunden idag", {
         format: "understanding-current",
-        organisation: "Vikstads kommun.",
-        system: "Timecare nämns.",
+        organisation: "Testköpings kommun.",
+        system: "Planeringssystemet nämns.",
         processer: "Drift och uthyrning.",
         smärtpunkter: ["Ingen samlad nulägesbild"],
       }),
     ]);
-    expect(md).toContain("**Organisation:** Vikstads kommun.\n\n**System:** Timecare nämns.");
+    expect(md).toContain("**Organisation:** Testköpings kommun.\n\n**System:** Planeringssystemet nämns.");
     expect(md).toContain("**Processer:** Drift och uthyrning.\n\n**Smärtpunkter:**");
   });
 
@@ -76,21 +76,21 @@ describe("bidToMarkdown", () => {
         references: [
           {
             clientName: "Göteborgs stad",
-            contextLine: "Bemanningsoptimering",
-            organisation: "Idrottsförvaltningen",
+            contextLine: "Processöversyn",
+            organisation: "Fastighetskontoret",
             startDate: "01/2023",
             endDate: "12/2023",
             scope: "Tre faser",
             contact: { name: "N N", titlePhoneEmail: "Titel · tel · epost" },
             roleAndDelivery: "Analys och verktyg",
-            result: "Beslutad bemanningsplan",
+            result: "Beslutad handlingsplan",
           },
         ],
       }),
     ]);
-    expect(md).toContain("### Göteborgs stad — Bemanningsoptimering");
-    expect(md).toContain("- **Organisation:** Idrottsförvaltningen\n- **Period:** 01/2023 – 12/2023");
-    expect(md).toContain("- **Resultat:** Beslutad bemanningsplan");
+    expect(md).toContain("### Göteborgs stad — Processöversyn");
+    expect(md).toContain("- **Organisation:** Fastighetskontoret\n- **Period:** 01/2023 – 12/2023");
+    expect(md).toContain("- **Resultat:** Beslutad handlingsplan");
   });
 
   it("renders requirement matrix rows with per-consultant coverage", () => {
@@ -99,9 +99,9 @@ describe("bidToMarkdown", () => {
         format: "requirement-matrix-v2",
         rows: [
           {
-            requirement: "Erfarenhet av bemanningsoptimering",
+            requirement: "Erfarenhet av processkartläggning",
             hurUppfylls: "Jonas och Anna har direkt erfarenhet.",
-            referens: "Bemanningsoptimering, Göteborgs stad",
+            referens: "Processöversyn, Göteborgs stad",
             coverage: [
               { consultantName: "Anna Lindström", status: "JA", evidence: "Uppdraget i Göteborg" },
               { consultantName: "Erik Johansson", status: "DELVIS", evidence: "Budgetmodeller" },
@@ -110,7 +110,7 @@ describe("bidToMarkdown", () => {
         ],
       }),
     ]);
-    expect(md).toContain("### 1. Erfarenhet av bemanningsoptimering");
+    expect(md).toContain("### 1. Erfarenhet av processkartläggning");
     expect(md).toContain("- Anna Lindström: **JA** — Uppdraget i Göteborg");
     expect(md).toContain("- Erik Johansson: **DELVIS** — Budgetmodeller");
   });
@@ -230,12 +230,12 @@ describe("escaping of AI free text", () => {
       section("cover", "Framsida", {
         format: "cover",
         title: "Titel\nmed radbrytning",
-        client: "Vikstads\nkommun",
+        client: "Testköpings\nkommun",
         date: "2026-08-11",
       }),
     ]);
     expect(md).toContain("# Titel med radbrytning");
-    expect(md).toContain("**Till:** Vikstads kommun · **Datum:** 2026-08-11");
+    expect(md).toContain("**Till:** Testköpings kommun · **Datum:** 2026-08-11");
   });
 
   it("escapes code fences in prose so they cannot swallow the rest of the document", () => {
@@ -249,7 +249,7 @@ describe("escaping of AI free text", () => {
       section("understanding-current", "Kunden idag", {
         format: "understanding-current",
         organisation: "Kommunen.",
-        system: "Timecare.",
+        system: "Planeringssystemet.",
         processer: "Drift.",
         smärtpunkter: ["# Ingen samlad nulägesbild"],
       }),

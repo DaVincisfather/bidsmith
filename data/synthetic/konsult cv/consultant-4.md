@@ -6,7 +6,7 @@
 
 ## Sammanfattning
 
-Managementkonsult med fokus på operativ effektivisering, bemanningsplanering och schemaoptimering i offentlig sektor. Erfarenhet av att arbeta med kollektivavtal, facklig samverkan och arbetsrättsliga ramar. Praktisk erfarenhet av Timecare och andra schemaplaneringssystem. Bakgrund som enhetschef i kommunal verksamhet.
+Managementkonsult med fokus på process- och projektledning, verksamhetsanalys och förändringsledning i offentlig sektor. Van att kartlägga arbetssätt, roller och flöden samt leda workshops och dialogprocesser med medarbetare, chefer och fackliga parter. Bakgrund som enhetschef i kommunal verksamhet.
 
 ## Utbildning
 
@@ -28,35 +28,35 @@ Managementkonsult med fokus på operativ effektivisering, bemanningsplanering oc
 
 ## Nyckelkompetenser
 
-- Bemanningsplanering och schemaoptimering
-- Timecare och schemaplaneringssystem
-- Kollektivavtal och arbetsrätt
+- Processkartläggning och verksamhetsanalys
+- Projekt- och processledning
+- Workshopfacilitering och dialogprocesser
+- Förändringsledning och förankring
 - Facklig samverkan (Kommunal, Vision)
-- Verksamhetsutveckling och förändringsledning
 - Kostnadsdrivaranalys
 
 ## Uppdrag
 
-### Bemanningsoptimering inom idrottsförvaltning, Göteborgs stad
-**Period:** 2023
-**Roll:** Konsult
+### Processöversyn bygglov och tillsyn, Järfälla kommun
+**Period:** 2024
+**Roll:** Uppdragsansvarig
 
-Stödde senior konsult med kartläggning av bemanning, schemaprinciper och anställningsformer för kommunala idrottsanläggningar. Genomförde intervjuer med driftchefer, analyserade nyttjande av timanställda och säsongsvariationer. Utvecklade Excel-baserat planeringsverktyg.
+Kartlade och analyserade arbetssätt, roller och flöden i kommunens bygglovs- och tillsynsverksamhet. Genomförde workshopserie med medarbetare och chefer, identifierade flaskhalsar och tog fram förslag till förbättrade handläggningsprocesser med tydligare ansvarsfördelning.
 
-### Översyn hemtjänstens schemaläggning, Norrköpings kommun
+### Projektledning — samverkansmodell för arbetsmarknadsinsatser, Botkyrka kommun
 **Period:** 2023
 **Roll:** Uppdragsansvarig
 
-Kartlade och analyserade hemtjänstens schemaläggning med fokus på koppling mellan bemanning, geografisk planering och kvalitet. Identifierade besparingsmöjligheter genom optimerad ruttplanering och jämnare bemanningsfördelning.
+Ledde framtagandet av ny samverkansmodell mellan förvaltningar och externa aktörer kring arbetsmarknadsinsatser. Planerade och faciliterade dialogmöten, utformade beslutsstruktur och tog fram handlingsplan för införandet.
 
 ### Omställning och kompetensväxling, Södertälje kommun
 **Period:** 2021–2022
 **Roll:** Enhetschef
 
-Ledde omställningsarbete inom äldreomsorg vid övergång till nytt arbetssätt. Förhandlade med fackliga parter (Kommunal, Vision) kring nya schemamodeller och kompetenskrav.
+Ledde omställningsarbete inom äldreomsorg vid övergång till nytt arbetssätt. Förhandlade med fackliga parter (Kommunal, Vision) kring nya arbetssätt och kompetenskrav.
 
-### Implementering av Timecare, Södertälje kommun
+### Införande av nytt verksamhetssystem, Södertälje kommun
 **Period:** 2019–2020
 **Roll:** Verksamhetsutvecklare
 
-Deltog i implementering av schemaplaneringsverktyget Timecare inom äldreomsorgen. Ansvarade för kravspecifikation, testning och utbildning av enhetschefer.
+Deltog i införandet av nytt verksamhetssystem inom äldreomsorgen. Ansvarade för kravspecifikation, testning och utbildning av enhetschefer.

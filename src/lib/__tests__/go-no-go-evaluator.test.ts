@@ -532,16 +532,16 @@ describe("evaluateGoNoGo post-processing", () => {
       winProbability: 72,
       winProbabilityReasoning: "Bra team",
       strengths: [],
-      gaps: ["Timecare-erfarenhet saknas"],
+      gaps: ["GIS-kompetens saknas"],
       improvements: [],
-      poolGap: "Gapet kräver Timecare-erfarenhet som saknas i poolen",
+      poolGap: "Gapet kräver GIS-kompetens som saknas i poolen",
       recommendation: "go-with-reservations",
       reasoning: "—",
     });
 
     const { evaluateGoNoGo } = await import("../go-no-go-evaluator");
     const withGap = await evaluateGoNoGo(analysis, team, scored);
-    expect(withGap.poolGap).toBe("Gapet kräver Timecare-erfarenhet som saknas i poolen");
+    expect(withGap.poolGap).toBe("Gapet kräver GIS-kompetens som saknas i poolen");
 
     mockResponse({
       mustRequirements: [{ index: 1, met: true, coveredBy: "Anna" }],
