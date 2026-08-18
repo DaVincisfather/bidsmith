@@ -20,11 +20,17 @@ Eskilstuna-caset (samma rigg; jsonb-deadlines bumpade 2026-09-25/10-02 för rail
 seedat via demo-seed mot dev, analysis 0dcfad1f + bid 7e3072f0). DB-städ båda
 Supabase-projekten: 8 (dev) + 1 (demo) old-case-analyser raderade inkl. bids/matches/
 go-no-go/documents. Routinens review: APPROVE, polish-fyndet (golden-överlapp-not)
-fixat före merge. KVARSTÅR: (1) 15s-GIF:en i README visar fortfarande gamla caset —
-omfilmning kräver video-riggen; (2) routine-förslag: harmonisera bid-3 (gammal stil,
-svarar på RFP som saknas i rfps/); (3) demo-projektets konsultrader har kvar gamla
-CV-innehållet (ej publikt — upsertas via CV-uppladdning nästa gång demon riggas);
-(4) git-historiken behåller gamla filerna (medvetet ingen history-rewrite)._
+fixat före merge. UPPFÖLJNINGARNA STÄNGDA SAMMA KVÄLL: (1) 15s-GIF:en OMFILMAD
+(#138, denna PR): demo-poolen omseedad med nya CV:na (10/10 upsertade =
+demo-konsultraderna städade), alla 7 scener nyinspelade mot Eskilstuna-caset
+(analys da906a78, bid 19c4339c; rfp-1-deadline lokalt bumpad 2026-09-25 i
+video-worktreen, ocommittad rigg-praxis), match-frysens spotlight omriktad till
+Marias motivering (94/100), bara GIF-segmenten ombyggda (rebuild-gif-segments.ps1)
+— fullvideons övriga stills (source/gonogo) är kvar från v8 och byggs om vid nästa
+omklippning; (2) bid-3 harmoniserad (#137; routinens "svarar på RFP som saknas"
+stämde inte — bid-3 refererar RS-2025-1247 = rfp-3). KVARSTÅR: git-historiken
+behåller gamla filerna (medvetet ingen history-rewrite); video-worktreens rå-scener
+för en full omklippning av launchvideon finns i bidsmith-video/tmp/video._
 
 _Historik (2026-08-17): **README-LANSERINGSPOLISH + GIF (#133).**
 Stefans genomläsningsfråga "är README:n klar för publicering?" gav fyra fynd, alla
