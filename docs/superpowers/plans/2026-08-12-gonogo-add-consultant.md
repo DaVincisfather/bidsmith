@@ -54,7 +54,7 @@ it("drops a kind:add entry that still carries a remove (malformed)", async () =>
 });
 
 it("passes poolGap through and tolerates null", async () => {
-  // payload poolGap: "Gapet kräver Timecare-erfarenhet som saknas i poolen" → present on result
+  // payload poolGap: "Gapet kräver GIS-kompetens som saknas i poolen" → present on result
   // payload poolGap: null → result.poolGap null
 });
 ```
@@ -91,7 +91,7 @@ and, after the improvements example, `"poolGap": null,` with the rule below.
 
 ```
 - kind: "swap" kräver både remove och add (removeId och addId). kind: "add" kräver add/addId och remove/removeId ska vara null. Föreslå ALDRIG "add" när teamet är fullt.
-- poolGap: om ett ouppfyllt krav inte kan täckas av NÅGON konsult i poolen — varken via byte eller tillägg — beskriv gapet kort och konkret (t.ex. "Gapet kräver dokumenterad Timecare-erfarenhet som ingen i poolen har"). Annars EXAKT null. Aldrig tom sträng.
+- poolGap: om ett ouppfyllt krav inte kan täckas av NÅGON konsult i poolen — varken via byte eller tillägg — beskriv gapet kort och konkret (t.ex. "Gapet kräver dokumenterad GIS-kompetens som ingen i poolen har"). Annars EXAKT null. Aldrig tom sträng.
 ```
 
 4. Team-size injection: where the user content is built, add a line near the team section: `Teamstorlek: ${teamConsultants.length} av ${MAX_TEAM_SIZE} platser fyllda.` (import MAX_TEAM_SIZE from `@/lib/constants`).

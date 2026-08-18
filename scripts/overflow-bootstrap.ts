@@ -40,7 +40,6 @@ interface FixtureTarget {
 // uniformly: every target takes the newest created_at among its matches.
 const TARGETS: FixtureTarget[] = [
   { id: "styrmodell", label: "Styrmodell — RetailTech", titleMatch: "styrmodell", expectedClient: "RetailTech" },
-  { id: "bemanning", label: "Bemanning — Göteborgs stad", titleMatch: "bemanning", expectedClient: "Göteborg" },
   { id: "dataplattform", label: "Dataplattform — Region Sörmland", titleMatch: "dataplattform", expectedClient: "Sörmland" },
   {
     id: "strategi-nic", label: "Strategiutveckling — NIC",

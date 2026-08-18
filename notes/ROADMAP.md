@@ -278,7 +278,7 @@ inte"-panel (visas även utan förslag), jämförelsebalkens tilläggsgren. RIDE
 GoNoGoCreateSchema-taket 200→MAX_TEAM_SIZE (sista luckan där team kunde växa förbi 5
 server-side). LIVE-SMOKE (grind för gonogo-promptändring): 2-personersteam gav två
 kind:add (+15/+8, korrekt sorterade, removeId null) OCH ärlig poolGap om
-kollektivavtal+Timecare-kombon — båda signalerna samexisterar korrekt. Kända v1-gränser:
+kollektivavtal+schemasystem-kombon — båda signalerna samexisterar korrekt. Kända v1-gränser:
 ingen undo-dämpning för add-kort (skulle kräva remove-typ som inte finns; lägre
 cirkularitetsrisk än byten). Slutgranskningens fynd FIXAT före merge: filtret tvingar nu
 BÅDA fälten (swap.remove OCH swapIds.removeId null) för add — UI:ts två isAdd-härledningar
