@@ -4,7 +4,29 @@
 > SAMMA PR som ändringen. Lita ALDRIG på assistent-minne för status — läs här och
 > verifiera mot `git log` / koden. (Minnet driftar; denna fil följer koden.)
 
-_Senast uppdaterad: 2026-08-17 — **README-LANSERINGSPOLISH + GIF (DENNA PR).**
+_Senast uppdaterad: 2026-08-18 — **SAMPELDATA → RIKTIGA TED-CASE + FULLSTÄDNING (#135; status i denna notes-PR — statusraden missades i #135, mot regeln ovan).**
+Stefans beslut lanseringsdagen: de två uppdiktade sampelcasen (bemanningsoptimering
+Vikstad + skatteväxling Mälardalen) rensas HELT ur repot. Levererat i #135: rfp-1/rfp-2
+= utdrag ur riktiga offentliga upphandlingar (Eskilstuna UE 26.050 lokalförsörjning/
+hyresmodell + Sörmland/Västmanland IN-IN25-0354 ramavtal verksamhetsstöd — samma
+TED-case som analyzer-goldens, källnot i varje fil, personnamn strukna), bid-1/bid-2
+nyskrivna som Nordias svar på dem, CV 1/3/4 omprofilerade så anbudens referenser
+hänger ihop (Maria: skatteväxling → hyres-/finansieringsmodeller; Jonas: bemanning/
+Timecare → process-/projektledning), README-datanoterna ärliga om proveniens,
+test-litteraler + gonogo-promptexemplet genericiserade, overflow-fixturen "bemanning"
+borttagen ur fixtures.json + bootstrap-TARGETS (runs-artefakterna varv-01–05 behållna —
+bara etikett + mått, ingen case-text), README-skärmdumparna OMTAGNA mot nya
+Eskilstuna-caset (samma rigg; jsonb-deadlines bumpade 2026-09-25/10-02 för rail:en;
+seedat via demo-seed mot dev, analysis 0dcfad1f + bid 7e3072f0). DB-städ båda
+Supabase-projekten: 8 (dev) + 1 (demo) old-case-analyser raderade inkl. bids/matches/
+go-no-go/documents. Routinens review: APPROVE, polish-fyndet (golden-överlapp-not)
+fixat före merge. KVARSTÅR: (1) 15s-GIF:en i README visar fortfarande gamla caset —
+omfilmning kräver video-riggen; (2) routine-förslag: harmonisera bid-3 (gammal stil,
+svarar på RFP som saknas i rfps/); (3) demo-projektets konsultrader har kvar gamla
+CV-innehållet (ej publikt — upsertas via CV-uppladdning nästa gång demon riggas);
+(4) git-historiken behåller gamla filerna (medvetet ingen history-rewrite)._
+
+_Historik (2026-08-17): **README-LANSERINGSPOLISH + GIF (#133).**
 Stefans genomläsningsfråga "är README:n klar för publicering?" gav fyra fynd, alla
 åtgärdade här: (1) KOSTNADSSIFFRORNA var pre-#107 (överdrev ~2×) — "≈ $1.5–2" →
 "≈ $1" per anbud med #107-mätningen som hård källa ($0.33/anbud för skrivpasset,
