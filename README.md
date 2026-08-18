@@ -172,8 +172,8 @@ npm run dev                         # → http://localhost:3000
 Upgrading an existing install? Keep applying `supabase/migrations/` incrementally
 in numeric order as before — `setup.sql` is for fresh installs only.
 
-Want a populated workspace without hunting for documents? Seed the bundled synthetic
-demo data — ten consultant CVs and a public-sector tender run through the entire
+Want a populated workspace without hunting for documents? Seed the bundled demo
+data — ten consultant CVs and a public-sector tender run through the entire
 pipeline to an exported Markdown draft (≈ $2 in API usage):
 
 ```bash
@@ -188,8 +188,10 @@ npm run eval:matcher         # consultant-matching quality
 npm run eval:bid-generator   # bid quality: structure / coverage / hallucination
 ```
 
-Synthetic fixtures live in `evals/fixtures/` and sample data in `data/synthetic/`, so
-the project is runnable without any real tender data.
+Eval fixtures live in `evals/fixtures/` and sample data in `data/synthetic/` — sample
+RFPs are excerpts of real public TED procurements (source noted in each file) and the
+demo consultancy is fictional — so the project is runnable without supplying any
+tender data of your own.
 
 > **Known state:** `eval:analyzer` is currently red on an unmodified checkout — its
 > golden annotations predate a model upgrade and are being re-annotated. Don't let
@@ -222,7 +224,10 @@ Bidsmith never sends raw documents between pipeline steps — only compressed,
 structured output. Real tender and consultant data stays in your own Supabase
 instance. Anthropic does not train models on API data under its standard commercial
 terms, so CV and tender content sent to Claude is processed, not retained for
-training. The public repository ships only synthetic sample data.
+training. The public repository ships no client data: sample RFPs and eval fixtures
+are excerpts of real, publicly available procurement documents (sourced via TED, with
+personal contact details removed), and the sample consultancy — its consultants, CVs
+and bids — is entirely fictional.
 
 ## License
 

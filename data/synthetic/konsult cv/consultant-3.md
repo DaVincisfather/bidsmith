@@ -6,7 +6,7 @@
 
 ## Sammanfattning
 
-Expert inom offentlig ekonomi med djup kunskap om skatteväxling, kommunalekonomisk utjämning och kollektivtrafikfinansiering. Har genomfört utredningar åt flera regioner kring finansieringsmodeller och ansvarsfördelning kommun/region. Lång erfarenhet av juridisk-ekonomisk analys i politiskt komplexa miljöer.
+Expert inom offentlig ekonomi med djup kunskap om finansierings- och hyresmodeller, självkostnadsprissättning och kommunalekonomisk utjämning. Har genomfört utredningar åt kommuner och regioner kring internhyresmodeller, kostnadsfördelning och investeringsstyrning. Lång erfarenhet av juridisk-ekonomisk analys i politiskt komplexa miljöer.
 
 ## Utbildning
 
@@ -29,29 +29,29 @@ Expert inom offentlig ekonomi med djup kunskap om skatteväxling, kommunalekonom
 
 ## Nyckelkompetenser
 
-- Skatteväxling och finansieringsmodeller
+- Finansierings- och hyresmodeller i offentlig sektor
+- Självkostnadsprissättning och kostnadsfördelning
 - Kommunalekonomisk utjämning
-- Kollektivtrafik och regional utveckling
+- Investeringsstyrning och lokalekonomi
 - Juridisk analys (kommunallag, momslagstiftning)
-- Utredningsmetodik och beslutsunderlag
-- Scenarioanalys och konsekvensberäkning
+- Utredningsmetodik, scenarioanalys och konsekvensberäkning
 
 ## Uppdrag
 
-### Utredning skatteväxling kollektivtrafik, Region Östergötland
+### Ny internhyresmodell, Linköpings kommun
 **Period:** 2024
 **Roll:** Uppdragsansvarig
 
-Analyserade förutsättningar för hel skatteväxling av allmän kollektivtrafik. Genomförde juridisk analys, beräknade skatteväxlingsnivåer, analyserade påverkan på kommunalekonomisk utjämning. Intervjuade nyckelpersoner i 13 kommuner och jämförde med regioner där skatteväxling genomförts.
+Utredde och designade ny självkostnadsbaserad internhyresmodell för kommunens verksamhetslokaler. Tog fram principer för komponentutbyten, verksamhetsanpassningar och lagstyrda investeringar, analyserade skolhyrornas påverkan på skolpengen och genomförde simulering av modellens utfall per fastighet. Modellen infördes i 2026 års budgetprocess.
 
-### Finansieringsmodell regional kollektivtrafik, Region Dalarna
+### Kostnadsfördelningsmodell för gemensam nämnd, Region Värmland
 **Period:** 2023
 **Roll:** Senior konsult
 
-Utredde alternativa finansieringsmodeller för regional kollektivtrafik inklusive skatteväxling, avgiftsfinansiering och blandmodeller. Tog fram konsekvensanalys för kommunernas ekonomi och levererade rapport till regionfullmäktige.
+Utredde alternativa modeller för kostnadsfördelning mellan region och kommuner i gemensam nämndverksamhet. Genomförde juridisk analys av avtal och ansvarsfördelning, beräknade utfall per part och levererade beslutsunderlag till nämnd och fullmäktige.
 
 ### Översyn kommunalekonomisk utjämning, SKR
 **Period:** 2016–2018
 **Roll:** Utredare
 
-Deltog i SKR:s arbete med att analysera och föreslå förändringar i det kommunalekonomiska utjämningssystemet. Fokus på kostnadsutjämning för kollektivtrafik och strukturella skillnader mellan kommuner.
+Deltog i SKR:s arbete med att analysera och föreslå förändringar i det kommunalekonomiska utjämningssystemet. Fokus på kostnadsutjämning och strukturella skillnader mellan kommuner.

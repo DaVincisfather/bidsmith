@@ -1,87 +1,68 @@
-# Avropsanbud
+# Anbud
 
-## Utredning av hel skatteväxling — Region Mälardalen
+## Ramavtal verksamhetsstöd och administrativa tjänster — Region Sörmland och Region Västmanland
 
 **Anbudsgivare:** Nordia Management AB, org.nr. 559012-3456
-**Ramavtal:** Managementkonsulter, Ekonomi och finans
-**Referensnummer:** IN-IN23-0496
-**Datum:** 2026-03-20
+**Referensnummer:** IN-IN25-0354
+**Anbudet avser:** Delområde 1 (Analyser, utredningar, undersökningar och utvärderingar) samt Delområde 2 (Projektledning, processledning, processtöd samt metod- och processutveckling)
+**Datum:** 2026-06-10
 
 ---
 
-### 1. Uppdragsförståelse
+### 1. Om Nordia Management
 
-Region Mälardalen utreder förutsättningarna för att skatteväxla all allmän kollektivtrafik från kommunerna till regionen. Uppdraget kräver en kombination av juridisk, ekonomisk och verksamhetsmässig kompetens, samt erfarenhet av liknande utredningar i andra regioner.
+Nordia Management AB är en managementkonsultfirma specialiserad på offentlig sektor. Våra tio konsulter arbetar med utredningar, styrning, verksamhetsutveckling och beslutsstöd åt kommuner och regioner. Kompetensen är organiserad i tre team — utredning och analys, styrning och ekonomi samt data och visualisering — med korta vägar däremellan, vilket gör att uppdrag kan bemannas tvärfunktionellt utan underkonsulter.
 
-Vi har genomfört likartade utredningar för Region Östergötland och Region Dalarna och har djup insikt i de praktiska utmaningar som uppstår vid skatteväxling av kollektivtrafik.
+Vi har dokumenterad erfarenhet av arbete i politiskt styrda organisationer, av det regionala utvecklingsuppdragets sakområden samt av uppdrag där analys och strategiutveckling använts som underlag för politiska beslut, planering och uppföljning.
 
-### 2. Lösningsförslag
+### 2. Bilaga D1-1 — Referensportfölj, delområde 1
 
-Utredningen struktureras i fyra delmoment som genomförs parallellt med iterativa avstämningar:
+1. **Region Mellansverige (2024)** — Organisationsöversyn av hälso- och sjukvården (420 000 invånare): nulägesanalys, benchmarking mot tre jämförbara regioner, alternativa organisationsmodeller med konsekvensanalys. Uppdragsansvarig: Anna Lindström. Rapporten låg till grund för regionstyrelsens inriktningsbeslut.
+2. **Linköpings kommun (2024)** — Utredning och design av ny internhyresmodell inklusive simulering av utfall per fastighet och analys av skolpengspåverkan. Uppdragsansvarig: Maria Bergström. Modellen infördes i 2026 års budgetprocess.
+3. **Uddevalla kommun (2023–2024)** — Översyn av finansiella mål och styrmodell för god ekonomisk hushållning; nyckeltal kopplade till mål- och budgetprocessen. Uppdragsansvarig: Anna Lindström.
 
-**A. Ekonomisk analys**
-- Beräkning av skatteväxlingsnivå utifrån nuvarande nettokostnader och framtida utveckling
-- Scenarioanalys med tre alternativa nivåer baserat på olika antaganden om kostnadsutveckling
-- Analys av påverkan på kommunalekonomisk utjämning per kommun
-- Momsteknisk analys av konsekvenser vid förändrad huvudmannaskap
+### 3. Bilaga D1-2 — Metodbeskrivning, delområde 1
 
-**B. Juridisk analys**
-- Genomgång av relevant lagstiftning (kommunallagen, kollektivtrafiklagen, skattelagstiftning)
-- Analys av hur avtal och ansvarsfördelning bör organiseras
-- Granskning av momskonsekvenser vid skatteväxling
-- Jämförelse med juridisk hantering i regioner som genomfört skatteväxling
+- **Planering och uppstart:** mål, avgränsning och tidplan fastställs i uppstartsmöte; kontaktvägar och avstämningspunkter dokumenteras i projektplan
+- **Genomförande och metodval:** metodval motiveras skriftligt mot frågeställningen (kvantitativ analys, intervjuer, fokusgrupper, dokumentstudier); pilottest av intervjuguider och enkäter
+- **Data och spårbarhet:** samtliga slutsatser spårbara till källa; datahantering enligt dokumenterad rutin
+- **Verktyg:** statistisk analys i R/Excel, visualisering i Power BI, AI-stödd strukturering och sammanställning av intervjumaterial där det tillför mervärde
+- **Leverans:** versionshanterade rapporter med fastställd leveransstandard och strukturerad överlämning
 
-**C. Verksamhetsanalys**
-- Kartläggning av nuvarande organisation och samarbetsstrukturer
-- Analys av roller, mandat och styrning vid förändrat huvudmannaskap
-- Identifiering av centrala risker och framgångsfaktorer
+### 4. Bilaga D1-3 — Kvalitetssystem
 
-**D. Erfarenhetsinhämtning**
-- Intervjuer med nyckelpersoner i regionen och kommunerna (10–15 intervjuer)
-- Erfarenhetssamtal med 3–4 regioner som genomfört skatteväxling
-- Sammanställning av lärdomar, fallgropar och framgångsfaktorer
+Varje leverans granskas i tre steg: faktagranskning av annan konsult än författaren, logik- och metodgranskning av uppdragsansvarig samt språkgranskning. Synpunkter från beställaren loggas med åtgärd, ansvarig och version. Mallar för rapport, projektplan och synpunktslogg bifogas.
 
-### 3. Tidplan
+### 5. Bilaga D1-4 — Kapacitet och redundans
 
-| Vecka | Aktivitet | Leverans |
-|-------|-----------|----------|
-| 1–2 | Uppstart, datainsamling, intervjuplanering | Projektplan |
-| 3–8 | Ekonomisk, juridisk och verksamhetsanalys | Delrapporter |
-| 9–14 | Erfarenhetsinhämtning, scenarioberäkningar | — |
-| 15–18 | Syntes och rapportskrivning | Utkast rapport |
-| 19–20 | Presentation tjänstepersoner (senast 31 okt) | Slutrapport |
-| 24–26 | Presentation förtroendevalda (senast 20 dec) | Presentationsmaterial |
+| Konsultnivå | Antal konsulter |
+|-------------|-----------------|
+| Junior | 1 |
+| Erfaren | 4 |
+| Senior | 3 |
+| Expert | 2 |
 
-### 4. Team
+Varje uppdrag bemannas med minst två konsulter med full insyn i material och status, vilket möjliggör ersättning utan kvalitetstapp vid frånvaro. Vid hög belastning prioriteras ramavtalskunder; beläggning följs upp veckovis.
 
-| Konsult | Roll | Kompetens |
-|---------|------|-----------|
-| Maria Bergström | Uppdragsansvarig (senior) | Expert på skatteväxling och kollektivtrafikfinansiering. Juristexamen + nationalekonomi. Genomfört liknande utredningar i Östergötland och Dalarna. |
-| Sofia Nilsson | Analytiker (junior) | Kvantitativ analys, intervjuer, rapportskrivande. Erfarenhet från offentlig förvaltning. |
+### 6. Delområde 2 — Referensportfölj och metod (bilagor D2-1–D2-4 i sammandrag)
 
-### 5. Fast pris
+1. **Järfälla kommun (2024)** — Processöversyn av bygglov och tillsyn: kartläggning av arbetssätt, roller och flöden, workshopserie med medarbetare och chefer, förslag till förbättrade handläggningsprocesser. Uppdragsansvarig: Jonas Eriksson.
+2. **Botkyrka kommun (2023)** — Projektledning för ny samverkansmodell för arbetsmarknadsinsatser mellan förvaltningar och externa aktörer; dialogmöten, beslutsstruktur och handlingsplan. Uppdragsansvarig: Jonas Eriksson.
+3. **Region Mellansverige (2024)** — Processtöd och facilitering i organisationsöversynens förankringsfas: workshops med ledningsgrupper och politisk styrgrupp. Uppdragsansvarig: Anna Lindström.
 
-**Totalpris: 620 000 SEK exkl. moms**
+Metodik enligt avsnitt 3 kompletterad med etablerade ramverk för projektstyrning, facilitering och förändringsledning; samtliga processer dokumenteras löpande i format användbara för beställarens fortsatta arbete.
 
-Priset inkluderar samtliga konsultkostnader, resor inom Mälardalen, och två presentationstillfällen (tjänstepersoner + förtroendevalda).
+### 7. Anbudspriser
 
-### 6. Referenser
+Timpriser i SEK exklusive mervärdesskatt, per konsultnivå:
 
-**Referens 1: Utredning skatteväxling kollektivtrafik, Region Östergötland (2024)**
-- Analys av förutsättningar för hel skatteväxling
-- Juridisk, ekonomisk och verksamhetsmässig analys
-- Intervjuer med 13 kommuner
-- Resultat: Beslutsunderlag som antogs av regionfullmäktige
-- Kontaktperson: [tillgänglig vid förfrågan]
+| Konsultnivå | Delområde 1 | Delområde 2 |
+|-------------|-------------|-------------|
+| Junior konsult | 940 | 940 |
+| Erfaren konsult | 1 260 | 1 260 |
+| Senior konsult | 1 560 | 1 560 |
+| Expert | 1 840 | 1 790 |
 
-**Referens 2: Finansieringsmodell kollektivtrafik, Region Dalarna (2023)**
-- Utredning av alternativa finansieringsmodeller
-- Konsekvensanalys för kommunernas ekonomi
-- Leverans: Rapport till regionfullmäktige
-- Kontaktperson: [tillgänglig vid förfrågan]
+### 8. Anbudets giltighet
 
-### 7. Kontaktperson
-
-Maria Bergström, Senior Managementkonsult
-maria.bergstrom@nordiamanagement.se
-+46 72 234 56 78
+Anbudet är bindande t.o.m. 2026-11-02.

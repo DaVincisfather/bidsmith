@@ -49,11 +49,11 @@ Ledde genomlysning av regionens organisationsstruktur inom hälso- och sjukvård
 
 Stödde kommunen i att uppdatera policy för god ekonomisk hushållning efter riksdagsbeslut 2023. Tog fram finansiella nyckeltal och styrmodell som överskred valperioder och kopplades till mål- och budgetprocessen.
 
-### Bemanningsoptimering inom idrottsförvaltning, Göteborgs stad
+### Genomlysning av lokalförsörjningsprocess, Västerås stad
 **Period:** 2023
-**Roll:** Senior konsult
+**Roll:** Uppdragsansvarig konsult
 
-Kartläggning, analys och optimering av bemanning för kommunala idrottsanläggningar i tillväxtfas. Levererade beslutsunderlag med personalbehovsanalys, schemaoptimering och ett Excel-baserat planeringsverktyg kopplat till budget.
+Genomlysning av kommunens lokalförsörjningsprocess med fokus på roller, ansvar, beslutsunderlag och gränssnittet mot investeringsprocessen. Ledde workshopserie med fastighetsenhet och berörda förvaltningar. Levererade beslutsunderlag med förbättringsförslag för styrning och investeringsplanering.
 
 ### Styrmodell och uppföljningsprocess, Borås kommun
 **Period:** 2022
